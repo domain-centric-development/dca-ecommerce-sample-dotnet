@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+    <!-- Local-first: the sibling dca-dotnet checkout is referenced as projects; without it the
+         published NuGet packages are used. Remove the project references once the packages are released. -->
+    <DcaDotnetDir>$(MSBuildThisFileDirectory)../dca-dotnet/src/</DcaDotnetDir>
+    <UseLocalDcaDotnet Condition="Exists('$(DcaDotnetDir)DomainCentric.BuildingBlocks/DomainCentric.BuildingBlocks.csproj')">true</UseLocalDcaDotnet>
+    <DcaDotnetVersion>0.1.0</DcaDotnetVersion>
+  </PropertyGroup>
+</Project>

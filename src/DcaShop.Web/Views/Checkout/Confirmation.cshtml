@@ -1,0 +1,9 @@
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
+@{ ViewData["Title"] = "Order confirmed"; }
+<h1 data-test="confirmation-title">Thank you for your order!</h1>
+<partial name="~/Views/Checkout/_Steps.cshtml" model="Model" />
+<div class="card">
+    <p>Your order <strong data-test="session-id">@Model.Session.SessionId</strong> is confirmed (status: <span data-test="session-status">@Model.Session.Status</span>).</p>
+    <partial name="~/Views/Checkout/_Summary.cshtml" model="Model" />
+    <p><a href="/products" class="button">Back to the shop</a></p>
+</div>

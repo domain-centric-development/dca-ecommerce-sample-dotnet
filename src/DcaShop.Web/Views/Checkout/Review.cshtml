@@ -1,0 +1,14 @@
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
+@{ ViewData["Title"] = "Checkout – Review"; var s = Model.Session; }
+<h1>Review your order</h1>
+<partial name="~/Views/Checkout/_Steps.cshtml" model="Model" />
+<div class="card">
+    <h3>Buyer</h3><p>@s.BuyerInfo?.FullName · @s.BuyerInfo?.Email · @s.BuyerInfo?.Phone</p>
+    <h3>Delivery</h3><p>@s.DeliveryAddress?.FormattedAddress<br /><span class="muted">@s.ShippingOption?.Name (@s.ShippingOption?.EstimatedDelivery)</span></p>
+    <h3>Payment</h3><p>@s.PaymentSelection?.ProviderId.Value</p>
+    <h3>Items</h3>
+    <partial name="~/Views/Checkout/_Summary.cshtml" model="Model" />
+    <form method="post" action="/checkout/@s.SessionId/confirm">
+        <p><a href="/checkout/@s.SessionId/payment" class="button secondary">Back</a> <button type="submit" data-test="confirm-order">Confirm order</button></p>
+    </form>
+</div>

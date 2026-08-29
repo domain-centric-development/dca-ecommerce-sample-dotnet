@@ -1,0 +1,14 @@
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
+@{ ViewData["Title"] = "Checkout – Payment"; }
+<h1>How would you like to pay?</h1>
+<partial name="~/Views/Checkout/_Steps.cshtml" model="Model" />
+<form method="post" action="/checkout/@Model.Session.SessionId/payment" class="card">
+    @foreach (var p in Model.PaymentProviders)
+    {
+        <label>
+            <input type="radio" name="paymentProviderId" value="@p.Id" required checked="@(Model.Session.PaymentSelection?.ProviderId.Value == p.Id)" data-test="payment-@p.Id" />
+            <strong>@p.DisplayName</strong> <span class="muted">– @p.Description</span>
+        </label>
+    }
+    <p><a href="/checkout/@Model.Session.SessionId/delivery" class="button secondary">Back</a> <button type="submit" data-test="continue">Continue to review</button></p>
+</form>

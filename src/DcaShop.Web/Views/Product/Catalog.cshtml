@@ -1,0 +1,26 @@
+@model DcaShop.Product.Adapter.Incoming.Web.ProductCatalogPageViewModel
+@{ ViewData["Title"] = "Products"; }
+<h1>Products</h1>
+<div class="grid">
+@foreach (var p in Model.Products)
+{
+    <div class="card" data-test="product-card">
+        <a href="/products/@p.ProductId"><img src="@p.ImageUrl" alt="@p.Name" /></a>
+        <h3><a href="/products/@p.ProductId" data-test="product-name">@p.Name</a></h3>
+        <p class="muted">@p.Category · @p.Sku</p>
+        <p class="price" data-test="product-price">@p.Price</p>
+        @if (p.CanBePurchased)
+        {
+            <form method="post" action="/cart/items">
+                <input type="hidden" name="productId" value="@p.ProductId" />
+                <input type="hidden" name="quantity" value="1" />
+                <button type="submit" data-test="add-to-cart">Add to cart</button>
+            </form>
+        }
+        else
+        {
+            <span class="badge">Out of stock</span>
+        }
+    </div>
+}
+</div>

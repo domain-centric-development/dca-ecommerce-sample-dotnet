@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)../Directory.Build.props" />
+  <ItemGroup Condition="'$(UseLocalDcaDotnet)' == 'true'">
+    <ProjectReference Include="$(DcaDotnetDir)DomainCentric.BuildingBlocks/DomainCentric.BuildingBlocks.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseLocalDcaDotnet)' != 'true'">
+    <PackageReference Include="DomainCentric.BuildingBlocks" Version="$(DcaDotnetVersion)" />
+  </ItemGroup>
+</Project>

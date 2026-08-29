@@ -1,0 +1,20 @@
+:root { font-family: system-ui, sans-serif; color: #1c1c1c; background: #fafafa; }
+body { margin: 0; }
+header { background: #1f3a5f; color: #fff; padding: 0.75rem 1.5rem; display: flex; gap: 1.5rem; align-items: center; }
+header a { color: #fff; text-decoration: none; font-weight: 600; }
+main { max-width: 960px; margin: 1.5rem auto; padding: 0 1rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+.card { background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 1rem; }
+.card img { max-width: 100%; border-radius: 4px; }
+.price { font-weight: 700; }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #e3e3e3; }
+button, .button { background: #1f3a5f; color: #fff; border: 0; border-radius: 4px; padding: 0.5rem 1rem; cursor: pointer; text-decoration: none; display: inline-block; }
+button.secondary { background: #888; }
+.error { background: #fde8e8; border: 1px solid #f5b5b5; padding: 0.5rem 1rem; border-radius: 4px; }
+.muted { color: #666; }
+.steps { display: flex; gap: 1rem; margin-bottom: 1rem; color: #888; }
+.steps .current { color: #1f3a5f; font-weight: 700; }
+label { display: block; margin: 0.5rem 0 0.2rem; }
+input[type=text], input[type=email], input[type=tel], select { width: 100%; max-width: 420px; padding: 0.4rem; }
+.badge { font-size: 0.8rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eee; }

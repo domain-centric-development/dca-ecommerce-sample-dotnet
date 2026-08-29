@@ -1,0 +1,20 @@
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
+@{ ViewData["Title"] = "Checkout – Delivery"; var a = Model.Session.DeliveryAddress; }
+<h1>Where should we deliver?</h1>
+<partial name="~/Views/Checkout/_Steps.cshtml" model="Model" />
+<form method="post" action="/checkout/@Model.Session.SessionId/delivery" class="card">
+    <label for="street">Street</label><input type="text" id="street" name="street" value="@a?.Street" required data-test="street" />
+    <label for="streetLine2">Street (line 2)</label><input type="text" id="streetLine2" name="streetLine2" value="@a?.StreetLine2" />
+    <label for="postalCode">Postal code</label><input type="text" id="postalCode" name="postalCode" value="@a?.PostalCode" required data-test="postal-code" />
+    <label for="city">City</label><input type="text" id="city" name="city" value="@a?.City" required data-test="city" />
+    <label for="state">State</label><input type="text" id="state" name="state" value="@a?.State" />
+    <label for="country">Country</label><input type="text" id="country" name="country" value="@(a?.Country ?? "Germany")" required data-test="country" />
+    <label for="shippingOptionId">Shipping</label>
+    <select id="shippingOptionId" name="shippingOptionId" data-test="shipping-option">
+    @foreach (var o in Model.ShippingOptions)
+    {
+        <option value="@o.Id" selected="@(Model.Session.ShippingOption?.Id == o.Id)">@o.Name – @o.EstimatedDelivery (@o.Cost)</option>
+    }
+    </select>
+    <p><a href="/checkout/@Model.Session.SessionId/buyer-info" class="button secondary">Back</a> <button type="submit" data-test="continue">Continue to payment</button></p>
+</form>

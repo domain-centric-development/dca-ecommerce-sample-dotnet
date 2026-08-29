@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"] – DcaShop</title>
+    <link rel="stylesheet" href="~/site.css" />
+</head>
+<body>
+<header>
+    <a href="/products" data-test="nav-catalog">DcaShop</a>
+    <a href="/cart" data-test="nav-cart">Cart</a>
+</header>
+<main>
+    @if (TempData["Error"] is string error)
+    {
+        <p class="error" data-test="error">@error</p>
+    }
+    @RenderBody()
+</main>
+</body>
+</html>

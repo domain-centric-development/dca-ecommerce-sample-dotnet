@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>DcaShop.Cart</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../DcaShop.SharedKernel/DcaShop.SharedKernel.csproj" />
+    <ProjectReference Include="../DcaShop.Product/DcaShop.Product.csproj" />
+  </ItemGroup>
+</Project>
