@@ -7,8 +7,8 @@ namespace DcaShop.SharedKernel.Infrastructure.Events;
 
 /// <summary>
 /// In-memory outbox: publications live in a dictionary, a channel of ids wakes the dispatcher. Durable within
-/// the process only — a database-backed implementation would persist the publication in the same unit of work as
-/// the aggregate and keep the same interface.
+/// the process only — a database-backed implementation persists the publication in the aggregate's transaction
+/// and keeps the same interface (<c>Discard</c> becomes a no-op there: the database rolls the row back).
 /// </summary>
 public sealed class InMemoryIntegrationEventOutbox : IIntegrationEventOutbox
 {
@@ -27,9 +27,12 @@ public sealed class InMemoryIntegrationEventOutbox : IIntegrationEventOutbox
         ArgumentNullException.ThrowIfNull(@event);
         var publication = new IntegrationEventPublication(@event.EventId, @event, _clock.GetUtcNow(), PublicationStatus.Pending, 0, null, null);
         _publications[publication.Id] = publication;
-        _due.Writer.TryWrite(publication.Id);
         return publication;
     }
+
+    public void Release(Guid publicationId) => _due.Writer.TryWrite(publicationId);
+
+    public void Discard(Guid publicationId) => _publications.TryRemove(publicationId, out _);
 
     public async IAsyncEnumerable<IntegrationEventPublication> ReadDueAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {

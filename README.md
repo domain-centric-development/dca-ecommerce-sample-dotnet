@@ -47,7 +47,7 @@ One assembly per bounded context, one for the shared kernel, one for global infr
 
 ```
 src/
-├── DcaShop.SharedKernel/        Money, Price, ProductId, UserId; unit of work, event dispatch, integration-event outbox
+├── DcaShop.SharedKernel/        Money, Price, ProductId, UserId; transaction boundary, event dispatch, integration-event outbox
 ├── DcaShop.Product/             Product Catalog   (namespace DcaShop.Product)
 ├── DcaShop.Cart/                Shopping Cart     (namespace DcaShop.Cart)
 ├── DcaShop.Checkout/            Checkout          (namespace DcaShop.Checkout)
@@ -120,8 +120,8 @@ contract; Cart and Checkout are partners over that contract.
 This is an architecture sample, not a production template. Two pieces of infrastructure are intentionally minimal:
 
 - **In-memory persistence** shares mutable aggregate instances between requests and has no optimistic
-  concurrency; see ADR-001. `InMemoryTransactionBoundary` draws the boundary and runs after-commit hooks, but there is
-  nothing to roll back; see ADR-004.
+  concurrency; see ADR-001. `InMemoryTransactionBoundary` draws the boundary and runs after-commit/after-rollback hooks,
+  but repositories have nothing to roll back; see ADR-004.
 - **The integration-event outbox is in-memory**: at-least-once delivery with retries and a visible `Failed` state,
   but durable only within the process — a restart loses outstanding publications; see ADR-002 for the
   database-backed variant.

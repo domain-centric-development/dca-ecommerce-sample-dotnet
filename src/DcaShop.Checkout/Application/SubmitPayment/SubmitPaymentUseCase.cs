@@ -25,13 +25,13 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
         var sessionId = new CheckoutSessionId(command.SessionId);
         var providerId = PaymentProviderId.Of(command.PaymentProviderId);
 
-        // Provider lookup is remote-capable (payment service provider) — outside the unit of work
+        // Provider lookup is remote-capable (payment service provider) — outside the transaction
         if (await _providers.FindAsync(providerId, cancellationToken).ConfigureAwait(false) is null)
         {
             throw new ArgumentException($"Unknown payment provider: {providerId}", nameof(command));
         }
 
-        // Short unit of work: load, submit, save, publish
+        // Short transaction: load, submit, save, publish
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {

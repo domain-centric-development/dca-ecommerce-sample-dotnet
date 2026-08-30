@@ -20,7 +20,7 @@ public sealed class SubmitDeliveryUseCase : ISubmitDeliveryInputPort
 
     public async Task<SubmitDeliveryResult> ExecuteAsync(SubmitDeliveryCommand command, CancellationToken cancellationToken = default)
     {
-        // Whole use case is local: one short unit of work
+        // Whole use case is local: one short transaction
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {

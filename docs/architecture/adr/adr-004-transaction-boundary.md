@@ -20,13 +20,15 @@ smaller than the use case.
   application-layer execution abstraction, deliberately not an output port (a transaction is no interaction with the
   outside world; it defines the execution semantics of several such interactions):
   remote-capable reads first, then `InTransactionAsync(load, mutate, save, publish)`. Use cases without remote reads wrap
-  their whole body. Read-only use cases run without a unit of work.
-- `InMemoryTransactionBoundary` (shared kernel infrastructure, scoped) implements the port for the in-memory stage: nested calls
-  join the outer unit of work; `ITransactionHooks.AfterCommit` collects work that must become visible only on
-  commit and drops it on rollback.
-- `OutboxIntegrationEventPublisher` enlists the outbox registration through `AfterCommit`: a use case that throws
-  after publishing leaves no integration event behind — the in-process equivalent of an outbox row written in
-  the aggregate's transaction (ADR-002).
+  their whole body. Read-only use cases run without a transaction.
+- `InMemoryTransactionBoundary` (shared kernel infrastructure, scoped) implements the abstraction for the in-memory
+  stage: nested calls join the outer transaction; `ITransactionHooks` offers `AfterCommit` and `AfterRollback` for
+  work that reacts to the outcome — not for work that belongs *into* the transaction.
+- `OutboxIntegrationEventPublisher` registers the publication **inside** the transaction, next to the aggregate, so
+  there is no window in which the aggregate is committed but the event is not recorded. `AfterCommit` only releases
+  the publication to the dispatcher; `AfterRollback` discards it (a database outbox rolls the row back by itself).
+  This is exactly the shape a database-backed outbox needs, so the swap touches the outbox store, not the
+  publisher or the use cases (ADR-002).
 - Only transactional resources are used inside `InTransactionAsync`: repositories, stores, the event publishers. Ports that
   may leave the process (`IArticleDataPort`, `ICartDataPort`, `IPaymentProviderRegistry`, …) are called before.
 - `DCA-NET-006` keeps EF Core, `System.Data` and `System.Transactions` out of the application layer, so the only

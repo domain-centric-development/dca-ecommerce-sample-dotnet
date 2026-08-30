@@ -20,7 +20,7 @@ public sealed class CheckoutCartUseCase : ICheckoutCartInputPort
 
     public async Task<CheckoutCartResult> ExecuteAsync(CheckoutCartCommand command, CancellationToken cancellationToken = default)
     {
-        // Whole use case is local: one short unit of work
+        // Whole use case is local: one short transaction
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {

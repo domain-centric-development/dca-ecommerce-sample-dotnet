@@ -27,7 +27,7 @@ public sealed class AddItemToCartUseCase : IAddItemToCartInputPort
         var productId = new ProductId(command.ProductId);
         var quantity = Quantity.Of(command.Quantity);
 
-        // Remote-capable read (Product Catalog via ACL) — outside the unit of work
+        // Remote-capable read (Product Catalog via ACL) — outside the transaction
         var article = await _articles.GetArticleDataAsync(productId, cancellationToken).ConfigureAwait(false)
                       ?? throw new ArgumentException($"Product not found: {productId}", nameof(command));
         if (!article.HasStockFor(quantity.Value))
@@ -37,7 +37,7 @@ public sealed class AddItemToCartUseCase : IAddItemToCartInputPort
 
         var priceAtAddition = Price.Of(article.CurrentPrice);
 
-        // Short unit of work: load, mutate, save, publish
+        // Short transaction: load, mutate, save, publish
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {

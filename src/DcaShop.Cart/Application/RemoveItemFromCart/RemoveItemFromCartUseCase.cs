@@ -20,7 +20,7 @@ public sealed class RemoveItemFromCartUseCase : IRemoveItemFromCartInputPort
 
     public async Task<RemoveItemFromCartResult> ExecuteAsync(RemoveItemFromCartCommand command, CancellationToken cancellationToken = default)
     {
-        // Whole use case is local: one short unit of work
+        // Whole use case is local: one short transaction
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {

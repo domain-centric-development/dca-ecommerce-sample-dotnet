@@ -32,19 +32,37 @@ public sealed class InMemoryTransactionBoundaryTest
     }
 
     [Fact]
-    public async Task RollbackDropsEnlistedHooks()
+    public async Task RollbackDropsCommitHooksAndRunsRollbackHooks()
     {
         var uow = new InMemoryTransactionBoundary();
-        var ran = false;
+        var committed = false;
+        var rolledBack = false;
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => uow.InTransactionAsync<int>(_ =>
         {
-            uow.AfterCommit(() => ran = true);
+            uow.AfterCommit(() => committed = true);
+            uow.AfterRollback(() => rolledBack = true);
             throw new InvalidOperationException("boom");
         }));
 
-        Assert.False(ran);
+        Assert.False(committed);
+        Assert.True(rolledBack);
         Assert.False(uow.InTransaction);
+    }
+
+    [Fact]
+    public async Task CommitDropsRollbackHooks()
+    {
+        var uow = new InMemoryTransactionBoundary();
+        var rolledBack = false;
+
+        await ((ITransactionBoundary)uow).InTransactionAsync(_ =>
+        {
+            uow.AfterRollback(() => rolledBack = true);
+            return Task.CompletedTask;
+        });
+
+        Assert.False(rolledBack);
     }
 
     [Fact]
@@ -56,5 +74,16 @@ public sealed class InMemoryTransactionBoundaryTest
         uow.AfterCommit(() => ran = true);
 
         Assert.True(ran);
+    }
+
+    [Fact]
+    public void OutsideATransactionBoundaryRollbackHooksAreDiscarded()
+    {
+        var uow = new InMemoryTransactionBoundary();
+        var ran = false;
+
+        uow.AfterRollback(() => ran = true);
+
+        Assert.False(ran);
     }
 }

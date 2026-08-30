@@ -33,7 +33,7 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
             return new StartCheckoutResult(CheckoutSessionData.From(existing));
         }
 
-        // Cart and article data come from other contexts (remote-capable) — outside the unit of work
+        // Cart and article data come from other contexts (remote-capable) — outside the transaction
         var cart = await _cartData.FindByIdAsync(cartId, cancellationToken).ConfigureAwait(false)
                    ?? throw new ArgumentException($"Cart not found: {cartId}", nameof(command));
         if (!cart.Active)
@@ -61,7 +61,7 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
             subtotal = subtotal.Add(lineItem.LineTotal);
         }
 
-        // Short unit of work: create, save, publish
+        // Short transaction: create, save, publish
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {

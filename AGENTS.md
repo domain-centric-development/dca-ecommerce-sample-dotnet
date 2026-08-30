@@ -47,7 +47,7 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
 - Cross-context calls go **only** through the other context's `Api/` from an outgoing adapter (ACL); consumed
   integration events arrive in `Adapter/Incoming/Event`. Incoming web adapters touch only their own context.
 - Events: domain events are dispatched in-process synchronously (`InProcessDomainEventPublisher`);
-  integration events are registered in `IIntegrationEventOutbox` and delivered by `IntegrationEventDispatcherService`
+  integration events are registered in `IIntegrationEventOutbox` inside the use case's transaction, released after commit and delivered by `IntegrationEventDispatcherService`
   — asynchronous, after the publishing use case finished, at least once with retry/backoff; consumers are idempotent. Listeners implement `EventListener<TEvent>` and are registered as `IEventListener`.
 - E2E: `tests/DcaShop.E2eTests` is a one-to-one port of the Java `src/test-e2e` page objects and
   `CheckoutGuestE2ETest` (same `data-test` selectors, same scenario names). Either suite runs against either shop

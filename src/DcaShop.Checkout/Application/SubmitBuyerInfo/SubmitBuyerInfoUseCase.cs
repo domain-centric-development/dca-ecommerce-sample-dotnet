@@ -20,7 +20,7 @@ public sealed class SubmitBuyerInfoUseCase : ISubmitBuyerInfoInputPort
 
     public async Task<SubmitBuyerInfoResult> ExecuteAsync(SubmitBuyerInfoCommand command, CancellationToken cancellationToken = default)
     {
-        // Whole use case is local: one short unit of work
+        // Whole use case is local: one short transaction
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {

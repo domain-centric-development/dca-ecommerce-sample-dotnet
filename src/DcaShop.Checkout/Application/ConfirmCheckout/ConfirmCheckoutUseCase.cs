@@ -24,12 +24,12 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
     {
         var sessionId = new CheckoutSessionId(command.SessionId);
 
-        // Article data comes from the Product Catalog (remote-capable) — fetched outside the unit of work
+        // Article data comes from the Product Catalog (remote-capable) — fetched outside the transaction
         var current = await LoadAsync(sessionId, cancellationToken).ConfigureAwait(false);
         var articles = await _articleData.GetArticleDataAsync(current.LineItems.Select(i => i.ProductId).ToArray(), cancellationToken).ConfigureAwait(false);
         var resolver = new ArticleDataPriceResolver(articles);
 
-        // Short unit of work: reload, confirm, save, publish
+        // Short transaction: reload, confirm, save, publish
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {

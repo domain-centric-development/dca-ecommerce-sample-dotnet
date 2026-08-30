@@ -20,7 +20,7 @@ public sealed class CreateCartUseCase : ICreateCartInputPort
 
     public async Task<CreateCartResult> ExecuteAsync(CreateCartCommand command, CancellationToken cancellationToken = default)
     {
-        // Whole use case is local: one short unit of work
+        // Whole use case is local: one short transaction
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {

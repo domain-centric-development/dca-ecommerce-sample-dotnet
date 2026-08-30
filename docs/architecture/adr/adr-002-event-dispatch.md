@@ -17,7 +17,9 @@ port and blurs the distinction between commands and events.
   listener fails the use case and leaves the events on the aggregate. This is the relay point where outgoing event
   adapters (`*EventPublisher`) translate domain events into integration events.
 - The `IIntegrationEventPublisher` port is implemented by `OutboxIntegrationEventPublisher`: publishing registers an
-  `IntegrationEventPublication` (event + delivery bookkeeping) in the `IIntegrationEventOutbox`.
+  `IntegrationEventPublication` (event + delivery bookkeeping) in the `IIntegrationEventOutbox` — inside the use
+  case's transaction; the publication is released to the dispatcher after commit and discarded after rollback
+  (ADR-004).
   `IntegrationEventDispatcherService` (a `BackgroundService` in `DcaShop.Infrastructure`) reads due publications and
   delivers each in its own DI scope — asynchronous and after the publishing use case returned, which is the semantic
   `@ApplicationModuleListener` gives the Java sample. A failed delivery is recorded and retried with exponential
@@ -37,7 +39,8 @@ port and blurs the distinction between commands and events.
 - Positive: two small classes replace a framework; the event flow is readable in one file each; tests can assert
   eventual consistency by polling the consuming context.
 - Negative: the outbox is `InMemoryIntegrationEventOutbox` — durable within the process only; a restart loses
-  outstanding publications, and registering the publication is not atomic with `SaveAsync` on the aggregate. Both
-  gaps close with a database-backed outbox that writes the publication in the same unit of work as the aggregate;
-  the interface, the dispatcher, the ports and the use cases stay as they are. Synchronous domain-event listeners
+  outstanding publications, and the in-memory store cannot make the registration atomic with `SaveAsync` on the
+  aggregate (it emulates the rollback through `AfterRollback`). Both gaps close with a database-backed outbox that
+  writes the publication in the aggregate's transaction; the interface, the publisher, the dispatcher, the ports
+  and the use cases stay as they are. Synchronous domain-event listeners
   run inside the use case, so a failure there is a failure of the use case — no outbox needed on that leg.
