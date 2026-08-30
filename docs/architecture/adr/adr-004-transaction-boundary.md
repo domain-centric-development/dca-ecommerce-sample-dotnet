@@ -22,7 +22,8 @@ smaller than the use case.
   remote-capable reads first, then `InTransactionAsync(load, mutate, save, publish)`. Use cases without remote reads wrap
   their whole body. Read-only use cases run without a transaction.
 - `InMemoryTransactionBoundary` (shared kernel infrastructure, scoped) implements the abstraction for the in-memory
-  stage: nested calls join the outer transaction; `ITransactionHooks` offers `AfterCommit` and `AfterRollback` for
+  stage: nested calls join the outer transaction and an inner failure marks it rollback-only (the outermost block
+  then throws `TransactionRolledBackException` instead of committing — Spring's REQUIRED semantics); `ITransactionHooks` offers `AfterCommit` and `AfterRollback` for
   work that reacts to the outcome — not for work that belongs *into* the transaction.
 - `OutboxIntegrationEventPublisher` registers the publication **inside** the transaction, next to the aggregate, so
   there is no window in which the aggregate is committed but the event is not recorded. `AfterCommit` only releases

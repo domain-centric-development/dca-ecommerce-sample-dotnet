@@ -51,6 +51,50 @@ public sealed class InMemoryTransactionBoundaryTest
     }
 
     [Fact]
+    public async Task SwallowedInnerFailureMarksTheTransactionRollbackOnly()
+    {
+        var impl = new InMemoryTransactionBoundary();
+        ITransactionBoundary boundary = impl;
+        var committed = false;
+        var rolledBack = false;
+
+        await Assert.ThrowsAsync<TransactionRolledBackException>(() => boundary.InTransactionAsync(async ct =>
+        {
+            impl.AfterCommit(() => committed = true);
+            impl.AfterRollback(() => rolledBack = true);
+            try
+            {
+                await boundary.InTransactionAsync(_ => throw new InvalidOperationException("inner"), ct);
+            }
+            catch (InvalidOperationException)
+            {
+                // handled by the outer block — the transaction is still poisoned
+            }
+        }));
+
+        Assert.False(committed);
+        Assert.True(rolledBack);
+        Assert.False(impl.InTransaction);
+    }
+
+    [Fact]
+    public async Task RollbackOnlyDoesNotLeakIntoTheNextTransaction()
+    {
+        var impl = new InMemoryTransactionBoundary();
+        ITransactionBoundary boundary = impl;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => boundary.InTransactionAsync<int>(_ => throw new InvalidOperationException("boom")));
+        var committed = false;
+        await boundary.InTransactionAsync(_ =>
+        {
+            impl.AfterCommit(() => committed = true);
+            return Task.CompletedTask;
+        });
+
+        Assert.True(committed);
+    }
+
+    [Fact]
     public async Task CommitDropsRollbackHooks()
     {
         var uow = new InMemoryTransactionBoundary();
