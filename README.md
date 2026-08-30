@@ -85,7 +85,7 @@ DcaShop.Cart/
 
 The pages are a one-to-one translation of the Java sample's Pug templates into Razor: same stylesheet
 (`wwwroot/css/main.css`), same product images, same CSS classes and `data-test` attributes, same routes
-(`/products`, `/products/{id}`, `/cart`, `/cart/add-product`, `/checkout/start?cartId=…`, `/checkout/buyer` →
+(`/products`, `/products/{id}`, `/cart`, `/cart/add-product`, POST `/checkout/start`, `/checkout/buyer` →
 `delivery` → `payment` → `review` → `confirm` → `confirmation`). The active checkout session is resolved from the
 customer, not from the URL. The only intended difference in the HTML is the antiforgery hidden field in every form.
 Login/Register/Account/Event Log links are rendered but lead to 404 until the Account, Portal and Backoffice

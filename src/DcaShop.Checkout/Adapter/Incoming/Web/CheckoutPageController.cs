@@ -56,8 +56,9 @@ public sealed class CheckoutPageController : Controller
         _confirm = confirm;
     }
 
-    [HttpGet("start")]
-    public async Task<IActionResult> Start([FromQuery] Guid cartId, CancellationToken cancellationToken)
+    /// <summary>POST: starting a checkout creates a session — never reachable through a link.</summary>
+    [HttpPost("start")]
+    public async Task<IActionResult> Start([FromForm] Guid cartId, CancellationToken cancellationToken)
     {
         try
         {

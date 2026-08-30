@@ -65,7 +65,11 @@ else if (!item.HasSufficientStock)
 {
 @if (Model.CanCheckout)
 {
-<a class="btn btn--primary btn--lg" href="/checkout/start?cartId=@Model.CartId" data-test="cart-checkout-link">Proceed to Checkout</a>
+<form method="post" action="/checkout/start" data-test="cart-checkout-form">
+@Html.AntiForgeryToken()
+<input type="hidden" name="cartId" value="@Model.CartId">
+<button class="btn btn--primary btn--lg" type="submit" data-test="cart-checkout-button">Proceed to Checkout</button>
+</form>
 <div class="cart__actions-info"><a href="/products">Continue Shopping</a></div>
 }
 else

@@ -6,7 +6,7 @@ public sealed class CartPage : BasePage
 {
     private const string UrlPattern = "/cart**";
     private const string CartItem = "cart-item";
-    private const string CheckoutLink = "cart-checkout-link";
+    private const string CheckoutButton = "cart-checkout-button";
 
     private CartPage(IPage page) : base(page)
     {
@@ -28,7 +28,7 @@ public sealed class CartPage : BasePage
     public async Task<BuyerInfoPage> ProceedToCheckoutAsync()
     {
         await WaitForAsync(CartItem);
-        await ClickAsync(CheckoutLink);
+        await ClickAsync(CheckoutButton);
         return await BuyerInfoPage.OpenAsync(Page);
     }
 

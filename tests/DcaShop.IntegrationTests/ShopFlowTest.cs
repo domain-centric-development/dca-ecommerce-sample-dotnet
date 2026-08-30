@@ -39,11 +39,11 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
         Assert.Contains("data-test=\"cart-success-message\"", cartPage, StringComparison.Ordinal);
         Assert.Contains("data-test=\"cart-item\"", cartPage, StringComparison.Ordinal);
         Assert.Contains("data-test=\"mini-basket-count\">2<", cartPage, StringComparison.Ordinal);
-        var cartId = Regex.Match(cartPage, @"/checkout/start\?cartId=([0-9a-f-]{36})""").Groups[1].Value;
+        var cartId = Regex.Match(cartPage, @"name=""cartId"" value=""([0-9a-f-]{36})""").Groups[1].Value;
         Assert.NotEmpty(cartId);
 
         // Start checkout → redirected to buyer info; skipping ahead is refused
-        var started = await client.GetAsync($"/checkout/start?cartId={cartId}");
+        var started = await client.PostAsync("/checkout/start", Form(cartPage, ("cartId", cartId)));
         Assert.Equal(HttpStatusCode.Redirect, started.StatusCode);
         Assert.Equal("/checkout/buyer", started.Headers.Location!.ToString());
         var skipped = await client.GetAsync("/checkout/delivery");
