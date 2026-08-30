@@ -33,11 +33,11 @@ One assembly per bounded context, one for the shared kernel, one for global infr
 
 ```
 src/
-├── DcaShop.SharedKernel/        Money, Price, ProductId, UserId; in-process event dispatch
+├── DcaShop.SharedKernel/        Money, Price, ProductId, UserId; event dispatch + integration-event outbox
 ├── DcaShop.Product/             Product Catalog   (namespace DcaShop.Product)
 ├── DcaShop.Cart/                Shopping Cart     (namespace DcaShop.Cart)
 ├── DcaShop.Checkout/            Checkout          (namespace DcaShop.Checkout)
-├── DcaShop.Infrastructure/      composition root, integration-event background service, sample data
+├── DcaShop.Infrastructure/      composition root, outbox dispatcher (retry/backoff), sample data
 └── DcaShop.Web/                 ASP.NET Core host, Razor views (controllers live in the contexts)
 tests/
 ├── DcaShop.UnitTests/           aggregate and value-object tests
@@ -96,8 +96,9 @@ This is an architecture sample, not a production template. Two pieces of infrast
 
 - **In-memory persistence** shares mutable aggregate instances between requests and has no optimistic
   concurrency; see ADR-001.
-- **Event delivery is non-durable**: an unbounded in-process channel, no outbox, no retries. A restart loses
-  queued integration events; see ADR-002 for what a production implementation swaps in.
+- **The integration-event outbox is in-memory**: at-least-once delivery with retries and a visible `Failed` state,
+  but durable only within the process — a restart loses outstanding publications; see ADR-002 for the
+  database-backed variant.
 
 Both live entirely in adapters — the domain and application layers are unaffected when they are replaced.
 

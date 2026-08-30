@@ -7,6 +7,7 @@ using DcaShop.SharedKernel.Adapter.Outgoing.Event;
 using DcaShop.SharedKernel.Infrastructure.Events;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DcaShop.Infrastructure;
 
@@ -18,8 +19,10 @@ public static class DcaShopRegistration
         // Event plumbing (shared kernel)
         services.AddScoped<IEventDispatcher, InProcessEventDispatcher>();
         services.AddScoped<IDomainEventPublisher, InProcessDomainEventPublisher>();
-        services.AddSingleton<IntegrationEventChannel>();
-        services.AddSingleton<IIntegrationEventPublisher, ChannelIntegrationEventPublisher>();
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<IIntegrationEventOutbox, InMemoryIntegrationEventOutbox>();
+        services.AddSingleton<IIntegrationEventPublisher, OutboxIntegrationEventPublisher>();
+        services.TryAddSingleton(IntegrationEventRetryPolicy.Default);
         services.AddHostedService<IntegrationEventDispatcherService>();
 
         // Bounded contexts

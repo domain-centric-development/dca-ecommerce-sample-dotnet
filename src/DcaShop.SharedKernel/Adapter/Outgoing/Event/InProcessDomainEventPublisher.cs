@@ -20,11 +20,13 @@ public sealed class InProcessDomainEventPublisher : IDomainEventPublisher
     public async Task PublishAndClearEventsAsync(IAggregateRoot aggregate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(aggregate);
-        var events = aggregate.DomainEvents.ToArray();
-        aggregate.ClearDomainEvents();
-        foreach (var @event in events)
+        // Dispatch first, clear last: clearing is the acknowledgement that every listener has seen the event.
+        // If a listener throws, the events stay on the aggregate and the failure surfaces in the use case.
+        foreach (var @event in aggregate.DomainEvents.ToArray())
         {
             await _dispatcher.DispatchAsync(@event, cancellationToken).ConfigureAwait(false);
         }
+
+        aggregate.ClearDomainEvents();
     }
 }

@@ -46,8 +46,8 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
 - Cross-context calls go **only** through the other context's `Api/` from an outgoing adapter (ACL); consumed
   integration events arrive in `Adapter/Incoming/Event`. Incoming web adapters touch only their own context.
 - Events: domain events are dispatched in-process synchronously (`InProcessDomainEventPublisher`);
-  integration events go through `IntegrationEventChannel` and a background service — asynchronous, after the
-  publishing use case finished. Listeners implement `EventListener<TEvent>` and are registered as `IEventListener`.
+  integration events are registered in `IIntegrationEventOutbox` and delivered by `IntegrationEventDispatcherService`
+  — asynchronous, after the publishing use case finished, at least once with retry/backoff; consumers are idempotent. Listeners implement `EventListener<TEvent>` and are registered as `IEventListener`.
 - DI is explicit: every use case, adapter and listener is registered in the context's `*ContextRegistration`.
 
 ## Stage-1 stand-ins (remove when the contexts arrive)
