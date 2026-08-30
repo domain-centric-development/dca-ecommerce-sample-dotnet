@@ -59,7 +59,7 @@ else if (!item.HasSufficientStock)
 </div>
 }
 </div>
-<div class="cart__total"><div class="cart__total-row"><span>Subtotal</span><span>@Model.CurrentSubtotal</span></div></div>
+<div class="cart__total"><div class="cart__total-row"><span>Subtotal</span><span>@Model.CurrentSubtotal</span></div><div class="cart__total-row cart__total-row--note" data-test="cart-tax-row"><span>incl. VAT</span><span>@Model.ContainedTax</span></div></div>
 <div class="cart__actions">
 @if (Model.Status == "Active")
 {

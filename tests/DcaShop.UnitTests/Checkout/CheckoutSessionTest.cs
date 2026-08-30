@@ -1,5 +1,6 @@
 using DcaShop.Checkout.Domain.Event;
 using DcaShop.Checkout.Domain.Model;
+using DcaShop.Checkout.Domain.Service;
 using DcaShop.SharedKernel.Domain.Model;
 
 namespace DcaShop.UnitTests.Checkout;
@@ -12,7 +13,7 @@ public sealed class CheckoutSessionTest
     private static CheckoutSession Started()
     {
         var line = new CheckoutLineItem(CheckoutLineItemId.Generate(), Product, "Thing", Money.Euro(10m), 2, null);
-        return CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("guest"), new[] { line }, line.LineTotal);
+        return CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("guest"), new[] { line }, line.LineTotal, new TaxCalculator());
     }
 
     private sealed class FixedResolver : ICheckoutArticlePriceResolver
@@ -40,7 +41,7 @@ public sealed class CheckoutSessionTest
     {
         var session = Started();
 
-        Assert.Throws<InvalidOperationException>(() => session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard));
+        Assert.Throws<InvalidOperationException>(() => session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard, new TaxCalculator()));
         Assert.Throws<InvalidOperationException>(() => session.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice"))));
     }
 
@@ -52,7 +53,7 @@ public sealed class CheckoutSessionTest
         session.SubmitBuyerInfo(new BuyerInfo("a@b.de", "Ada", "Lovelace", "123"));
         Assert.Equal(CheckoutStep.Delivery, session.CurrentStep);
 
-        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard);
+        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard, new TaxCalculator());
         Assert.Equal(CheckoutStep.Payment, session.CurrentStep);
         Assert.Equal(Money.Euro(24.99m), session.Totals.Total);
 
@@ -73,7 +74,7 @@ public sealed class CheckoutSessionTest
     {
         var session = Started();
         session.SubmitBuyerInfo(new BuyerInfo("a@b.de", "Ada", "Lovelace", "123"));
-        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard);
+        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard, new TaxCalculator());
         session.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice")));
 
         Assert.Throws<InvalidOperationException>(() => session.Confirm(new FixedResolver(available: true, stock: 1)));
@@ -85,7 +86,7 @@ public sealed class CheckoutSessionTest
     {
         var session = Started();
         session.SubmitBuyerInfo(new BuyerInfo("a@b.de", "Ada", "Lovelace", "123"));
-        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard);
+        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard, new TaxCalculator());
         session.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice")));
         session.Confirm(new FixedResolver(available: true, stock: 5));
 
@@ -98,5 +99,5 @@ public sealed class CheckoutSessionTest
 
     [Fact]
     public void CannotStartWithoutLineItems() =>
-        Assert.Throws<ArgumentException>(() => CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("g"), Array.Empty<CheckoutLineItem>(), Money.Euro(0m)));
+        Assert.Throws<ArgumentException>(() => CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("g"), Array.Empty<CheckoutLineItem>(), Money.Euro(0m), new TaxCalculator()));
 }

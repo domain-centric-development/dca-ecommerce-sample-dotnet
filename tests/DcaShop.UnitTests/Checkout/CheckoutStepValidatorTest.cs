@@ -14,14 +14,14 @@ public sealed class CheckoutStepValidatorTest
     private static CheckoutSession Started()
     {
         var line = new CheckoutLineItem(CheckoutLineItemId.Generate(), ProductId.Generate(), "Thing", Money.Euro(10m), 2, null);
-        return CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("guest"), new[] { line }, line.LineTotal);
+        return CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("guest"), new[] { line }, line.LineTotal, new TaxCalculator());
     }
 
     private static CheckoutSession AtReview()
     {
         var session = Started();
         session.SubmitBuyerInfo(new BuyerInfo("a@b.de", "Ada", "Lovelace", "123"));
-        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard);
+        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard, new TaxCalculator());
         session.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice")));
         return session;
     }

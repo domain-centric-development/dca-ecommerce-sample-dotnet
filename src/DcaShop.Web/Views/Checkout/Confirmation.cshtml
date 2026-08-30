@@ -48,6 +48,7 @@
 <div class="confirmation__detail-section">
 <div class="order-summary__line"><span>Subtotal</span><span>@s.Subtotal</span></div>
 @if (s.ShippingOption is not null) {<div class="order-summary__line"><span>Shipping</span><span>@s.Totals.Shipping</span></div>}
+<div class="order-summary__line"><span>Tax</span><span>@s.Totals.Tax</span></div>
 <div class="order-summary__total"><span>Total Paid</span><span>@s.Totals.Total</span></div>
 </div>
 </div>

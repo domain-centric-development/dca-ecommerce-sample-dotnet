@@ -1,4 +1,5 @@
 using DcaShop.Checkout.Domain.Event;
+using DcaShop.Checkout.Domain.Service;
 using DcaShop.SharedKernel.Domain.Model;
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
@@ -12,25 +13,25 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
 {
     private readonly List<CheckoutLineItem> _lineItems;
 
-    private CheckoutSession(CheckoutSessionId id, CartId cartId, CustomerId customerId, IReadOnlyList<CheckoutLineItem> lineItems, Money subtotal)
+    private CheckoutSession(CheckoutSessionId id, CartId cartId, CustomerId customerId, IReadOnlyList<CheckoutLineItem> lineItems, Money subtotal, TaxCalculator taxCalculator)
     {
         Id = id;
         CartId = cartId;
         CustomerId = customerId;
         _lineItems = new List<CheckoutLineItem>(lineItems);
-        Totals = CheckoutTotals.Calculate(subtotal, Money.Zero(subtotal.Currency), Money.Zero(subtotal.Currency));
+        Totals = CheckoutTotals.Calculate(subtotal, Money.Zero(subtotal.Currency), taxCalculator.ContainedTax(subtotal));
         CurrentStep = CheckoutStep.BuyerInfo;
         Status = CheckoutSessionStatus.Active;
     }
 
-    public static CheckoutSession Start(CartId cartId, CustomerId customerId, IReadOnlyList<CheckoutLineItem> lineItems, Money subtotal)
+    public static CheckoutSession Start(CartId cartId, CustomerId customerId, IReadOnlyList<CheckoutLineItem> lineItems, Money subtotal, TaxCalculator taxCalculator)
     {
         if (lineItems is null || lineItems.Count == 0)
         {
             throw new ArgumentException("Cannot start checkout with empty line items", nameof(lineItems));
         }
 
-        var session = new CheckoutSession(CheckoutSessionId.Generate(), cartId, customerId, lineItems, subtotal);
+        var session = new CheckoutSession(CheckoutSessionId.Generate(), cartId, customerId, lineItems, subtotal, taxCalculator);
         session.RegisterEvent(CheckoutSessionStarted.Now(session.Id, cartId, customerId, subtotal, lineItems.Count));
         return session;
     }
@@ -63,7 +64,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
 
     public bool IsCompleted => Status == CheckoutSessionStatus.Completed;
 
-    public void SyncLineItems(IReadOnlyList<CheckoutLineItem> newLineItems, Money newSubtotal)
+    public void SyncLineItems(IReadOnlyList<CheckoutLineItem> newLineItems, Money newSubtotal, TaxCalculator taxCalculator)
     {
         EnsureModifiable();
         if (newLineItems is null || newLineItems.Count == 0)
@@ -73,7 +74,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
 
         _lineItems.Clear();
         _lineItems.AddRange(newLineItems);
-        Totals = CheckoutTotals.Calculate(newSubtotal, Totals.Shipping, Money.Zero(newSubtotal.Currency));
+        Totals = CheckoutTotals.Calculate(newSubtotal, Totals.Shipping, taxCalculator.ContainedTax(newSubtotal.Add(Totals.Shipping)));
     }
 
     public void SubmitBuyerInfo(BuyerInfo buyerInfo)
@@ -89,14 +90,16 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         RegisterEvent(BuyerInfoSubmitted.Now(Id, buyerInfo));
     }
 
-    public void SubmitDelivery(DeliveryAddress address, ShippingOption shippingOption)
+    public void SubmitDelivery(DeliveryAddress address, ShippingOption shippingOption, TaxCalculator taxCalculator)
     {
         EnsureModifiable();
         EnsureStepCompleted(CheckoutStep.BuyerInfo);
         EnsureAtOrBeforeStep(CheckoutStep.Delivery);
         DeliveryAddress = address ?? throw new ArgumentNullException(nameof(address));
         ShippingOption = shippingOption ?? throw new ArgumentNullException(nameof(shippingOption));
-        Totals = Totals.WithShipping(shippingOption.Cost);
+        // The tax contained in the totals moves with the shipping cost
+        var withShipping = Totals.WithShipping(shippingOption.Cost);
+        Totals = withShipping.WithTax(taxCalculator.ContainedTax(withShipping.Subtotal.Add(withShipping.Shipping)));
         if (CurrentStep == CheckoutStep.Delivery)
         {
             CurrentStep = CheckoutStep.Payment;

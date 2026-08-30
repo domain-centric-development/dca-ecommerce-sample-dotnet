@@ -1,5 +1,6 @@
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
+using DcaShop.Checkout.Domain.Service;
 using DcaShop.SharedKernel.Domain.Model;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
@@ -15,6 +16,7 @@ public sealed class SyncCheckoutWithCartUseCase : ISyncCheckoutWithCartInputPort
 {
     private readonly ICheckoutSessionRepository _sessions;
     private readonly ICartDataPort _cartData;
+    private readonly TaxCalculator _taxCalculator;
     private readonly ICheckoutArticleDataPort _articleData;
     private readonly IDomainEventPublisher _events;
     private readonly ITransactionBoundary _transactionBoundary;
@@ -23,6 +25,7 @@ public sealed class SyncCheckoutWithCartUseCase : ISyncCheckoutWithCartInputPort
     public SyncCheckoutWithCartUseCase(
         ICheckoutSessionRepository sessions,
         ICartDataPort cartData,
+        TaxCalculator taxCalculator,
         ICheckoutArticleDataPort articleData,
         IDomainEventPublisher events,
         ITransactionBoundary transactionBoundary,
@@ -30,6 +33,7 @@ public sealed class SyncCheckoutWithCartUseCase : ISyncCheckoutWithCartInputPort
     {
         _sessions = sessions;
         _cartData = cartData;
+        _taxCalculator = taxCalculator;
         _articleData = articleData;
         _events = events;
         _transactionBoundary = transactionBoundary;
@@ -78,7 +82,7 @@ public sealed class SyncCheckoutWithCartUseCase : ISyncCheckoutWithCartInputPort
             {
                 var session = await _sessions.FindByIdAsync(sessionId, ct).ConfigureAwait(false)
                               ?? throw new InvalidOperationException($"Checkout session vanished: {sessionId}");
-                session.SyncLineItems(newLineItems, subtotal);
+                session.SyncLineItems(newLineItems, subtotal, _taxCalculator);
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
                 return SyncCheckoutWithCartResult.Synced(session.Id.Value, newLineItems.Count);

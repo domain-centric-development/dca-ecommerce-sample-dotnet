@@ -8,6 +8,7 @@ public sealed record CartPageViewModel(
     int ItemCount,
     int TotalQuantity,
     string CurrentSubtotal,
+    string ContainedTax,
     bool HasAnyPriceChanges,
     bool CanCheckout)
 {

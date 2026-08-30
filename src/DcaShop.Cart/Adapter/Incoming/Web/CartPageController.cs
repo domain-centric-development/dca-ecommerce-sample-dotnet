@@ -2,6 +2,7 @@ using DcaShop.Cart.Application.AddItemToCart;
 using DcaShop.Cart.Application.GetCartById;
 using DcaShop.Cart.Application.GetOrCreateActiveCart;
 using DcaShop.Cart.Domain.Model;
+using DcaShop.Cart.Domain.Service;
 using DcaShop.SharedKernel.Domain.Model;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,15 +15,18 @@ public sealed class CartPageController : Controller
     private readonly IGetOrCreateActiveCartInputPort _getOrCreateActiveCart;
     private readonly IGetCartByIdInputPort _getCartById;
     private readonly IAddItemToCartInputPort _addItemToCart;
+    private readonly CartTotalCalculator _totalCalculator;
 
     public CartPageController(
         IGetOrCreateActiveCartInputPort getOrCreateActiveCart,
         IGetCartByIdInputPort getCartById,
-        IAddItemToCartInputPort addItemToCart)
+        IAddItemToCartInputPort addItemToCart,
+        CartTotalCalculator totalCalculator)
     {
         _getOrCreateActiveCart = getOrCreateActiveCart;
         _getCartById = getCartById;
         _addItemToCart = addItemToCart;
+        _totalCalculator = totalCalculator;
     }
 
     [HttpGet("")]
@@ -57,7 +61,7 @@ public sealed class CartPageController : Controller
         return result.CartId;
     }
 
-    private static CartPageViewModel ToViewModel(EnrichedCart cart) =>
+    private CartPageViewModel ToViewModel(EnrichedCart cart) =>
         new(
             cart.CartId.Value,
             cart.Status.ToString(),
@@ -65,6 +69,7 @@ public sealed class CartPageController : Controller
             cart.ItemCount,
             cart.TotalQuantity,
             cart.CurrentSubtotal.ToString(),
+            _totalCalculator.ContainedTax(cart.CurrentSubtotal).ToString(),
             cart.HasAnyPriceChanges,
             cart.IsValidForCheckout);
 

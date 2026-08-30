@@ -2,6 +2,7 @@ using DcaShop.Checkout.Domain.ReadModel;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
+using DcaShop.Checkout.Domain.Service;
 using DcaShop.SharedKernel.Domain.Model;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
@@ -12,16 +13,18 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
 {
     private readonly ICartDataPort _cartData;
     private readonly CheckoutCartFactory _checkoutCartFactory;
+    private readonly TaxCalculator _taxCalculator;
     private readonly ICheckoutArticleDataPort _articleData;
     private readonly ICheckoutSessionRepository _sessions;
     private readonly IDomainEventPublisher _events;
     private readonly ITransactionBoundary _transactionBoundary;
 
-    public StartCheckoutUseCase(ICartDataPort cartData, CheckoutCartFactory checkoutCartFactory, ICheckoutArticleDataPort articleData, ICheckoutSessionRepository sessions, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
+    public StartCheckoutUseCase(ICartDataPort cartData, CheckoutCartFactory checkoutCartFactory, TaxCalculator taxCalculator, ICheckoutArticleDataPort articleData, ICheckoutSessionRepository sessions, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
         _transactionBoundary = transactionBoundary;
         _cartData = cartData;
         _checkoutCartFactory = checkoutCartFactory;
+        _taxCalculator = taxCalculator;
         _articleData = articleData;
         _sessions = sessions;
         _events = events;
@@ -75,7 +78,7 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
-                var session = CheckoutSession.Start(cart.CartId, cart.CustomerId, lineItems, subtotal);
+                var session = CheckoutSession.Start(cart.CartId, cart.CustomerId, lineItems, subtotal, _taxCalculator);
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
                 return new StartCheckoutResult(CheckoutCartSnapshot.From(session));

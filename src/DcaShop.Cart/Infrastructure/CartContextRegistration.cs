@@ -13,6 +13,7 @@ using DcaShop.Cart.Application.GetOrCreateActiveCart;
 using DcaShop.Cart.Application.RemoveItemFromCart;
 using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Domain.Model;
+using DcaShop.Cart.Domain.Service;
 using DcaShop.SharedKernel.Infrastructure.Events;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,6 +26,7 @@ public static class CartContextRegistration
     {
         // Domain
         services.AddSingleton<EnrichedCartFactory>();
+        services.AddSingleton<CartTotalCalculator>();
 
         // Use cases (input ports)
         services.AddScoped<ICreateCartInputPort, CreateCartUseCase>();

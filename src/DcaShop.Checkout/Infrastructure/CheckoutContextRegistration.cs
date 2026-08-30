@@ -31,6 +31,7 @@ public static class CheckoutContextRegistration
         // Domain
         services.AddSingleton<CheckoutStepValidator>();
         services.AddSingleton<CheckoutCartFactory>();
+        services.AddSingleton<TaxCalculator>();
 
         // Use cases (input ports)
         services.AddScoped<IStartCheckoutInputPort, StartCheckoutUseCase>();
