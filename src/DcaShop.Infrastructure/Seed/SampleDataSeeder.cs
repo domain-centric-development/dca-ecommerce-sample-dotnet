@@ -1,15 +1,15 @@
-using DcaShop.Product.Adapter.Outgoing.Inventory;
-using DcaShop.Product.Adapter.Outgoing.Pricing;
 using DcaShop.Product.Application.CreateProduct;
-using DcaShop.SharedKernel.Domain.Model;
+using DcaShop.SharedKernel.Infrastructure.Events;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace DcaShop.Infrastructure.Seed;
 
 /// <summary>
-/// Fills the in-memory catalog at start-up. Prices and stock go to the stand-in adapters directly — once the
-/// Pricing and Inventory contexts exist they will initialise themselves from <c>ProductCreatedEvent</c>.
+/// Fills the in-memory catalog at start-up. Only products are created here: the price and the stock of each
+/// product are set by the Pricing and Inventory contexts when they receive <c>ProductCreatedEvent</c>. Delivery is
+/// asynchronous, so the seeder waits until the outbox has no pending publication left — a start-up convenience, not
+/// a pattern: nothing else in the shop waits for an integration event.
 /// </summary>
 public sealed class SampleDataSeeder : IHostedService
 {
@@ -33,27 +33,44 @@ public sealed class SampleDataSeeder : IHostedService
         ("DUMBBELL-001", "Adjustable Dumbbells Set", "Replace an entire rack of weights with one smart set. These space-saving adjustable dumbbells let you switch between 5kg and 25kg in seconds with a simple twist-lock mechanism. Perfect for home workouts with professional-grade cast iron construction.", "/images/products/dumbbells.svg", "Sports", 199.99m, 18),
     };
 
-    private readonly IServiceScopeFactory _scopes;
+    private static readonly TimeSpan DrainTimeout = TimeSpan.FromSeconds(30);
 
-    public SampleDataSeeder(IServiceScopeFactory scopes)
+    private readonly IServiceScopeFactory _scopes;
+    private readonly IIntegrationEventOutbox _outbox;
+
+    public SampleDataSeeder(IServiceScopeFactory scopes, IIntegrationEventOutbox outbox)
     {
         _scopes = scopes;
+        _outbox = outbox;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         using var scope = _scopes.CreateScope();
         var createProduct = scope.ServiceProvider.GetRequiredService<ICreateProductInputPort>();
-        var pricing = scope.ServiceProvider.GetRequiredService<InMemoryPricingDataAdapter>();
-        var stock = scope.ServiceProvider.GetRequiredService<InMemoryStockDataAdapter>();
 
         foreach (var p in Products)
         {
-            var created = await createProduct.ExecuteAsync(
+            await createProduct.ExecuteAsync(
                 new CreateProductCommand(p.Sku, p.Name, p.Description, p.ImageUrl, p.Price, "EUR", p.Category, p.Stock),
                 cancellationToken).ConfigureAwait(false);
-            pricing.Seed(new ProductId(created.ProductId), Money.Euro(p.Price));
-            stock.Seed(new ProductId(created.ProductId), p.Stock);
+        }
+
+        await WaitForOutboxAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Waits until every publication the seeding caused has been delivered (or given up on).</summary>
+    private async Task WaitForOutboxAsync(CancellationToken cancellationToken)
+    {
+        var deadline = DateTimeOffset.UtcNow + DrainTimeout;
+        while (_outbox.All().Any(publication => publication.Status == PublicationStatus.Pending))
+        {
+            if (DateTimeOffset.UtcNow > deadline)
+            {
+                throw new TimeoutException("Sample data seeding timed out waiting for the integration-event outbox to drain.");
+            }
+
+            await Task.Delay(25, cancellationToken).ConfigureAwait(false);
         }
     }
 

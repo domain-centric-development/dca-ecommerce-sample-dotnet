@@ -3,6 +3,8 @@ using DcaShop.Cart.Infrastructure;
 using DcaShop.Checkout.Infrastructure;
 using DcaShop.Infrastructure.Events;
 using DcaShop.Infrastructure.Seed;
+using DcaShop.Inventory.Infrastructure;
+using DcaShop.Pricing.Infrastructure;
 using DcaShop.Product.Infrastructure;
 using DcaShop.SharedKernel.Adapter.Outgoing.Event;
 using DcaShop.SharedKernel.Infrastructure.Transactions;
@@ -33,6 +35,8 @@ public static class DcaShopRegistration
         services.AddHostedService<IntegrationEventDispatcherService>();
 
         // Bounded contexts
+        services.AddPricingContext();
+        services.AddInventoryContext();
         services.AddProductContext();
         services.AddCartContext();
         services.AddCheckoutContext();

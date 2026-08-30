@@ -5,5 +5,7 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../DcaShop.SharedKernel/DcaShop.SharedKernel.csproj" />
+    <ProjectReference Include="../DcaShop.Pricing/DcaShop.Pricing.csproj" />
+    <ProjectReference Include="../DcaShop.Inventory/DcaShop.Inventory.csproj" />
   </ItemGroup>
 </Project>

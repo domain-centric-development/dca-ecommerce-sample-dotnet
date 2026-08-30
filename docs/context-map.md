@@ -19,6 +19,8 @@ modules and the shared kernel are intentionally not part of this map.
 |---|---|---|---|
 | Cart | Shopping Cart | Cart management, item additions/removals, and cart lifecycle | api, events |
 | Checkout | Checkout | Checkout process, order placement, and payment orchestration | events |
+| Inventory | Inventory | Stock level management and availability tracking | api, events |
+| Pricing | Pricing | Product pricing management and price change tracking | api, events |
 | Product | Product Catalog | Product management and catalog browsing | api, events |
 
 ## Diagram
@@ -27,15 +29,25 @@ modules and the shared kernel are intentionally not part of this map.
 graph LR
   Cart["Shopping Cart<br/><i>api · events</i>"]
   Checkout["Checkout<br/><i>events</i>"]
+  Inventory["Inventory<br/><i>api · events</i>"]
+  Pricing["Pricing<br/><i>api · events</i>"]
   Product["Product Catalog<br/><i>api · events</i>"]
 
   Cart -->|"ACL / api"| Product
   Checkout -->|"ACL / api"| Product
   Checkout -->|"ACL / api"| Cart
   Checkout -.->|"Conformist / events"| Cart
+  Checkout -.->|"Conformist / events"| Inventory
+  Product -->|"ACL / api"| Pricing
+  Product -->|"ACL / api"| Inventory
+  Product -.->|"Conformist / events"| Pricing
+  Product -.->|"Conformist / events"| Inventory
   ext_payment_service_provider[["Payment Service Provider"]]
   Checkout -->|"ACL / REST"| ext_payment_service_provider
   Cart ---|"Partnership"| Checkout
+  Checkout ---|"Partnership"| Inventory
+  Inventory ---|"Partnership"| Product
+  Pricing ---|"Partnership"| Product
 ```
 
 Arrows point from downstream to upstream (dependency direction, never call direction).
@@ -52,6 +64,11 @@ Edges labeled `planned` are declared intent without a code dependency yet.
 | Checkout | Product | api | ACL | implemented | Product data is translated into checkout's own article types |
 | Checkout | Cart | api | ACL | implemented | Cart snapshots are translated into checkout's own CartData |
 | Checkout | Cart | events | Conformist | implemented | CheckoutConfirmedEvent implements cart's consumer-defined ICartCompletionTrigger contract as-is |
+| Checkout | Inventory | events | Conformist | implemented | CheckoutConfirmedEvent implements inventory's consumer-defined IStockReductionTrigger contract as-is |
+| Product | Pricing | api | ACL | implemented | The catalog shows a price but does not own it; the pricing model is translated into the catalog's own article view |
+| Product | Inventory | api | ACL | implemented | Availability is an inventory statement; the catalog translates it into its own article view |
+| Product | Pricing | events | Conformist | implemented | ProductCreatedEvent implements pricing's consumer-defined IPriceInitializationTrigger contract as-is |
+| Product | Inventory | events | Conformist | implemented | ProductCreatedEvent implements inventory's consumer-defined IStockInitializationTrigger contract as-is |
 
 ## External systems
 
@@ -64,3 +81,6 @@ Edges labeled `planned` are declared intent without a code dependency yet.
 | Contexts | Rationale |
 |---|---|
 | Cart ↔ Checkout | Cart owns the consumer-defined ICartCompletionTrigger contract that checkout events implement; both contexts evolve it together — Checkout implements cart's consumer-defined ICartCompletionTrigger contract; both contexts evolve it together |
+| Checkout ↔ Inventory | Checkout implements inventory's consumer-defined IStockReductionTrigger contract; both contexts evolve it together — Inventory owns the consumer-defined IStockReductionTrigger contract that checkout events implement; both contexts evolve it together |
+| Inventory ↔ Product | Inventory owns the consumer-defined IStockInitializationTrigger contract that catalog events implement; both contexts evolve it together — The catalog implements inventory's consumer-defined IStockInitializationTrigger contract; both contexts evolve it together |
+| Pricing ↔ Product | Pricing owns the consumer-defined IPriceInitializationTrigger contract that catalog events implement; both contexts evolve it together — The catalog implements pricing's consumer-defined IPriceInitializationTrigger contract; both contexts evolve it together |

@@ -29,10 +29,8 @@ public static class ProductContextRegistration
 
         // Outgoing adapters (output ports)
         services.AddSingleton<IProductRepository, InMemoryProductRepository>();
-        services.AddSingleton<InMemoryPricingDataAdapter>();
-        services.AddSingleton<IPricingDataPort>(sp => sp.GetRequiredService<InMemoryPricingDataAdapter>());
-        services.AddSingleton<InMemoryStockDataAdapter>();
-        services.AddSingleton<IProductStockDataPort>(sp => sp.GetRequiredService<InMemoryStockDataAdapter>());
+        services.AddScoped<IPricingDataPort, PricingDataAdapter>();
+        services.AddScoped<IProductStockDataPort, InventoryStockDataAdapter>();
         services.AddScoped<IEventListener, ProductCreatedEventPublisher>();
 
         // Published API

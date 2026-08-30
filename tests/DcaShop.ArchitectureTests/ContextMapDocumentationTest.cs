@@ -13,6 +13,8 @@ public sealed class ContextMapDocumentationTest
         var arch = DcaArchitecture.Load(
             layout,
             typeof(SharedKernel.SharedKernelContext).Assembly,
+            typeof(Pricing.PricingContext).Assembly,
+            typeof(Inventory.InventoryContext).Assembly,
             typeof(Product.ProductContext).Assembly,
             typeof(Cart.CartContext).Assembly,
             typeof(Checkout.CheckoutContext).Assembly);

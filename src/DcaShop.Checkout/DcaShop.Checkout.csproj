@@ -7,5 +7,6 @@
     <ProjectReference Include="../DcaShop.SharedKernel/DcaShop.SharedKernel.csproj" />
     <ProjectReference Include="../DcaShop.Product/DcaShop.Product.csproj" />
     <ProjectReference Include="../DcaShop.Cart/DcaShop.Cart.csproj" />
+    <ProjectReference Include="../DcaShop.Inventory/DcaShop.Inventory.csproj" />
   </ItemGroup>
 </Project>

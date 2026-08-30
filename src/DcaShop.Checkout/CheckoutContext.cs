@@ -14,8 +14,12 @@ namespace DcaShop.Checkout;
 [ExternalUpstream("Payment Service Provider", Translation.AntiCorruptionLayer, Interaction.Outbound,
     Protocol = "REST", Exchanges = "payment operations (initiate, confirm, refund)",
     Rationale = "Behind the caller-owned IPaymentProviderRegistry port; the sample ships an in-memory registry in place of a real gateway")]
+[Upstream("Inventory", Translation.Conformist, Consumes.Events,
+    Rationale = "CheckoutConfirmedEvent implements inventory's consumer-defined IStockReductionTrigger contract as-is")]
 [Partnership("Cart",
     Rationale = "Checkout implements cart's consumer-defined ICartCompletionTrigger contract; both contexts evolve it together")]
+[Partnership("Inventory",
+    Rationale = "Checkout implements inventory's consumer-defined IStockReductionTrigger contract; both contexts evolve it together")]
 public static class CheckoutContext
 {
 }
