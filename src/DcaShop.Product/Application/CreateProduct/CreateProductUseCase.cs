@@ -1,3 +1,4 @@
+using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Product.Application.Shared;
 using DcaShop.Product.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
@@ -10,11 +11,11 @@ public sealed class CreateProductUseCase : ICreateProductInputPort
     private readonly IProductRepository _products;
     private readonly ProductFactory _factory;
     private readonly IDomainEventPublisher _events;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly ITransactionBoundary _transactionBoundary;
 
-    public CreateProductUseCase(IProductRepository products, ProductFactory factory, IDomainEventPublisher events, IUnitOfWork unitOfWork)
+    public CreateProductUseCase(IProductRepository products, ProductFactory factory, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
-        _unitOfWork = unitOfWork;
+        _transactionBoundary = transactionBoundary;
         _products = products;
         _factory = factory;
         _events = events;
@@ -23,7 +24,7 @@ public sealed class CreateProductUseCase : ICreateProductInputPort
     public async Task<CreateProductResult> ExecuteAsync(CreateProductCommand command, CancellationToken cancellationToken = default)
     {
         // Whole use case is local: one short unit of work
-        return await _unitOfWork.RunAsync(
+        return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
                 var sku = Sku.Of(command.Sku);

@@ -1,3 +1,4 @@
+using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
@@ -9,11 +10,11 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
     private readonly ICheckoutSessionRepository _sessions;
     private readonly ICheckoutArticleDataPort _articleData;
     private readonly IDomainEventPublisher _events;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly ITransactionBoundary _transactionBoundary;
 
-    public ConfirmCheckoutUseCase(ICheckoutSessionRepository sessions, ICheckoutArticleDataPort articleData, IDomainEventPublisher events, IUnitOfWork unitOfWork)
+    public ConfirmCheckoutUseCase(ICheckoutSessionRepository sessions, ICheckoutArticleDataPort articleData, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
-        _unitOfWork = unitOfWork;
+        _transactionBoundary = transactionBoundary;
         _sessions = sessions;
         _articleData = articleData;
         _events = events;
@@ -29,7 +30,7 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
         var resolver = new ArticleDataPriceResolver(articles);
 
         // Short unit of work: reload, confirm, save, publish
-        return await _unitOfWork.RunAsync(
+        return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
                 var session = await LoadAsync(sessionId, ct).ConfigureAwait(false);

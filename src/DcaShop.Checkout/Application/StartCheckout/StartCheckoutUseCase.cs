@@ -1,3 +1,4 @@
+using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
@@ -12,11 +13,11 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
     private readonly ICheckoutArticleDataPort _articleData;
     private readonly ICheckoutSessionRepository _sessions;
     private readonly IDomainEventPublisher _events;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly ITransactionBoundary _transactionBoundary;
 
-    public StartCheckoutUseCase(ICartDataPort cartData, ICheckoutArticleDataPort articleData, ICheckoutSessionRepository sessions, IDomainEventPublisher events, IUnitOfWork unitOfWork)
+    public StartCheckoutUseCase(ICartDataPort cartData, ICheckoutArticleDataPort articleData, ICheckoutSessionRepository sessions, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
-        _unitOfWork = unitOfWork;
+        _transactionBoundary = transactionBoundary;
         _cartData = cartData;
         _articleData = articleData;
         _sessions = sessions;
@@ -61,7 +62,7 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
         }
 
         // Short unit of work: create, save, publish
-        return await _unitOfWork.RunAsync(
+        return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
                 var session = CheckoutSession.Start(cart.CartId, cart.CustomerId, lineItems, subtotal);

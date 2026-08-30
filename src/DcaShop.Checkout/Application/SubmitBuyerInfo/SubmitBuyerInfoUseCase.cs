@@ -1,3 +1,4 @@
+using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
@@ -8,11 +9,11 @@ public sealed class SubmitBuyerInfoUseCase : ISubmitBuyerInfoInputPort
 {
     private readonly ICheckoutSessionRepository _sessions;
     private readonly IDomainEventPublisher _events;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly ITransactionBoundary _transactionBoundary;
 
-    public SubmitBuyerInfoUseCase(ICheckoutSessionRepository sessions, IDomainEventPublisher events, IUnitOfWork unitOfWork)
+    public SubmitBuyerInfoUseCase(ICheckoutSessionRepository sessions, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
-        _unitOfWork = unitOfWork;
+        _transactionBoundary = transactionBoundary;
         _sessions = sessions;
         _events = events;
     }
@@ -20,7 +21,7 @@ public sealed class SubmitBuyerInfoUseCase : ISubmitBuyerInfoInputPort
     public async Task<SubmitBuyerInfoResult> ExecuteAsync(SubmitBuyerInfoCommand command, CancellationToken cancellationToken = default)
     {
         // Whole use case is local: one short unit of work
-        return await _unitOfWork.RunAsync(
+        return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
                 var session = await _sessions.FindByIdAsync(new CheckoutSessionId(command.SessionId), ct).ConfigureAwait(false)

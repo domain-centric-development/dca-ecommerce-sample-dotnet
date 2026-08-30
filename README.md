@@ -120,7 +120,7 @@ contract; Cart and Checkout are partners over that contract.
 This is an architecture sample, not a production template. Two pieces of infrastructure are intentionally minimal:
 
 - **In-memory persistence** shares mutable aggregate instances between requests and has no optimistic
-  concurrency; see ADR-001. `InMemoryUnitOfWork` draws the boundary and runs after-commit hooks, but there is
+  concurrency; see ADR-001. `InMemoryTransactionBoundary` draws the boundary and runs after-commit hooks, but there is
   nothing to roll back; see ADR-004.
 - **The integration-event outbox is in-memory**: at-least-once delivery with retries and a visible `Failed` state,
   but durable only within the process — a restart loses outstanding publications; see ADR-002 for the

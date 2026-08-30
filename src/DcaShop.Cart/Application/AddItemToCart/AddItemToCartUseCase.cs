@@ -1,3 +1,4 @@
+using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
@@ -10,11 +11,11 @@ public sealed class AddItemToCartUseCase : IAddItemToCartInputPort
     private readonly IShoppingCartRepository _carts;
     private readonly IArticleDataPort _articles;
     private readonly IDomainEventPublisher _events;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly ITransactionBoundary _transactionBoundary;
 
-    public AddItemToCartUseCase(IShoppingCartRepository carts, IArticleDataPort articles, IDomainEventPublisher events, IUnitOfWork unitOfWork)
+    public AddItemToCartUseCase(IShoppingCartRepository carts, IArticleDataPort articles, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
-        _unitOfWork = unitOfWork;
+        _transactionBoundary = transactionBoundary;
         _carts = carts;
         _articles = articles;
         _events = events;
@@ -37,7 +38,7 @@ public sealed class AddItemToCartUseCase : IAddItemToCartInputPort
         var priceAtAddition = Price.Of(article.CurrentPrice);
 
         // Short unit of work: load, mutate, save, publish
-        return await _unitOfWork.RunAsync(
+        return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
                 var cart = await _carts.FindByIdAsync(cartId, ct).ConfigureAwait(false)

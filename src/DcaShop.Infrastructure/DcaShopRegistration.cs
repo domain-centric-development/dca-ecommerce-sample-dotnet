@@ -1,12 +1,12 @@
+using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Cart.Infrastructure;
 using DcaShop.Checkout.Infrastructure;
 using DcaShop.Infrastructure.Events;
 using DcaShop.Infrastructure.Seed;
 using DcaShop.Product.Infrastructure;
 using DcaShop.SharedKernel.Adapter.Outgoing.Event;
-using DcaShop.SharedKernel.Adapter.Outgoing.Transaction;
-using DcaShop.SharedKernel.Infrastructure.Events;
 using DcaShop.SharedKernel.Infrastructure.Transactions;
+using DcaShop.SharedKernel.Infrastructure.Events;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -25,10 +25,10 @@ public static class DcaShopRegistration
         services.AddSingleton<IIntegrationEventOutbox, InMemoryIntegrationEventOutbox>();
         services.AddScoped<IIntegrationEventPublisher, OutboxIntegrationEventPublisher>();
 
-        // Transaction boundary: writing use cases run inside IUnitOfWork.RunAsync
-        services.AddScoped<InMemoryUnitOfWork>();
-        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<InMemoryUnitOfWork>());
-        services.AddScoped<ITransactionHooks>(sp => sp.GetRequiredService<InMemoryUnitOfWork>());
+        // Transaction boundary: writing use cases run inside ITransactionBoundary.InTransactionAsync
+        services.AddScoped<InMemoryTransactionBoundary>();
+        services.AddScoped<ITransactionBoundary>(sp => sp.GetRequiredService<InMemoryTransactionBoundary>());
+        services.AddScoped<ITransactionHooks>(sp => sp.GetRequiredService<InMemoryTransactionBoundary>());
         services.TryAddSingleton(IntegrationEventRetryPolicy.Default);
         services.AddHostedService<IntegrationEventDispatcherService>();
 

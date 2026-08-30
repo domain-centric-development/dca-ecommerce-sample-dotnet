@@ -1,3 +1,4 @@
+using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
@@ -9,11 +10,11 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
     private readonly ICheckoutSessionRepository _sessions;
     private readonly IPaymentProviderRegistry _providers;
     private readonly IDomainEventPublisher _events;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly ITransactionBoundary _transactionBoundary;
 
-    public SubmitPaymentUseCase(ICheckoutSessionRepository sessions, IPaymentProviderRegistry providers, IDomainEventPublisher events, IUnitOfWork unitOfWork)
+    public SubmitPaymentUseCase(ICheckoutSessionRepository sessions, IPaymentProviderRegistry providers, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
-        _unitOfWork = unitOfWork;
+        _transactionBoundary = transactionBoundary;
         _sessions = sessions;
         _providers = providers;
         _events = events;
@@ -31,7 +32,7 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
         }
 
         // Short unit of work: load, submit, save, publish
-        return await _unitOfWork.RunAsync(
+        return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
                 var session = await _sessions.FindByIdAsync(sessionId, ct).ConfigureAwait(false)

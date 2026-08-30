@@ -1,21 +1,22 @@
-using DcaShop.SharedKernel.Adapter.Outgoing.Transaction;
+using DomainCentric.BuildingBlocks.Application.Transactions;
+using DcaShop.SharedKernel.Infrastructure.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
 namespace DcaShop.UnitTests.SharedKernel;
 
-public sealed class InMemoryUnitOfWorkTest
+public sealed class InMemoryTransactionBoundaryTest
 {
     [Fact]
     public async Task AfterCommitHooksRunOnceTheOutermostWorkCompleted()
     {
-        var impl = new InMemoryUnitOfWork();
-        IUnitOfWork uow = impl;
+        var impl = new InMemoryTransactionBoundary();
+        ITransactionBoundary uow = impl;
         var log = new List<string>();
 
-        var result = await uow.RunAsync(async ct =>
+        var result = await uow.InTransactionAsync(async ct =>
         {
             impl.AfterCommit(() => log.Add("outer hook"));
-            await uow.RunAsync(_ =>
+            await uow.InTransactionAsync(_ =>
             {
                 impl.AfterCommit(() => log.Add("inner hook"));
                 log.Add("inner work");
@@ -33,10 +34,10 @@ public sealed class InMemoryUnitOfWorkTest
     [Fact]
     public async Task RollbackDropsEnlistedHooks()
     {
-        var uow = new InMemoryUnitOfWork();
+        var uow = new InMemoryTransactionBoundary();
         var ran = false;
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => uow.RunAsync<int>(_ =>
+        await Assert.ThrowsAsync<InvalidOperationException>(() => uow.InTransactionAsync<int>(_ =>
         {
             uow.AfterCommit(() => ran = true);
             throw new InvalidOperationException("boom");
@@ -47,9 +48,9 @@ public sealed class InMemoryUnitOfWorkTest
     }
 
     [Fact]
-    public void OutsideAUnitOfWorkHooksRunImmediately()
+    public void OutsideATransactionBoundaryHooksRunImmediately()
     {
-        var uow = new InMemoryUnitOfWork();
+        var uow = new InMemoryTransactionBoundary();
         var ran = false;
 
         uow.AfterCommit(() => ran = true);

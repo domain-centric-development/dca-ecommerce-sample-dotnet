@@ -58,7 +58,7 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
   when the Java UI changes. Host-level `HomePageController`/`ErrorPageController`/`MiniBasketViewComponent`
   stand in for the Portal context until stage 2.
 - Transactions: writing use cases wrap load → mutate → `SaveAsync` → `PublishAndClearEventsAsync` in
-  `IUnitOfWork.RunAsync`; ports that may leave the process (other contexts' data ports, payment providers) are
+  `ITransactionBoundary.InTransactionAsync`; ports that may leave the process (other contexts' data ports, payment providers) are
   called **before** the unit of work, never inside it (ADR-004). Read use cases run without one.
 - DI is explicit: every use case, adapter and listener is registered in the context's `*ContextRegistration`.
 

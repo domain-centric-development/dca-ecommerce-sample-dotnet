@@ -1,3 +1,4 @@
+using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Domain.Model;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
@@ -8,11 +9,11 @@ public sealed class CompleteCartUseCase : ICompleteCartInputPort
 {
     private readonly IShoppingCartRepository _carts;
     private readonly IDomainEventPublisher _events;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly ITransactionBoundary _transactionBoundary;
 
-    public CompleteCartUseCase(IShoppingCartRepository carts, IDomainEventPublisher events, IUnitOfWork unitOfWork)
+    public CompleteCartUseCase(IShoppingCartRepository carts, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
-        _unitOfWork = unitOfWork;
+        _transactionBoundary = transactionBoundary;
         _carts = carts;
         _events = events;
     }
@@ -20,7 +21,7 @@ public sealed class CompleteCartUseCase : ICompleteCartInputPort
     public async Task<CompleteCartResult> ExecuteAsync(CompleteCartCommand command, CancellationToken cancellationToken = default)
     {
         // Whole use case is local: one short unit of work
-        return await _unitOfWork.RunAsync(
+        return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
                 var cartId = new CartId(command.CartId);
