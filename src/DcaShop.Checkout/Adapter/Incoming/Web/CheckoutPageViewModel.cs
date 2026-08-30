@@ -1,10 +1,11 @@
-using DcaShop.Checkout.Application.Shared;
+using DcaShop.Checkout.Domain.Model;
+using DcaShop.Checkout.Domain.ReadModel;
 
 namespace DcaShop.Checkout.Adapter.Incoming.Web;
 
 /// <summary>View model shared by all checkout pages; the markup mirrors the Java sample's checkout views.</summary>
 public sealed record CheckoutPageViewModel(
-    CheckoutSessionData Session,
+    CheckoutCartSnapshot Session,
     IReadOnlyList<CheckoutPageViewModel.ShippingChoice> ShippingOptions,
     IReadOnlyList<CheckoutPageViewModel.PaymentChoice> PaymentProviders,
     string? Error)
@@ -13,5 +14,5 @@ public sealed record CheckoutPageViewModel(
 
     public sealed record PaymentChoice(string Id, string DisplayName, string Description, bool Available);
 
-    public bool IsStep(string step) => Session.CurrentStep == step;
+    public bool IsStep(CheckoutStep step) => Session.Step == step;
 }

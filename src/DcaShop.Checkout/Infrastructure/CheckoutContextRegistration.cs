@@ -1,3 +1,4 @@
+using DcaShop.Checkout.Adapter.Incoming.Event;
 using DcaShop.Checkout.Adapter.Outgoing.Cart;
 using DcaShop.Checkout.Adapter.Outgoing.Event;
 using DcaShop.Checkout.Adapter.Outgoing.Payment;
@@ -14,6 +15,8 @@ using DcaShop.Checkout.Application.StartCheckout;
 using DcaShop.Checkout.Application.SubmitBuyerInfo;
 using DcaShop.Checkout.Application.SubmitDelivery;
 using DcaShop.Checkout.Application.SubmitPayment;
+using DcaShop.Checkout.Application.SyncCheckoutWithCart;
+using DcaShop.Checkout.Domain.Service;
 using DcaShop.SharedKernel.Infrastructure.Events;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,6 +27,9 @@ public static class CheckoutContextRegistration
 {
     public static IServiceCollection AddCheckoutContext(this IServiceCollection services)
     {
+        // Domain
+        services.AddSingleton<CheckoutStepValidator>();
+
         // Use cases (input ports)
         services.AddScoped<IStartCheckoutInputPort, StartCheckoutUseCase>();
         services.AddScoped<IGetCheckoutSessionInputPort, GetCheckoutSessionUseCase>();
@@ -35,6 +41,7 @@ public static class CheckoutContextRegistration
         services.AddScoped<ISubmitPaymentInputPort, SubmitPaymentUseCase>();
         services.AddScoped<IGetPaymentProvidersInputPort, GetPaymentProvidersUseCase>();
         services.AddScoped<IConfirmCheckoutInputPort, ConfirmCheckoutUseCase>();
+        services.AddScoped<ISyncCheckoutWithCartInputPort, SyncCheckoutWithCartUseCase>();
 
         // Outgoing adapters (output ports)
         services.AddSingleton<ICheckoutSessionRepository, InMemoryCheckoutSessionRepository>();
@@ -42,6 +49,9 @@ public static class CheckoutContextRegistration
         services.AddScoped<ICheckoutArticleDataPort, ProductCatalogCheckoutArticleDataAdapter>();
         services.AddSingleton<IPaymentProviderRegistry, InMemoryPaymentProviderRegistry>();
         services.AddScoped<IEventListener, CheckoutConfirmedEventPublisher>();
+
+        // Incoming event consumers
+        services.AddScoped<IEventListener, CartChangeEventConsumer>();
 
         return services;
     }

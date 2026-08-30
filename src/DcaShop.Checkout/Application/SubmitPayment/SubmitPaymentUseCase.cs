@@ -1,3 +1,4 @@
+using DcaShop.Checkout.Domain.ReadModel;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
@@ -40,7 +41,7 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
                 session.SubmitPayment(new PaymentSelection(providerId, string.IsNullOrWhiteSpace(command.ProviderReference) ? null : command.ProviderReference.Trim()));
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
-                return new SubmitPaymentResult(CheckoutSessionData.From(session));
+                return new SubmitPaymentResult(CheckoutCartSnapshot.From(session));
             },
             cancellationToken).ConfigureAwait(false);
     }

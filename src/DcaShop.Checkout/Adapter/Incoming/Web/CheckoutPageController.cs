@@ -8,6 +8,9 @@ using DcaShop.Checkout.Application.StartCheckout;
 using DcaShop.Checkout.Application.SubmitBuyerInfo;
 using DcaShop.Checkout.Application.SubmitDelivery;
 using DcaShop.Checkout.Application.SubmitPayment;
+using DcaShop.Checkout.Domain.Model;
+using DcaShop.Checkout.Domain.ReadModel;
+using DcaShop.Checkout.Domain.Service;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Checkout.Adapter.Incoming.Web;
@@ -19,11 +22,6 @@ namespace DcaShop.Checkout.Adapter.Incoming.Web;
 [Route("checkout")]
 public sealed class CheckoutPageController : Controller
 {
-    private const string BuyerStep = "BuyerInfo";
-    private const string DeliveryStep = "Delivery";
-    private const string PaymentStep = "Payment";
-    private const string ReviewStep = "Review";
-
     private readonly IStartCheckoutInputPort _start;
     private readonly IGetActiveCheckoutSessionInputPort _active;
     private readonly IGetConfirmedCheckoutSessionInputPort _confirmed;
@@ -33,6 +31,7 @@ public sealed class CheckoutPageController : Controller
     private readonly ISubmitPaymentInputPort _submitPayment;
     private readonly IGetPaymentProvidersInputPort _paymentProviders;
     private readonly IConfirmCheckoutInputPort _confirm;
+    private readonly CheckoutStepValidator _stepValidator;
 
     public CheckoutPageController(
         IStartCheckoutInputPort start,
@@ -43,7 +42,8 @@ public sealed class CheckoutPageController : Controller
         IGetShippingOptionsInputPort shippingOptions,
         ISubmitPaymentInputPort submitPayment,
         IGetPaymentProvidersInputPort paymentProviders,
-        IConfirmCheckoutInputPort confirm)
+        IConfirmCheckoutInputPort confirm,
+        CheckoutStepValidator stepValidator)
     {
         _start = start;
         _active = active;
@@ -54,6 +54,7 @@ public sealed class CheckoutPageController : Controller
         _submitPayment = submitPayment;
         _paymentProviders = paymentProviders;
         _confirm = confirm;
+        _stepValidator = stepValidator;
     }
 
     /// <summary>POST: starting a checkout creates a session — never reachable through a link.</summary>
@@ -73,32 +74,32 @@ public sealed class CheckoutPageController : Controller
     }
 
     [HttpGet("buyer")]
-    public Task<IActionResult> Buyer(CancellationToken cancellationToken) => Page(BuyerStep, cancellationToken);
+    public Task<IActionResult> Buyer(CancellationToken cancellationToken) => Page(CheckoutStep.BuyerInfo, cancellationToken);
 
     [HttpPost("buyer")]
     public Task<IActionResult> SubmitBuyer([FromForm] string email, [FromForm] string firstName, [FromForm] string lastName, [FromForm] string phone, CancellationToken cancellationToken) =>
-        Submit(BuyerStep, "/checkout/delivery", id => _submitBuyerInfo.ExecuteAsync(new SubmitBuyerInfoCommand(id, email, firstName, lastName, phone), cancellationToken), cancellationToken);
+        Submit(CheckoutStep.BuyerInfo, "/checkout/delivery", id => _submitBuyerInfo.ExecuteAsync(new SubmitBuyerInfoCommand(id, email, firstName, lastName, phone), cancellationToken), cancellationToken);
 
     [HttpGet("delivery")]
-    public Task<IActionResult> Delivery(CancellationToken cancellationToken) => Page(DeliveryStep, cancellationToken);
+    public Task<IActionResult> Delivery(CancellationToken cancellationToken) => Page(CheckoutStep.Delivery, cancellationToken);
 
     [HttpPost("delivery")]
     public Task<IActionResult> SubmitDelivery([FromForm] string street, [FromForm] string? streetLine2, [FromForm] string city, [FromForm] string postalCode, [FromForm] string country, [FromForm] string? state, [FromForm] string shippingOptionId, CancellationToken cancellationToken) =>
-        Submit(DeliveryStep, "/checkout/payment", id => _submitDelivery.ExecuteAsync(new SubmitDeliveryCommand(id, street, streetLine2, city, postalCode, country, state, shippingOptionId), cancellationToken), cancellationToken);
+        Submit(CheckoutStep.Delivery, "/checkout/payment", id => _submitDelivery.ExecuteAsync(new SubmitDeliveryCommand(id, street, streetLine2, city, postalCode, country, state, shippingOptionId), cancellationToken), cancellationToken);
 
     [HttpGet("payment")]
-    public Task<IActionResult> Payment(CancellationToken cancellationToken) => Page(PaymentStep, cancellationToken);
+    public Task<IActionResult> Payment(CancellationToken cancellationToken) => Page(CheckoutStep.Payment, cancellationToken);
 
     [HttpPost("payment")]
     public Task<IActionResult> SubmitPayment([FromForm] string providerId, [FromForm] string? providerReference, CancellationToken cancellationToken) =>
-        Submit(PaymentStep, "/checkout/review", id => _submitPayment.ExecuteAsync(new SubmitPaymentCommand(id, providerId, providerReference), cancellationToken), cancellationToken);
+        Submit(CheckoutStep.Payment, "/checkout/review", id => _submitPayment.ExecuteAsync(new SubmitPaymentCommand(id, providerId, providerReference), cancellationToken), cancellationToken);
 
     [HttpGet("review")]
-    public Task<IActionResult> Review(CancellationToken cancellationToken) => Page(ReviewStep, cancellationToken);
+    public Task<IActionResult> Review(CancellationToken cancellationToken) => Page(CheckoutStep.Review, cancellationToken);
 
     [HttpPost("confirm")]
     public Task<IActionResult> Confirm(CancellationToken cancellationToken) =>
-        Submit(ReviewStep, "/checkout/confirmation", id => _confirm.ExecuteAsync(new ConfirmCheckoutCommand(id), cancellationToken), cancellationToken);
+        Submit(CheckoutStep.Review, "/checkout/confirmation", id => _confirm.ExecuteAsync(new ConfirmCheckoutCommand(id), cancellationToken), cancellationToken);
 
     [HttpGet("confirmation")]
     public async Task<IActionResult> Confirmation(CancellationToken cancellationToken)
@@ -114,7 +115,7 @@ public sealed class CheckoutPageController : Controller
         return View("~/Views/Checkout/Confirmation.cshtml", await ViewModelAsync(session, null, cancellationToken));
     }
 
-    private async Task<IActionResult> Page(string step, CancellationToken cancellationToken, string? error = null)
+    private async Task<IActionResult> Page(CheckoutStep step, CancellationToken cancellationToken, string? error = null)
     {
         var session = await ActiveSessionAsync(cancellationToken);
         if (session is null)
@@ -123,15 +124,16 @@ public sealed class CheckoutPageController : Controller
             return Redirect("/cart");
         }
 
-        if (error is null && session.CurrentStep != step && StepOrder(step) > StepOrder(session.CurrentStep))
+        // Re-rendering a step after a rejected submit keeps the page; otherwise the domain decides who may see it
+        if (error is null && _stepValidator.ValidateStepAccess(session, step) is { } redirect)
         {
-            return Redirect(PathOf(session.CurrentStep));   // skipping ahead is refused
+            return Redirect(redirect);
         }
 
         return View($"~/Views/Checkout/{step}.cshtml", await ViewModelAsync(session, error, cancellationToken));
     }
 
-    private async Task<IActionResult> Submit(string step, string next, Func<Guid, Task> action, CancellationToken cancellationToken)
+    private async Task<IActionResult> Submit(CheckoutStep step, string next, Func<Guid, Task> action, CancellationToken cancellationToken)
     {
         var session = await ActiveSessionAsync(cancellationToken);
         if (session is null)
@@ -142,7 +144,7 @@ public sealed class CheckoutPageController : Controller
 
         try
         {
-            await action(session.SessionId);
+            await action(session.SessionId.Value);
             return Redirect(next);
         }
         catch (Exception e) when (e is ArgumentException or InvalidOperationException)
@@ -151,7 +153,7 @@ public sealed class CheckoutPageController : Controller
         }
     }
 
-    private async Task<CheckoutSessionData?> ActiveSessionAsync(CancellationToken cancellationToken)
+    private async Task<CheckoutCartSnapshot?> ActiveSessionAsync(CancellationToken cancellationToken)
     {
         var customerId = GuestCustomer.Identify(HttpContext);
         if (customerId is null)
@@ -162,7 +164,7 @@ public sealed class CheckoutPageController : Controller
         return (await _active.ExecuteAsync(new GetActiveCheckoutSessionQuery(customerId), cancellationToken)).Session;
     }
 
-    private async Task<CheckoutPageViewModel> ViewModelAsync(CheckoutSessionData session, string? error, CancellationToken cancellationToken)
+    private async Task<CheckoutPageViewModel> ViewModelAsync(CheckoutCartSnapshot session, string? error, CancellationToken cancellationToken)
     {
         var shipping = await _shippingOptions.ExecuteAsync(new GetShippingOptionsQuery(), cancellationToken);
         var providers = await _paymentProviders.ExecuteAsync(new GetPaymentProvidersQuery(), cancellationToken);
@@ -177,22 +179,4 @@ public sealed class CheckoutPageController : Controller
     private static string AmountOf(string money) => money.Split(' ')[0];
 
     private static string CurrencyOf(string money) => money.Split(' ').ElementAtOrDefault(1) ?? string.Empty;
-
-    private static int StepOrder(string step) => step switch
-    {
-        BuyerStep => 1,
-        DeliveryStep => 2,
-        PaymentStep => 3,
-        ReviewStep => 4,
-        _ => 5,
-    };
-
-    private static string PathOf(string step) => step switch
-    {
-        BuyerStep => "/checkout/buyer",
-        DeliveryStep => "/checkout/delivery",
-        PaymentStep => "/checkout/payment",
-        ReviewStep => "/checkout/review",
-        _ => "/checkout/confirmation",
-    };
 }

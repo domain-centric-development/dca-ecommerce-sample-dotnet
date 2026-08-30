@@ -11,8 +11,8 @@
 @foreach (var item in s.LineItems)
 {
 <div class="order-summary__item">
-<div class="order-summary__item-image">@if (!string.IsNullOrEmpty(item.ImageUrl)) {<img src="@item.ImageUrl" alt="@item.ProductName">}</div>
-<span class="order-summary__item-name">@item.ProductName</span>
+<div class="order-summary__item-image">@if (!string.IsNullOrEmpty(item.ImageUrl)) {<img src="@item.ImageUrl" alt="@item.Name">}</div>
+<span class="order-summary__item-name">@item.Name</span>
 <span class="order-summary__item-qty">x@(item.Quantity)</span>
 <span class="order-summary__item-price">@item.LineTotal</span>
 </div>
@@ -26,9 +26,9 @@ else
 <div class="order-summary__line"><span>Subtotal</span><span>@s.Subtotal</span></div>
 @if (s.ShippingOption is not null)
 {
-<div class="order-summary__line"><span>Shipping</span><span>@s.Shipping</span></div>
+<div class="order-summary__line"><span>Shipping</span><span>@s.Totals.Shipping</span></div>
 }
-<div class="order-summary__total"><span>Total</span><span>@s.Total</span></div>
+<div class="order-summary__total"><span>Total</span><span>@s.Totals.Total</span></div>
 }
 </div>
 }

@@ -4,9 +4,9 @@ The .NET reference implementation of **Domain-Centric Architecture (DCA)** — a
 Design, Hexagonal Architecture and Clean Architecture. A small webshop built with ASP.NET Core, consuming
 `DomainCentric.BuildingBlocks` (the markers) and `DomainCentric.ArchRules` (the executable rules).
 
-Stage 1 ships three bounded contexts — **Product Catalog**, **Shopping Cart**, **Checkout** — with the
-same ubiquitous language and use cases as the Java twin (`dca-ecommerce-sample-java`). Account, Portal,
-Inventory, Pricing and Backoffice follow in later stages.
+It ships five bounded contexts — **Product Catalog**, **Shopping Cart**, **Checkout**, **Pricing**,
+**Inventory** — with the same ubiquitous language and use cases as the Java twin
+(`dca-ecommerce-sample-java`). Account, Portal and Backoffice follow in later stages.
 
 ## Run
 
@@ -14,7 +14,7 @@ Requires the .NET 10 SDK (pinned by `global.json`).
 
 ```bash
 dotnet build
-dotnet test                                   # unit, integration, architecture (111 DCA rules)
+dotnet test                                   # unit, integration, architecture (112 DCA rules)
 dotnet run --project src/DcaShop.Web          # http://localhost:5080
 ```
 
@@ -51,6 +51,8 @@ src/
 ├── DcaShop.Product/             Product Catalog   (namespace DcaShop.Product)
 ├── DcaShop.Cart/                Shopping Cart     (namespace DcaShop.Cart)
 ├── DcaShop.Checkout/            Checkout          (namespace DcaShop.Checkout)
+├── DcaShop.Pricing/             Pricing           (namespace DcaShop.Pricing)
+├── DcaShop.Inventory/           Inventory         (namespace DcaShop.Inventory)
 ├── DcaShop.Infrastructure/      composition root, outbox dispatcher (retry/backoff), sample data
 └── DcaShop.Web/                 ASP.NET Core host: Razor views, layout + mini basket, home/error pages, wwwroot (controllers live in the contexts)
 tests/
@@ -105,15 +107,21 @@ contexts arrive.
 | Anti-corruption layer to another context's Api | `Adapter/Outgoing/Product/`, `Adapter/Outgoing/Cart/` |
 | Open Host Service | `ProductCatalogService`, `CartService` |
 | Domain event → integration event relay | `CheckoutConfirmedEventPublisher` → `CheckoutConfirmedEvent` |
-| Interface inversion between contexts | `CheckoutConfirmedEvent : ICartCompletionTrigger` (owned by Cart) |
+| Interface inversion between contexts | `CheckoutConfirmedEvent : ICartCompletionTrigger` (owned by Cart), `ProductCreatedEvent : IPriceInitializationTrigger, IStockInitializationTrigger` |
+| Domain service | `CheckoutStepValidator` — decides which checkout step a session may open |
+| Read model detached from the aggregate | `CheckoutCartSnapshot`, `LineItemSnapshot` |
+| Eventual consistency between contexts | cart changed → `SyncCheckoutWithCart`; checkout confirmed → `ReduceStock` |
 | Async at the ports, synchronous domain | `Task<TOut> ExecuteAsync(...)` vs. plain domain methods |
 | Executable context map | `docs/context-map.md`, rendered by the architecture tests |
 
 ## Context map
 
 See [docs/context-map.md](docs/context-map.md) (generated). Cart and Checkout each consume the Product
-Catalog through an ACL; Checkout consumes the Cart's Api (ACL) and conforms to its `ICartCompletionTrigger`
-contract; Cart and Checkout are partners over that contract.
+Catalog through an ACL; Checkout consumes the Cart's Api (ACL), conforms to its `ICartCompletionTrigger`
+contract and re-syncs its session on the Cart's `CartContentsChangedEvent`; the Product Catalog reads price and
+stock from the Pricing and Inventory Open Host Services, which in turn fill themselves from
+`ProductCreatedEvent`; confirming a checkout reduces stock. Cart and Checkout, and Checkout and Inventory, are
+partners over the trigger contracts they share.
 
 ## Known limitations (by design)
 

@@ -63,7 +63,7 @@ Edges labeled `planned` are declared intent without a code dependency yet.
 | Cart | Product | api | ACL | implemented | Cart works with its own article snapshot; the catalog model must not leak into cart invariants |
 | Checkout | Product | api | ACL | implemented | Product data is translated into checkout's own article types |
 | Checkout | Cart | api | ACL | implemented | Cart snapshots are translated into checkout's own CartData |
-| Checkout | Cart | events | Conformist | implemented | CheckoutConfirmedEvent implements cart's consumer-defined ICartCompletionTrigger contract as-is |
+| Checkout | Cart | events | Conformist | implemented | CheckoutConfirmedEvent implements cart's consumer-defined ICartCompletionTrigger contract as-is; cart's CartContentsChangedEvent is consumed as published |
 | Checkout | Inventory | events | Conformist | implemented | CheckoutConfirmedEvent implements inventory's consumer-defined IStockReductionTrigger contract as-is |
 | Product | Pricing | api | ACL | implemented | The catalog shows a price but does not own it; the pricing model is translated into the catalog's own article view |
 | Product | Inventory | api | ACL | implemented | Availability is an inventory statement; the catalog translates it into its own article view |

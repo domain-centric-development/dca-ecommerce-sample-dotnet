@@ -41,6 +41,7 @@ public static class CartContextRegistration
         services.AddSingleton<IShoppingCartRepository, InMemoryShoppingCartRepository>();
         services.AddScoped<IArticleDataPort, ProductCatalogArticleDataAdapter>();
         services.AddScoped<IEventListener, CartCheckedOutEventPublisher>();
+        services.AddScoped<IEventListener, CartContentsChangedEventPublisher>();
 
         // Incoming event consumers
         services.AddScoped<IEventListener, CartCompletionEventConsumer>();

@@ -29,7 +29,7 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
 ## Structure and conventions
 
 - Root namespace `DcaShop`; one **project per bounded context** (`DcaShop.Product`, `DcaShop.Cart`,
-  `DcaShop.Checkout`), plus `DcaShop.SharedKernel`, `DcaShop.Infrastructure`, `DcaShop.Web`.
+  `DcaShop.Checkout`, `DcaShop.Pricing`, `DcaShop.Inventory`), plus `DcaShop.SharedKernel`, `DcaShop.Infrastructure`, `DcaShop.Web`.
 - A context is declared by a marker class in its root namespace (`CartContext`) carrying `[BoundedContext]`
   and the context-map attributes (`[Upstream]`, `[ExternalUpstream]`, `[Partnership]`). Context references in
   those attributes use the namespace segment (`"Product"`, `"Cart"`).
@@ -62,15 +62,19 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
   called **before** the unit of work, never inside it (ADR-004). Read use cases run without one.
 - DI is explicit: every use case, adapter and listener is registered in the context's `*ContextRegistration`.
 
-## Stage-1 stand-ins (remove when the contexts arrive)
+## Stand-ins still in place (remove when the contexts arrive)
 
-- Pricing and Inventory do not exist yet. The Product Catalog answers `IPricingDataPort` /
-  `IProductStockDataPort` from `InMemoryPricingDataAdapter` / `InMemoryStockDataAdapter`, seeded by
-  `SampleDataSeeder`, and its Api exposes `ProductArticleInfo` (with price and stock) so Cart and Checkout have a
-  single source. With real contexts the Api drops price/stock and Cart/Checkout gain `[Upstream("Pricing")]`
-  and `[Upstream("Inventory")]`.
 - Customers are guests identified by a cookie (`GuestCustomer`) until the Account context exists.
-- No cart↔checkout sync on cart changes during an active checkout (Java: `SyncCheckoutWithCart`).
+- Portal and Backoffice are missing: `HomePageController` / `ErrorPageController` / `MiniBasketViewComponent`
+  live in the web host, and the Login/Register/Account/Event-Log links lead to 404.
+- Pricing and Inventory arrived in stage 2a: the Product Catalog's `IPricingDataPort` / `IProductStockDataPort`
+  are answered by `PricingDataAdapter` / `InventoryStockDataAdapter` calling the real Open Host Services, and a
+  new product gets its price and stock through `ProductCreatedEvent` (see the trigger contracts below).
+- Consumer-defined trigger contracts (interface inversion, keeps the project graph acyclic): `ICartCompletionTrigger`
+  (Cart), `IStockReductionTrigger` (Inventory) — both implemented by `CheckoutConfirmedEvent`;
+  `IPriceInitializationTrigger` (Pricing) and `IStockInitializationTrigger` (Inventory) — implemented by
+  `ProductCreatedEvent`. The Java sample calls the Pricing/Inventory Api directly from its seeder instead
+  (root `TODO.md` #11); it is to be brought to this shape.
 
 ## Sync duty
 

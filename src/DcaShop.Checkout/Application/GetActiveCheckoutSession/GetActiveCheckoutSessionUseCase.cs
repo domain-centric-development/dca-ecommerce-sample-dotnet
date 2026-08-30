@@ -1,3 +1,4 @@
+using DcaShop.Checkout.Domain.ReadModel;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 
@@ -16,6 +17,6 @@ public sealed class GetActiveCheckoutSessionUseCase : IGetActiveCheckoutSessionI
     public async Task<GetActiveCheckoutSessionResult> ExecuteAsync(GetActiveCheckoutSessionQuery query, CancellationToken cancellationToken = default)
     {
         var session = await _sessions.FindActiveByCustomerAsync(CustomerId.Of(query.CustomerId), cancellationToken).ConfigureAwait(false);
-        return new GetActiveCheckoutSessionResult(session is null ? null : CheckoutSessionData.From(session));
+        return new GetActiveCheckoutSessionResult(session is null ? null : CheckoutCartSnapshot.From(session));
     }
 }
