@@ -11,15 +11,17 @@ namespace DcaShop.Checkout.Application.StartCheckout;
 public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
 {
     private readonly ICartDataPort _cartData;
+    private readonly CheckoutCartFactory _checkoutCartFactory;
     private readonly ICheckoutArticleDataPort _articleData;
     private readonly ICheckoutSessionRepository _sessions;
     private readonly IDomainEventPublisher _events;
     private readonly ITransactionBoundary _transactionBoundary;
 
-    public StartCheckoutUseCase(ICartDataPort cartData, ICheckoutArticleDataPort articleData, ICheckoutSessionRepository sessions, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
+    public StartCheckoutUseCase(ICartDataPort cartData, CheckoutCartFactory checkoutCartFactory, ICheckoutArticleDataPort articleData, ICheckoutSessionRepository sessions, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
         _transactionBoundary = transactionBoundary;
         _cartData = cartData;
+        _checkoutCartFactory = checkoutCartFactory;
         _articleData = articleData;
         _sessions = sessions;
         _events = events;
@@ -49,7 +51,6 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
 
         var articles = await _articleData.GetArticleDataAsync(cart.Items.Select(i => i.ProductId).ToArray(), cancellationToken).ConfigureAwait(false);
         var lineItems = new List<CheckoutLineItem>();
-        var subtotal = Money.Euro(0m);
         foreach (var cartItem in cart.Items)
         {
             if (!articles.TryGetValue(cartItem.ProductId, out var article))
@@ -57,10 +58,18 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
                 throw new ArgumentException($"Product not found: {cartItem.ProductId}", nameof(command));
             }
 
-            var lineItem = new CheckoutLineItem(CheckoutLineItemId.Generate(), cartItem.ProductId, article.Name, article.CurrentPrice, cartItem.Quantity, article.ImageUrl);
-            lineItems.Add(lineItem);
-            subtotal = subtotal.Add(lineItem.LineTotal);
+            lineItems.Add(new CheckoutLineItem(CheckoutLineItemId.Generate(), cartItem.ProductId, article.Name, article.CurrentPrice, cartItem.Quantity, article.ImageUrl));
         }
+
+        // The enriched read model pairs each line item with its current article data, so the domain can
+        // answer availability, stock and pricing questions before a session exists
+        var checkoutCart = _checkoutCartFactory.Create(cart.CartId, cart.CustomerId, lineItems, articles);
+        if (!checkoutCart.IsValidForCheckout)
+        {
+            throw new InvalidOperationException($"Cannot start checkout, {checkoutCart.InvalidItems().Count} item(s) unavailable or out of stock");
+        }
+
+        var subtotal = checkoutCart.CalculateCurrentSubtotal();
 
         // Short transaction: create, save, publish
         return await _transactionBoundary.InTransactionAsync(

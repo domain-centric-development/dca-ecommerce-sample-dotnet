@@ -16,6 +16,7 @@ using DcaShop.Checkout.Application.SubmitBuyerInfo;
 using DcaShop.Checkout.Application.SubmitDelivery;
 using DcaShop.Checkout.Application.SubmitPayment;
 using DcaShop.Checkout.Application.SyncCheckoutWithCart;
+using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.Service;
 using DcaShop.SharedKernel.Infrastructure.Events;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +30,7 @@ public static class CheckoutContextRegistration
     {
         // Domain
         services.AddSingleton<CheckoutStepValidator>();
+        services.AddSingleton<CheckoutCartFactory>();
 
         // Use cases (input ports)
         services.AddScoped<IStartCheckoutInputPort, StartCheckoutUseCase>();

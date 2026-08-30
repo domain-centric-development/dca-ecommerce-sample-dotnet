@@ -100,8 +100,8 @@ contexts arrive.
 | Aggregate with invariants and domain events | `ShoppingCart`, `CheckoutSession`, `Product` |
 | Entity created only through its root | `CartItem` (internal constructor) |
 | Value objects as records / `readonly record struct` ids | `Money`, `Quantity`, `CartId`, `BuyerInfo` |
-| Factory | `ProductFactory`, `EnrichedCartFactory` |
-| Enriched read model | `EnrichedProduct`, `EnrichedCart` |
+| Factory | `ProductFactory`, `EnrichedCartFactory`, `CheckoutCartFactory` |
+| Enriched read model | `EnrichedProduct`, `EnrichedCart`, `CheckoutCart` / `EnrichedCheckoutLineItem` (persisted line item + fresh article data) |
 | Use case = input port + command/query + result | every `Application/<UseCase>/` folder |
 | Output ports in `Application/Shared`, adapters outside | `IArticleDataPort` ↔ `ProductCatalogArticleDataAdapter` |
 | Anti-corruption layer to another context's Api | `Adapter/Outgoing/Product/`, `Adapter/Outgoing/Cart/` |
