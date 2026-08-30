@@ -26,8 +26,8 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
         var productId = Regex.Match(catalog, @"name=""productId"" value=""([0-9a-f-]{36})""").Groups[1].Value;
         Assert.NotEmpty(productId);
 
-        // Add to cart
-        var added = await client.PostAsync("/cart/items", Form(("productId", productId), ("quantity", "2")));
+        // Add to cart (every POST carries the antiforgery token of the page it was rendered on)
+        var added = await client.PostAsync("/cart/items", Form(catalog, ("productId", productId), ("quantity", "2")));
         Assert.Equal(HttpStatusCode.Redirect, added.StatusCode);
 
         var cartPage = await client.GetStringAsync("/cart");
@@ -36,7 +36,7 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
         Assert.NotEmpty(cartId);
 
         // Start checkout → redirected to buyer info
-        var started = await client.PostAsync("/checkout/start", Form(("cartId", cartId)));
+        var started = await client.PostAsync("/checkout/start", Form(cartPage, ("cartId", cartId)));
         var buyerInfoUrl = started.Headers.Location!.ToString();
         var sessionId = Regex.Match(buyerInfoUrl, @"/checkout/([0-9a-f-]{36})/buyer-info").Groups[1].Value;
         Assert.NotEmpty(sessionId);
@@ -54,7 +54,7 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
         var review = await client.GetStringAsync($"/checkout/{sessionId}/review");
         Assert.Contains("Express Shipping", review, StringComparison.Ordinal);
 
-        await Step(client, $"/checkout/{sessionId}/confirm", "confirmation");
+        await Step(client, $"/checkout/{sessionId}/confirm", "confirmation", tokenFrom: review);
 
         var confirmation = await client.GetStringAsync($"/checkout/{sessionId}/confirmation");
         Assert.Contains("data-test=\"session-status\">Confirmed<", confirmation, StringComparison.Ordinal);
@@ -72,15 +72,33 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
         Assert.Contains("data-test=\"cart-empty\"", freshCart, StringComparison.Ordinal);
     }
 
-    private static async Task Step(HttpClient client, string url, string expectedNextStep, params (string, string)[] fields)
+    [Fact]
+    public async Task PostWithoutAntiforgeryTokenIsRejected()
     {
-        var response = await client.PostAsync(url, Form(fields));
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var response = await client.PostAsync("/cart/items",
+            new FormUrlEncodedContent([new KeyValuePair<string, string>("productId", Guid.NewGuid().ToString()), new("quantity", "1")]));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    private static async Task Step(HttpClient client, string url, string expectedNextStep, params (string, string)[] fields) =>
+        await Step(client, url, expectedNextStep, await client.GetStringAsync(url), fields);
+
+    private static async Task Step(HttpClient client, string url, string expectedNextStep, string tokenFrom, params (string, string)[] fields)
+    {
+        var response = await client.PostAsync(url, Form(tokenFrom, fields));
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.EndsWith("/" + expectedNextStep, response.Headers.Location!.ToString(), StringComparison.Ordinal);
     }
 
-    private static FormUrlEncodedContent Form(params (string Key, string Value)[] fields) =>
-        new(fields.Select(f => new KeyValuePair<string, string>(f.Key, f.Value)));
+    private static FormUrlEncodedContent Form(string renderedPage, params (string Key, string Value)[] fields)
+    {
+        var token = Regex.Match(renderedPage, @"name=""__RequestVerificationToken"" type=""hidden"" value=""([^""]+)""").Groups[1].Value;
+        Assert.NotEmpty(token);
+        return new(fields.Append(("__RequestVerificationToken", token)).Select(f => new KeyValuePair<string, string>(f.Item1, f.Item2)));
+    }
 
     private static async Task Eventually(Func<Task<bool>> condition)
     {

@@ -3,6 +3,7 @@
 <h1>How would you like to pay?</h1>
 <partial name="~/Views/Checkout/_Steps.cshtml" model="Model" />
 <form method="post" action="/checkout/@Model.Session.SessionId/payment" class="card">
+    @Html.AntiForgeryToken()
     @foreach (var p in Model.PaymentProviders)
     {
         <label>

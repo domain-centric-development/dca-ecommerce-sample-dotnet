@@ -12,6 +12,7 @@
         @if (p.CanBePurchased)
         {
             <form method="post" action="/cart/items">
+    @Html.AntiForgeryToken()
                 <input type="hidden" name="productId" value="@p.ProductId" />
                 <input type="hidden" name="quantity" value="1" />
                 <button type="submit" data-test="add-to-cart">Add to cart</button>

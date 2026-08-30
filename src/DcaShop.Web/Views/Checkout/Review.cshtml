@@ -9,6 +9,7 @@
     <h3>Items</h3>
     <partial name="~/Views/Checkout/_Summary.cshtml" model="Model" />
     <form method="post" action="/checkout/@s.SessionId/confirm">
+    @Html.AntiForgeryToken()
         <p><a href="/checkout/@s.SessionId/payment" class="button secondary">Back</a> <button type="submit" data-test="confirm-order">Confirm order</button></p>
     </form>
 </div>

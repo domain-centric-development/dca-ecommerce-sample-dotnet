@@ -88,6 +88,17 @@ See [docs/context-map.md](docs/context-map.md) (generated). Cart and Checkout ea
 Catalog through an ACL; Checkout consumes the Cart's Api (ACL) and conforms to its `ICartCompletionTrigger`
 contract; Cart and Checkout are partners over that contract.
 
+## Known limitations (by design)
+
+This is an architecture sample, not a production template. Two pieces of infrastructure are intentionally minimal:
+
+- **In-memory persistence** shares mutable aggregate instances between requests and has no optimistic
+  concurrency; see ADR-001.
+- **Event delivery is non-durable**: an unbounded in-process channel, no outbox, no retries. A restart loses
+  queued integration events; see ADR-002 for what a production implementation swaps in.
+
+Both live entirely in adapters — the domain and application layers are unaffected when they are replaced.
+
 ## Decisions
 
 Architecture decision records live in [docs/architecture/adr/](docs/architecture/adr/README.md).

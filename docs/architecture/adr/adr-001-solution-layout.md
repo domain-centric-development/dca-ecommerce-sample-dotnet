@@ -24,3 +24,8 @@ Enforcing both with projects would mean four to six projects per context.
   Java package layout one to one, so the guide's templates apply to both languages.
 - Negative: layer violations inside a context compile — they fail only in the architecture tests. That is the
   same trade-off the Java sample makes.
+- The in-memory repositories (`ConcurrentDictionary`) are demonstration stubs, not a persistence pattern: the
+  dictionary is thread-safe, the aggregate instance it hands out is shared and mutable, so two concurrent requests
+  on the same cart or checkout session can interleave; read-then-create flows such as `GetOrCreateActiveCart` are
+  not atomic. A real adapter would map to persistent state with optimistic concurrency (a version on the
+  aggregate, checked in `SaveAsync`) — nothing in the domain or application layer has to change for that.

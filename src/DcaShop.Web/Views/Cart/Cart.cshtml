@@ -23,6 +23,7 @@ else
                 <td>@line.LineTotal</td>
                 <td>
                     <form method="post" action="/cart/items/@line.ItemId/remove">
+    @Html.AntiForgeryToken()
                         <button type="submit" class="secondary" data-test="remove-item">Remove</button>
                     </form>
                 </td>
@@ -36,6 +37,7 @@ else
         @if (Model.CanCheckout)
         {
             <form method="post" action="/checkout/start" style="display:inline">
+    @Html.AntiForgeryToken()
                 <input type="hidden" name="cartId" value="@Model.CartId" />
                 <button type="submit" data-test="start-checkout">Checkout</button>
             </form>
