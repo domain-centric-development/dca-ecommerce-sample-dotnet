@@ -1,0 +1,18 @@
+@model IReadOnlyList<DcaShop.Account.Adapter.Incoming.Web.AccountNavigation.NavItem>
+<nav class="account__nav" aria-label="Account navigation" data-test="account-nav">
+<ul class="account__nav-list">
+@foreach (var item in Model)
+{
+<li class="account__nav-item">
+@if (item.Navigable)
+{
+<a class="account__nav-link@(item.Active ? " account__nav-link--active" : "")" href="@item.Href" aria-current="@(item.Active ? "page" : null)" data-test="account-nav-@item.Key">@item.Label</a>
+}
+else
+{
+<span class="account__nav-link account__nav-link--disabled" aria-disabled="true" data-test="account-nav-@item.Key">@item.Label</span>
+}
+</li>
+}
+</ul>
+</nav>

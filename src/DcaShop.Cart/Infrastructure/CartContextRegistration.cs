@@ -11,6 +11,9 @@ using DcaShop.Cart.Application.GetActiveCart;
 using DcaShop.Cart.Application.GetCartById;
 using DcaShop.Cart.Application.GetOrCreateActiveCart;
 using DcaShop.Cart.Application.RemoveItemFromCart;
+using DcaShop.Cart.Application.GetCartMergeOptions;
+using DcaShop.Cart.Application.MergeCarts;
+using DcaShop.Cart.Application.RecoverCartOnLogin;
 using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.Cart.Domain.Service;
@@ -37,6 +40,9 @@ public static class CartContextRegistration
         services.AddScoped<IRemoveItemFromCartInputPort, RemoveItemFromCartUseCase>();
         services.AddScoped<ICheckoutCartInputPort, CheckoutCartUseCase>();
         services.AddScoped<ICompleteCartInputPort, CompleteCartUseCase>();
+        services.AddScoped<IGetCartMergeOptionsInputPort, GetCartMergeOptionsUseCase>();
+        services.AddScoped<IMergeCartsInputPort, MergeCartsUseCase>();
+        services.AddScoped<IRecoverCartOnLoginInputPort, RecoverCartOnLoginUseCase>();
         services.AddScoped<EnrichedCartReader>();
 
         // Outgoing adapters (output ports)

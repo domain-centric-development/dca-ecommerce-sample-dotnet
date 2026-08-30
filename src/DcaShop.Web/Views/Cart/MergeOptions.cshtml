@@ -1,0 +1,95 @@
+@model DcaShop.Cart.Adapter.Incoming.Web.CartMergePageViewModel
+@{ ViewData["Title"] = "Cart Merge Options"; }
+<div class="merge-options">
+<h2 class="merge-options__title">Your Cart Has Items</h2>
+<p class="merge-options__intro">You have items in both your current browsing session and your account. How would you like to proceed?</p>
+@if (TempData["Error"] is string error)
+{
+<div class="alert alert--error" data-test="merge-error-message">@error</div>
+}
+<div class="merge-options__comparison">
+<div class="merge-options__cart-box" data-test="anonymous-cart-summary">
+<h3 class="merge-options__cart-title">Current Session Cart</h3>
+<div class="merge-options__cart-stats">
+<p>Items: @Model.AnonymousCart.ItemCount</p>
+<p>Total Quantity: @Model.AnonymousCart.TotalQuantity</p>
+<div class="merge-options__cart-total">Total: @Model.AnonymousCart.Total</div>
+</div>
+@if (Model.AnonymousCart.Items.Count > 0)
+{
+<div class="merge-options__item-list">
+@foreach (var item in Model.AnonymousCart.Items)
+{
+<div class="merge-options__item-row">
+<div class="merge-options__item-image">
+@if (!string.IsNullOrEmpty(item.ImageUrl))
+{
+<img src="@item.ImageUrl" alt="@item.ProductName">
+}
+</div>
+<span class="merge-options__item-name">@item.ProductName</span>
+<span class="merge-options__item-qty">Qty: @item.Quantity</span>
+<span class="merge-options__item-price">@item.UnitPrice</span>
+</div>
+}
+</div>
+}
+</div>
+<div class="merge-options__cart-box" data-test="account-cart-summary">
+<h3 class="merge-options__cart-title">Account Cart</h3>
+<div class="merge-options__cart-stats">
+<p>Items: @Model.AccountCart.ItemCount</p>
+<p>Total Quantity: @Model.AccountCart.TotalQuantity</p>
+<div class="merge-options__cart-total">Total: @Model.AccountCart.Total</div>
+</div>
+@if (Model.AccountCart.Items.Count > 0)
+{
+<div class="merge-options__item-list">
+@foreach (var item in Model.AccountCart.Items)
+{
+<div class="merge-options__item-row">
+<div class="merge-options__item-image">
+@if (!string.IsNullOrEmpty(item.ImageUrl))
+{
+<img src="@item.ImageUrl" alt="@item.ProductName">
+}
+</div>
+<span class="merge-options__item-name">@item.ProductName</span>
+<span class="merge-options__item-qty">Qty: @item.Quantity</span>
+<span class="merge-options__item-price">@item.UnitPrice</span>
+</div>
+}
+</div>
+}
+</div>
+</div>
+<h3 class="merge-options__choose-title">Choose an Option</h3>
+<form method="POST" action="/cart/merge" data-test="merge-form">
+@Html.AntiForgeryToken()
+<input type="hidden" name="anonymousUserId" value="@Model.AnonymousUserId">
+@if (!string.IsNullOrWhiteSpace(Model.ReturnUrl))
+{
+<input type="hidden" name="returnUrl" value="@Model.ReturnUrl">
+}
+<div class="merge-options__cards">
+<label class="merge-options__card" data-test="merge-option-merge-both">
+<input type="radio" name="strategy" value="MERGE_BOTH" checked>
+<div class="merge-options__card-title">Merge Both Carts</div>
+<div class="merge-options__card-description">Combine all items from both carts. If the same product exists in both, quantities will be added together.</div>
+</label>
+<label class="merge-options__card" data-test="merge-option-use-account">
+<input type="radio" name="strategy" value="USE_ACCOUNT_CART">
+<div class="merge-options__card-title">Use Account Cart Only</div>
+<div class="merge-options__card-description">Keep your account cart and discard the items from your current session.</div>
+</label>
+<label class="merge-options__card" data-test="merge-option-use-anonymous">
+<input type="radio" name="strategy" value="USE_ANONYMOUS_CART">
+<div class="merge-options__card-title">Use Current Session Cart Only</div>
+<div class="merge-options__card-description">Replace your account cart with the items from your current session.</div>
+</label>
+</div>
+<div class="form__actions">
+<button class="btn btn--primary btn--lg" type="submit" data-test="merge-submit-button">Continue</button>
+</div>
+</form>
+</div>

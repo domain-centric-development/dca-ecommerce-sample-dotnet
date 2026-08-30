@@ -17,9 +17,11 @@ modules and the shared kernel are intentionally not part of this map.
 
 | Module | Name | Description | Published interfaces |
 |---|---|---|---|
+| Account | Account | Registered accounts, credentials, profile and authenticated sessions | — |
 | Cart | Shopping Cart | Cart management, item additions/removals, and cart lifecycle | api, events |
 | Checkout | Checkout | Checkout process, order placement, and payment orchestration | events |
 | Inventory | Inventory | Stock level management and availability tracking | api, events |
+| Portal | Portal | Web portal, user interface composition, and cross-context views | — |
 | Pricing | Pricing | Product pricing management and price change tracking | api, events |
 | Product | Product Catalog | Product management and catalog browsing | api, events |
 
@@ -27,9 +29,11 @@ modules and the shared kernel are intentionally not part of this map.
 
 ```mermaid
 graph LR
+  Account["Account"]
   Cart["Shopping Cart<br/><i>api · events</i>"]
   Checkout["Checkout<br/><i>events</i>"]
   Inventory["Inventory<br/><i>api · events</i>"]
+  Portal["Portal"]
   Pricing["Pricing<br/><i>api · events</i>"]
   Product["Product Catalog<br/><i>api · events</i>"]
 

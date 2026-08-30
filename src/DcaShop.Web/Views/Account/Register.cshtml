@@ -1,0 +1,55 @@
+@model DcaShop.Account.Adapter.Incoming.Web.RegisterPageViewModel
+@{ ViewData["Title"] = "Register"; }
+<div class="auth">
+<div class="auth__card">
+<h2 class="auth__title">Create Account</h2>
+@if (TempData["Message"] is string message)
+{
+<div class="alert alert--success" data-test="register-success-message">@message</div>
+}
+@if (Model.ErrorMessage is { } error)
+{
+<div class="alert alert--error" data-test="register-error-message">@error</div>
+}
+<form class="auth__form" method="POST" action="/register" data-test="register-form">
+@Html.AntiForgeryToken()
+@if (!string.IsNullOrWhiteSpace(Model.ReturnUrl))
+{
+<input type="hidden" name="returnUrl" value="@Model.ReturnUrl">
+}
+<div class="form__group">
+<label class="form__label" for="firstName">First Name</label>
+<input class="form__input" id="firstName" type="text" name="firstName" value="@(Model.FirstName ?? "")" required autofocus maxlength="100" placeholder="Jane" data-test="register-first-name-input">
+</div>
+<div class="form__group">
+<label class="form__label" for="lastName">Last Name</label>
+<input class="form__input" id="lastName" type="text" name="lastName" value="@(Model.LastName ?? "")" required maxlength="100" placeholder="Doe" data-test="register-last-name-input">
+</div>
+<div class="form__group">
+<label class="form__label" for="dateOfBirth">Date of Birth</label>
+<input class="form__input" id="dateOfBirth" type="date" name="dateOfBirth" value="@(Model.DateOfBirth ?? "")" required data-test="register-date-of-birth-input">
+<p class="form__hint">Your name cannot be changed later</p>
+</div>
+<div class="form__group">
+<label class="form__label" for="email">Email</label>
+<input class="form__input" id="email" type="email" name="email" value="@(Model.Email ?? "")" required placeholder="you@example.com" data-test="register-email-input">
+</div>
+<div class="form__group">
+<label class="form__label" for="password">Password</label>
+<input class="form__input" id="password" type="password" name="password" required minlength="8" maxlength="72" placeholder="Create a password" data-test="register-password-input">
+<p class="form__hint">Password must be at least 8 characters</p>
+</div>
+<div class="form__group">
+<label class="form__label" for="confirmPassword">Confirm Password</label>
+<input class="form__input" id="confirmPassword" type="password" name="confirmPassword" required maxlength="72" placeholder="Confirm your password" data-test="register-confirm-password-input">
+</div>
+<div class="form__actions">
+<button class="btn btn--primary btn--full-width" type="submit" data-test="register-submit-button">Create Account</button>
+</div>
+</form>
+<div class="auth__footer">
+Already have an account?
+<a class="auth__link" href="@(string.IsNullOrWhiteSpace(Model.ReturnUrl) ? "/login" : "/login?returnUrl=" + System.Net.WebUtility.UrlEncode(Model.ReturnUrl))" data-test="register-login-link">Login here</a>
+</div>
+</div>
+</div>

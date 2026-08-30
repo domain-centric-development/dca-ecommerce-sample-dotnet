@@ -37,6 +37,8 @@ public sealed class ArchitectureRulesTest : DcaArchitectureTest
     protected override IEnumerable<Assembly> Assemblies => new[]
     {
         typeof(SharedKernel.SharedKernelContext).Assembly,
+        typeof(Account.AccountContext).Assembly,
+        typeof(Portal.PortalContext).Assembly,
         typeof(Pricing.PricingContext).Assembly,
         typeof(Inventory.InventoryContext).Assembly,
         typeof(Product.ProductContext).Assembly,

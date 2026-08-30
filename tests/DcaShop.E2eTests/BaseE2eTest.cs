@@ -56,6 +56,12 @@ public abstract class BaseE2eTest : IClassFixture<BrowserFixture>, IAsyncLifetim
 
     protected Task NavigateToAsync(string path) => Page.GotoAsync(BaseUrl + path);
 
+    /// <summary>
+    /// Drops every cookie of this browser, which is how a test becomes a different visitor: no identity, no
+    /// session, no cart.
+    /// </summary>
+    protected Task ClearCookiesAsync() => _context.ClearCookiesAsync();
+
     protected Task WaitForUrlAsync(string pattern) => Page.WaitForURLAsync(BaseUrl + pattern);
 
     protected string CurrentPath => Page.Url.Replace(BaseUrl, string.Empty, StringComparison.Ordinal);

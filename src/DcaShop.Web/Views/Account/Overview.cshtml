@@ -1,0 +1,25 @@
+@model DcaShop.Account.Adapter.Incoming.Web.MyAccountPageViewModel
+@{ ViewData["Title"] = "My Account"; }
+<div class="account" data-test="account-overview">
+<div class="account__header">
+<h2 class="account__title" data-test="account-greeting">Welcome, @Model.Email</h2>
+</div>
+<div class="account__layout">
+@await Html.PartialAsync("~/Views/Account/_Nav.cshtml", Model.NavItems)
+<div class="account__content">
+<div class="card">
+<div class="card__header"><h3 class="card__header-title">Account Overview</h3></div>
+<div class="card__body">
+<div class="account__detail-row">
+<span class="account__detail-label">Email</span>
+<span class="account__detail-value" data-test="account-email">@Model.Email</span>
+</div>
+<div class="account__detail-row">
+<span class="account__detail-label">Last Login</span>
+<span class="account__detail-value" data-test="account-last-login">@Model.LastLoginDisplay</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>

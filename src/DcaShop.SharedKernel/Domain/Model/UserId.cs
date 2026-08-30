@@ -15,5 +15,12 @@ public readonly record struct UserId(string Value) : IId
         return new UserId(value);
     }
 
+    /// <summary>
+    /// Mints an identity for a browser that presents none. Anonymous and registered identities are the same kind
+    /// of value — the cart is keyed on it either way — so registration keeps the identity it was handed rather
+    /// than replacing it.
+    /// </summary>
+    public static UserId GenerateAnonymous() => new(Guid.NewGuid().ToString());
+
     public override string ToString() => Value;
 }

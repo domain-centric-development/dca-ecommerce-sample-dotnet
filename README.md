@@ -4,9 +4,9 @@ The .NET reference implementation of **Domain-Centric Architecture (DCA)** — a
 Design, Hexagonal Architecture and Clean Architecture. A small webshop built with ASP.NET Core, consuming
 `DomainCentric.BuildingBlocks` (the markers) and `DomainCentric.ArchRules` (the executable rules).
 
-It ships five bounded contexts — **Product Catalog**, **Shopping Cart**, **Checkout**, **Pricing**,
-**Inventory** — with the same ubiquitous language and use cases as the Java twin
-(`dca-ecommerce-sample-java`). Account, Portal and Backoffice follow in later stages.
+It ships seven bounded contexts — **Product Catalog**, **Shopping Cart**, **Checkout**, **Pricing**,
+**Inventory**, **Account**, **Portal** — with the same ubiquitous language and use cases as the Java twin
+(`dca-ecommerce-sample-java`). Backoffice, the REST API and the MCP server follow in a later stage.
 
 ## Run
 
@@ -19,7 +19,8 @@ dotnet run --project src/DcaShop.Web          # http://localhost:5080
 ```
 
 Browse `/products`, add items to the cart, check out in five steps (buyer → delivery → payment → review →
-confirmation). All state is in memory; restarting resets the shop.
+confirmation), register an account and log in. All state is in memory; restarting resets the shop, accounts
+included.
 
 > Architecture tests must run on **Debug** builds — ArchUnitNET drops the async state machines of optimized
 > builds and would miss dependencies inside `async` method bodies. `dotnet test` defaults to Debug.
@@ -53,6 +54,8 @@ src/
 ├── DcaShop.Checkout/            Checkout          (namespace DcaShop.Checkout)
 ├── DcaShop.Pricing/             Pricing           (namespace DcaShop.Pricing)
 ├── DcaShop.Inventory/           Inventory         (namespace DcaShop.Inventory)
+├── DcaShop.Account/             Account           (namespace DcaShop.Account) — accounts, credentials, sessions
+├── DcaShop.Portal/              Portal            (namespace DcaShop.Portal) — the landing page; a UI shell with no domain model
 ├── DcaShop.Infrastructure/      composition root, outbox dispatcher (retry/backoff), sample data
 └── DcaShop.Web/                 ASP.NET Core host: Razor views, layout + mini basket, home/error pages, wwwroot (controllers live in the contexts)
 tests/
@@ -89,9 +92,10 @@ The pages are a one-to-one translation of the Java sample's Pug templates into R
 (`wwwroot/css/main.css`), same product images, same CSS classes and `data-test` attributes, same routes
 (`/products`, `/products/{id}`, `/cart`, `/cart/add-product`, POST `/checkout/start`, `/checkout/buyer` →
 `delivery` → `payment` → `review` → `confirm` → `confirmation`). The active checkout session is resolved from the
-customer, not from the URL. The only intended difference in the HTML is the antiforgery hidden field in every form.
-Login/Register/Account/Event Log links are rendered but lead to 404 until the Account, Portal and Backoffice
-contexts arrive.
+customer, not from the URL. The account pages follow the same rule (`/login`, `/register`, POST `/logout`,
+`/account`, `/account/profile`, `/account/change-password`, `/cart/merge`). The only intended difference in the
+HTML is the antiforgery hidden field in every form. The Event Log link in the footer still leads to 404 until the
+Backoffice context arrives.
 
 ## What it demonstrates
 
@@ -112,6 +116,9 @@ contexts arrive.
 | Domain service | `CheckoutStepValidator` — decides which checkout step a session may open |
 | Read model detached from the aggregate | `CheckoutCartSnapshot`, `LineItemSnapshot` |
 | Eventual consistency between contexts | cart changed → `SyncCheckoutWithCart`; checkout confirmed → `ReduceStock` |
+| Domain gateway called by the aggregate | `IPasswordHasher` — the contract in `Account/Domain/Gateway`, BCrypt in the adapter |
+| Specification as a first-class rule | `UsableDateOfBirth` — evaluated by `Owner` and by the change-profile use case |
+| Shared-kernel port with one context's implementation | `IIdentityProvider` (shared kernel) resolved by Account's JWT middleware |
 | Async at the ports, synchronous domain | `Task<TOut> ExecuteAsync(...)` vs. plain domain methods |
 | Executable context map | `docs/context-map.md`, rendered by the architecture tests |
 
@@ -126,7 +133,7 @@ partners over the trigger contracts they share.
 
 ## Known limitations (by design)
 
-This is an architecture sample, not a production template. Two pieces of infrastructure are intentionally minimal:
+This is an architecture sample, not a production template. Three pieces are intentionally minimal:
 
 - **In-memory persistence** shares mutable aggregate instances between requests and has no optimistic
   concurrency; see ADR-001. `InMemoryTransactionBoundary` draws the boundary and runs after-commit/after-rollback hooks,
@@ -134,8 +141,10 @@ This is an architecture sample, not a production template. Two pieces of infrast
 - **The integration-event outbox is in-memory**: at-least-once delivery with retries and a visible `Failed` state,
   but durable only within the process — a restart loses outstanding publications; see ADR-002 for the
   database-backed variant.
+- **No refresh token.** The session cookie's lifetime is the blast radius of a stolen token: there is no
+  revocation and no theft detection. ADR-006 records the three-cookie design this stops short of, and why.
 
-Both live entirely in adapters — the domain and application layers are unaffected when they are replaced.
+All three live entirely in adapters — the domain and application layers are unaffected when they are replaced.
 
 ## Decisions
 

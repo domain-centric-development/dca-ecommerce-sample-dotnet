@@ -1,0 +1,41 @@
+@model DcaShop.Account.Adapter.Incoming.Web.LoginPageViewModel
+@{ ViewData["Title"] = "Login"; }
+<div class="auth">
+<div class="auth__card">
+<h2 class="auth__title">Login</h2>
+@if (Model.LoggedOut)
+{
+<div class="alert alert--success" data-test="logout-success-message">You have been successfully logged out.</div>
+}
+@if (TempData["Message"] is string message)
+{
+<div class="alert alert--success" data-test="login-success-message">@message</div>
+}
+@if (Model.ErrorMessage is { } error)
+{
+<div class="alert alert--error" data-test="login-error-message">@error</div>
+}
+<form class="auth__form" method="POST" action="/login" data-test="login-form">
+@Html.AntiForgeryToken()
+@if (!string.IsNullOrWhiteSpace(Model.ReturnUrl))
+{
+<input type="hidden" name="returnUrl" value="@Model.ReturnUrl">
+}
+<div class="form__group">
+<label class="form__label" for="email">Email</label>
+<input class="form__input" id="email" type="email" name="email" value="@(Model.Email ?? "")" required autofocus placeholder="you@example.com" data-test="login-email-input">
+</div>
+<div class="form__group">
+<label class="form__label" for="password">Password</label>
+<input class="form__input" id="password" type="password" name="password" required placeholder="Enter your password" data-test="login-password-input">
+</div>
+<div class="form__actions">
+<button class="btn btn--primary btn--full-width" type="submit" data-test="login-submit-button">Login</button>
+</div>
+</form>
+<div class="auth__footer">
+Don't have an account?
+<a class="auth__link" href="@(string.IsNullOrWhiteSpace(Model.ReturnUrl) ? "/register" : "/register?returnUrl=" + System.Net.WebUtility.UrlEncode(Model.ReturnUrl))" data-test="login-register-link">Register here</a>
+</div>
+</div>
+</div>

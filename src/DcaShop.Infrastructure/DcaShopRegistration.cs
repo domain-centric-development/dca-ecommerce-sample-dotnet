@@ -1,15 +1,18 @@
 using DomainCentric.BuildingBlocks.Application.Transactions;
+using DcaShop.Account.Infrastructure;
 using DcaShop.Cart.Infrastructure;
 using DcaShop.Checkout.Infrastructure;
 using DcaShop.Infrastructure.Events;
 using DcaShop.Infrastructure.Seed;
 using DcaShop.Inventory.Infrastructure;
+using DcaShop.Portal.Infrastructure;
 using DcaShop.Pricing.Infrastructure;
 using DcaShop.Product.Infrastructure;
 using DcaShop.SharedKernel.Adapter.Outgoing.Event;
 using DcaShop.SharedKernel.Infrastructure.Transactions;
 using DcaShop.SharedKernel.Infrastructure.Events;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -18,7 +21,7 @@ namespace DcaShop.Infrastructure;
 /// <summary>Composes the whole shop: shared event plumbing, every bounded context, sample data.</summary>
 public static class DcaShopRegistration
 {
-    public static IServiceCollection AddDcaShop(this IServiceCollection services)
+    public static IServiceCollection AddDcaShop(this IServiceCollection services, IConfiguration configuration)
     {
         // Event plumbing (shared kernel)
         services.AddScoped<IEventDispatcher, InProcessEventDispatcher>();
@@ -34,7 +37,9 @@ public static class DcaShopRegistration
         services.TryAddSingleton(IntegrationEventRetryPolicy.Default);
         services.AddHostedService<IntegrationEventDispatcherService>();
 
-        // Bounded contexts
+        // Bounded contexts. Account comes first: every other context reads the visitor identity it resolves.
+        services.AddAccountContext(configuration);
+        services.AddPortalContext();
         services.AddPricingContext();
         services.AddInventoryContext();
         services.AddProductContext();

@@ -11,6 +11,7 @@ using DcaShop.Checkout.Application.SubmitPayment;
 using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.ReadModel;
 using DcaShop.Checkout.Domain.Service;
+using DcaShop.SharedKernel.Application.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Checkout.Adapter.Incoming.Web;
@@ -32,6 +33,7 @@ public sealed class CheckoutPageController : Controller
     private readonly IGetPaymentProvidersInputPort _paymentProviders;
     private readonly IConfirmCheckoutInputPort _confirm;
     private readonly CheckoutStepValidator _stepValidator;
+    private readonly IIdentityProvider _identityProvider;
 
     public CheckoutPageController(
         IStartCheckoutInputPort start,
@@ -43,7 +45,8 @@ public sealed class CheckoutPageController : Controller
         ISubmitPaymentInputPort submitPayment,
         IGetPaymentProvidersInputPort paymentProviders,
         IConfirmCheckoutInputPort confirm,
-        CheckoutStepValidator stepValidator)
+        CheckoutStepValidator stepValidator,
+        IIdentityProvider identityProvider)
     {
         _start = start;
         _active = active;
@@ -55,7 +58,14 @@ public sealed class CheckoutPageController : Controller
         _paymentProviders = paymentProviders;
         _confirm = confirm;
         _stepValidator = stepValidator;
+        _identityProvider = identityProvider;
     }
+
+    /// <summary>
+    /// The checkout session is keyed on the visitor identity, exactly as the cart is — so a guest who registers
+    /// mid-checkout keeps the session they started.
+    /// </summary>
+    private string CurrentCustomerId() => _identityProvider.GetCurrentIdentity().UserId.Value;
 
     /// <summary>POST: starting a checkout creates a session — never reachable through a link.</summary>
     [HttpPost("start")]
@@ -104,8 +114,7 @@ public sealed class CheckoutPageController : Controller
     [HttpGet("confirmation")]
     public async Task<IActionResult> Confirmation(CancellationToken cancellationToken)
     {
-        var customerId = GuestCustomer.Identify(HttpContext);
-        var result = customerId is null ? null : await _confirmed.ExecuteAsync(new GetConfirmedCheckoutSessionQuery(customerId), cancellationToken);
+        var result = await _confirmed.ExecuteAsync(new GetConfirmedCheckoutSessionQuery(CurrentCustomerId()), cancellationToken);
         if (result?.Session is not { } session)
         {
             TempData["Error"] = "No confirmed order found";
@@ -155,13 +164,8 @@ public sealed class CheckoutPageController : Controller
 
     private async Task<CheckoutCartSnapshot?> ActiveSessionAsync(CancellationToken cancellationToken)
     {
-        var customerId = GuestCustomer.Identify(HttpContext);
-        if (customerId is null)
-        {
-            return null;
-        }
-
-        return (await _active.ExecuteAsync(new GetActiveCheckoutSessionQuery(customerId), cancellationToken)).Session;
+        return (await _active.ExecuteAsync(new GetActiveCheckoutSessionQuery(CurrentCustomerId()), cancellationToken))
+            .Session;
     }
 
     private async Task<CheckoutPageViewModel> ViewModelAsync(CheckoutCartSnapshot session, string? error, CancellationToken cancellationToken)

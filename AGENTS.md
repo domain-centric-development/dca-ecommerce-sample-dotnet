@@ -61,12 +61,19 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
   `ITransactionBoundary.InTransactionAsync`; ports that may leave the process (other contexts' data ports, payment providers) are
   called **before** the unit of work, never inside it (ADR-004). Read use cases run without one.
 - DI is explicit: every use case, adapter and listener is registered in the context's `*ContextRegistration`.
+- Identity: every context keys its data on the visitor's `UserId`, read through the shared-kernel port
+  `IIdentityProvider`. `JwtAuthenticationMiddleware` (Account) resolves it per request from two cookies —
+  `shop-identity` (who the browser is, 30 days, rotated only on explicit logout) and `shop-session` (the
+  authentication, 7 days, expiry harmless). Expiry ends the session, never the identity, so an aged-out login
+  never costs the cart. The middleware enriches, it does not gate: a page decides who may see it (ADR-006).
 
 ## Stand-ins still in place (remove when the contexts arrive)
 
-- Customers are guests identified by a cookie (`GuestCustomer`) until the Account context exists.
-- Portal and Backoffice are missing: `HomePageController` / `ErrorPageController` / `MiniBasketViewComponent`
-  live in the web host, and the Login/Register/Account/Event-Log links lead to 404.
+- Backoffice is missing, and with it the REST API and the MCP server: the Event-Log link in the footer leads
+  to 404. `ErrorPageController` and `MiniBasketViewComponent` stay in the web host on purpose — the error page
+  belongs to no context, and the mini basket composes the Cart's Api into the shared layout.
+- No refresh token (`shop-refresh`): no revocation, no theft detection, the session lifetime is the blast
+  radius. Deliberate and shared with the Java sample; ADR-006 records the design it stops short of.
 - Pricing and Inventory arrived in stage 2a: the Product Catalog's `IPricingDataPort` / `IProductStockDataPort`
   are answered by `PricingDataAdapter` / `InventoryStockDataAdapter` calling the real Open Host Services, and a
   new product gets its price and stock through `ProductCreatedEvent` (see the trigger contracts below).
@@ -75,6 +82,10 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
   `IPriceInitializationTrigger` (Pricing) and `IStockInitializationTrigger` (Inventory) — implemented by
   `ProductCreatedEvent`. The Java sample calls the Pricing/Inventory Api directly from its seeder instead
   (root `TODO.md` #11); it is to be brought to this shape.
+- Account and Portal arrived in stage 2b: `GuestCustomer` and the `dcashop-customer` cookie are gone, the
+  landing page moved out of the host into `DcaShop.Portal`, and after a login the Cart context decides for
+  itself whether carts have to be merged (`/cart/merge`) or the guest cart simply recovered — Account never
+  calls Cart.
 
 ## Sync duty
 

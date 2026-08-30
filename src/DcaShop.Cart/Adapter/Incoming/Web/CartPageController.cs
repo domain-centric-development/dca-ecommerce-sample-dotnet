@@ -3,6 +3,7 @@ using DcaShop.Cart.Application.GetCartById;
 using DcaShop.Cart.Application.GetOrCreateActiveCart;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.Cart.Domain.Service;
+using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,17 +17,20 @@ public sealed class CartPageController : Controller
     private readonly IGetCartByIdInputPort _getCartById;
     private readonly IAddItemToCartInputPort _addItemToCart;
     private readonly CartTotalCalculator _totalCalculator;
+    private readonly IIdentityProvider _identityProvider;
 
     public CartPageController(
         IGetOrCreateActiveCartInputPort getOrCreateActiveCart,
         IGetCartByIdInputPort getCartById,
         IAddItemToCartInputPort addItemToCart,
-        CartTotalCalculator totalCalculator)
+        CartTotalCalculator totalCalculator,
+        IIdentityProvider identityProvider)
     {
         _getOrCreateActiveCart = getOrCreateActiveCart;
         _getCartById = getCartById;
         _addItemToCart = addItemToCart;
         _totalCalculator = totalCalculator;
+        _identityProvider = identityProvider;
     }
 
     [HttpGet("")]
@@ -56,7 +60,7 @@ public sealed class CartPageController : Controller
 
     private async Task<Guid> ActiveCartIdAsync(CancellationToken cancellationToken)
     {
-        var customerId = GuestCustomer.IdentifyOrCreate(HttpContext);
+        var customerId = _identityProvider.GetCurrentIdentity().UserId.Value;
         var result = await _getOrCreateActiveCart.ExecuteAsync(new GetOrCreateActiveCartCommand(customerId), cancellationToken);
         return result.CartId;
     }

@@ -1,0 +1,9 @@
+@*
+    Intentionally broken view, to see the error page at work. The expression below dereferences a null model and
+    fails at render time, the same way the Java sample's broken Pug template does.
+*@
+@model object
+<h1>Razor Render Error Page Test</h1>
+<p>This line renders fine.</p>
+<p>@Model.ToString()</p>
+<p>This line is never reached.</p>
