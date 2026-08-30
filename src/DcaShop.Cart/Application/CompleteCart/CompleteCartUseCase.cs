@@ -8,30 +8,38 @@ public sealed class CompleteCartUseCase : ICompleteCartInputPort
 {
     private readonly IShoppingCartRepository _carts;
     private readonly IDomainEventPublisher _events;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public CompleteCartUseCase(IShoppingCartRepository carts, IDomainEventPublisher events)
+    public CompleteCartUseCase(IShoppingCartRepository carts, IDomainEventPublisher events, IUnitOfWork unitOfWork)
     {
+        _unitOfWork = unitOfWork;
         _carts = carts;
         _events = events;
     }
 
     public async Task<CompleteCartResult> ExecuteAsync(CompleteCartCommand command, CancellationToken cancellationToken = default)
     {
-        var cartId = new CartId(command.CartId);
-        var cart = await _carts.FindByIdAsync(cartId, cancellationToken).ConfigureAwait(false)
-                   ?? throw new ArgumentException($"Cart not found: {cartId}", nameof(command));
+        // Whole use case is local: one short unit of work
+        return await _unitOfWork.RunAsync(
+            async ct =>
+            {
+                var cartId = new CartId(command.CartId);
+                var cart = await _carts.FindByIdAsync(cartId, ct).ConfigureAwait(false)
+                           ?? throw new ArgumentException($"Cart not found: {cartId}", nameof(command));
 
-        if (cart.Status == CartStatus.Completed)
-        {
-            // Idempotent: the completion trigger is delivered at least once.
-            return new CompleteCartResult(cart.Id.Value, cart.Status.ToString());
-        }
+                if (cart.Status == CartStatus.Completed)
+                {
+                    // Idempotent: the completion trigger is delivered at least once.
+                    return new CompleteCartResult(cart.Id.Value, cart.Status.ToString());
+                }
 
-        cart.Complete();
+                cart.Complete();
 
-        await _carts.SaveAsync(cart, cancellationToken).ConfigureAwait(false);
-        await _events.PublishAndClearEventsAsync(cart, cancellationToken).ConfigureAwait(false);
+                await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
+                await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);
 
-        return new CompleteCartResult(cart.Id.Value, cart.Status.ToString());
+                return new CompleteCartResult(cart.Id.Value, cart.Status.ToString());
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 }

@@ -4,7 +4,9 @@ using DcaShop.Infrastructure.Events;
 using DcaShop.Infrastructure.Seed;
 using DcaShop.Product.Infrastructure;
 using DcaShop.SharedKernel.Adapter.Outgoing.Event;
+using DcaShop.SharedKernel.Adapter.Outgoing.Transaction;
 using DcaShop.SharedKernel.Infrastructure.Events;
+using DcaShop.SharedKernel.Infrastructure.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -21,7 +23,12 @@ public static class DcaShopRegistration
         services.AddScoped<IDomainEventPublisher, InProcessDomainEventPublisher>();
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IIntegrationEventOutbox, InMemoryIntegrationEventOutbox>();
-        services.AddSingleton<IIntegrationEventPublisher, OutboxIntegrationEventPublisher>();
+        services.AddScoped<IIntegrationEventPublisher, OutboxIntegrationEventPublisher>();
+
+        // Transaction boundary: writing use cases run inside IUnitOfWork.RunAsync
+        services.AddScoped<InMemoryUnitOfWork>();
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<InMemoryUnitOfWork>());
+        services.AddScoped<ITransactionHooks>(sp => sp.GetRequiredService<InMemoryUnitOfWork>());
         services.TryAddSingleton(IntegrationEventRetryPolicy.Default);
         services.AddHostedService<IntegrationEventDispatcherService>();
 

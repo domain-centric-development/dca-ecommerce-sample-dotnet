@@ -29,7 +29,7 @@ public sealed class IntegrationEventDeliveryTest : IClassFixture<WebApplicationF
     {
         var @event = new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        await _factory.Services.GetRequiredService<IIntegrationEventPublisher>().PublishAsync(@event);
+        await PublishAsync(@event);
 
         var publication = await Eventually(() => Publication(@event.EventId), p => p.Status == PublicationStatus.Completed);
         Assert.Equal(1, publication.Attempts);   // one failed attempt recorded, second succeeded
@@ -41,11 +41,17 @@ public sealed class IntegrationEventDeliveryTest : IClassFixture<WebApplicationF
     {
         var @event = new PoisonEvent(Guid.NewGuid(), DateTimeOffset.UtcNow);
 
-        await _factory.Services.GetRequiredService<IIntegrationEventPublisher>().PublishAsync(@event);
+        await PublishAsync(@event);
 
         var publication = await Eventually(() => Publication(@event.EventId), p => p.Status == PublicationStatus.Failed);
         Assert.Equal(3, publication.Attempts);
         Assert.Equal("poison", publication.LastError);
+    }
+
+    private async Task PublishAsync(IIntegrationEvent @event)
+    {
+        using var scope = _factory.Services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>().PublishAsync(@event);
     }
 
     private IntegrationEventPublication Publication(Guid id) =>

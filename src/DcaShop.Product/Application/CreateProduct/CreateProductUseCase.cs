@@ -10,9 +10,11 @@ public sealed class CreateProductUseCase : ICreateProductInputPort
     private readonly IProductRepository _products;
     private readonly ProductFactory _factory;
     private readonly IDomainEventPublisher _events;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public CreateProductUseCase(IProductRepository products, ProductFactory factory, IDomainEventPublisher events)
+    public CreateProductUseCase(IProductRepository products, ProductFactory factory, IDomainEventPublisher events, IUnitOfWork unitOfWork)
     {
+        _unitOfWork = unitOfWork;
         _products = products;
         _factory = factory;
         _events = events;
@@ -20,24 +22,30 @@ public sealed class CreateProductUseCase : ICreateProductInputPort
 
     public async Task<CreateProductResult> ExecuteAsync(CreateProductCommand command, CancellationToken cancellationToken = default)
     {
-        var sku = Sku.Of(command.Sku);
-        if (await _products.FindBySkuAsync(sku, cancellationToken).ConfigureAwait(false) is not null)
-        {
-            throw new InvalidOperationException($"A product with SKU {sku} already exists");
-        }
+        // Whole use case is local: one short unit of work
+        return await _unitOfWork.RunAsync(
+            async ct =>
+            {
+                var sku = Sku.Of(command.Sku);
+                if (await _products.FindBySkuAsync(sku, ct).ConfigureAwait(false) is not null)
+                {
+                    throw new InvalidOperationException($"A product with SKU {sku} already exists");
+                }
 
-        var product = _factory.Create(
-            sku,
-            ProductName.Of(command.Name),
-            ProductDescription.Of(command.Description),
-            Category.Of(command.Category),
-            ImageUrl.Of(command.ImageUrl),
-            Price.Of(Money.Of(command.PriceAmount, command.PriceCurrency)),
-            command.StockQuantity);
+                var product = _factory.Create(
+                    sku,
+                    ProductName.Of(command.Name),
+                    ProductDescription.Of(command.Description),
+                    Category.Of(command.Category),
+                    ImageUrl.Of(command.ImageUrl),
+                    Price.Of(Money.Of(command.PriceAmount, command.PriceCurrency)),
+                    command.StockQuantity);
 
-        await _products.SaveAsync(product, cancellationToken).ConfigureAwait(false);
-        await _events.PublishAndClearEventsAsync(product, cancellationToken).ConfigureAwait(false);
+                await _products.SaveAsync(product, ct).ConfigureAwait(false);
+                await _events.PublishAndClearEventsAsync(product, ct).ConfigureAwait(false);
 
-        return new CreateProductResult(product.Id.Value, product.Sku.Value, product.Name.Value);
+                return new CreateProductResult(product.Id.Value, product.Sku.Value, product.Name.Value);
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 }

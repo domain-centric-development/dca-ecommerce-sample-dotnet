@@ -8,25 +8,33 @@ public sealed class GetOrCreateActiveCartUseCase : IGetOrCreateActiveCartInputPo
 {
     private readonly IShoppingCartRepository _carts;
     private readonly IDomainEventPublisher _events;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public GetOrCreateActiveCartUseCase(IShoppingCartRepository carts, IDomainEventPublisher events)
+    public GetOrCreateActiveCartUseCase(IShoppingCartRepository carts, IDomainEventPublisher events, IUnitOfWork unitOfWork)
     {
+        _unitOfWork = unitOfWork;
         _carts = carts;
         _events = events;
     }
 
     public async Task<GetOrCreateActiveCartResult> ExecuteAsync(GetOrCreateActiveCartCommand command, CancellationToken cancellationToken = default)
     {
-        var customerId = CustomerId.Of(command.CustomerId);
-        var existing = await _carts.FindActiveByCustomerAsync(customerId, cancellationToken).ConfigureAwait(false);
-        if (existing is not null)
-        {
-            return new GetOrCreateActiveCartResult(existing.Id.Value, Created: false);
-        }
+        // Whole use case is local: one short unit of work
+        return await _unitOfWork.RunAsync(
+            async ct =>
+            {
+                var customerId = CustomerId.Of(command.CustomerId);
+                var existing = await _carts.FindActiveByCustomerAsync(customerId, ct).ConfigureAwait(false);
+                if (existing is not null)
+                {
+                    return new GetOrCreateActiveCartResult(existing.Id.Value, Created: false);
+                }
 
-        var cart = new ShoppingCart(CartId.Generate(), customerId);
-        await _carts.SaveAsync(cart, cancellationToken).ConfigureAwait(false);
-        await _events.PublishAndClearEventsAsync(cart, cancellationToken).ConfigureAwait(false);
-        return new GetOrCreateActiveCartResult(cart.Id.Value, Created: true);
+                var cart = new ShoppingCart(CartId.Generate(), customerId);
+                await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
+                await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);
+                return new GetOrCreateActiveCartResult(cart.Id.Value, Created: true);
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 }

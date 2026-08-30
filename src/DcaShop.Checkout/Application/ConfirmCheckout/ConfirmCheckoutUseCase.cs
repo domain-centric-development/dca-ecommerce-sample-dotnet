@@ -9,9 +9,11 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
     private readonly ICheckoutSessionRepository _sessions;
     private readonly ICheckoutArticleDataPort _articleData;
     private readonly IDomainEventPublisher _events;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public ConfirmCheckoutUseCase(ICheckoutSessionRepository sessions, ICheckoutArticleDataPort articleData, IDomainEventPublisher events)
+    public ConfirmCheckoutUseCase(ICheckoutSessionRepository sessions, ICheckoutArticleDataPort articleData, IDomainEventPublisher events, IUnitOfWork unitOfWork)
     {
+        _unitOfWork = unitOfWork;
         _sessions = sessions;
         _articleData = articleData;
         _events = events;
@@ -19,15 +21,27 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
 
     public async Task<ConfirmCheckoutResult> ExecuteAsync(ConfirmCheckoutCommand command, CancellationToken cancellationToken = default)
     {
-        var session = await _sessions.FindByIdAsync(new CheckoutSessionId(command.SessionId), cancellationToken).ConfigureAwait(false)
-                      ?? throw new ArgumentException($"Session not found: {command.SessionId}", nameof(command));
+        var sessionId = new CheckoutSessionId(command.SessionId);
 
-        var articles = await _articleData.GetArticleDataAsync(session.LineItems.Select(i => i.ProductId).ToArray(), cancellationToken).ConfigureAwait(false);
-        session.Confirm(new ArticleDataPriceResolver(articles));
+        // Article data comes from the Product Catalog (remote-capable) — fetched outside the unit of work
+        var current = await LoadAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        var articles = await _articleData.GetArticleDataAsync(current.LineItems.Select(i => i.ProductId).ToArray(), cancellationToken).ConfigureAwait(false);
+        var resolver = new ArticleDataPriceResolver(articles);
 
-        await _sessions.SaveAsync(session, cancellationToken).ConfigureAwait(false);
-        await _events.PublishAndClearEventsAsync(session, cancellationToken).ConfigureAwait(false);
-
-        return new ConfirmCheckoutResult(CheckoutSessionData.From(session));
+        // Short unit of work: reload, confirm, save, publish
+        return await _unitOfWork.RunAsync(
+            async ct =>
+            {
+                var session = await LoadAsync(sessionId, ct).ConfigureAwait(false);
+                session.Confirm(resolver);
+                await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
+                await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
+                return new ConfirmCheckoutResult(CheckoutSessionData.From(session));
+            },
+            cancellationToken).ConfigureAwait(false);
     }
+
+    private async Task<CheckoutSession> LoadAsync(CheckoutSessionId sessionId, CancellationToken cancellationToken) =>
+        await _sessions.FindByIdAsync(sessionId, cancellationToken).ConfigureAwait(false)
+        ?? throw new ArgumentException($"Session not found: {sessionId}", nameof(sessionId));
 }

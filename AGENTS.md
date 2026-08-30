@@ -48,6 +48,9 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
 - Events: domain events are dispatched in-process synchronously (`InProcessDomainEventPublisher`);
   integration events are registered in `IIntegrationEventOutbox` and delivered by `IntegrationEventDispatcherService`
   — asynchronous, after the publishing use case finished, at least once with retry/backoff; consumers are idempotent. Listeners implement `EventListener<TEvent>` and are registered as `IEventListener`.
+- Transactions: writing use cases wrap load → mutate → `SaveAsync` → `PublishAndClearEventsAsync` in
+  `IUnitOfWork.RunAsync`; ports that may leave the process (other contexts' data ports, payment providers) are
+  called **before** the unit of work, never inside it (ADR-004). Read use cases run without one.
 - DI is explicit: every use case, adapter and listener is registered in the context's `*ContextRegistration`.
 
 ## Stage-1 stand-ins (remove when the contexts arrive)

@@ -8,24 +8,32 @@ public sealed class CheckoutCartUseCase : ICheckoutCartInputPort
 {
     private readonly IShoppingCartRepository _carts;
     private readonly IDomainEventPublisher _events;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public CheckoutCartUseCase(IShoppingCartRepository carts, IDomainEventPublisher events)
+    public CheckoutCartUseCase(IShoppingCartRepository carts, IDomainEventPublisher events, IUnitOfWork unitOfWork)
     {
+        _unitOfWork = unitOfWork;
         _carts = carts;
         _events = events;
     }
 
     public async Task<CheckoutCartResult> ExecuteAsync(CheckoutCartCommand command, CancellationToken cancellationToken = default)
     {
-        var cartId = new CartId(command.CartId);
-        var cart = await _carts.FindByIdAsync(cartId, cancellationToken).ConfigureAwait(false)
-                   ?? throw new ArgumentException($"Cart not found: {cartId}", nameof(command));
+        // Whole use case is local: one short unit of work
+        return await _unitOfWork.RunAsync(
+            async ct =>
+            {
+                var cartId = new CartId(command.CartId);
+                var cart = await _carts.FindByIdAsync(cartId, ct).ConfigureAwait(false)
+                           ?? throw new ArgumentException($"Cart not found: {cartId}", nameof(command));
 
-        cart.Checkout();
+                cart.Checkout();
 
-        await _carts.SaveAsync(cart, cancellationToken).ConfigureAwait(false);
-        await _events.PublishAndClearEventsAsync(cart, cancellationToken).ConfigureAwait(false);
+                await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
+                await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);
 
-        return new CheckoutCartResult(cart.Id.Value, cart.Status.ToString(), cart.CalculateTotal().ToString());
+                return new CheckoutCartResult(cart.Id.Value, cart.Status.ToString(), cart.CalculateTotal().ToString());
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 }
