@@ -1,0 +1,12 @@
+@model int
+@{
+    // Model = active step (1–4); 5 = everything completed (confirmation page)
+    var labels = new[] { "Buyer Info", "Delivery", "Payment", Model == 5 ? "Confirmed" : "Review" };
+}
+<div class="checkout__progress" data-test="checkout-progress">
+@for (var i = 1; i <= 4; i++)
+{
+    var state = i < Model || Model == 5 ? " checkout__step--completed" : i == Model ? " checkout__step--active" : "";
+<div class="checkout__step@(state)"><div class="checkout__step-marker">@i</div><div class="checkout__step-label">@labels[i - 1]</div></div>
+}
+</div>

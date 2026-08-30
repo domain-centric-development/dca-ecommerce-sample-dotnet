@@ -7,6 +7,7 @@ using DcaShop.Cart.Application.AddItemToCart;
 using DcaShop.Cart.Application.CheckoutCart;
 using DcaShop.Cart.Application.CompleteCart;
 using DcaShop.Cart.Application.CreateCart;
+using DcaShop.Cart.Application.GetActiveCart;
 using DcaShop.Cart.Application.GetCartById;
 using DcaShop.Cart.Application.GetOrCreateActiveCart;
 using DcaShop.Cart.Application.RemoveItemFromCart;
@@ -29,6 +30,7 @@ public static class CartContextRegistration
         services.AddScoped<ICreateCartInputPort, CreateCartUseCase>();
         services.AddScoped<IGetOrCreateActiveCartInputPort, GetOrCreateActiveCartUseCase>();
         services.AddScoped<IGetCartByIdInputPort, GetCartByIdUseCase>();
+        services.AddScoped<IGetActiveCartInputPort, GetActiveCartUseCase>();
         services.AddScoped<IAddItemToCartInputPort, AddItemToCartUseCase>();
         services.AddScoped<IRemoveItemFromCartInputPort, RemoveItemFromCartUseCase>();
         services.AddScoped<ICheckoutCartInputPort, CheckoutCartUseCase>();

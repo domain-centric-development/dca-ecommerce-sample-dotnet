@@ -1,6 +1,27 @@
 namespace DcaShop.Cart.Adapter.Incoming.Web;
 
-public sealed record CartPageViewModel(Guid CartId, IReadOnlyList<CartPageViewModel.Line> Items, string Subtotal, bool HasPriceChanges, bool CanCheckout)
+/// <summary>Everything the cart page renders — the same shape the Java sample's cart view consumes.</summary>
+public sealed record CartPageViewModel(
+    Guid CartId,
+    string Status,
+    IReadOnlyList<CartPageViewModel.Line> LineItems,
+    int ItemCount,
+    int TotalQuantity,
+    string CurrentSubtotal,
+    bool HasAnyPriceChanges,
+    bool CanCheckout)
 {
-    public sealed record Line(Guid ItemId, Guid ProductId, string Name, string ImageUrl, int Quantity, string UnitPrice, string LineTotal, bool PriceChanged, bool InStock);
+    public sealed record Line(
+        Guid ItemId,
+        Guid ProductId,
+        string ProductName,
+        string ImageUrl,
+        int Quantity,
+        string UnitPrice,
+        string LineTotal,
+        bool HasPriceChanged,
+        bool PriceIncreased,
+        string PriceDifference,
+        bool IsAvailable,
+        bool HasSufficientStock);
 }

@@ -1,25 +1,66 @@
 @model DcaShop.Product.Adapter.Incoming.Web.ProductDetailPageViewModel
 @{ ViewData["Title"] = Model.Name; }
-<p><a href="/products">← Back to catalog</a></p>
-<div class="card">
-    <img src="@Model.ImageUrl" alt="@Model.Name" style="max-width: 400px" />
-    <h1 data-test="product-name">@Model.Name</h1>
-    <p class="muted">@Model.Category · SKU @Model.Sku</p>
-    <p>@Model.Description</p>
-    <p class="price" data-test="product-price">@Model.Price</p>
-    <p class="muted">@Model.AvailableStock in stock</p>
-    @if (Model.CanBePurchased)
-    {
-        <form method="post" action="/cart/items">
-    @Html.AntiForgeryToken()
-            <input type="hidden" name="productId" value="@Model.ProductId" />
-            <label for="quantity">Quantity</label>
-            <input type="number" id="quantity" name="quantity" value="1" min="1" max="@Model.AvailableStock" />
-            <button type="submit" data-test="add-to-cart">Add to cart</button>
-        </form>
-    }
-    else
-    {
-        <span class="badge">Out of stock</span>
-    }
+<div class="breadcrumb" data-test="breadcrumb">
+<a class="breadcrumb__link" href="/">Home</a>
+<span class="breadcrumb__separator">/</span>
+<a class="breadcrumb__link" href="/products">Products</a>
+<span class="breadcrumb__separator">/</span>
+<span class="breadcrumb__current">@Model.Name</span>
+</div>
+<div class="product-detail" data-test="product-detail">
+<div class="product-detail__header">
+<h1 class="product-detail__title">@Model.Name</h1>
+@if (Model.CanBePurchased)
+{
+<span class="badge badge--success">In Stock</span>
+}
+else
+{
+<span class="badge badge--danger">Out of Stock</span>
+}
+</div>
+<div class="product-detail__content">
+<div class="product-detail__image" style="view-transition-name: product-img-@Model.ProductId">
+@if (!string.IsNullOrEmpty(Model.ImageUrl))
+{
+<img src="@Model.ImageUrl" alt="@Model.Name">
+}
+else
+{
+<div class="product-card__image-placeholder product-card__image-placeholder--large">@Model.Name[0]</div>
+}
+</div>
+<div class="product-detail__info">
+<div class="product-detail__price"><span>@Model.Price</span><span class="product-detail__price-label">Retail Price</span></div>
+@if (!string.IsNullOrEmpty(Model.Description))
+{
+<div class="product-detail__description"><p>@Model.Description</p></div>
+}
+<div class="product-detail__meta">
+<div class="product-detail__meta-item"><span class="product-detail__meta-label">Category</span><span class="product-detail__meta-value">@Model.Category</span></div>
+<div class="product-detail__meta-item"><span class="product-detail__meta-label">Availability</span>
+@if (Model.CanBePurchased)
+{
+<span class="product-detail__meta-value text-success">@Model.AvailableStock units available</span>
+}
+else
+{
+<span class="product-detail__meta-value text-danger">Currently out of stock</span>
+}
+</div>
+</div>
+</div>
+</div>
+<div class="product-detail__actions">
+@if (Model.CanBePurchased)
+{
+<form method="post" action="/cart/add-product" data-test="product-add-to-cart-form">
+@Html.AntiForgeryToken()
+<input type="hidden" name="productId" value="@Model.ProductId">
+<input type="hidden" name="quantity" value="1">
+<button class="btn btn--accent btn--lg" type="submit" data-test="product-add-to-cart-button">Add to Cart</button>
+</form>
+}
+<a class="btn btn--ghost" href="/products" data-test="product-back-link">Back to Products</a>
+</div>
 </div>

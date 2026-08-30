@@ -1,0 +1,34 @@
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
+@{
+    var title = ViewData["SummaryTitle"] as string ?? "Order Summary";
+    var withTotals = ViewData["WithTotals"] as bool? ?? false;   // buyer/delivery: subtotal only; payment/review: shipping + total
+    var s = Model.Session;
+}
+@if (s.LineItems.Count > 0)
+{
+<div class="order-summary">
+<h3 class="order-summary__title">@title</h3>
+@foreach (var item in s.LineItems)
+{
+<div class="order-summary__item">
+<div class="order-summary__item-image">@if (!string.IsNullOrEmpty(item.ImageUrl)) {<img src="@item.ImageUrl" alt="@item.ProductName">}</div>
+<span class="order-summary__item-name">@item.ProductName</span>
+<span class="order-summary__item-qty">x@(item.Quantity)</span>
+<span class="order-summary__item-price">@item.LineTotal</span>
+</div>
+}
+@if (!withTotals)
+{
+<div class="order-summary__total"><span>Subtotal</span><span>@s.Subtotal</span></div>
+}
+else
+{
+<div class="order-summary__line"><span>Subtotal</span><span>@s.Subtotal</span></div>
+@if (s.ShippingOption is not null)
+{
+<div class="order-summary__line"><span>Shipping</span><span>@s.Shipping</span></div>
+}
+<div class="order-summary__total"><span>Total</span><span>@s.Total</span></div>
+}
+</div>
+}

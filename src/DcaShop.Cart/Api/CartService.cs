@@ -1,5 +1,6 @@
 using DcaShop.Cart.Application.CheckoutCart;
 using DcaShop.Cart.Application.CompleteCart;
+using DcaShop.Cart.Application.GetActiveCart;
 using DcaShop.Cart.Application.GetCartById;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
@@ -12,12 +13,14 @@ namespace DcaShop.Cart.Api;
 public sealed class CartService
 {
     private readonly IGetCartByIdInputPort _getCartById;
+    private readonly IGetActiveCartInputPort _getActiveCart;
     private readonly ICheckoutCartInputPort _checkoutCart;
     private readonly ICompleteCartInputPort _completeCart;
 
-    public CartService(IGetCartByIdInputPort getCartById, ICheckoutCartInputPort checkoutCart, ICompleteCartInputPort completeCart)
+    public CartService(IGetCartByIdInputPort getCartById, IGetActiveCartInputPort getActiveCart, ICheckoutCartInputPort checkoutCart, ICompleteCartInputPort completeCart)
     {
         _getCartById = getCartById;
+        _getActiveCart = getActiveCart;
         _checkoutCart = checkoutCart;
         _completeCart = completeCart;
     }
@@ -25,6 +28,27 @@ public sealed class CartService
     public sealed record CartSnapshot(Guid CartId, string CustomerId, IReadOnlyList<CartItemSnapshot> Items, bool Active);
 
     public sealed record CartItemSnapshot(ProductId ProductId, Price PriceAtAddition, int Quantity);
+
+    /// <summary>What the site header needs to render the mini basket.</summary>
+    public sealed record MiniBasket(Guid CartId, int ItemCount, IReadOnlyList<MiniBasketItem> Items, string Total);
+
+    public sealed record MiniBasketItem(string Name, int Quantity);
+
+    /// <summary>The customer's active cart as a mini basket, or null when there is none — never creates a cart.</summary>
+    public async Task<MiniBasket?> FindMiniBasketAsync(string customerId, CancellationToken cancellationToken = default)
+    {
+        var result = await _getActiveCart.ExecuteAsync(new GetActiveCartQuery(customerId), cancellationToken).ConfigureAwait(false);
+        if (result.Cart is not { } cart)
+        {
+            return null;
+        }
+
+        return new MiniBasket(
+            cart.CartId.Value,
+            cart.TotalQuantity,
+            cart.Items.Select(i => new MiniBasketItem(i.Article.Name, i.Quantity.Value)).ToList(),
+            cart.CurrentSubtotal.ToString());
+    }
 
     public async Task<CartSnapshot?> FindCartByIdAsync(Guid cartId, CancellationToken cancellationToken = default)
     {

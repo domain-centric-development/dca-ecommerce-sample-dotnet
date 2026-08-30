@@ -27,9 +27,7 @@ else
 
 app.UseStatusCodePagesWithReExecute("/error/{0}");
 app.UseStaticFiles();
-app.MapGet("/", () => Results.Redirect("/products"));
-app.Map("/error/{code:int?}", (int? code) => Results.Problem(statusCode: code ?? 500));
-app.MapControllers();
+app.MapControllers();   // context controllers via AddApplicationPart, host controllers (home, error) from this assembly
 
 app.Run();
 

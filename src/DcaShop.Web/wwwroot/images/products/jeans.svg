@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e0e7ff"/>
+      <stop offset="100%" style="stop-color:#dbeafe"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)" rx="8"/>
+  <!-- Jeans shape -->
+  <!-- Waistband -->
+  <rect x="130" y="60" width="140" height="20" rx="3" fill="#1e40af" opacity="0.85"/>
+  <!-- Body -->
+  <path d="M130 80 L130 180 L120 330 L180 330 L195 200 L205 200 L220 330 L280 330 L270 180 L270 80 Z"
+        fill="#2563eb" opacity="0.8"/>
+  <!-- Pocket lines -->
+  <path d="M145 85 L145 120 L175 115" fill="none" stroke="#1e40af" stroke-width="1.5" opacity="0.5"/>
+  <path d="M255 85 L255 120 L225 115" fill="none" stroke="#1e40af" stroke-width="1.5" opacity="0.5"/>
+  <!-- Center seam -->
+  <line x1="200" y1="80" x2="200" y2="200" stroke="#1e40af" stroke-width="1" opacity="0.4"/>
+  <!-- Inseam -->
+  <line x1="180" y1="200" x2="155" y2="330" stroke="#1e40af" stroke-width="1" opacity="0.3"/>
+  <line x1="220" y1="200" x2="245" y2="330" stroke="#1e40af" stroke-width="1" opacity="0.3"/>
+  <!-- Belt loops -->
+  <rect x="150" y="57" width="8" height="26" rx="1" fill="#1e40af" opacity="0.6"/>
+  <rect x="195" y="57" width="8" height="26" rx="1" fill="#1e40af" opacity="0.6"/>
+  <rect x="240" y="57" width="8" height="26" rx="1" fill="#1e40af" opacity="0.6"/>
+  <!-- Rivets -->
+  <circle cx="148" cy="90" r="2.5" fill="#d97706" opacity="0.7"/>
+  <circle cx="252" cy="90" r="2.5" fill="#d97706" opacity="0.7"/>
+  <!-- Category label -->
+  <text x="200" y="370" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#64748b" font-weight="500">Clothing</text>
+</svg>

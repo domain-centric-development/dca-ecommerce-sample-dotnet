@@ -22,7 +22,7 @@ public sealed class ProductPageController : Controller
     {
         var result = await _getAllProducts.ExecuteAsync(new GetAllProductsQuery(), cancellationToken);
         var items = result.Products
-            .Select(p => new ProductCatalogPageViewModel.Item(p.ProductId.Value, p.Name.Value, p.Sku.Value, p.Category.Name, p.ImageUrl.Value, p.CurrentPrice.ToString(), p.CanBePurchased))
+            .Select(p => new ProductCatalogPageViewModel.Item(p.ProductId.Value, p.Name.Value, p.Sku.Value, p.Category.Name, p.Description.Value, p.ImageUrl.Value, p.CurrentPrice.ToString(), p.CanBePurchased))
             .ToList();
         return View("~/Views/Product/Catalog.cshtml", new ProductCatalogPageViewModel(items));
     }

@@ -21,43 +21,50 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
     {
         var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
 
-        // Catalog lists seeded products
+        // Home and catalog render the shared layout
+        var home = await client.GetStringAsync("/");
+        Assert.Contains("data-test=\"hero\"", home, StringComparison.Ordinal);
         var catalog = await client.GetStringAsync("/products");
-        var productId = Regex.Match(catalog, @"name=""productId"" value=""([0-9a-f-]{36})""").Groups[1].Value;
+        Assert.Contains("data-test=\"product-grid\"", catalog, StringComparison.Ordinal);
+        var productId = Regex.Match(catalog, @"href=""/products/([0-9a-f-]{36})""").Groups[1].Value;
         Assert.NotEmpty(productId);
 
-        // Add to cart (every POST carries the antiforgery token of the page it was rendered on)
-        var added = await client.PostAsync("/cart/items", Form(catalog, ("productId", productId), ("quantity", "2")));
+        // Product detail → add to cart (every POST carries the antiforgery token of the page it was rendered on)
+        var detail = await client.GetStringAsync($"/products/{productId}");
+        Assert.Contains("data-test=\"product-add-to-cart-form\"", detail, StringComparison.Ordinal);
+        var added = await client.PostAsync("/cart/add-product", Form(detail, ("productId", productId), ("quantity", "2")));
         Assert.Equal(HttpStatusCode.Redirect, added.StatusCode);
 
         var cartPage = await client.GetStringAsync("/cart");
-        Assert.Contains("data-test=\"cart-line\"", cartPage, StringComparison.Ordinal);
-        var cartId = Regex.Match(cartPage, @"name=""cartId"" value=""([0-9a-f-]{36})""").Groups[1].Value;
+        Assert.Contains("data-test=\"cart-success-message\"", cartPage, StringComparison.Ordinal);
+        Assert.Contains("data-test=\"cart-item\"", cartPage, StringComparison.Ordinal);
+        Assert.Contains("data-test=\"mini-basket-count\">2<", cartPage, StringComparison.Ordinal);
+        var cartId = Regex.Match(cartPage, @"/checkout/start\?cartId=([0-9a-f-]{36})""").Groups[1].Value;
         Assert.NotEmpty(cartId);
 
-        // Start checkout → redirected to buyer info
-        var started = await client.PostAsync("/checkout/start", Form(cartPage, ("cartId", cartId)));
-        var buyerInfoUrl = started.Headers.Location!.ToString();
-        var sessionId = Regex.Match(buyerInfoUrl, @"/checkout/([0-9a-f-]{36})/buyer-info").Groups[1].Value;
-        Assert.NotEmpty(sessionId);
-
-        // Skipping ahead is refused: delivery redirects back to the current step
-        var skipped = await client.GetAsync($"/checkout/{sessionId}/delivery");
+        // Start checkout → redirected to buyer info; skipping ahead is refused
+        var started = await client.GetAsync($"/checkout/start?cartId={cartId}");
+        Assert.Equal(HttpStatusCode.Redirect, started.StatusCode);
+        Assert.Equal("/checkout/buyer", started.Headers.Location!.ToString());
+        var skipped = await client.GetAsync("/checkout/delivery");
         Assert.Equal(HttpStatusCode.Redirect, skipped.StatusCode);
+        Assert.Equal("/checkout/buyer", skipped.Headers.Location!.ToString());
 
-        await Step(client, $"/checkout/{sessionId}/buyer-info", "delivery",
+        await Step(client, "/checkout/buyer", "/checkout/delivery",
             ("email", "ada@example.com"), ("firstName", "Ada"), ("lastName", "Lovelace"), ("phone", "0123"));
-        await Step(client, $"/checkout/{sessionId}/delivery", "payment",
+        await Step(client, "/checkout/delivery", "/checkout/payment",
             ("street", "Analytical Engine Way 1"), ("city", "London"), ("postalCode", "12345"), ("country", "UK"), ("shippingOptionId", "express"));
-        await Step(client, $"/checkout/{sessionId}/payment", "review", ("paymentProviderId", "invoice"));
+        await Step(client, "/checkout/payment", "/checkout/review", ("providerId", "invoice"));
 
-        var review = await client.GetStringAsync($"/checkout/{sessionId}/review");
+        var review = await client.GetStringAsync("/checkout/review");
         Assert.Contains("Express Shipping", review, StringComparison.Ordinal);
+        Assert.Contains("data-test=\"review-place-order-button\"", review, StringComparison.Ordinal);
 
-        await Step(client, $"/checkout/{sessionId}/confirm", "confirmation", tokenFrom: review);
+        await Step(client, "/checkout/confirm", "/checkout/confirmation", tokenFrom: review);
 
-        var confirmation = await client.GetStringAsync($"/checkout/{sessionId}/confirmation");
-        Assert.Contains("data-test=\"session-status\">Confirmed<", confirmation, StringComparison.Ordinal);
+        var confirmation = await client.GetStringAsync("/checkout/confirmation");
+        Assert.Contains("data-test=\"confirmation-title\"", confirmation, StringComparison.Ordinal);
+        Assert.Contains($"Order Reference: ", confirmation, StringComparison.Ordinal);
 
         // Cross-context, eventually consistent: the cart completes via CheckoutConfirmedEvent → ICartCompletionTrigger
         await Eventually(async () =>
@@ -67,9 +74,20 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
             return snapshot is { Active: false };
         });
 
-        // A new cart is handed out afterwards
+        // A new, empty cart is handed out afterwards
         var freshCart = await client.GetStringAsync("/cart");
-        Assert.Contains("data-test=\"cart-empty\"", freshCart, StringComparison.Ordinal);
+        Assert.Contains("data-test=\"cart-browse-link\"", freshCart, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task UnknownPageRendersThe404Page()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/does-not-exist");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Contains("error-page__code", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -77,20 +95,20 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
     {
         var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-        var response = await client.PostAsync("/cart/items",
+        var response = await client.PostAsync("/cart/add-product",
             new FormUrlEncodedContent([new KeyValuePair<string, string>("productId", Guid.NewGuid().ToString()), new("quantity", "1")]));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    private static async Task Step(HttpClient client, string url, string expectedNextStep, params (string, string)[] fields) =>
-        await Step(client, url, expectedNextStep, await client.GetStringAsync(url), fields);
+    private static async Task Step(HttpClient client, string url, string expectedNext, params (string, string)[] fields) =>
+        await Step(client, url, expectedNext, await client.GetStringAsync(url), fields);
 
-    private static async Task Step(HttpClient client, string url, string expectedNextStep, string tokenFrom, params (string, string)[] fields)
+    private static async Task Step(HttpClient client, string url, string expectedNext, string tokenFrom, params (string, string)[] fields)
     {
         var response = await client.PostAsync(url, Form(tokenFrom, fields));
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.EndsWith("/" + expectedNextStep, response.Headers.Location!.ToString(), StringComparison.Ordinal);
+        Assert.Equal(expectedNext, response.Headers.Location!.ToString());
     }
 
     private static FormUrlEncodedContent Form(string renderedPage, params (string Key, string Value)[] fields)

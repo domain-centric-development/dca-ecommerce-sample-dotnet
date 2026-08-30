@@ -13,14 +13,24 @@ namespace DcaShop.Infrastructure.Seed;
 /// </summary>
 public sealed class SampleDataSeeder : IHostedService
 {
-    private static readonly (string Sku, string Name, string Description, string Category, decimal Price, int Stock)[] Products =
+    private static readonly (string Sku, string Name, string Description, string ImageUrl, string Category, decimal Price, int Stock)[] Products =
     {
-        ("LAPTOP-001", "Laptop Pro 15", "A powerful 15-inch laptop for professionals.", "Electronics", 1299.99m, 10),
-        ("PHONE-001", "Smartphone X", "Flagship smartphone with an outstanding camera.", "Electronics", 899.00m, 25),
-        ("HEADPHONE-001", "Noise-Cancelling Headphones", "Over-ear headphones with active noise cancelling.", "Electronics", 249.50m, 40),
-        ("BOOK-DDD", "Domain-Driven Design", "Tackling complexity in the heart of software.", "Books", 54.90m, 100),
-        ("BOOK-IDDD", "Implementing Domain-Driven Design", "The practical companion to the blue book.", "Books", 49.90m, 60),
-        ("SHIRT-001", "Hexagon T-Shirt", "Soft cotton shirt with a ports-and-adapters print.", "Clothing", 24.99m, 0),
+        // Electronics
+        ("LAPTOP-001", "Professional Laptop", "Unleash your productivity with this high-performance laptop featuring 16GB RAM, a blazing-fast 512GB SSD, and a stunning 15.6-inch Retina display. Built for professionals who demand power and portability, it delivers all-day battery life and whisper-quiet operation.", "/images/products/laptop.svg", "Electronics", 1299.99m, 15),
+        ("PHONE-001", "Smartphone Pro", "Capture every moment in breathtaking detail with our flagship smartphone. The triple-lens 108MP camera system, edge-to-edge AMOLED display, and 5G connectivity make this the ultimate mobile companion for work and play.", "/images/products/smartphone.svg", "Electronics", 899.99m, 25),
+        ("TABLET-001", "Tablet Air", "The perfect blend of power and portability. This ultra-lightweight tablet features a vibrant 11-inch display, Apple M2 chip, and supports stylus input for creative professionals. Ideal for sketching, note-taking, and streaming on the go.", "/images/products/tablet.svg", "Electronics", 599.99m, 30),
+        // Clothing
+        ("SHIRT-001", "Cotton T-Shirt", "Made from 100% organic combed cotton, this premium t-shirt offers unmatched softness and breathability. Available in 12 vibrant colors with a modern relaxed fit that looks great whether you dress it up or keep it casual.", "/images/products/tshirt.svg", "Clothing", 29.99m, 100),
+        ("JEANS-001", "Classic Jeans", "Crafted from premium selvedge denim with a classic straight-leg fit that never goes out of style. Features reinforced stitching, copper rivets, and a comfortable mid-rise waist. These jeans only get better with age.", "/images/products/jeans.svg", "Clothing", 79.99m, 50),
+        // Books
+        ("BOOK-001", "Domain-Driven Design", "The seminal work by Eric Evans that introduced the software industry to Domain-Driven Design. This essential guide teaches you how to tackle complexity in the heart of software by connecting implementation to an evolving model of the business domain.", "/images/products/ddd-book.svg", "Books", 54.99m, 20),
+        ("BOOK-002", "Clean Architecture", "Robert C. Martin's definitive guide to software structure and design. Learn the universal rules of software architecture that dramatically improve developer productivity throughout the life of any software system.", "/images/products/clean-architecture-book.svg", "Books", 39.99m, 35),
+        // Home & Garden
+        ("CHAIR-001", "Ergonomic Office Chair", "Designed in collaboration with orthopedic specialists, this premium office chair features adjustable lumbar support, breathable mesh back, and a 4D armrest system. Work in comfort for hours with proper spinal alignment and pressure distribution.", "/images/products/office-chair.svg", "Home & Garden", 299.99m, 12),
+        ("DESK-001", "Standing Desk", "Transform your workspace with this electric height-adjustable standing desk. Smooth dual-motor system transitions between sitting and standing in seconds, with programmable memory presets. The spacious 60x30 inch bamboo surface provides plenty of room for dual monitors.", "/images/products/standing-desk.svg", "Home & Garden", 499.99m, 8),
+        // Sports
+        ("YOGA-001", "Yoga Mat Premium", "Elevate your practice with this professional-grade yoga mat. The dual-layer design provides superior cushioning and a non-slip surface that grips better the more you sweat. Includes a cotton carrying strap and is made from eco-friendly, biodegradable natural rubber.", "/images/products/yoga-mat.svg", "Sports", 49.99m, 40),
+        ("DUMBBELL-001", "Adjustable Dumbbells Set", "Replace an entire rack of weights with one smart set. These space-saving adjustable dumbbells let you switch between 5kg and 25kg in seconds with a simple twist-lock mechanism. Perfect for home workouts with professional-grade cast iron construction.", "/images/products/dumbbells.svg", "Sports", 199.99m, 18),
     };
 
     private readonly IServiceScopeFactory _scopes;
@@ -40,7 +50,7 @@ public sealed class SampleDataSeeder : IHostedService
         foreach (var p in Products)
         {
             var created = await createProduct.ExecuteAsync(
-                new CreateProductCommand(p.Sku, p.Name, p.Description, ImageUrlFor(p.Sku), p.Price, "EUR", p.Category, p.Stock),
+                new CreateProductCommand(p.Sku, p.Name, p.Description, p.ImageUrl, p.Price, "EUR", p.Category, p.Stock),
                 cancellationToken).ConfigureAwait(false);
             pricing.Seed(new ProductId(created.ProductId), Money.Euro(p.Price));
             stock.Seed(new ProductId(created.ProductId), p.Stock);
@@ -49,5 +59,4 @@ public sealed class SampleDataSeeder : IHostedService
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    private static string ImageUrlFor(string sku) => $"https://placehold.co/400x300?text={Uri.EscapeDataString(sku)}";
 }

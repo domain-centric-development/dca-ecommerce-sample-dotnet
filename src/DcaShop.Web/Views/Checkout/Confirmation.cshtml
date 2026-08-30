@@ -1,9 +1,59 @@
 @model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
-@{ ViewData["Title"] = "Order confirmed"; }
-<h1 data-test="confirmation-title">Thank you for your order!</h1>
-<partial name="~/Views/Checkout/_Steps.cshtml" model="Model" />
-<div class="card">
-    <p>Your order <strong data-test="session-id">@Model.Session.SessionId</strong> is confirmed (status: <span data-test="session-status">@Model.Session.Status</span>).</p>
-    <partial name="~/Views/Checkout/_Summary.cshtml" model="Model" />
-    <p><a href="/products" class="button">Back to the shop</a></p>
+@{ ViewData["Title"] = "Order Confirmed"; var s = Model.Session; }
+<div class="confirmation">
+@await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 5)
+<div class="confirmation__message" data-test="confirmation-message">
+<div class="confirmation__icon"></div>
+<h3 class="confirmation__title" data-test="confirmation-title">Your order has been placed successfully</h3>
+<p class="confirmation__reference">Order Reference: @s.SessionId</p>
+</div>
+<div class="confirmation__details">
+<h3 class="confirmation__details-title">Order Summary</h3>
+@if (s.BuyerInfo is { } b)
+{
+<div class="confirmation__detail-section"><h4>Contact Information</h4><p>@b.FirstName @b.LastName</p><p>@b.Email</p><p>@b.Phone</p></div>
+}
+@if (s.DeliveryAddress is { } a && s.ShippingOption is { } o)
+{
+<div class="confirmation__detail-section">
+<h4>Delivery Address</h4>
+<p>@a.Street</p>
+@if (a.StreetLine2 is not null) {<p>@a.StreetLine2</p>}
+<p>@a.City, @a.PostalCode</p>
+@if (a.State is not null) {<p>@a.State, @a.Country</p>} else {<p>@a.Country</p>}
+<h4>Shipping Method</h4>
+<p>@o.Name</p>
+<p>Estimated Delivery: @o.EstimatedDelivery</p>
+</div>
+}
+@if (s.PaymentSelection is { } p)
+{
+<div class="confirmation__detail-section"><h4>Payment Method</h4><p>@p.ProviderId.Value</p></div>
+}
+@if (s.LineItems.Count > 0)
+{
+<div class="confirmation__detail-section">
+<h4>Items Ordered</h4>
+@foreach (var item in s.LineItems)
+{
+<div class="order-summary__item">
+<div class="order-summary__item-image">@if (!string.IsNullOrEmpty(item.ImageUrl)) {<img src="@item.ImageUrl" alt="@item.ProductName">}</div>
+<span class="order-summary__item-name">@item.ProductName</span>
+<span class="order-summary__item-qty">x@(item.Quantity)</span>
+<span class="order-summary__item-price">@item.LineTotal</span>
+</div>
+}
+</div>
+}
+<div class="confirmation__detail-section">
+<div class="order-summary__line"><span>Subtotal</span><span>@s.Subtotal</span></div>
+@if (s.ShippingOption is not null) {<div class="order-summary__line"><span>Shipping</span><span>@s.Shipping</span></div>}
+<div class="order-summary__total"><span>Total Paid</span><span>@s.Total</span></div>
+</div>
+</div>
+<div class="confirmation__next-steps">
+<p>We've sent a confirmation email to @(s.BuyerInfo?.Email ?? "your email address").</p>
+<p>You can track your order status using your order reference.</p>
+</div>
+<div class="confirmation__footer"><a class="btn btn--primary btn--lg" href="/" data-test="confirmation-continue-link">Continue Shopping</a></div>
 </div>

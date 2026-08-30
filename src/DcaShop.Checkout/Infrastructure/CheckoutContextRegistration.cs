@@ -4,7 +4,9 @@ using DcaShop.Checkout.Adapter.Outgoing.Payment;
 using DcaShop.Checkout.Adapter.Outgoing.Persistence;
 using DcaShop.Checkout.Adapter.Outgoing.Product;
 using DcaShop.Checkout.Application.ConfirmCheckout;
+using DcaShop.Checkout.Application.GetActiveCheckoutSession;
 using DcaShop.Checkout.Application.GetCheckoutSession;
+using DcaShop.Checkout.Application.GetConfirmedCheckoutSession;
 using DcaShop.Checkout.Application.GetPaymentProviders;
 using DcaShop.Checkout.Application.GetShippingOptions;
 using DcaShop.Checkout.Application.Shared;
@@ -25,6 +27,8 @@ public static class CheckoutContextRegistration
         // Use cases (input ports)
         services.AddScoped<IStartCheckoutInputPort, StartCheckoutUseCase>();
         services.AddScoped<IGetCheckoutSessionInputPort, GetCheckoutSessionUseCase>();
+        services.AddScoped<IGetActiveCheckoutSessionInputPort, GetActiveCheckoutSessionUseCase>();
+        services.AddScoped<IGetConfirmedCheckoutSessionInputPort, GetConfirmedCheckoutSessionUseCase>();
         services.AddScoped<ISubmitBuyerInfoInputPort, SubmitBuyerInfoUseCase>();
         services.AddScoped<ISubmitDeliveryInputPort, SubmitDeliveryUseCase>();
         services.AddScoped<IGetShippingOptionsInputPort, GetShippingOptionsUseCase>();

@@ -1,0 +1,99 @@
+@model DcaShop.Cart.Adapter.Incoming.Web.CartPageViewModel
+@{ ViewData["Title"] = "Shopping Cart"; }
+<div class="cart">
+<div class="cart__header"><h2 class="cart__header-title">Shopping Cart</h2></div>
+@if (TempData["Message"] is string message)
+{
+<div class="alert alert--success" data-test="cart-success-message">@message</div>
+}
+@if (TempData["Error"] is string error)
+{
+<div class="alert alert--error" data-test="cart-error-message">@error</div>
+}
+@if (Model.LineItems.Count > 0)
+{
+<div class="cart__summary">
+<div class="cart__summary-row"><span>Total Items: @Model.ItemCount</span><span>Total Quantity: @Model.TotalQuantity</span></div>
+</div>
+@if (Model.HasAnyPriceChanges)
+{
+<div class="price-change-summary" data-test="price-change-summary">Some items have price changes since they were added to your cart.</div>
+}
+<div class="cart__items" data-test="cart-items">
+@foreach (var item in Model.LineItems)
+{
+<div class="cart__item" data-test="cart-item">
+<div class="cart__item-image">
+@if (!string.IsNullOrEmpty(item.ImageUrl))
+{
+<img src="@item.ImageUrl" alt="@item.ProductName" width="64" height="64">
+}
+</div>
+<div class="cart__item-details">
+<div class="cart__item-name">@item.ProductName</div>
+<div class="cart__item-info">
+<div class="cart__item-row"><span class="cart__item-label">Quantity</span><span class="cart__item-value">@item.Quantity</span></div>
+<div class="cart__item-row"><span class="cart__item-label">Unit Price</span><span class="cart__item-value">@item.UnitPrice</span></div>
+<div class="cart__item-row"><span class="cart__item-label">Line Total</span><span class="cart__item-price">@item.LineTotal</span></div>
+</div>
+@if (item.HasPriceChanged)
+{
+@if (item.PriceIncreased)
+{
+<div class="price-change price-change--increased" data-test="price-change-alert">Price increased by @item.PriceDifference</div>
+}
+else
+{
+<div class="price-change price-change--decreased" data-test="price-change-alert">Price decreased by @item.PriceDifference</div>
+}
+}
+@if (!item.IsAvailable)
+{
+<div class="stock-alert stock-alert--danger" data-test="stock-alert">Product no longer available</div>
+}
+else if (!item.HasSufficientStock)
+{
+<div class="stock-alert stock-alert--warning" data-test="stock-alert">Insufficient stock available</div>
+}
+</div>
+</div>
+}
+</div>
+<div class="cart__total"><div class="cart__total-row"><span>Subtotal</span><span>@Model.CurrentSubtotal</span></div></div>
+<div class="cart__actions">
+@if (Model.Status == "Active")
+{
+@if (Model.CanCheckout)
+{
+<a class="btn btn--primary btn--lg" href="/checkout/start?cartId=@Model.CartId" data-test="cart-checkout-link">Proceed to Checkout</a>
+<div class="cart__actions-info"><a href="/products">Continue Shopping</a></div>
+}
+else
+{
+<button class="btn btn--disabled btn--lg" disabled data-test="cart-checkout-disabled">Cannot Checkout</button>
+<div class="cart__actions-warning">Some items are unavailable or have insufficient stock</div>
+}
+}
+else
+{
+<div class="status-badge">
+@switch (Model.Status)
+{
+case "CheckedOut": <span class="badge badge--success">Checked Out</span> break;
+case "Completed": <span class="badge badge--info">Order Completed</span> break;
+case "Abandoned": <span class="badge badge--warning">Abandoned</span> break;
+}
+</div>
+}
+</div>
+}
+else
+{
+<div class="empty-state">
+<div class="empty-state__icon"></div>
+<h3 class="empty-state__title">Your cart is empty</h3>
+<p class="empty-state__message">Browse our products to find something you'll love.</p>
+<a class="btn btn--primary" href="/products" data-test="cart-browse-link">Browse Products</a>
+</div>
+}
+</div>

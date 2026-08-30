@@ -48,6 +48,10 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
 - Events: domain events are dispatched in-process synchronously (`InProcessDomainEventPublisher`);
   integration events are registered in `IIntegrationEventOutbox` and delivered by `IntegrationEventDispatcherService`
   — asynchronous, after the publishing use case finished, at least once with retry/backoff; consumers are idempotent. Listeners implement `EventListener<TEvent>` and are registered as `IEventListener`.
+- Views mirror the Java sample's Pug templates one to one (classes, `data-test` attributes, routes, seed data);
+  `wwwroot/css/main.css` and `wwwroot/images/products/` are copies of the Java static assets — keep them in sync
+  when the Java UI changes. Host-level `HomePageController`/`ErrorPageController`/`MiniBasketViewComponent`
+  stand in for the Portal context until stage 2.
 - Transactions: writing use cases wrap load → mutate → `SaveAsync` → `PublishAndClearEventsAsync` in
   `IUnitOfWork.RunAsync`; ports that may leave the process (other contexts' data ports, payment providers) are
   called **before** the unit of work, never inside it (ADR-004). Read use cases run without one.

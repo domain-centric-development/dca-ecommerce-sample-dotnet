@@ -1,0 +1,16 @@
+@model DcaShop.Cart.Api.CartService.MiniBasket?
+<div class="mini-basket" data-test="mini-basket">
+<a class="mini-basket__trigger" href="/cart" data-test="mini-basket-trigger"><span>Cart</span>@if (Model is { ItemCount: > 0 })
+{<span class="mini-basket__count" data-test="mini-basket-count">@Model.ItemCount</span>}</a>
+@if (Model is { ItemCount: > 0 })
+{
+<div class="mini-basket__dropdown" data-test="mini-basket-dropdown">
+@foreach (var item in Model.Items)
+{
+<div class="mini-basket__item"><span>@item.Name</span><span>x@(item.Quantity)</span></div>
+}
+<div class="mini-basket__total"><span>Total</span><span>@Model.Total</span></div>
+<a class="mini-basket__link btn btn--primary btn--sm" href="/cart" data-test="mini-basket-view-cart-link">View Cart</a>
+</div>
+}
+</div>

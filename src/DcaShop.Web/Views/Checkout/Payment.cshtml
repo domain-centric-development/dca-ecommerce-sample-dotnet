@@ -1,15 +1,42 @@
 @model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
-@{ ViewData["Title"] = "Checkout – Payment"; }
-<h1>How would you like to pay?</h1>
-<partial name="~/Views/Checkout/_Steps.cshtml" model="Model" />
-<form method="post" action="/checkout/@Model.Session.SessionId/payment" class="card">
-    @Html.AntiForgeryToken()
-    @foreach (var p in Model.PaymentProviders)
-    {
-        <label>
-            <input type="radio" name="paymentProviderId" value="@p.Id" required checked="@(Model.Session.PaymentSelection?.ProviderId.Value == p.Id)" data-test="payment-@p.Id" />
-            <strong>@p.DisplayName</strong> <span class="muted">– @p.Description</span>
-        </label>
-    }
-    <p><a href="/checkout/@Model.Session.SessionId/delivery" class="button secondary">Back</a> <button type="submit" data-test="continue">Continue to review</button></p>
+@{ ViewData["Title"] = "Checkout - Payment"; var selectedId = Model.Session.PaymentSelection?.ProviderId.Value; ViewData["WithTotals"] = true; }
+<div class="checkout">
+@await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 3)
+@if (Model.Error is not null)
+{
+<div class="alert alert--error" data-test="payment-error-message">@Model.Error</div>
+}
+<form class="checkout__form" method="post" action="/checkout/payment" data-test="payment-form">
+@Html.AntiForgeryToken()
+<h3 class="checkout__section-title">Select Payment Method</h3>
+<div class="payment-options" data-test="payment-options">
+@foreach (var provider in Model.PaymentProviders.Where(p => p.Available))
+{
+    var isSelected = selectedId == provider.Id;
+<label class="option-card@(isSelected ? " option-card--selected" : "")" data-test="payment-provider-option">
+<input class="option-card__radio" type="radio" name="providerId" value="@provider.Id" required checked="@isSelected" data-test="payment-provider-radio">
+<div class="option-card__content"><span class="option-card__label">@provider.DisplayName</span></div>
+</label>
+}
+</div>
+<div class="form__group">
+<label class="form__label" for="providerReference">Payment Reference (Optional)</label>
+<input class="form__input" id="providerReference" type="text" name="providerReference" placeholder="e.g., Payment Intent ID" value="">
+</div>
+<div class="form__actions">
+<a class="btn btn--secondary" href="/checkout/delivery" data-test="payment-back-link">Back</a>
+<button class="btn btn--primary" type="submit" data-test="payment-continue-button">Continue to Review</button>
+</div>
 </form>
+@await Html.PartialAsync("~/Views/Checkout/_OrderSummary.cshtml", Model, ViewData)
+</div>
+@section Scripts {
+<script>
+document.querySelectorAll('.option-card input[type="radio"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    document.querySelectorAll('.option-card').forEach(function(opt) { opt.classList.remove('option-card--selected'); });
+    this.closest('.option-card').classList.add('option-card--selected');
+  });
+});
+</script>
+}

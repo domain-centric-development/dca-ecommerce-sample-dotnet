@@ -1,12 +1,40 @@
 @model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
-@{ ViewData["Title"] = "Checkout – Buyer"; var b = Model.Session.BuyerInfo; }
-<h1>Who is buying?</h1>
-<partial name="~/Views/Checkout/_Steps.cshtml" model="Model" />
-<form method="post" action="/checkout/@Model.Session.SessionId/buyer-info" class="card">
-    @Html.AntiForgeryToken()
-    <label for="email">Email</label><input type="email" id="email" name="email" value="@b?.Email" required data-test="email" />
-    <label for="firstName">First name</label><input type="text" id="firstName" name="firstName" value="@b?.FirstName" required data-test="first-name" />
-    <label for="lastName">Last name</label><input type="text" id="lastName" name="lastName" value="@b?.LastName" required data-test="last-name" />
-    <label for="phone">Phone</label><input type="tel" id="phone" name="phone" value="@b?.Phone" required data-test="phone" />
-    <p><button type="submit" data-test="continue">Continue to delivery</button></p>
+@{ ViewData["Title"] = "Checkout - Buyer Information"; var b = Model.Session.BuyerInfo; }
+<div class="checkout">
+@await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 1)
+@if (Model.Error is not null)
+{
+<div class="alert alert--error" data-test="buyer-error-message">@Model.Error</div>
+}
+<div class="checkout__auth" data-test="buyer-auth-options">
+<p>Already have an account? Log in to speed up checkout.</p>
+<div class="checkout__auth-buttons">
+<a class="btn btn--secondary" href="/login?returnUrl=/checkout/buyer" data-test="buyer-login-link">Login</a>
+<a class="btn btn--secondary" href="/register?returnUrl=/checkout/buyer" data-test="buyer-register-link">Register</a>
+</div>
+</div>
+<h3 class="checkout__section-title">Buyer Information</h3>
+<form class="checkout__form" method="post" action="/checkout/buyer" data-test="buyer-form">
+@Html.AntiForgeryToken()
+<div class="form__group">
+<label class="form__label" for="email">Email Address</label>
+<input class="form__input" id="email" type="email" name="email" required placeholder="you@example.com" value="@(b?.Email)" data-test="buyer-email-input">
+</div>
+<div class="form__row">
+<div class="form__group">
+<label class="form__label" for="firstName">First Name</label>
+<input class="form__input" id="firstName" type="text" name="firstName" required placeholder="First Name" value="@(b?.FirstName)" data-test="buyer-firstname-input">
+</div>
+<div class="form__group">
+<label class="form__label" for="lastName">Last Name</label>
+<input class="form__input" id="lastName" type="text" name="lastName" required placeholder="Last Name" value="@(b?.LastName)" data-test="buyer-lastname-input">
+</div>
+</div>
+<div class="form__group">
+<label class="form__label" for="phone">Phone Number</label>
+<input class="form__input" id="phone" type="tel" name="phone" required placeholder="+1 (555) 123-4567" value="@(b?.Phone)" data-test="buyer-phone-input">
+</div>
+<div class="form__actions"><button class="btn btn--primary" type="submit" data-test="buyer-continue-button">Continue to Delivery</button></div>
 </form>
+@await Html.PartialAsync("~/Views/Checkout/_OrderSummary.cshtml", Model)
+</div>

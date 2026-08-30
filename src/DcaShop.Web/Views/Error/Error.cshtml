@@ -1,0 +1,11 @@
+@model int
+@{ ViewData["Title"] = "Something went wrong"; }
+<div class="error-page">
+<div class="error-page__code">@Model</div>
+<h2 class="error-page__title">Something went wrong</h2>
+<p class="error-page__message">We could not complete your request. Please try again in a moment.</p>
+<div class="error-page__action">
+<a class="btn btn--accent" href="/products" data-test="error-browse-link">Browse All Products</a>
+<a class="btn btn--secondary" href="/" data-test="error-home-link">Go to Homepage</a>
+</div>
+</div>

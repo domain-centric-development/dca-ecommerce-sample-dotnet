@@ -36,7 +36,7 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
             {
                 var session = await _sessions.FindByIdAsync(sessionId, ct).ConfigureAwait(false)
                               ?? throw new ArgumentException($"Session not found: {command.SessionId}", nameof(command));
-                session.SubmitPayment(new PaymentSelection(providerId));
+                session.SubmitPayment(new PaymentSelection(providerId, string.IsNullOrWhiteSpace(command.ProviderReference) ? null : command.ProviderReference.Trim()));
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
                 return new SubmitPaymentResult(CheckoutSessionData.From(session));

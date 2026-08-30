@@ -38,7 +38,7 @@ src/
 ├── DcaShop.Cart/                Shopping Cart     (namespace DcaShop.Cart)
 ├── DcaShop.Checkout/            Checkout          (namespace DcaShop.Checkout)
 ├── DcaShop.Infrastructure/      composition root, outbox dispatcher (retry/backoff), sample data
-└── DcaShop.Web/                 ASP.NET Core host, Razor views (controllers live in the contexts)
+└── DcaShop.Web/                 ASP.NET Core host: Razor views, layout + mini basket, home/error pages, wwwroot (controllers live in the contexts)
 tests/
 ├── DcaShop.UnitTests/           aggregate and value-object tests
 ├── DcaShop.IntegrationTests/    browse → cart → checkout through the HTTP pipeline (WebApplicationFactory)
@@ -65,6 +65,16 @@ DcaShop.Cart/
 ├── Events/                      CartCheckedOutEvent, ICartCompletionTrigger — published language
 └── Infrastructure/              CartContextRegistration.AddCartContext() — explicit DI wiring
 ```
+
+## Same shop, same markup
+
+The pages are a one-to-one translation of the Java sample's Pug templates into Razor: same stylesheet
+(`wwwroot/css/main.css`), same product images, same CSS classes and `data-test` attributes, same routes
+(`/products`, `/products/{id}`, `/cart`, `/cart/add-product`, `/checkout/start?cartId=…`, `/checkout/buyer` →
+`delivery` → `payment` → `review` → `confirm` → `confirmation`). The active checkout session is resolved from the
+customer, not from the URL. The only intended difference in the HTML is the antiforgery hidden field in every form.
+Login/Register/Account/Event Log links are rendered but lead to 404 until the Account, Portal and Backoffice
+contexts arrive.
 
 ## What it demonstrates
 

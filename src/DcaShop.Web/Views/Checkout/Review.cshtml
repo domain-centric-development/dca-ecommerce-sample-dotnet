@@ -1,15 +1,62 @@
 @model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
-@{ ViewData["Title"] = "Checkout – Review"; var s = Model.Session; }
-<h1>Review your order</h1>
-<partial name="~/Views/Checkout/_Steps.cshtml" model="Model" />
-<div class="card">
-    <h3>Buyer</h3><p>@s.BuyerInfo?.FullName · @s.BuyerInfo?.Email · @s.BuyerInfo?.Phone</p>
-    <h3>Delivery</h3><p>@s.DeliveryAddress?.FormattedAddress<br /><span class="muted">@s.ShippingOption?.Name (@s.ShippingOption?.EstimatedDelivery)</span></p>
-    <h3>Payment</h3><p>@s.PaymentSelection?.ProviderId.Value</p>
-    <h3>Items</h3>
-    <partial name="~/Views/Checkout/_Summary.cshtml" model="Model" />
-    <form method="post" action="/checkout/@s.SessionId/confirm">
-    @Html.AntiForgeryToken()
-        <p><a href="/checkout/@s.SessionId/payment" class="button secondary">Back</a> <button type="submit" data-test="confirm-order">Confirm order</button></p>
-    </form>
+@{ ViewData["Title"] = "Checkout - Review"; var s = Model.Session; ViewData["WithTotals"] = true; ViewData["SummaryTitle"] = "Order Items"; }
+<div class="checkout">
+@await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 4)
+@if (Model.Error is not null)
+{
+<div class="alert alert--error" data-test="review-error-message">@Model.Error</div>
+}
+<div class="review-sections" data-test="review-sections">
+<div class="review-section" data-test="review-buyer-section">
+<div class="review-section__header"><h3 class="review-section__title">Buyer Information</h3><a class="review-section__edit" href="/checkout/buyer" data-test="review-buyer-edit-link">Edit</a></div>
+@if (s.BuyerInfo is { } b)
+{
+<div class="review-section__body"><p>@b.FirstName @b.LastName</p><p>@b.Email</p><p>@b.Phone</p></div>
+}
+else
+{
+<div class="review-section__body review-section__body--incomplete"><p>Buyer information not provided</p><a class="btn btn--sm" href="/checkout/buyer">Complete</a></div>
+}
+</div>
+<div class="review-section" data-test="review-delivery-section">
+<div class="review-section__header"><h3 class="review-section__title">Delivery</h3><a class="review-section__edit" href="/checkout/delivery" data-test="review-delivery-edit-link">Edit</a></div>
+@if (s.DeliveryAddress is { } a && s.ShippingOption is { } o)
+{
+<div class="review-section__body">
+<h4>Shipping Address</h4>
+<p>@a.Street</p>
+@if (a.StreetLine2 is not null) {<p>@a.StreetLine2</p>}
+<p>@a.City, @a.PostalCode</p>
+@if (a.State is not null) {<p>@a.State, @a.Country</p>} else {<p>@a.Country</p>}
+<h4>Shipping Method</h4>
+<p>@o.Name</p>
+<p>Estimated Delivery: @o.EstimatedDelivery</p>
+<p>Cost: @o.Cost</p>
+</div>
+}
+else
+{
+<div class="review-section__body review-section__body--incomplete"><p>Delivery information not provided</p><a class="btn btn--sm" href="/checkout/delivery">Complete</a></div>
+}
+</div>
+<div class="review-section" data-test="review-payment-section">
+<div class="review-section__header"><h3 class="review-section__title">Payment Method</h3><a class="review-section__edit" href="/checkout/payment" data-test="review-payment-edit-link">Edit</a></div>
+@if (s.PaymentSelection is { } p)
+{
+<div class="review-section__body"><p>@p.ProviderId.Value</p>@if (p.HasReference) {<p>Reference: @p.ProviderReference</p>}</div>
+}
+else
+{
+<div class="review-section__body review-section__body--incomplete"><p>Payment method not selected</p><a class="btn btn--sm" href="/checkout/payment">Complete</a></div>
+}
+</div>
+</div>
+@await Html.PartialAsync("~/Views/Checkout/_OrderSummary.cshtml", Model, ViewData)
+<div class="review__actions">
+<a class="btn btn--secondary" href="/checkout/payment" data-test="review-back-link">Back</a>
+<form method="post" action="/checkout/confirm" data-test="review-confirm-form">
+@Html.AntiForgeryToken()
+<button class="btn btn--primary btn--lg" type="submit" data-test="review-place-order-button">Place Order</button>
+</form>
+</div>
 </div>

@@ -1,21 +1,78 @@
 @model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
-@{ ViewData["Title"] = "Checkout – Delivery"; var a = Model.Session.DeliveryAddress; }
-<h1>Where should we deliver?</h1>
-<partial name="~/Views/Checkout/_Steps.cshtml" model="Model" />
-<form method="post" action="/checkout/@Model.Session.SessionId/delivery" class="card">
-    @Html.AntiForgeryToken()
-    <label for="street">Street</label><input type="text" id="street" name="street" value="@a?.Street" required data-test="street" />
-    <label for="streetLine2">Street (line 2)</label><input type="text" id="streetLine2" name="streetLine2" value="@a?.StreetLine2" />
-    <label for="postalCode">Postal code</label><input type="text" id="postalCode" name="postalCode" value="@a?.PostalCode" required data-test="postal-code" />
-    <label for="city">City</label><input type="text" id="city" name="city" value="@a?.City" required data-test="city" />
-    <label for="state">State</label><input type="text" id="state" name="state" value="@a?.State" />
-    <label for="country">Country</label><input type="text" id="country" name="country" value="@(a?.Country ?? "Germany")" required data-test="country" />
-    <label for="shippingOptionId">Shipping</label>
-    <select id="shippingOptionId" name="shippingOptionId" data-test="shipping-option">
-    @foreach (var o in Model.ShippingOptions)
-    {
-        <option value="@o.Id" selected="@(Model.Session.ShippingOption?.Id == o.Id)">@o.Name – @o.EstimatedDelivery (@o.Cost)</option>
-    }
-    </select>
-    <p><a href="/checkout/@Model.Session.SessionId/buyer-info" class="button secondary">Back</a> <button type="submit" data-test="continue">Continue to payment</button></p>
+@{ ViewData["Title"] = "Checkout - Delivery"; var a = Model.Session.DeliveryAddress; var selectedId = Model.Session.ShippingOption?.Id; }
+<div class="checkout">
+@await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 2)
+@if (Model.Error is not null)
+{
+<div class="alert alert--error" data-test="delivery-error-message">@Model.Error</div>
+}
+<form class="checkout__form" method="post" action="/checkout/delivery" data-test="delivery-form">
+@Html.AntiForgeryToken()
+<h3 class="checkout__section-title">Shipping Address</h3>
+<div class="form__group">
+<label class="form__label" for="street">Street Address</label>
+<input class="form__input" id="street" type="text" name="street" required placeholder="123 Main Street" value="@(a?.Street)" data-test="delivery-street-input">
+</div>
+<div class="form__group">
+<label class="form__label" for="streetLine2">Address Line 2 (Optional)</label>
+<input class="form__input" id="streetLine2" type="text" name="streetLine2" placeholder="Apt, Suite, Unit, etc." value="@(a?.StreetLine2)" data-test="delivery-street2-input">
+</div>
+<div class="form__row">
+<div class="form__group">
+<label class="form__label" for="city">City</label>
+<input class="form__input" id="city" type="text" name="city" required placeholder="City" value="@(a?.City)" data-test="delivery-city-input">
+</div>
+<div class="form__group">
+<label class="form__label" for="state">State/Province (Optional)</label>
+<input class="form__input" id="state" type="text" name="state" placeholder="State" value="@(a?.State)" data-test="delivery-state-input">
+</div>
+</div>
+<div class="form__row">
+<div class="form__group">
+<label class="form__label" for="postalCode">Postal Code</label>
+<input class="form__input" id="postalCode" type="text" name="postalCode" required placeholder="12345" value="@(a?.PostalCode)" data-test="delivery-postalcode-input">
+</div>
+<div class="form__group">
+<label class="form__label" for="country">Country</label>
+<input class="form__input" id="country" type="text" name="country" required placeholder="Country" value="@(a?.Country)" data-test="delivery-country-input">
+</div>
+</div>
+<h3 class="checkout__section-title">Shipping Method</h3>
+<div class="shipping-options" data-test="delivery-shipping-options">
+@foreach (var option in Model.ShippingOptions)
+{
+    var isSelected = selectedId == option.Id;
+<label class="option-card@(isSelected ? " option-card--selected" : "")" data-test="delivery-shipping-option">
+<input class="option-card__radio" type="radio" name="shippingOptionId" value="@option.Id" required checked="@isSelected" data-test="delivery-shipping-radio">
+<input type="hidden" name="shippingOptionName" value="@option.Name" disabled="@(!isSelected)">
+<input type="hidden" name="estimatedDelivery" value="@option.EstimatedDelivery" disabled="@(!isSelected)">
+<input type="hidden" name="shippingCost" value="@option.Cost" disabled="@(!isSelected)">
+<input type="hidden" name="currencyCode" value="@option.CurrencyCode" disabled="@(!isSelected)">
+<div class="option-card__content">
+<span class="option-card__label">@option.Name</span>
+<span class="option-card__description">@option.EstimatedDelivery</span>
+<span class="option-card__price">@option.Cost @option.CurrencyCode</span>
+</div>
+</label>
+}
+</div>
+<div class="form__actions">
+<a class="btn btn--secondary" href="/checkout/buyer" data-test="delivery-back-link">Back</a>
+<button class="btn btn--primary" type="submit" data-test="delivery-continue-button">Continue to Payment</button>
+</div>
 </form>
+@await Html.PartialAsync("~/Views/Checkout/_OrderSummary.cshtml", Model)
+</div>
+@section Scripts {
+<script>
+document.querySelectorAll('.option-card input[type="radio"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    document.querySelectorAll('.option-card input[type="hidden"]').forEach(function(hidden) { hidden.disabled = true; });
+    var selectedOption = this.closest('.option-card');
+    selectedOption.querySelectorAll('input[type="hidden"]').forEach(function(hidden) { hidden.disabled = false; });
+    document.querySelectorAll('.option-card').forEach(function(opt) { opt.classList.remove('option-card--selected'); });
+    selectedOption.classList.add('option-card--selected');
+  });
+});
+</script>
+}

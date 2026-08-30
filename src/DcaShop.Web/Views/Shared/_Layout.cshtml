@@ -1,21 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <title>@ViewData["Title"] – DcaShop</title>
-    <link rel="stylesheet" href="~/site.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="DCA Commerce — A curated collection of premium products, delivered with care.">
+<title>@(ViewData["Title"] ?? "DCA Commerce")</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Sans:wght@400..700&family=Inter:wght@300..700&family=Nunito+Sans:ital,wght@0,300..700;1,300..700&family=Space+Grotesk:wght@400..700&display=swap">
+<link rel="stylesheet" href="/css/main.css">
+<script>(function(){var t=localStorage.getItem('dca-theme');if(t&&t!=='organic')document.documentElement.setAttribute('data-theme',t)})();</script>
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Sans:wght@400..700&family=Inter:wght@300..700&family=Nunito+Sans:ital,wght@0,300..700;1,300..700&family=Space+Grotesk:wght@400..700&display=swap"></noscript>
 </head>
 <body>
-<header>
-    <a href="/products" data-test="nav-catalog">DcaShop</a>
-    <a href="/cart" data-test="nav-cart">Cart</a>
+<header class="site-header" data-test="site-header">
+<div class="site-header__inner">
+<a class="site-header__logo" href="/" data-test="site-logo">DCA Commerce</a>
+<nav class="nav" aria-label="Main navigation">
+<ul class="nav__list">
+<li class="nav__item"><a class="nav__link" href="/" data-test="nav-home-link">Home</a></li>
+<li class="nav__item"><a class="nav__link" href="/products" data-test="nav-products-link">Products</a></li>
+</ul>
+</nav>
+<div class="site-header__actions">
+@await Component.InvokeAsync("MiniBasket")
+<a class="nav__link" href="/login" data-test="nav-login-link">Login</a>
+<a class="nav__link" href="/register" data-test="nav-register-link">Register</a>
+</div>
+</div>
 </header>
-<main>
-    @if (TempData["Error"] is string error)
-    {
-        <p class="error" data-test="error">@error</p>
-    }
-    @RenderBody()
+<main class="site-main">
+<div class="container">
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+<div class="alert alert--success" data-test="success-message">@successMessage</div>
+}
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+<div class="alert alert--error" data-test="error-message">@errorMessage</div>
+}
+@RenderBody()
+</div>
 </main>
+<footer class="site-footer" data-test="site-footer">
+<div class="site-footer__inner">
+<div class="site-footer__text">DCA Commerce &mdash; Built with Domain-Centric Architecture</div>
+<div class="site-footer__links"><a class="site-footer__link" href="/backoffice/events" data-test="footer-event-log-link">Event Log</a></div>
+<div class="theme-switcher" data-test="theme-switcher">
+<label class="theme-switcher__label" for="theme-select">Theme</label>
+<select class="theme-switcher__select" id="theme-select" data-test="theme-select">
+<option value="organic">Organic</option>
+<option value="sharp">Sharp &amp; Minimal</option>
+<option value="classic">Classic</option>
+<option value="vibrant">Neon + Dark</option>
+</select>
+</div>
+</div>
+</footer>
+<script>
+(function() {
+  var saved = localStorage.getItem('dca-theme');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+    var sel = document.getElementById('theme-select');
+    if (sel) sel.value = saved;
+  }
+  document.getElementById('theme-select').addEventListener('change', function(e) {
+    var theme = e.target.value;
+    if (theme === 'organic') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    localStorage.setItem('dca-theme', theme);
+  });
+})();
+</script>
+@RenderSection("Scripts", required: false)
 </body>
 </html>
