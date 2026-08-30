@@ -22,7 +22,7 @@ The architecture tests also (re)generate `docs/context-map.md` — commit it wit
 
 ## Tech stack
 
-.NET 8, ASP.NET Core MVC + Razor views, xUnit, `DomainCentric.BuildingBlocks` + `DomainCentric.ArchRules(.Xunit)`
+.NET 10 (LTS; SDK pinned via `global.json`), ASP.NET Core MVC + Razor views, xUnit, `DomainCentric.BuildingBlocks` + `DomainCentric.ArchRules(.Xunit)`
 from `../dca-dotnet` (project references while unpublished; NuGet afterwards). In-memory persistence only.
 
 ## Structure and conventions

@@ -10,6 +10,8 @@ Inventory, Pricing and Backoffice follow in later stages.
 
 ## Run
 
+Requires the .NET 10 SDK (pinned by `global.json`).
+
 ```bash
 dotnet build
 dotnet test                                   # unit, integration, architecture (111 DCA rules)
