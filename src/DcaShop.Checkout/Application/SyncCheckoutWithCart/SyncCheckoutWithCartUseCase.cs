@@ -53,7 +53,8 @@ public sealed class SyncCheckoutWithCartUseCase : ISyncCheckoutWithCartInputPort
         var sessionId = activeSession.Id;
 
         // Cart and article data come from other contexts (remote-capable) — outside the transaction
-        var cart = await _cartData.FindByIdAsync(cartId, cancellationToken).ConfigureAwait(false)
+        // No caller here — the session names the customer this runs on behalf of.
+        var cart = await _cartData.FindByIdAsync(cartId, activeSession.CustomerId, cancellationToken).ConfigureAwait(false)
                    ?? throw new InvalidOperationException($"Cart not found for active session: {cartId}");
         if (cart.Items.Count == 0)
         {

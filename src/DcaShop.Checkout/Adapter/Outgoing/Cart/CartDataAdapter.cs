@@ -14,14 +14,11 @@ public sealed class CartDataAdapter : ICartDataPort
         _cartService = cartService;
     }
 
-    public async Task<CartData?> FindByIdAsync(CartId cartId, CancellationToken cancellationToken = default)
+    public async Task<CartData?> FindByIdAsync(CartId cartId, CustomerId customerId, CancellationToken cancellationToken = default)
     {
-        var snapshot = await _cartService.FindCartByIdAsync(cartId.Value, cancellationToken).ConfigureAwait(false);
+        var snapshot = await _cartService.FindCartByIdAsync(cartId.Value, customerId.Value, cancellationToken).ConfigureAwait(false);
         return snapshot is null ? null : Translate(snapshot);
     }
-
-    public Task MarkAsCheckedOutAsync(CartId cartId, CancellationToken cancellationToken = default) =>
-        _cartService.MarkAsCheckedOutAsync(cartId.Value, cancellationToken);
 
     private static CartData Translate(CartService.CartSnapshot snapshot) =>
         new(

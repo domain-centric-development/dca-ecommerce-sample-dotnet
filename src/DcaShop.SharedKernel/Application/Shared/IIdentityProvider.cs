@@ -30,6 +30,13 @@ public interface IIdentityProvider : IOutputPort
         /// <summary>The role every registered account holds.</summary>
         public const string RoleCustomer = "CUSTOMER";
 
+        /// <summary>
+        /// The operator role. It lives here rather than in the Account context because the adapters that guard
+        /// on it — the product and cart APIs — belong to other contexts, and a role name is exactly the kind of
+        /// tiny, universally agreed concept the shared kernel is for.
+        /// </summary>
+        public const string RoleStaff = "STAFF";
+
         /// <summary>The cross-context identity. It survives session expiry and changes only on explicit logout.</summary>
         UserId UserId { get; }
 

@@ -19,7 +19,13 @@ namespace DcaShop.ArchitectureTests;
 /// </remarks>
 public sealed class ArchitectureRulesTest : DcaArchitectureTest
 {
-    protected override DcaLayout Layout => DcaLayout.ForRootNamespace("DcaShop");
+    /// <summary>
+    /// The shop names its REST adapters <c>*Resource</c>, as the Java sample does, rather than taking the .NET
+    /// default suffix <c>Controller</c>. The suffix is layout configuration precisely so a project can make that
+    /// call; <c>DCA-NAM-006</c> then holds the shop to it.
+    /// </summary>
+    protected override DcaLayout Layout =>
+        DcaLayout.ForRootNamespace("DcaShop").WithRestControllerSuffix("Resource");
 
     /// <summary>
     /// Applied on top of <c>dca-archunit.properties</c> — the reference implementation adds nothing.
@@ -38,6 +44,7 @@ public sealed class ArchitectureRulesTest : DcaArchitectureTest
     {
         typeof(SharedKernel.SharedKernelContext).Assembly,
         typeof(Account.AccountContext).Assembly,
+        typeof(Backoffice.BackofficeModule).Assembly,
         typeof(Portal.PortalContext).Assembly,
         typeof(Pricing.PricingContext).Assembly,
         typeof(Inventory.InventoryContext).Assembly,

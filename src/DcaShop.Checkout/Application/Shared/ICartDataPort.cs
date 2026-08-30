@@ -7,9 +7,9 @@ namespace DcaShop.Checkout.Application.Shared;
 /// <summary>What checkout needs from the Cart context, in checkout's own terms — the adapter translates the cart's published Api.</summary>
 public interface ICartDataPort : IOutputPort
 {
-    Task<CartData?> FindByIdAsync(CartId cartId, CancellationToken cancellationToken = default);
+    /// <summary>The named customer's cart — <see langword="null"/> when it does not exist or is not theirs.</summary>
+    Task<CartData?> FindByIdAsync(CartId cartId, CustomerId customerId, CancellationToken cancellationToken = default);
 
-    Task MarkAsCheckedOutAsync(CartId cartId, CancellationToken cancellationToken = default);
 }
 
 public sealed record CartData(CartId CartId, CustomerId CustomerId, IReadOnlyList<CartData.CartItemData> Items, bool Active)

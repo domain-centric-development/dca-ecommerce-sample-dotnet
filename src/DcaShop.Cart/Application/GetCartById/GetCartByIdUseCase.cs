@@ -16,7 +16,9 @@ public sealed class GetCartByIdUseCase : IGetCartByIdInputPort
 
     public async Task<GetCartByIdResult> ExecuteAsync(GetCartByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var cart = await _carts.FindByIdAsync(new CartId(query.CartId), cancellationToken).ConfigureAwait(false);
+        var cart = await _carts
+            .FindByIdForCustomerAsync(new CartId(query.CartId), CustomerId.Of(query.CustomerId), cancellationToken)
+            .ConfigureAwait(false);
         if (cart is null)
         {
             return new GetCartByIdResult(null);

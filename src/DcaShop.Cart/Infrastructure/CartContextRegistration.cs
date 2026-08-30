@@ -1,3 +1,4 @@
+using DcaShop.Cart.Adapter.Incoming.Api;
 using DcaShop.Cart.Adapter.Incoming.Event;
 using DcaShop.Cart.Adapter.Outgoing.Event;
 using DcaShop.Cart.Adapter.Outgoing.Persistence;
@@ -8,6 +9,7 @@ using DcaShop.Cart.Application.CheckoutCart;
 using DcaShop.Cart.Application.CompleteCart;
 using DcaShop.Cart.Application.CreateCart;
 using DcaShop.Cart.Application.GetActiveCart;
+using DcaShop.Cart.Application.GetAllCarts;
 using DcaShop.Cart.Application.GetCartById;
 using DcaShop.Cart.Application.GetOrCreateActiveCart;
 using DcaShop.Cart.Application.RemoveItemFromCart;
@@ -36,6 +38,7 @@ public static class CartContextRegistration
         services.AddScoped<IGetOrCreateActiveCartInputPort, GetOrCreateActiveCartUseCase>();
         services.AddScoped<IGetCartByIdInputPort, GetCartByIdUseCase>();
         services.AddScoped<IGetActiveCartInputPort, GetActiveCartUseCase>();
+        services.AddScoped<IGetAllCartsInputPort, GetAllCartsUseCase>();
         services.AddScoped<IAddItemToCartInputPort, AddItemToCartUseCase>();
         services.AddScoped<IRemoveItemFromCartInputPort, RemoveItemFromCartUseCase>();
         services.AddScoped<ICheckoutCartInputPort, CheckoutCartUseCase>();
@@ -44,6 +47,9 @@ public static class CartContextRegistration
         services.AddScoped<IMergeCartsInputPort, MergeCartsUseCase>();
         services.AddScoped<IRecoverCartOnLoginInputPort, RecoverCartOnLoginUseCase>();
         services.AddScoped<EnrichedCartReader>();
+
+        // Incoming adapters
+        services.AddSingleton<ShoppingCartDtoConverter>();
 
         // Outgoing adapters (output ports)
         services.AddSingleton<IShoppingCartRepository, InMemoryShoppingCartRepository>();

@@ -8,3 +8,4 @@
 | [ADR-004](adr-004-transaction-boundary.md) | Transaction boundary via `ITransactionBoundary`, remote calls outside it | Accepted |
 | [ADR-005](adr-005-antiforgery-and-safe-methods.md) | Antiforgery token on every writing form, no state-changing `GET` | Accepted |
 | [ADR-006](adr-006-identity-and-session-cookies.md) | Two cookies for identity and session, signed by an own JWT middleware | Accepted |
+| [ADR-007](adr-007-api-authorization-and-bearer-only-boundary.md) | API authorization at the adapter, and a Bearer-only `/api` and `/mcp` | Accepted |

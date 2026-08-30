@@ -41,7 +41,7 @@ public sealed class AddItemToCartUseCase : IAddItemToCartInputPort
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
-                var cart = await _carts.FindByIdAsync(cartId, ct).ConfigureAwait(false)
+                var cart = await _carts.FindByIdForCustomerAsync(cartId, CustomerId.Of(command.CustomerId), ct).ConfigureAwait(false)
                            ?? throw new ArgumentException($"Cart not found: {cartId}", nameof(command));
                 cart.AddItem(productId, quantity, priceAtAddition);
                 await _carts.SaveAsync(cart, ct).ConfigureAwait(false);

@@ -40,7 +40,8 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
         }
 
         // Cart and article data come from other contexts (remote-capable) — outside the transaction
-        var cart = await _cartData.FindByIdAsync(cartId, cancellationToken).ConfigureAwait(false)
+        // Scoped to the caller: a cart that is not theirs is indistinguishable from one that does not exist.
+        var cart = await _cartData.FindByIdAsync(cartId, CustomerId.Of(command.CustomerId), cancellationToken).ConfigureAwait(false)
                    ?? throw new ArgumentException($"Cart not found: {cartId}", nameof(command));
         if (!cart.Active)
         {

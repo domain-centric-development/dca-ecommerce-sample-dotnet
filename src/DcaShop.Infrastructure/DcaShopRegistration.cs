@@ -1,5 +1,6 @@
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Account.Infrastructure;
+using DcaShop.Backoffice.Infrastructure;
 using DcaShop.Cart.Infrastructure;
 using DcaShop.Checkout.Infrastructure;
 using DcaShop.Infrastructure.Events;
@@ -45,6 +46,9 @@ public static class DcaShopRegistration
         services.AddProductContext();
         services.AddCartContext();
         services.AddCheckoutContext();
+
+        // Operational modules (not bounded contexts)
+        services.AddBackofficeModule(configuration);
 
         // Sample data
         services.AddHostedService<SampleDataSeeder>();

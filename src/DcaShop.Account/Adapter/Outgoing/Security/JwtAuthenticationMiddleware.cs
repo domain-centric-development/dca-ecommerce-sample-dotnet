@@ -28,6 +28,14 @@ public sealed class JwtAuthenticationMiddleware
     /// <summary>Key the resolved identity is stored under in <see cref="HttpContext.Items"/>.</summary>
     internal const string IdentityItemKey = "dcashop.identity";
 
+    /// <summary>
+    /// The paths authenticated by an <c>Authorization: Bearer</c> header and nothing else. This list and the
+    /// antiforgery exemption in <c>Program.cs</c> are two halves of one decision: these endpoints may skip the
+    /// antiforgery token <b>only</b> because no browser cookie can authenticate them. Changing one without the
+    /// other is the mistake to watch for in review (ADR-007).
+    /// </summary>
+    public static readonly string[] TokenOnlyPathPrefixes = ["/api/", "/mcp"];
+
     private const string AuthorizationHeader = "Authorization";
     private const string BearerPrefix = "Bearer ";
 
@@ -55,10 +63,19 @@ public sealed class JwtAuthenticationMiddleware
             return;
         }
 
-        var identityUserId = ResolveIdentity(context, tokenService);
-        context.Items[IdentityItemKey] =
-            await ResolveSessionAsync(context, tokenService, registeredUserValidator, identityUserId)
-                .ConfigureAwait(false);
+        if (IsTokenOnlyEndpoint(context.Request.Path))
+        {
+            context.Items[IdentityItemKey] =
+                await ResolveBearerIdentityAsync(context, tokenService, registeredUserValidator)
+                    .ConfigureAwait(false);
+        }
+        else
+        {
+            var identityUserId = ResolveIdentity(context, tokenService);
+            context.Items[IdentityItemKey] =
+                await ResolveSessionAsync(context, tokenService, registeredUserValidator, identityUserId)
+                    .ConfigureAwait(false);
+        }
 
         await _next(context).ConfigureAwait(false);
     }
@@ -125,6 +142,39 @@ public sealed class JwtAuthenticationMiddleware
 
         return valid.Identity;
     }
+
+    /// <summary>
+    /// The identity for a token-only endpoint: whatever the Bearer token says, or a throwaway anonymous identity
+    /// when there is none. No cookie is read and none is issued — that is what makes the antiforgery exemption
+    /// sound, and it is why a cross-site form post to the API arrives as a stranger.
+    /// </summary>
+    private static async Task<IIdentityProvider.IIdentity> ResolveBearerIdentityAsync(
+        HttpContext context, JwtTokenService tokenService, IRegisteredUserValidator registeredUserValidator)
+    {
+        if (BearerToken(context) is not { } token
+            || tokenService.Validate(token) is not JwtTokenService.TokenValidation.Valid valid)
+        {
+            return JwtIdentity.Anonymous(UserId.GenerateAnonymous());
+        }
+
+        if (valid.Identity.IsRegistered
+            && !await registeredUserValidator
+                .ExistsForUserIdAsync(valid.Identity.UserId, context.RequestAborted)
+                .ConfigureAwait(false))
+        {
+            return JwtIdentity.Anonymous(valid.Identity.UserId);
+        }
+
+        return valid.Identity;
+    }
+
+    /// <summary>
+    /// Whether a path is authenticated by a Bearer token alone. The antiforgery filter asks the same question,
+    /// which is what keeps the exemption and the cookie-free treatment in step.
+    /// </summary>
+    public static bool IsTokenOnlyEndpoint(PathString path) =>
+        path.Value is { } value
+        && TokenOnlyPathPrefixes.Any(prefix => value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
 
     private string? SessionToken(HttpContext context) =>
         ReadCookie(context, _options.SessionCookieName) ?? BearerToken(context);

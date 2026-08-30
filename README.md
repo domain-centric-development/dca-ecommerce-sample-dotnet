@@ -6,7 +6,7 @@ Design, Hexagonal Architecture and Clean Architecture. A small webshop built wit
 
 It ships seven bounded contexts — **Product Catalog**, **Shopping Cart**, **Checkout**, **Pricing**,
 **Inventory**, **Account**, **Portal** — with the same ubiquitous language and use cases as the Java twin
-(`dca-ecommerce-sample-java`). Backoffice, the REST API and the MCP server follow in a later stage.
+(`dca-ecommerce-sample-java`), plus the **Backoffice** operational module, the REST API and an MCP server.
 
 ## Run
 
@@ -56,6 +56,7 @@ src/
 ├── DcaShop.Inventory/           Inventory         (namespace DcaShop.Inventory)
 ├── DcaShop.Account/             Account           (namespace DcaShop.Account) — accounts, credentials, sessions
 ├── DcaShop.Portal/              Portal            (namespace DcaShop.Portal) — the landing page; a UI shell with no domain model
+├── DcaShop.Backoffice/          operational module, *not* a bounded context — the event publication log
 ├── DcaShop.Infrastructure/      composition root, outbox dispatcher (retry/backoff), sample data
 └── DcaShop.Web/                 ASP.NET Core host: Razor views, layout + mini basket, home/error pages, wwwroot (controllers live in the contexts)
 tests/
@@ -93,9 +94,9 @@ The pages are a one-to-one translation of the Java sample's Pug templates into R
 (`/products`, `/products/{id}`, `/cart`, `/cart/add-product`, POST `/checkout/start`, `/checkout/buyer` →
 `delivery` → `payment` → `review` → `confirm` → `confirmation`). The active checkout session is resolved from the
 customer, not from the URL. The account pages follow the same rule (`/login`, `/register`, POST `/logout`,
-`/account`, `/account/profile`, `/account/change-password`, `/cart/merge`). The only intended difference in the
-HTML is the antiforgery hidden field in every form. The Event Log link in the footer still leads to 404 until the
-Backoffice context arrives.
+`/account`, `/account/profile`, `/account/change-password`, `/cart/merge`), and so does the backoffice
+(`/backoffice/login`, `/backoffice/events`). The only intended difference in the HTML is the antiforgery hidden
+field in every form.
 
 ## What it demonstrates
 
@@ -121,6 +122,46 @@ Backoffice context arrives.
 | Shared-kernel port with one context's implementation | `IIdentityProvider` (shared kernel) resolved by Account's JWT middleware |
 | Async at the ports, synchronous domain | `Task<TOut> ExecuteAsync(...)` vs. plain domain methods |
 | Executable context map | `docs/context-map.md`, rendered by the architecture tests |
+| One protocol per adapter, one set of use cases | `ProductPageController` (Razor), `ProductResource` (REST), `ProductCatalogMcpToolProvider` (MCP) |
+| Operational module beside the contexts | `DcaShop.Backoffice` — no context marker, its own authentication |
+
+## API, MCP and the backoffice
+
+Three surfaces sit beside the shop pages.
+
+**REST** (`/api/**`) is authenticated by an `Authorization: Bearer` token and by **nothing else** — on those paths
+the identity middleware neither reads a cookie nor writes one, which is the only reason they may skip the
+antiforgery token (ADR-007). Authorization is stated by each resource, because the middleware enriches rather than
+gates: a request without a token is anonymous, and anonymous is still an identity.
+
+| Route | Who |
+|---|---|
+| `GET /api/products`, `GET /api/products/{id}` | anyone — the same assortment the shop pages show |
+| `POST /api/products` | staff role |
+| `GET /api/carts` (every cart in the shop) | staff role |
+| `POST /api/carts`, `GET /api/carts/{id}`, `POST /{id}/items`, `DELETE /{id}/items/{itemId}`, `POST /{id}/checkout` | the caller, on their own cart — a stranger's cart answers `404`, never `403` |
+
+Ownership is enforced by the **use cases**, not by the resource: the caller is part of the command and the
+repository is asked a scoped question, so the web pages and any future adapter inherit the same rule. The staff
+gate is the one check that stays at the edge — it reads only the token's claims, and the same use case is
+legitimate for a console with no HTTP identity at all.
+| `POST /api/auth/{login,register,logout}` | anyone; the token comes back in the body, no cookie is set |
+
+**MCP** (`/mcp`, `ModelContextProtocol.AspNetCore`) exposes the catalog as the two tools `all-products` and
+`product-by-id`, over the same input ports and the same DTO converter as the REST resources — one representation
+of a product, not two that can drift. Bearer-only, like `/api/**`.
+
+**Backoffice** (`/backoffice/events`, reachable from the footer) is an operational module, not a bounded context:
+it owns no business concept, carries no `[BoundedContext]` marker and does not appear in the context map. It signs
+operators in under its own cookie scheme with its own credentials (`admin`/`admin` by default, `Backoffice`
+section in `appsettings.json`) — a staff session and a shopper session must never be the same cookie.
+
+> **What the event log actually shows.** The Java sample reads Spring Modulith's `EVENT_PUBLICATION` table: one
+> row per *domain* event per listener, completed when that listener returned. This shop has no such registry — its
+> domain events are dispatched in-process and leave no record. What it does keep is the **integration-event
+> outbox**: one row per integration event, with a status, an attempt count and the last error. The page shows the
+> same three numbers (total / completed / incomplete) and the same `data-test` hooks, so the Java browser suite
+> passes against it, but the underlying record is not the same one.
 
 ## Context map
 
@@ -141,6 +182,9 @@ This is an architecture sample, not a production template. Three pieces are inte
 - **The integration-event outbox is in-memory**: at-least-once delivery with retries and a visible `Failed` state,
   but durable only within the process — a restart loses outstanding publications; see ADR-002 for the
   database-backed variant.
+- **The staff role has no provisioning path.** `Role.Staff` guards the operator routes of the API, but no
+  registration grants it — the tests mint such a token out of band. Authorization also lives in each resource
+  rather than in a policy the pipeline enforces; see ADR-007.
 - **No refresh token.** The session cookie's lifetime is the blast radius of a stolen token: there is no
   revocation and no theft detection. ADR-006 records the three-cookie design this stops short of, and why.
 

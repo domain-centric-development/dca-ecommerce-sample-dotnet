@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.RegularExpressions;
-using DcaShop.Cart.Api;
+using DcaShop.Cart.Application.Shared;
+using DcaShop.Cart.Domain.Model;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -69,9 +70,12 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
         // Cross-context, eventually consistent: the cart completes via CheckoutConfirmedEvent → ICartCompletionTrigger
         await Eventually(async () =>
         {
+            // Read through the repository, not the Open Host Service: the assertion is about the system's own
+            // state after an event, and there is no caller here whose cart this would be.
             using var scope = _factory.Services.CreateScope();
-            var snapshot = await scope.ServiceProvider.GetRequiredService<CartService>().FindCartByIdAsync(Guid.Parse(cartId));
-            return snapshot is { Active: false };
+            var cart = await scope.ServiceProvider.GetRequiredService<IShoppingCartRepository>()
+                .FindByIdAsync(new CartId(Guid.Parse(cartId)));
+            return cart is { IsActive: false };
         });
 
         // A new, empty cart is handed out afterwards

@@ -73,7 +73,7 @@ public sealed class CheckoutPageController : Controller
     {
         try
         {
-            await _start.ExecuteAsync(new StartCheckoutCommand(cartId), cancellationToken);
+            await _start.ExecuteAsync(new StartCheckoutCommand(cartId, CurrentCustomerId()), cancellationToken);
             return Redirect("/checkout/buyer");
         }
         catch (Exception e) when (e is ArgumentException or InvalidOperationException)

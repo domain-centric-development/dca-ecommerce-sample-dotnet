@@ -1,3 +1,5 @@
+using DcaShop.Product.Adapter.Incoming.Api;
+using DcaShop.Product.Adapter.Incoming.Mcp;
 using DcaShop.Product.Adapter.Outgoing.Event;
 using DcaShop.Product.Adapter.Outgoing.Inventory;
 using DcaShop.Product.Adapter.Outgoing.Persistence;
@@ -32,6 +34,15 @@ public static class ProductContextRegistration
         services.AddScoped<IPricingDataPort, PricingDataAdapter>();
         services.AddScoped<IProductStockDataPort, InventoryStockDataAdapter>();
         services.AddScoped<IEventListener, ProductCreatedEventPublisher>();
+
+        // Incoming adapters
+        services.AddSingleton<ProductDtoConverter>();
+
+        // The catalog as MCP tools. The transport is HTTP; the host maps it at /mcp.
+        services
+            .AddMcpServer()
+            .WithHttpTransport()
+            .WithTools<ProductCatalogMcpToolProvider>();
 
         // Published API
         services.AddScoped<ProductCatalogService>();

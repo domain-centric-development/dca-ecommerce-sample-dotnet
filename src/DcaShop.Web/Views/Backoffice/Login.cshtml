@@ -1,0 +1,29 @@
+@model DcaShop.Backoffice.Adapter.Incoming.Web.BackofficeLoginViewModel
+@{ ViewData["Title"] = "Backoffice Login"; }
+<div class="auth">
+<div class="auth__card">
+<h2 class="auth__title">Backoffice Login</h2>
+@if (Model.ShowLogout)
+{
+<div class="alert alert--success" data-test="logout-message">You have been logged out.</div>
+}
+@if (Model.ShowError)
+{
+<div class="alert alert--error" data-test="login-error-message">Invalid username or password.</div>
+}
+<form class="auth__form" method="POST" action="/backoffice/login" data-test="backoffice-login-form">
+@Html.AntiForgeryToken()
+<div class="form__group">
+<label class="form__label" for="username">Username</label>
+<input class="form__input" id="username" type="text" name="username" required autofocus placeholder="admin" data-test="backoffice-username-input">
+</div>
+<div class="form__group">
+<label class="form__label" for="password">Password</label>
+<input class="form__input" id="password" type="password" name="password" required placeholder="Enter password" data-test="backoffice-password-input">
+</div>
+<div class="form__actions">
+<button class="btn btn--primary btn--full-width" type="submit" data-test="backoffice-login-submit">Login</button>
+</div>
+</form>
+</div>
+</div>

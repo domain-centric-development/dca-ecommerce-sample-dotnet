@@ -29,17 +29,22 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
 ## Structure and conventions
 
 - Root namespace `DcaShop`; one **project per bounded context** (`DcaShop.Product`, `DcaShop.Cart`,
-  `DcaShop.Checkout`, `DcaShop.Pricing`, `DcaShop.Inventory`), plus `DcaShop.SharedKernel`, `DcaShop.Infrastructure`, `DcaShop.Web`.
+  `DcaShop.Checkout`, `DcaShop.Pricing`, `DcaShop.Inventory`, `DcaShop.Account`, `DcaShop.Portal`), plus
+  `DcaShop.SharedKernel`, `DcaShop.Infrastructure`, `DcaShop.Web` and `DcaShop.Backoffice` — the last an
+  **operational module, not a context**: no `[BoundedContext]` marker, absent from the context map.
 - A context is declared by a marker class in its root namespace (`CartContext`) carrying `[BoundedContext]`
   and the context-map attributes (`[Upstream]`, `[ExternalUpstream]`, `[Partnership]`). Context references in
   those attributes use the namespace segment (`"Product"`, `"Cart"`).
 - Layers are folders/namespaces: `Domain/Model`, `Domain/Event`, `Domain/Service`, `Application/<UseCase>/`,
   `Application/Shared/` (output ports only), `Adapter/Incoming/{Web,Event}`, `Adapter/Outgoing/<Concern>/`,
+  `Adapter/Incoming/Api` (REST resources + their DTOs and converters), `Adapter/Incoming/Mcp` (MCP tools),
   `Api/` (Open Host Service), `Events/` (integration events, consumer-defined trigger interfaces),
   `Infrastructure/` (DI registration `Add<Context>Context()`).
 - Naming: `I<Name>InputPort : IUseCase<TCommand|TQuery, TResult>`, `<Name>UseCase`, `<Name>Command` (writes) /
   `<Name>Query` (reads), `<Name>Result`; repositories `I<Aggregate>Repository` / `InMemory<Aggregate>Repository`;
-  web adapters `*PageController` + `*PageViewModel`; event adapters `*EventConsumer` (incoming) and
+  web adapters `*PageController` + `*PageViewModel`; REST adapters `*Resource` (`[ApiController]`,
+  `Adapter/Incoming/Api/`) — the layout's `RestControllerSuffix` is set to `Resource` in `ArchitectureRulesTest`
+  so `DCA-NAM-006` enforces the Java sample's name rather than the .NET default `Controller`; event adapters `*EventConsumer` (incoming) and
   `*EventPublisher` (domain → integration relay, outgoing); domain events in past tense, integration events
   with the `Event` suffix and `[IntegrationEventType]`.
 - Ports and use cases are **async only** (`Task<TOut> ExecuteAsync(TIn, CancellationToken)`, `*Async` methods);
@@ -49,14 +54,15 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
 - Events: domain events are dispatched in-process synchronously (`InProcessDomainEventPublisher`);
   integration events are registered in `IIntegrationEventOutbox` inside the use case's transaction, released after commit and delivered by `IntegrationEventDispatcherService`
   — asynchronous, after the publishing use case finished, at least once with retry/backoff; consumers are idempotent. Listeners implement `EventListener<TEvent>` and are registered as `IEventListener`.
-- E2E: `tests/DcaShop.E2eTests` is a one-to-one port of the Java `src/test-e2e` page objects and
-  `CheckoutGuestE2ETest` (same `data-test` selectors, same scenario names). Either suite runs against either shop
+- E2E: `tests/DcaShop.E2eTests` is a one-to-one port of the Java `src/test-e2e` page objects and suites
+  (`CheckoutGuestE2ETest`, `CheckoutLoginE2ETest`, `CartMergeE2ETest`, `BackofficeE2ETest` — 15 scenarios, same
+  `data-test` selectors, same scenario names). Either suite runs against either shop
   (`./gradlew test-e2e -De2e.baseUrl=http://localhost:5080` in the Java repo; `E2E_BASE_URL=http://localhost:8080`
   here). Keep selectors and scenarios in sync with the Java suite.
 - Views mirror the Java sample's Pug templates one to one (classes, `data-test` attributes, routes, seed data);
   `wwwroot/css/main.css` and `wwwroot/images/products/` are copies of the Java static assets — keep them in sync
-  when the Java UI changes. Host-level `HomePageController`/`ErrorPageController`/`MiniBasketViewComponent`
-  stand in for the Portal context until stage 2.
+  when the Java UI changes. `ErrorPageController` and `MiniBasketViewComponent` stay in the web host; the
+  backoffice views live there too (`Views/Backoffice/`), rendered by `DcaShop.Backoffice`'s page controller.
 - Transactions: writing use cases wrap load → mutate → `SaveAsync` → `PublishAndClearEventsAsync` in
   `ITransactionBoundary.InTransactionAsync`; ports that may leave the process (other contexts' data ports, payment providers) are
   called **before** the unit of work, never inside it (ADR-004). Read use cases run without one.
@@ -66,12 +72,27 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
   `shop-identity` (who the browser is, 30 days, rotated only on explicit logout) and `shop-session` (the
   authentication, 7 days, expiry harmless). Expiry ends the session, never the identity, so an aged-out login
   never costs the cart. The middleware enriches, it does not gate: a page decides who may see it (ADR-006).
+- API surface: `/api/**` and `/mcp` are **Bearer only** — on those paths the middleware reads no cookie and
+  writes none, which is the sole reason `TokenOnlyAwareAntiforgeryFilter` may exempt them from the antiforgery
+  token. The path list lives in `JwtAuthenticationMiddleware.TokenOnlyPathPrefixes` and the filter asks it;
+  never give one half a list of its own.
+- Authorization: **a guard goes where its inputs are** (ADR-007), not where it feels "business" or "technical".
+  A claims-only gate may sit in the adapter — `POST /api/products` and `GET /api/carts` are staff-only there,
+  because that is a property of the exposure. An **ownership** check never may: the caller is part of the command
+  (`GetCartByIdQuery(CartId, CustomerId)`, `CheckoutCartCommand`, `StartCheckoutCommand`) and the use case asks
+  `IShoppingCartRepository.FindByIdForCustomerAsync`, not `FindByIdAsync` plus an `if`. Cart's Open Host Service
+  demands the customer too, so Checkout inherits the rule. `FindByIdAsync` stays for the system paths that act on
+  nobody's behalf (`CompleteCart`, from an integration event). The refusal is *rendered* at the edge: a stranger's
+  cart answers `404`, never `403`.
+- The backoffice has its **own** cookie scheme and its own credentials (`BackofficeOptions`, defaults
+  `admin`/`admin`). A staff session and a shopper session are never the same cookie.
 
 ## Stand-ins still in place (remove when the contexts arrive)
 
-- Backoffice is missing, and with it the REST API and the MCP server: the Event-Log link in the footer leads
-  to 404. `ErrorPageController` and `MiniBasketViewComponent` stay in the web host on purpose — the error page
-  belongs to no context, and the mini basket composes the Cart's Api into the shared layout.
+- `ErrorPageController` and `MiniBasketViewComponent` stay in the web host on purpose — the error page belongs
+  to no context, and the mini basket composes the Cart's Api into the shared layout.
+- The staff role has no provisioning path: nothing grants `Role.Staff`, so an operator token is minted out of
+  band (the tests do it through `JwtTokenService`). Deliberate for a sample; ADR-007 records it.
 - No refresh token (`shop-refresh`): no revocation, no theft detection, the session lifetime is the blast
   radius. Deliberate and shared with the Java sample; ADR-006 records the design it stops short of.
 - Pricing and Inventory arrived in stage 2a: the Product Catalog's `IPricingDataPort` / `IProductStockDataPort`
@@ -82,6 +103,11 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
   `IPriceInitializationTrigger` (Pricing) and `IStockInitializationTrigger` (Inventory) — implemented by
   `ProductCreatedEvent`. The Java sample calls the Pricing/Inventory Api directly from its seeder instead
   (root `TODO.md` #11); it is to be brought to this shape.
+- Backoffice, the REST API and MCP arrived in stage 2c: the footer's Event Log link is live, `/api/**` carries
+  the resources of Product, Cart and Account, and `/mcp` exposes the catalog as the tools `all-products` and
+  `product-by-id`. The event log is built from the **integration-event outbox**, not from a per-listener domain
+  event registry as in Java — the numbers mean the same thing to an operator but count different things, and the
+  README and `OutboxEventPublicationLogStore` both say so.
 - Account and Portal arrived in stage 2b: `GuestCustomer` and the `dcashop-customer` cookie are gone, the
   landing page moved out of the host into `DcaShop.Portal`, and after a login the Cart context decides for
   itself whether carts have to be merged (`/cart/merge`) or the guest cart simply recovered — Account never

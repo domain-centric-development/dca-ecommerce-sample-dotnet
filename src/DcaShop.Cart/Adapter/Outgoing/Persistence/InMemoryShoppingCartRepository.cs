@@ -23,6 +23,12 @@ public sealed class InMemoryShoppingCartRepository : IShoppingCartRepository
         return Task.CompletedTask;
     }
 
+    public Task<ShoppingCart?> FindByIdForCustomerAsync(CartId id, CustomerId customerId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_carts.TryGetValue(id, out var cart) && cart.CustomerId == customerId ? cart : null);
+
+    public Task<IReadOnlyList<ShoppingCart>> FindAllAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<ShoppingCart>>(_carts.Values.ToList());
+
     public Task<ShoppingCart?> FindActiveByCustomerAsync(CustomerId customerId, CancellationToken cancellationToken = default) =>
         Task.FromResult(_carts.Values.FirstOrDefault(c => c.CustomerId == customerId && c.IsActive));
 }

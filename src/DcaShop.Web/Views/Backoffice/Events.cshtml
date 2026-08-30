@@ -1,0 +1,82 @@
+@model DcaShop.Backoffice.Adapter.Incoming.Web.EventPublicationPageViewModel
+@{ ViewData["Title"] = "Event Publication Log"; }
+<div class="event-log__header">
+<div class="breadcrumb" data-test="breadcrumb">
+<a class="breadcrumb__link" href="/">Home</a>
+<span class="breadcrumb__separator">/</span>
+<span class="breadcrumb__current">Event Publication Log</span>
+</div>
+<div class="event-log__actions">
+<a class="btn btn--secondary btn--sm" href="/backoffice/events" data-test="event-log-refresh">Refresh</a>
+<form class="event-log__logout-form" method="POST" action="/backoffice/logout" data-test="event-log-logout-form">
+@Html.AntiForgeryToken()
+<button class="btn btn--secondary btn--sm" type="submit" data-test="event-log-logout">Logout</button>
+</form>
+</div>
+</div>
+<h1>Event Publication Log</h1>
+<div class="event-log" data-test="event-log">
+<div class="event-log__summary" data-test="event-log-summary">
+<div class="event-log__stat-card">
+<div class="event-log__stat-value" data-test="event-log-total">@Model.TotalEvents</div>
+<div class="event-log__stat-label">Total Events</div>
+</div>
+<div class="event-log__stat-card event-log__stat-card--success">
+<div class="event-log__stat-value" data-test="event-log-completed">@Model.CompletedCount</div>
+<div class="event-log__stat-label">Completed</div>
+</div>
+<div class="event-log__stat-card event-log__stat-card--warning">
+<div class="event-log__stat-value" data-test="event-log-incomplete">@Model.IncompleteCount</div>
+<div class="event-log__stat-label">Incomplete</div>
+</div>
+</div>
+@if (Model.TotalEvents > 0)
+{
+<div class="event-log__list" data-test="event-log-list">
+@foreach (var item in Model.Events)
+{
+<div class="event-log__item" data-test="event-log-item">
+<div class="event-log__item-header">
+<span class="event-log__event-type" data-test="event-type">@item.ShortEventType</span>
+@if (item.Completed)
+{
+<span class="event-log__badge event-log__badge--completed" data-test="event-status">Completed</span>
+}
+else
+{
+<span class="event-log__badge event-log__badge--incomplete" data-test="event-status">Incomplete</span>
+}
+</div>
+<div class="event-log__item-details">
+<div class="event-log__detail">
+<span class="event-log__detail-label">Listener</span>
+<span class="event-log__detail-value" data-test="event-listener">@item.ListenerId</span>
+</div>
+<div class="event-log__detail">
+<span class="event-log__detail-label">Published</span>
+<span class="event-log__detail-value" data-test="event-publication-date">@item.PublicationDate</span>
+</div>
+@if (item.CompletionDate is { } completedOn)
+{
+<div class="event-log__detail">
+<span class="event-log__detail-label">Completed</span>
+<span class="event-log__detail-value" data-test="event-completion-date">@completedOn</span>
+</div>
+}
+</div>
+<details class="event-log__payload" data-test="event-payload">
+<summary class="event-log__payload-toggle">Event Payload</summary>
+<pre class="event-log__payload-content">@item.SerializedEvent</pre>
+</details>
+</div>
+}
+</div>
+}
+else
+{
+<div class="empty-state">
+<p class="empty-state__title">No events published yet</p>
+<p class="empty-state__message">Events will appear here as the application processes domain events.</p>
+</div>
+}
+</div>

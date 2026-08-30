@@ -14,6 +14,7 @@ public sealed class ContextMapDocumentationTest
             layout,
             typeof(SharedKernel.SharedKernelContext).Assembly,
             typeof(Account.AccountContext).Assembly,
+            typeof(Backoffice.BackofficeModule).Assembly,
             typeof(Portal.PortalContext).Assembly,
             typeof(Pricing.PricingContext).Assembly,
             typeof(Inventory.InventoryContext).Assembly,

@@ -37,7 +37,7 @@ public sealed class CartPageController : Controller
     public async Task<IActionResult> Show(CancellationToken cancellationToken)
     {
         var cartId = await ActiveCartIdAsync(cancellationToken);
-        var result = await _getCartById.ExecuteAsync(new GetCartByIdQuery(cartId), cancellationToken);
+        var result = await _getCartById.ExecuteAsync(new GetCartByIdQuery(cartId, CurrentCustomerId), cancellationToken);
         return result.Cart is { } cart ? View("~/Views/Cart/View.cshtml", ToViewModel(cart)) : NotFound();
     }
 
@@ -47,7 +47,7 @@ public sealed class CartPageController : Controller
         var cartId = await ActiveCartIdAsync(cancellationToken);
         try
         {
-            await _addItemToCart.ExecuteAsync(new AddItemToCartCommand(cartId, productId, quantity), cancellationToken);
+            await _addItemToCart.ExecuteAsync(new AddItemToCartCommand(cartId, CurrentCustomerId, productId, quantity), cancellationToken);
             TempData["Message"] = "Product added to cart!";
         }
         catch (Exception e) when (e is ArgumentException or InvalidOperationException)
@@ -58,10 +58,11 @@ public sealed class CartPageController : Controller
         return RedirectToAction(nameof(Show));
     }
 
+    private string CurrentCustomerId => _identityProvider.GetCurrentIdentity().UserId.Value;
+
     private async Task<Guid> ActiveCartIdAsync(CancellationToken cancellationToken)
     {
-        var customerId = _identityProvider.GetCurrentIdentity().UserId.Value;
-        var result = await _getOrCreateActiveCart.ExecuteAsync(new GetOrCreateActiveCartCommand(customerId), cancellationToken);
+        var result = await _getOrCreateActiveCart.ExecuteAsync(new GetOrCreateActiveCartCommand(CurrentCustomerId), cancellationToken);
         return result.CartId;
     }
 

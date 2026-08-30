@@ -1,4 +1,3 @@
-using DcaShop.Cart.Application.CheckoutCart;
 using DcaShop.Cart.Application.CompleteCart;
 using DcaShop.Cart.Application.GetActiveCart;
 using DcaShop.Cart.Application.GetCartById;
@@ -8,20 +7,18 @@ using DomainCentric.BuildingBlocks.Ddd.Strategic.Relationships;
 
 namespace DcaShop.Cart.Api;
 
-/// <summary>Open Host Service of the Shopping Cart: cart snapshots and lifecycle operations for other contexts (primarily Checkout).</summary>
-[OpenHostService("Shopping Cart", Description = "Provides cart data and checkout operations for other bounded contexts")]
+/// <summary>Open Host Service of the Shopping Cart: cart snapshots for other contexts (primarily Checkout), and completion after a confirmed checkout.</summary>
+[OpenHostService("Shopping Cart", Description = "Provides cart data and cart completion for other bounded contexts")]
 public sealed class CartService
 {
     private readonly IGetCartByIdInputPort _getCartById;
     private readonly IGetActiveCartInputPort _getActiveCart;
-    private readonly ICheckoutCartInputPort _checkoutCart;
     private readonly ICompleteCartInputPort _completeCart;
 
-    public CartService(IGetCartByIdInputPort getCartById, IGetActiveCartInputPort getActiveCart, ICheckoutCartInputPort checkoutCart, ICompleteCartInputPort completeCart)
+    public CartService(IGetCartByIdInputPort getCartById, IGetActiveCartInputPort getActiveCart, ICompleteCartInputPort completeCart)
     {
         _getCartById = getCartById;
         _getActiveCart = getActiveCart;
-        _checkoutCart = checkoutCart;
         _completeCart = completeCart;
     }
 
@@ -50,9 +47,14 @@ public sealed class CartService
             cart.CurrentSubtotal.ToString());
     }
 
-    public async Task<CartSnapshot?> FindCartByIdAsync(Guid cartId, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// One customer's cart — <see langword="null"/> when it does not exist or is not theirs. A consuming context
+    /// has to name the customer it is acting for; that is what keeps the ownership rule in the context that owns
+    /// carts instead of in every caller.
+    /// </summary>
+    public async Task<CartSnapshot?> FindCartByIdAsync(Guid cartId, string customerId, CancellationToken cancellationToken = default)
     {
-        var result = await _getCartById.ExecuteAsync(new GetCartByIdQuery(cartId), cancellationToken).ConfigureAwait(false);
+        var result = await _getCartById.ExecuteAsync(new GetCartByIdQuery(cartId, customerId), cancellationToken).ConfigureAwait(false);
         if (result.Cart is not { } cart)
         {
             return null;
@@ -62,9 +64,10 @@ public sealed class CartService
         return new CartSnapshot(cart.CartId.Value, cart.CustomerId.Value, items, cart.Status == CartStatus.Active);
     }
 
-    public Task MarkAsCheckedOutAsync(Guid cartId, CancellationToken cancellationToken = default) =>
-        _checkoutCart.ExecuteAsync(new CheckoutCartCommand(cartId), cancellationToken);
-
+    /// <summary>
+    /// Completes a cart after a confirmed checkout. Unscoped on purpose: this one acts on nobody's behalf — it is
+    /// the system reacting to its own event, delivered at least once, with no caller to check.
+    /// </summary>
     public Task CompleteCartAsync(Guid cartId, CancellationToken cancellationToken = default) =>
         _completeCart.ExecuteAsync(new CompleteCartCommand(cartId), cancellationToken);
 }
