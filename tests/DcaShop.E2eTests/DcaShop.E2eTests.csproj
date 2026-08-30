@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- Same Playwright release as the Java sample's suite, so both drive the same browser builds. -->
+    <PackageReference Include="Microsoft.Playwright" Version="1.50.0" />
+  </ItemGroup>
+</Project>

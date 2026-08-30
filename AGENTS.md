@@ -16,6 +16,7 @@ dotnet test                              # everything
 dotnet test tests/DcaShop.ArchitectureTests   # DCA rule catalog (Debug build required)
 dotnet test tests/DcaShop.UnitTests --filter "FullyQualifiedName~ShoppingCart"
 dotnet run --project src/DcaShop.Web     # http://localhost:5080
+E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests   # Playwright; skipped without E2E_BASE_URL
 ```
 
 The architecture tests also (re)generate `docs/context-map.md` — commit it with the change that caused it.
@@ -48,6 +49,10 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
 - Events: domain events are dispatched in-process synchronously (`InProcessDomainEventPublisher`);
   integration events are registered in `IIntegrationEventOutbox` and delivered by `IntegrationEventDispatcherService`
   — asynchronous, after the publishing use case finished, at least once with retry/backoff; consumers are idempotent. Listeners implement `EventListener<TEvent>` and are registered as `IEventListener`.
+- E2E: `tests/DcaShop.E2eTests` is a one-to-one port of the Java `src/test-e2e` page objects and
+  `CheckoutGuestE2ETest` (same `data-test` selectors, same scenario names). Either suite runs against either shop
+  (`./gradlew test-e2e -De2e.baseUrl=http://localhost:5080` in the Java repo; `E2E_BASE_URL=http://localhost:8080`
+  here). Keep selectors and scenarios in sync with the Java suite.
 - Views mirror the Java sample's Pug templates one to one (classes, `data-test` attributes, routes, seed data);
   `wwwroot/css/main.css` and `wwwroot/images/products/` are copies of the Java static assets — keep them in sync
   when the Java UI changes. Host-level `HomePageController`/`ErrorPageController`/`MiniBasketViewComponent`

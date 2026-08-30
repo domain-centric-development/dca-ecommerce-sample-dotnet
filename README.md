@@ -27,6 +27,20 @@ confirmation). All state is in memory; restarting resets the shop.
 Until the packages are published on NuGet, the sibling checkout `../dca-dotnet` is referenced as projects
 (see `Directory.Build.props`); without it the `PackageReference`s are used.
 
+## End-to-end tests
+
+`tests/DcaShop.E2eTests` drives the shop through a real browser (Playwright, page objects, `data-test`
+selectors). They are skipped unless the shop's address is given:
+
+```bash
+dotnet run --project src/DcaShop.Web &                      # or any other running instance
+E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests
+```
+
+`E2E_BROWSER` (`chromium` | `firefox` | `webkit`) and `E2E_HEADLESS=false` are honoured. Because the markup is the
+same as the Java sample's, the suite passes against either shop — the browser tests are the language-neutral
+acceptance test of the architecture.
+
 ## Solution layout
 
 One assembly per bounded context, one for the shared kernel, one for global infrastructure, one web host:
@@ -42,7 +56,8 @@ src/
 tests/
 ├── DcaShop.UnitTests/           aggregate and value-object tests
 ├── DcaShop.IntegrationTests/    browse → cart → checkout through the HTTP pipeline (WebApplicationFactory)
-└── DcaShop.ArchitectureTests/   the DCA rule catalog + the executable context map
+├── DcaShop.ArchitectureTests/   the DCA rule catalog + the executable context map
+└── DcaShop.E2eTests/            Playwright browser tests with page objects (run against a started shop)
 ```
 
 Inside a context project the folders are the DCA layers:
