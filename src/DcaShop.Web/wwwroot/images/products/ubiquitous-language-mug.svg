@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fef2f2"/>
+      <stop offset="100%" style="stop-color:#fee2e2"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)" rx="8"/>
+  <!-- Handle -->
+  <path d="M272 176 Q322 176 322 216 Q322 256 272 256" fill="none" stroke="#e2e8f0" stroke-width="20" stroke-linecap="round"/>
+  <path d="M272 176 Q322 176 322 216 Q322 256 272 256" fill="none" stroke="#cbd5e1" stroke-width="10" stroke-linecap="round"/>
+  <!-- Body -->
+  <path d="M96 140 L280 140 L268 300 Q266 314 252 314 L124 314 Q110 314 108 300 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <!-- Coffee surface -->
+  <ellipse cx="188" cy="140" rx="92" ry="16" fill="#e2e8f0"/>
+  <ellipse cx="188" cy="140" rx="80" ry="11" fill="#78350f"/>
+  <!-- Print: the word, spoken by everyone -->
+  <rect x="126" y="196" width="124" height="7" rx="3.5" fill="#0f766e" opacity="0.85"/>
+  <rect x="140" y="214" width="96" height="5" rx="2.5" fill="#0f766e" opacity="0.5"/>
+  <g fill="#0f766e" opacity="0.35">
+    <circle cx="150" cy="248" r="9"/>
+    <circle cx="188" cy="248" r="9"/>
+    <circle cx="226" cy="248" r="9"/>
+  </g>
+  <!-- Steam -->
+  <g stroke="#94a3b8" stroke-width="3" fill="none" opacity="0.6" stroke-linecap="round">
+    <path d="M160 112 Q172 96 160 78"/>
+    <path d="M196 108 Q208 90 196 70"/>
+    <path d="M232 112 Q244 96 232 78"/>
+  </g>
+  <!-- Category label -->
+  <text x="200" y="352" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#64748b" font-weight="500">Desk &amp; Office</text>
+</svg>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fdf4ff"/>
+      <stop offset="100%" style="stop-color:#f5d0fe"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)" rx="8"/>
+  <!-- Pin shadow -->
+  <ellipse cx="200" cy="306" rx="72" ry="12" fill="#1e1b4b" opacity="0.12"/>
+  <!-- Enamel body: a bounded context, drawn as a hexagon with a hard border -->
+  <path d="M200 78 L296 134 L296 246 L200 302 L104 246 L104 134 Z" fill="#a21caf" stroke="#fbbf24" stroke-width="7"/>
+  <!-- Enamel fill fields -->
+  <path d="M200 116 L262 152 L262 224 L200 260 L138 224 L138 152 Z" fill="#86198f"/>
+  <!-- Inner model -->
+  <circle cx="200" cy="188" r="30" fill="none" stroke="#fbbf24" stroke-width="5"/>
+  <circle cx="200" cy="188" r="12" fill="#fbbf24"/>
+  <!-- Ports on the boundary -->
+  <g fill="#fbbf24">
+    <rect x="128" y="178" width="14" height="20" rx="3"/>
+    <rect x="258" y="178" width="14" height="20" rx="3"/>
+    <rect x="190" y="108" width="20" height="14" rx="3"/>
+  </g>
+  <!-- Glossy highlight -->
+  <path d="M200 78 L296 134 L296 152 L200 96 L104 152 L104 134 Z" fill="#ffffff" opacity="0.18"/>
+  <!-- Category label -->
+  <text x="200" y="352" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#64748b" font-weight="500">Stickers &amp; Pins</text>
+</svg>

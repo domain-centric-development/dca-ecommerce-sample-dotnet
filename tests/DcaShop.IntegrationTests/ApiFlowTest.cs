@@ -150,7 +150,7 @@ public sealed class ApiFlowTest : IClassFixture<WebApplicationFactory<Program>>
             description = "Created through the REST API",
             imageUrl = "",
             price = 19.99m,
-            category = "Electronics",
+            category = "Books",
             stock = 5,
         }),
         Encoding.UTF8,

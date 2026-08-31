@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f5f5f4"/>
+      <stop offset="100%" style="stop-color:#e7e5e4"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)" rx="8"/>
+
+  <!-- Shadow -->
+  <ellipse cx="200" cy="322" rx="96" ry="13" fill="#1c1917" opacity="0.12"/>
+  <!-- Walnut base: a slab with visible thickness -->
+  <path d="M120 286 L280 286 L280 300 L272 312 L128 312 L120 300 Z" fill="#5b2c0c"/>
+  <path d="M120 286 L280 286 L272 276 L128 276 Z" fill="#78350f"/>
+  <!-- Hexagon standing in the base -->
+  <path d="M200 84 L288 136 L288 224 L200 276 L112 224 L112 136 Z" fill="#d97706" stroke="#92400e" stroke-width="2.5"/>
+  <!-- Vertical wood grain -->
+  <g stroke="#92400e" stroke-width="1.5" opacity="0.22">
+    <line x1="152" y1="122" x2="152" y2="248"/>
+    <line x1="176" y1="106" x2="176" y2="262"/>
+    <line x1="224" y1="106" x2="224" y2="262"/>
+    <line x1="248" y1="122" x2="248" y2="248"/>
+  </g>
+  <!-- Engraved boundary and the domain at its centre -->
+  <path d="M200 132 L254 164 L254 196 L200 228 L146 196 L146 164 Z" fill="none" stroke="#7c2d12" stroke-width="3" opacity="0.65"/>
+  <circle cx="200" cy="180" r="13" fill="#7c2d12" opacity="0.6"/>
+  <!-- Port notches, cut into three edges -->
+  <g fill="#7c2d12" opacity="0.7">
+    <rect x="106" y="172" width="14" height="16" rx="3"/>
+    <rect x="280" y="172" width="14" height="16" rx="3"/>
+    <rect x="193" y="78" width="14" height="16" rx="3"/>
+  </g>
+  <!-- Category label -->
+  <text x="200" y="352" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#64748b" font-weight="500">Desk &amp; Office</text>
+</svg>

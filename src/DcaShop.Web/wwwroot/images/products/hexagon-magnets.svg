@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e0e7ff"/>
+      <stop offset="100%" style="stop-color:#c7d2fe"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)" rx="8"/>
+  <!-- Whiteboard -->
+  <rect x="45" y="70" width="310" height="230" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+  <!-- Hexagon magnets in a honeycomb -->
+  <g stroke="#ffffff" stroke-width="2">
+    <path d="M120 110 L148 126 L148 158 L120 174 L92 158 L92 126 Z" fill="#2563eb"/>
+    <path d="M180 110 L208 126 L208 158 L180 174 L152 158 L152 126 Z" fill="#0ea5e9"/>
+    <path d="M240 110 L268 126 L268 158 L240 174 L212 158 L212 126 Z" fill="#14b8a6"/>
+    <path d="M150 166 L178 182 L178 214 L150 230 L122 214 L122 182 Z" fill="#f59e0b"/>
+    <path d="M210 166 L238 182 L238 214 L210 230 L182 214 L182 182 Z" fill="#ef4444"/>
+    <path d="M180 222 L208 238 L208 270 L180 286 L152 270 L152 238 Z" fill="#8b5cf6"/>
+  </g>
+  <!-- Category label -->
+  <text x="200" y="340" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#64748b" font-weight="500">Modeling</text>
+</svg>

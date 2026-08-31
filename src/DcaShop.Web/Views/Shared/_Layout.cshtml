@@ -5,14 +5,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="DCA Commerce — A curated collection of premium products, delivered with care.">
-<title>@(ViewData["Title"] ?? "DCA Commerce")</title>
+<meta name="description" content="domaincentric.commerce — A curated collection of premium products, delivered with care.">
+<title>@(ViewData["Title"] ?? "domaincentric.commerce")</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Sans:wght@400..700&family=Inter:wght@300..700&family=Nunito+Sans:ital,wght@0,300..700;1,300..700&family=Space+Grotesk:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Sans:wght@400..700&family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Nunito+Sans:ital,wght@0,300..700;1,300..700&family=Space+Grotesk:wght@400..700&display=swap">
 <link rel="stylesheet" href="/css/main.css">
-<script>(function(){var t=localStorage.getItem('dca-theme');if(t&&t!=='organic')document.documentElement.setAttribute('data-theme',t)})();</script>
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Sans:wght@400..700&family=Inter:wght@300..700&family=Nunito+Sans:ital,wght@0,300..700;1,300..700&family=Space+Grotesk:wght@400..700&display=swap"></noscript>
+<script>(function(){var t=localStorage.getItem('dca-theme');if(t&&t!=='blueprint')document.documentElement.setAttribute('data-theme',t)})();</script>
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Sans:wght@400..700&family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Nunito+Sans:ital,wght@0,300..700;1,300..700&family=Space+Grotesk:wght@400..700&display=swap"></noscript>
 </head>
 <body>
 <div class="stack-ribbon stack-ribbon--dotnet" aria-hidden="true" data-test="stack-ribbon">
@@ -20,7 +20,7 @@
 </div>
 <header class="site-header" data-test="site-header">
 <div class="site-header__inner">
-<a class="site-header__logo" href="/" data-test="site-logo">DCA Commerce</a>
+<a class="site-header__logo" href="/" data-test="site-logo"><svg class="site-header__mark" viewBox="0 0 120 120" width="30" height="30" fill="none" aria-hidden="true" focusable="false"><polygon points="60,20 94.6,40 94.6,80 60,100 25.4,80 25.4,40" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/><circle cx="60" cy="20" r="9" fill="currentColor"/><circle cx="94.6" cy="40" r="9" fill="currentColor"/><circle cx="94.6" cy="80" r="9" fill="currentColor"/><circle cx="60" cy="100" r="9" fill="currentColor"/><circle cx="25.4" cy="80" r="9" fill="currentColor"/><circle cx="25.4" cy="40" r="9" fill="currentColor"/><circle class="site-header__mark-core" cx="60" cy="60" r="14"/></svg><span class="site-header__wordmark">domaincentric<span class="brand-tld">.commerce</span></span></a>
 <nav class="nav" aria-label="Main navigation">
 <ul class="nav__list">
 <li class="nav__item"><a class="nav__link" href="/" data-test="nav-home-link">Home</a></li>
@@ -64,11 +64,12 @@ else
 </main>
 <footer class="site-footer" data-test="site-footer">
 <div class="site-footer__inner">
-<div class="site-footer__text">DCA Commerce &mdash; Built with Domain-Centric Architecture</div>
+<div class="site-footer__text">domaincentric.commerce &mdash; Built with Domain-Centric Architecture</div>
 <div class="site-footer__links"><a class="site-footer__link" href="/backoffice/events" data-test="footer-event-log-link">Event Log</a></div>
 <div class="theme-switcher" data-test="theme-switcher">
 <label class="theme-switcher__label" for="theme-select">Theme</label>
 <select class="theme-switcher__select" id="theme-select" data-test="theme-select">
+<option value="blueprint">Blueprint</option>
 <option value="organic">Organic</option>
 <option value="sharp">Sharp &amp; Minimal</option>
 <option value="classic">Classic</option>
@@ -81,13 +82,13 @@ else
 (function() {
   var saved = localStorage.getItem('dca-theme');
   if (saved) {
-    document.documentElement.setAttribute('data-theme', saved);
+    if (saved !== 'blueprint') document.documentElement.setAttribute('data-theme', saved);
     var sel = document.getElementById('theme-select');
     if (sel) sel.value = saved;
   }
   document.getElementById('theme-select').addEventListener('change', function(e) {
     var theme = e.target.value;
-    if (theme === 'organic') {
+    if (theme === 'blueprint') {
       document.documentElement.removeAttribute('data-theme');
     } else {
       document.documentElement.setAttribute('data-theme', theme);

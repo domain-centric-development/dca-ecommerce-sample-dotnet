@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f1f5f9"/>
+      <stop offset="100%" style="stop-color:#e2e8f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)" rx="8"/>
+  <!-- Poster sheet -->
+  <rect x="72" y="55" width="256" height="270" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <!-- Heading -->
+  <rect x="100" y="80" width="140" height="7" rx="3.5" fill="#1e293b" opacity="0.75"/>
+  <rect x="100" y="95" width="90" height="5" rx="2.5" fill="#64748b" opacity="0.6"/>
+  <!-- Contexts -->
+  <rect x="98" y="125" width="88" height="46" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <rect x="214" y="125" width="88" height="46" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <rect x="98" y="215" width="88" height="46" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <rect x="214" y="215" width="88" height="46" rx="4" fill="#fae8ff" stroke="#a21caf" stroke-width="1.5"/>
+  <!-- Relationships -->
+  <g stroke="#475569" stroke-width="1.5">
+    <line x1="186" y1="148" x2="214" y2="148"/>
+    <line x1="142" y1="171" x2="142" y2="215"/>
+    <line x1="258" y1="171" x2="258" y2="215"/>
+    <line x1="186" y1="238" x2="214" y2="238"/>
+  </g>
+  <!-- Upstream/downstream markers -->
+  <g font-family="system-ui,sans-serif" font-size="9" fill="#475569">
+    <text x="196" y="143" text-anchor="middle">U</text>
+    <text x="204" y="143" text-anchor="middle">D</text>
+  </g>
+  <!-- Legend -->
+  <rect x="98" y="285" width="60" height="4" rx="2" fill="#94a3b8"/>
+  <rect x="166" y="285" width="60" height="4" rx="2" fill="#94a3b8"/>
+  <rect x="234" y="285" width="60" height="4" rx="2" fill="#94a3b8"/>
+  <!-- Category label -->
+  <text x="200" y="355" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#64748b" font-weight="500">Modeling</text>
+</svg>

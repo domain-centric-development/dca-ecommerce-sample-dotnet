@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fee2e2"/>
+      <stop offset="100%" style="stop-color:#fecaca"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)" rx="8"/>
+  <!-- Crown -->
+  <path d="M110 230 Q110 128 200 128 Q290 128 290 230 Z" fill="#1e3a8a"/>
+  <!-- Panel seams -->
+  <g stroke="#1e40af" stroke-width="2" opacity="0.8" fill="none">
+    <path d="M200 128 L200 230"/>
+    <path d="M155 133 Q140 180 138 230"/>
+    <path d="M245 133 Q260 180 262 230"/>
+  </g>
+  <!-- Brim -->
+  <path d="M104 230 Q200 218 296 230 Q300 258 200 262 Q100 258 104 230 Z" fill="#1e40af"/>
+  <!-- Button -->
+  <circle cx="200" cy="128" r="7" fill="#2563eb"/>
+  <!-- Embroidered hexagon -->
+  <path d="M200 158 L222 171 L222 197 L200 210 L178 197 L178 171 Z" fill="none" stroke="#fbbf24" stroke-width="3.5"/>
+  <!-- Category label -->
+  <text x="200" y="320" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#64748b" font-weight="500">Apparel</text>
+</svg>

@@ -67,7 +67,7 @@ characters.
 ### Category
 
 **Definition:** Assortment category to which a product is functionally assigned
-(e.g., "Electronics", "Books"). Used to structure the catalog.
+(e.g., "Books", "Modeling"). Used to structure the catalog.
 
 **Type:** Value Object
 

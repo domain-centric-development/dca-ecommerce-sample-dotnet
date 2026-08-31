@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#dbeafe"/>
+      <stop offset="100%" style="stop-color:#bfdbfe"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)" rx="8"/>
+  <!-- Back cover -->
+  <rect x="112" y="70" width="188" height="260" rx="6" fill="#1e40af"/>
+  <!-- Open page -->
+  <rect x="104" y="62" width="188" height="260" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <!-- Hex grid -->
+  <g fill="none" stroke="#93c5fd" stroke-width="1.2" opacity="0.9">
+    <path d="M136 96 L152 105 L152 123 L136 132 L120 123 L120 105 Z"/>
+    <path d="M168 96 L184 105 L184 123 L168 132 L152 123 L152 105 Z"/>
+    <path d="M200 96 L216 105 L216 123 L200 132 L184 123 L184 105 Z"/>
+    <path d="M232 96 L248 105 L248 123 L232 132 L216 123 L216 105 Z"/>
+    <path d="M264 96 L280 105 L280 123 L264 132 L248 123 L248 105 Z"/>
+    <path d="M152 132 L168 141 L168 159 L152 168 L136 159 L136 141 Z"/>
+    <path d="M184 132 L200 141 L200 159 L184 168 L168 159 L168 141 Z"/>
+    <path d="M216 132 L232 141 L232 159 L216 168 L200 159 L200 141 Z"/>
+    <path d="M248 132 L264 141 L264 159 L248 168 L232 159 L232 141 Z"/>
+    <path d="M136 168 L152 177 L152 195 L136 204 L120 195 L120 177 Z"/>
+    <path d="M168 168 L184 177 L184 195 L168 204 L152 195 L152 177 Z"/>
+    <path d="M200 168 L216 177 L216 195 L200 204 L184 195 L184 177 Z"/>
+    <path d="M232 168 L248 177 L248 195 L232 204 L216 195 L216 177 Z"/>
+    <path d="M264 168 L280 177 L280 195 L264 204 L248 195 L248 177 Z"/>
+    <path d="M152 204 L168 213 L168 231 L152 240 L136 231 L136 213 Z"/>
+    <path d="M184 204 L200 213 L200 231 L184 240 L168 231 L168 213 Z"/>
+    <path d="M216 204 L232 213 L232 231 L216 240 L200 231 L200 213 Z"/>
+    <path d="M248 204 L264 213 L264 231 L248 240 L232 231 L232 213 Z"/>
+    <path d="M136 240 L152 249 L152 267 L136 276 L120 267 L120 249 Z"/>
+    <path d="M168 240 L184 249 L184 267 L168 276 L152 267 L152 249 Z"/>
+    <path d="M200 240 L216 249 L216 267 L200 276 L184 267 L184 249 Z"/>
+    <path d="M232 240 L248 249 L248 267 L232 276 L216 267 L216 249 Z"/>
+    <path d="M264 240 L280 249 L280 267 L264 276 L248 267 L248 249 Z"/>
+  </g>
+  <!-- A sketched context, mid-modelling -->
+  <path d="M184 132 L200 141 L200 159 L184 168 L168 159 L168 141 Z" fill="#2563eb" opacity="0.25"/>
+  <path d="M216 204 L232 213 L232 231 L216 240 L200 231 L200 213 Z" fill="#f59e0b" opacity="0.35"/>
+  <!-- Elastic band -->
+  <rect x="264" y="62" width="8" height="260" fill="#1e293b" opacity="0.6"/>
+  <!-- Category label -->
+  <text x="200" y="352" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#64748b" font-weight="500">Desk &amp; Office</text>
+</svg>

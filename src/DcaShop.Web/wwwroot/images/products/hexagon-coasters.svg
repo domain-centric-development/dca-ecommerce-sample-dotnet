@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fef3c7"/>
+      <stop offset="100%" style="stop-color:#fde68a"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)" rx="8"/>
+  <!-- A stack of four coasters, lying flat -->
+  <path d="M128 268 L128 279 L164 301 L236 301 L272 279 L272 268 Z" fill="#92400e"/>
+  <path d="M128 268 L164 246 L236 246 L272 268 L236 290 L164 290 Z" fill="#b45309"/>
+  <path d="M128 238 L128 249 L164 271 L236 271 L272 249 L272 238 Z" fill="#b45309"/>
+  <path d="M128 238 L164 216 L236 216 L272 238 L236 260 L164 260 Z" fill="#d97706"/>
+  <path d="M128 208 L128 219 L164 241 L236 241 L272 219 L272 208 Z" fill="#d97706"/>
+  <path d="M128 208 L164 186 L236 186 L272 208 L236 230 L164 230 Z" fill="#f59e0b"/>
+  <path d="M128 178 L128 189 L164 211 L236 211 L272 189 L272 178 Z" fill="#f59e0b"/>
+  <path d="M128 178 L164 156 L236 156 L272 178 L236 200 L164 200 Z" fill="#fbbf24"/>
+  <g fill="none" stroke="#92400e" stroke-width="2" opacity="0.45">
+    <path d="M156 178 L180 163 L220 163 L244 178 L220 193 L180 193 Z"/>
+    <path d="M180 178 L194 170 L206 170 L220 178 L206 186 L194 186 Z"/>
+  </g>
+  <!-- Category label -->
+  <text x="200" y="345" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#64748b" font-weight="500">Desk &amp; Office</text>
+</svg>

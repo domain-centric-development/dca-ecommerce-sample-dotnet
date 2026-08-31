@@ -33,7 +33,7 @@ public sealed class CrossContextEventFlowTest : IClassFixture<WebApplicationFact
             Product.Domain.Model.ProductName.Of("Unpriced Thing"),
             Product.Domain.Model.ProductDescription.Of("Nobody has priced this yet"),
             Product.Domain.Model.Category.Of("Home"),
-            Product.Domain.Model.ImageUrl.Of("/images/products/laptop.svg"),
+            Product.Domain.Model.ImageUrl.Of("/images/products/ddd-book.webp"),
             Price.Of(Money.Euro(9.99m)),
             5);
         await scope.ServiceProvider.GetRequiredService<Product.Application.Shared.IProductRepository>()

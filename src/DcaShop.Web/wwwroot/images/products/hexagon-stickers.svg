@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0fdfa"/>
+      <stop offset="100%" style="stop-color:#ccfbf1"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)" rx="8"/>
+  <!-- Backing sheet -->
+  <rect x="66" y="72" width="268" height="240" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6 4"/>
+  <!-- Stickers, each with a white die-cut border -->
+  <g stroke="#ffffff" stroke-width="4">
+    <path d="M130 104 L164 124 L164 164 L130 184 L96 164 L96 124 Z" fill="#2563eb"/>
+    <path d="M200 104 L234 124 L234 164 L200 184 L166 164 L166 124 Z" fill="#f59e0b"/>
+    <path d="M270 104 L304 124 L304 164 L270 184 L236 164 L236 124 Z" fill="#14b8a6"/>
+    <path d="M130 200 L164 220 L164 260 L130 280 L96 260 L96 220 Z" fill="#8b5cf6"/>
+    <path d="M200 200 L234 220 L234 260 L200 280 L166 260 L166 220 Z" fill="#ef4444"/>
+    <path d="M270 200 L304 220 L304 260 L270 280 L236 260 L236 220 Z" fill="#0ea5e9"/>
+  </g>
+  <!-- Motifs -->
+  <g fill="none" stroke="#ffffff" stroke-width="2.5" opacity="0.85">
+    <path d="M130 126 L148 136 L148 152 L130 162 L112 152 L112 136 Z"/>
+    <circle cx="200" cy="144" r="16"/>
+    <path d="M254 144 L286 144 M270 128 L270 160"/>
+    <path d="M114 240 L146 240"/>
+    <path d="M186 226 L214 254 M214 226 L186 254"/>
+    <path d="M256 232 L284 232 L284 248 L256 248 Z"/>
+  </g>
+  <!-- Category label -->
+  <text x="200" y="344" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#64748b" font-weight="500">Stickers &amp; Pins</text>
+</svg>

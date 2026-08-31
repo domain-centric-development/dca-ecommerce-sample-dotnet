@@ -19,15 +19,15 @@ public sealed record Category : IValue
 
     public static Category Of(string name) => new(name);
 
-    public static Category Electronics() => new("Electronics");
-
-    public static Category Clothing() => new("Clothing");
-
     public static Category Books() => new("Books");
 
-    public static Category HomeAndGarden() => new("Home & Garden");
+    public static Category Modeling() => new("Modeling");
 
-    public static Category Sports() => new("Sports & Outdoors");
+    public static Category Apparel() => new("Apparel");
+
+    public static Category DeskAndOffice() => new("Desk & Office");
+
+    public static Category StickersAndPins() => new("Stickers & Pins");
 
     public override string ToString() => Name;
 }

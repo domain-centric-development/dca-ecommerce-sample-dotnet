@@ -1,5 +1,5 @@
 /* ==========================================================================
-   DCA Commerce — BEM Stylesheet
+   domaincentric.commerce — BEM Stylesheet
    Earthy luxury meets editorial boutique
    ========================================================================== */
 
@@ -9,32 +9,32 @@
 
 :root {
   /* Colors */
-  --color-bg: #FAF7F2;
+  --color-bg: #F7F6F3;
   --color-surface: #FFFFFF;
-  --color-primary: #2D5A3D;
-  --color-primary-dark: #1E3F2B;
-  --color-primary-light: #E8F0EB;
-  --color-accent: #C4654A;
-  --color-accent-dark: #A34E36;
-  --color-accent-light: #FDF0EC;
-  --color-text: #1A1A1A;
-  --color-text-light: #5C5C5C;
-  --color-text-muted: #8A8A8A;
-  --color-border: #E4DFD7;
-  --color-border-light: #F0EDE7;
-  --color-success: #2D7A4F;
-  --color-success-light: #E8F5ED;
-  --color-danger: #C4393B;
-  --color-danger-light: #FDE8E8;
-  --color-warning: #D4890E;
-  --color-warning-light: #FEF4DC;
-  --color-info: #3B6BA5;
-  --color-info-light: #E4EEF8;
+  --color-primary: #148F96;
+  --color-primary-dark: #0D6B70;
+  --color-primary-light: #E4F0F0;
+  --color-accent: #148F96;
+  --color-accent-dark: #0D6B70;
+  --color-accent-light: #E4F0F0;
+  --color-text: #1C2433;
+  --color-text-light: #39414E;
+  --color-text-muted: #5B6472;
+  --color-border: #DEDBD3;
+  --color-border-light: #ECEAE4;
+  --color-success: #15806A;
+  --color-success-light: #E6F2EF;
+  --color-danger: #B23B33;
+  --color-danger-light: #F8E9E7;
+  --color-warning: #A97B15;
+  --color-warning-light: #F7EFDD;
+  --color-info: #2C6B8F;
+  --color-info-light: #E6EFF4;
 
   /* Typography */
-  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
-  --font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  --font-display: 'Space Grotesk', 'Avenir Next', 'Trebuchet MS', sans-serif;
+  --font-family: 'Space Grotesk', 'Avenir Next', -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, monospace;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
@@ -57,24 +57,108 @@
   --space-3xl: 5rem;
 
   /* Borders */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-full: 9999px;
+
+  /* Shadows — warm-toned, brown undertones */
+  --shadow-sm: 0 1px 2px rgba(28, 36, 51, 0.05);
+  --shadow-md: 0 2px 10px rgba(28, 36, 51, 0.07);
+  --shadow-lg: 0 10px 28px rgba(28, 36, 51, 0.10);
+  --shadow-xl: 0 20px 44px rgba(28, 36, 51, 0.12);
+
+  /* Transitions */
+  --transition-fast: 160ms ease;
+  --transition-normal: 260ms ease;
+  --transition-slow: 420ms ease;
+
+  /* Semantic contextual text/border colors */
+  --color-success-text: #0F5A4B;
+  --color-success-border: rgba(21, 128, 106, 0.22);
+  --color-danger-text: #8A2B25;
+  --color-danger-hover: #97302A;
+  --color-danger-border: rgba(178, 59, 51, 0.22);
+  --color-warning-text: #7A5810;
+  --color-warning-border: rgba(169, 123, 21, 0.22);
+  --color-info-text: #1F4E68;
+  --color-info-border: rgba(44, 107, 143, 0.22);
+
+  /* Primary/accent alpha variants (borders, focus rings) */
+  --color-primary-border: rgba(20, 143, 150, 0.18);
+  --color-primary-focus: rgba(20, 143, 150, 0.25);
+  --color-accent-border: rgba(20, 143, 150, 0.22);
+
+  /* Hero background gradient (kept as a token for the other themes) */
+  --hero-bg-image: none;
+
+  /* Section muted background */
+  --color-muted-bg: #F1EFEA;
+  /* Running prose */
+  --font-prose: 'Newsreader', Georgia, 'Times New Roman', serif;
+
+}
+
+/* --------------------------------------------------------------------------
+   1b. Theme: Organic — the earthy palette that used to be the default
+   -------------------------------------------------------------------------- */
+
+[data-theme="organic"] {
+  --color-bg: #FAF7F2;
+  --color-surface: #FFFFFF;
+  --color-primary: #2D5A3D;
+  --color-primary-dark: #1E3F2B;
+  --color-primary-light: #E8F0EB;
+  --color-accent: #C4654A;
+  --color-accent-dark: #A34E36;
+  --color-accent-light: #FDF0EC;
+  --color-text: #1A1A1A;
+  --color-text-light: #5C5C5C;
+  --color-text-muted: #8A8A8A;
+  --color-border: #E4DFD7;
+  --color-border-light: #F0EDE7;
+  --color-success: #2D7A4F;
+  --color-success-light: #E8F5ED;
+  --color-danger: #C4393B;
+  --color-danger-light: #FDE8E8;
+  --color-warning: #D4890E;
+  --color-warning-light: #FEF4DC;
+  --color-info: #3B6BA5;
+  --color-info-light: #E4EEF8;
+  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 2rem;
+  --font-size-4xl: 2.5rem;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.6;
+  --line-height-relaxed: 1.75;
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 5rem;
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 16px;
   --radius-xl: 24px;
   --radius-full: 9999px;
-
-  /* Shadows — warm-toned, brown undertones */
   --shadow-sm: 0 1px 3px rgba(45, 40, 30, 0.06);
   --shadow-md: 0 4px 12px rgba(45, 40, 30, 0.08);
   --shadow-lg: 0 12px 32px rgba(45, 40, 30, 0.12);
   --shadow-xl: 0 24px 48px rgba(45, 40, 30, 0.15);
-
-  /* Transitions */
   --transition-fast: 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
   --transition-normal: 350ms cubic-bezier(0.25, 0.1, 0.25, 1);
   --transition-slow: 500ms cubic-bezier(0.25, 0.1, 0.25, 1);
-
-  /* Semantic contextual text/border colors */
   --color-success-text: #1A5233;
   --color-success-border: rgba(45, 122, 79, 0.2);
   --color-danger-text: #7A2020;
@@ -84,24 +168,20 @@
   --color-warning-border: rgba(212, 137, 14, 0.2);
   --color-info-text: #1E3D6B;
   --color-info-border: rgba(59, 107, 165, 0.2);
-
-  /* Primary/accent alpha variants (borders, focus rings) */
   --color-primary-border: rgba(45, 90, 61, 0.12);
   --color-primary-focus: rgba(45, 90, 61, 0.12);
   --color-accent-border: rgba(196, 101, 74, 0.2);
-
-  /* Hero background gradient (organic theme) */
   --hero-bg-image: radial-gradient(ellipse at 30% 50%, #FFF8F0 0%, transparent 70%);
-
-  /* Section muted background */
   --color-muted-bg: var(--color-surface);
 }
+
 
 /* --------------------------------------------------------------------------
    1b. Theme: Sharp & Minimal
    -------------------------------------------------------------------------- */
 
 [data-theme="sharp"] {
+  --font-mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
   /* Colors — monochrome + single blue accent */
   --color-bg: #FFFFFF;
   --color-surface: #FFFFFF;
@@ -226,6 +306,7 @@
    -------------------------------------------------------------------------- */
 
 [data-theme="classic"] {
+  --font-mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
   /* Colors — blue primary + purple secondary */
   --color-bg: #f8fafc;
   --color-surface: #ffffff;
@@ -537,6 +618,7 @@
    -------------------------------------------------------------------------- */
 
 [data-theme="vibrant"] {
+  --font-mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
   /* Colors — dark base + neon accents */
   --color-bg: #0F0F1A;
   --color-surface: #1A1A2E;
@@ -670,6 +752,171 @@
 /* Buttons — neon glow */
 [data-theme="vibrant"] .btn--primary:hover {
   box-shadow: 0 0 16px rgba(34, 211, 238, 0.35);
+}
+
+
+/* Running prose in the serif — everything the reader reads in sentences.
+   Controls, labels, tables and headings stay in the display face. */
+html:not([data-theme]) .hero__description,
+html:not([data-theme]) .product-card__description,
+html:not([data-theme]) .product-detail__description,
+html:not([data-theme]) .feature-card__description,
+html:not([data-theme]) .highlight-card__description,
+html:not([data-theme]) .option-card__description,
+html:not([data-theme]) .empty-state__message,
+html:not([data-theme]) .empty-state__text,
+html:not([data-theme]) .confirmation__message,
+html:not([data-theme]) .error-page__message,
+html:not([data-theme]) .merge-options__intro,
+html:not([data-theme]) .sample-page__intro {
+  font-family: var(--font-prose);
+  font-style: normal;
+  font-size: 1.05em;
+  line-height: 1.55;
+}
+
+/* Hero — the dark sheet of the site, honeycomb and all */
+html:not([data-theme]) .hero {
+  background-color: #171D29;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='69.28' height='120' viewBox='0 0 69.28 120' fill='none' stroke='%23e8eaf0' stroke-opacity='0.06' stroke-width='1.1'%3E%3Cpath d='M0.00,-40.00 34.64,-20.00 34.64,20.00 0.00,40.00 -34.64,20.00 -34.64,-20.00Z'/%3E%3Cpath d='M69.28,-40.00 103.92,-20.00 103.92,20.00 69.28,40.00 34.64,20.00 34.64,-20.00Z'/%3E%3Cpath d='M0.00,80.00 34.64,100.00 34.64,140.00 0.00,160.00 -34.64,140.00 -34.64,100.00Z'/%3E%3Cpath d='M69.28,80.00 103.92,100.00 103.92,140.00 69.28,160.00 34.64,140.00 34.64,100.00Z'/%3E%3Cpath d='M34.64,20.00 69.28,40.00 69.28,80.00 34.64,100.00 -0.00,80.00 0.00,40.00Z'/%3E%3Cpath d='M34.64,-100.00 69.28,-80.00 69.28,-40.00 34.64,-20.00 -0.00,-40.00 0.00,-80.00Z'/%3E%3Cpath d='M34.64,140.00 69.28,160.00 69.28,200.00 34.64,220.00 -0.00,200.00 0.00,160.00Z'/%3E%3C/svg%3E");
+  background-size: 132px 229px;
+  color: #E8EAF0;
+  border: none;
+  border-radius: 0;
+}
+
+html:not([data-theme]) .hero__title {
+  color: #FFFFFF;
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+html:not([data-theme]) .hero__subtitle {
+  color: #7FD4D9;
+  font-family: var(--font-mono);
+  font-style: normal;
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+html:not([data-theme]) .hero__description {
+  color: rgba(232, 234, 240, 0.82);
+}
+
+html:not([data-theme]) .hero__cta--secondary {
+  color: #E8EAF0;
+  border-color: rgba(232, 234, 240, 0.35);
+}
+
+html:not([data-theme]) .hero__cta--secondary:hover {
+  background: rgba(232, 234, 240, 0.10);
+  border-color: #7FD4D9;
+  color: #7FD4D9;
+}
+
+/* Headings in the display face, body copy stays serif */
+html:not([data-theme]) .section__title,
+html:not([data-theme]) h1,
+html:not([data-theme]) h2,
+html:not([data-theme]) h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+}
+
+/* Prices, ids and quantities are annotation — set them in mono */
+html:not([data-theme]) .price,
+html:not([data-theme]) .price__amount,
+html:not([data-theme]) .product-card__price,
+html:not([data-theme]) .order-summary__value,
+html:not([data-theme]) .badge,
+html:not([data-theme]) .status-badge {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hairlines instead of lift */
+html:not([data-theme]) .product-card,
+html:not([data-theme]) .feature-card,
+html:not([data-theme]) .card {
+  box-shadow: none;
+  border: 1px solid var(--color-border);
+}
+
+html:not([data-theme]) .product-card:hover,
+html:not([data-theme]) .feature-card:hover {
+  transform: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+html:not([data-theme]) .hero__cta:hover,
+html:not([data-theme]) .btn:hover {
+  transform: none;
+}
+
+html:not([data-theme]) .section--muted {
+  background: var(--color-muted-bg);
+}
+
+/* The hex-graph mark is part of the logo in every theme; its core and the
+   wordmark suffix take the theme's accent colour. */
+.site-header__logo { gap: 12px; }
+.site-header__mark { display: block; flex-shrink: 0; }
+.site-header__mark-core { fill: var(--color-primary); }
+.brand-tld { color: var(--color-primary); }
+
+html:not([data-theme]) .site-header__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+/* The header is the dark band of the site, the footer its title block */
+html:not([data-theme]) .site-header {
+  background: #171D29;
+  border-bottom: 1px solid rgba(232, 234, 240, 0.18);
+}
+
+html:not([data-theme]) .site-header__logo,
+html:not([data-theme]) .site-header .nav__link,
+html:not([data-theme]) .site-header .mini-basket__trigger {
+  color: #E8EAF0;
+}
+
+html:not([data-theme]) .site-header .nav__link:hover,
+html:not([data-theme]) .site-header .mini-basket__trigger:hover,
+html:not([data-theme]) .site-header__logo:hover {
+  color: #7FD4D9;
+}
+
+html:not([data-theme]) .site-header__mark {
+  color: #E8EAF0;
+}
+
+html:not([data-theme]) .site-header__logo:hover .site-header__mark {
+  color: #7FD4D9;
+}
+
+html:not([data-theme]) .mini-basket__count {
+  background: var(--color-primary);
+  color: #FFFFFF;
+}
+
+html:not([data-theme]) .site-footer {
+  border-top: 1px solid var(--color-text);
+}
+
+html:not([data-theme]) .site-footer__text,
+html:not([data-theme]) .site-footer__link,
+html:not([data-theme]) .theme-switcher__label {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
 }
 
 /* --------------------------------------------------------------------------
@@ -2519,7 +2766,7 @@ ul, ol {
 
 .highlight-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--space-lg);
 }
 
