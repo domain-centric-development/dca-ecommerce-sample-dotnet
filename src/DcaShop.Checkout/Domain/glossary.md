@@ -77,8 +77,8 @@ and shipping cost.
 
 ### PaymentSelection
 
-**Definition:** Selected payment method consisting of `PaymentProviderId` and an optional
-provider reference (e.g. payment intent ID).
+**Definition:** Selected payment method consisting of `PaymentProviderId` and the provider
+reference (e.g. payment intent ID) the provider returned when the payment was initiated.
 
 **Type:** Value Object
 
@@ -243,7 +243,8 @@ Kernel should be used here.
 
 ### PaymentProviderId
 
-**Definition:** Identifier of an external payment provider (e.g. `stripe`, `paypal`, `invoice`).
+**Definition:** Identifier of an external payment provider. The sample registers a single one,
+`mock`, standing in for a real provider such as Stripe, PayPal or invoice.
 
 **Type:** Value Object (ID)
 

@@ -8,11 +8,13 @@ public sealed record CheckoutPageViewModel(
     CheckoutCartSnapshot Session,
     IReadOnlyList<CheckoutPageViewModel.ShippingChoice> ShippingOptions,
     IReadOnlyList<CheckoutPageViewModel.PaymentChoice> PaymentProviders,
-    string? Error)
+    string? Error,
+    bool IsAnonymous,
+    string? IdentityEmail)
 {
     public sealed record ShippingChoice(string Id, string Name, string EstimatedDelivery, string Cost, string CurrencyCode);
 
-    public sealed record PaymentChoice(string Id, string DisplayName, string Description, bool Available);
+    public sealed record PaymentChoice(string Id, string DisplayName, bool Available);
 
     public bool IsStep(CheckoutStep step) => Session.Step == step;
 }

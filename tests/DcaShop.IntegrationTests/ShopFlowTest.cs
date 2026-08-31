@@ -55,7 +55,7 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
             ("email", "ada@example.com"), ("firstName", "Ada"), ("lastName", "Lovelace"), ("phone", "0123"));
         await Step(client, "/checkout/delivery", "/checkout/payment",
             ("street", "Analytical Engine Way 1"), ("city", "London"), ("postalCode", "12345"), ("country", "UK"), ("shippingOptionId", "express"));
-        await Step(client, "/checkout/payment", "/checkout/review", ("providerId", "invoice"));
+        await Step(client, "/checkout/payment", "/checkout/review", ("providerId", "mock"));
 
         var review = await client.GetStringAsync("/checkout/review");
         Assert.Contains("Express Shipping", review, StringComparison.Ordinal);

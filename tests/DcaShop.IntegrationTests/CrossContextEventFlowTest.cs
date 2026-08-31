@@ -142,7 +142,7 @@ public sealed class CrossContextEventFlowTest : IClassFixture<WebApplicationFact
             ("email", "ada@example.com"), ("firstName", "Ada"), ("lastName", "Lovelace"), ("phone", "0123"));
         await Step(client, "/checkout/delivery", "/checkout/payment",
             ("street", "Analytical Engine Way 1"), ("city", "London"), ("postalCode", "12345"), ("country", "UK"), ("shippingOptionId", "standard"));
-        await Step(client, "/checkout/payment", "/checkout/review", ("providerId", "invoice"));
+        await Step(client, "/checkout/payment", "/checkout/review", ("providerId", "mock"));
         var review = await client.GetStringAsync("/checkout/review");
         var confirmed = await client.PostAsync("/checkout/confirm", Form(review));
         Assert.Equal(HttpStatusCode.Redirect, confirmed.StatusCode);

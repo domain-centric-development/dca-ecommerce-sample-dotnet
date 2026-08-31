@@ -101,8 +101,8 @@ public sealed class CheckoutPageController : Controller
     public Task<IActionResult> Payment(CancellationToken cancellationToken) => Page(CheckoutStep.Payment, cancellationToken);
 
     [HttpPost("payment")]
-    public Task<IActionResult> SubmitPayment([FromForm] string providerId, [FromForm] string? providerReference, CancellationToken cancellationToken) =>
-        Submit(CheckoutStep.Payment, "/checkout/review", id => _submitPayment.ExecuteAsync(new SubmitPaymentCommand(id, providerId, providerReference), cancellationToken), cancellationToken);
+    public Task<IActionResult> SubmitPayment([FromForm] string providerId, CancellationToken cancellationToken) =>
+        Submit(CheckoutStep.Payment, "/checkout/review", id => _submitPayment.ExecuteAsync(new SubmitPaymentCommand(id, providerId), cancellationToken), cancellationToken);
 
     [HttpGet("review")]
     public Task<IActionResult> Review(CancellationToken cancellationToken) => Page(CheckoutStep.Review, cancellationToken);
@@ -172,11 +172,14 @@ public sealed class CheckoutPageController : Controller
     {
         var shipping = await _shippingOptions.ExecuteAsync(new GetShippingOptionsQuery(), cancellationToken);
         var providers = await _paymentProviders.ExecuteAsync(new GetPaymentProvidersQuery(), cancellationToken);
+        var identity = _identityProvider.GetCurrentIdentity();
         return new CheckoutPageViewModel(
             session,
             shipping.Options.Select(o => new CheckoutPageViewModel.ShippingChoice(o.Id, o.Name, o.EstimatedDelivery, AmountOf(o.Cost), CurrencyOf(o.Cost))).ToList(),
-            providers.Providers.Select(p => new CheckoutPageViewModel.PaymentChoice(p.Id, p.DisplayName, p.Description, Available: true)).ToList(),
-            error);
+            providers.Providers.Select(p => new CheckoutPageViewModel.PaymentChoice(p.Id, p.DisplayName, Available: true)).ToList(),
+            error,
+            identity.IsAnonymous,
+            identity.Email);
     }
 
     // "4.99 EUR" → ("4.99", "EUR"): the views print amount and currency in separate slots, like the Java views

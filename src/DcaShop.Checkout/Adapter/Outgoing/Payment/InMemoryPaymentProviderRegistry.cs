@@ -3,19 +3,33 @@ using DcaShop.Checkout.Domain.Model;
 
 namespace DcaShop.Checkout.Adapter.Outgoing.Payment;
 
-/// <summary>Stands in for the payment service provider: a fixed list of providers, no real gateway call.</summary>
+/// <summary>
+/// Keeps the registered payment providers in memory. The providers themselves come from the container, so
+/// adding one is adding an <see cref="IPaymentProvider"/> registration — the checkout needs no change.
+/// </summary>
 public sealed class InMemoryPaymentProviderRegistry : IPaymentProviderRegistry
 {
-    private static readonly IReadOnlyList<PaymentProviderInfo> Providers = new[]
+    private readonly IReadOnlyList<IPaymentProvider> _providers;
+
+    public InMemoryPaymentProviderRegistry(IEnumerable<IPaymentProvider> providers)
     {
-        new PaymentProviderInfo(PaymentProviderId.Of("invoice"), "Invoice", "Pay within 14 days after delivery"),
-        new PaymentProviderInfo(PaymentProviderId.Of("paypal"), "PayPal", "Redirect to PayPal (mock)"),
-        new PaymentProviderInfo(PaymentProviderId.Of("stripe"), "Credit Card", "Card payment via Stripe (mock)"),
-    };
+        _providers = providers.ToList();
+    }
 
-    public Task<IReadOnlyList<PaymentProviderInfo>> GetAvailableProvidersAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult(Providers);
+    public async Task<IReadOnlyList<IPaymentProvider>> GetAvailableProvidersAsync(CancellationToken cancellationToken = default)
+    {
+        var available = new List<IPaymentProvider>(_providers.Count);
+        foreach (var provider in _providers)
+        {
+            if (await provider.IsAvailableAsync(cancellationToken).ConfigureAwait(false))
+            {
+                available.Add(provider);
+            }
+        }
 
-    public Task<PaymentProviderInfo?> FindAsync(PaymentProviderId providerId, CancellationToken cancellationToken = default) =>
-        Task.FromResult(Providers.FirstOrDefault(p => p.Id == providerId));
+        return available;
+    }
+
+    public Task<IPaymentProvider?> FindAsync(PaymentProviderId providerId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_providers.FirstOrDefault(p => p.Id == providerId));
 }

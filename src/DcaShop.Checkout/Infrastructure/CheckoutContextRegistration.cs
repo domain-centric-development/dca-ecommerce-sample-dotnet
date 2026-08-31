@@ -50,6 +50,7 @@ public static class CheckoutContextRegistration
         services.AddSingleton<ICheckoutSessionRepository, InMemoryCheckoutSessionRepository>();
         services.AddScoped<ICartDataPort, CartDataAdapter>();
         services.AddScoped<ICheckoutArticleDataPort, CompositeCheckoutArticleDataAdapter>();
+        services.AddSingleton<IPaymentProvider, MockPaymentProvider>();
         services.AddSingleton<IPaymentProviderRegistry, InMemoryPaymentProviderRegistry>();
         services.AddScoped<IEventListener, CheckoutConfirmedEventPublisher>();
 

@@ -14,6 +14,6 @@ public sealed class GetPaymentProvidersUseCase : IGetPaymentProvidersInputPort
     public async Task<GetPaymentProvidersResult> ExecuteAsync(GetPaymentProvidersQuery query, CancellationToken cancellationToken = default)
     {
         var providers = await _providers.GetAvailableProvidersAsync(cancellationToken).ConfigureAwait(false);
-        return new GetPaymentProvidersResult(providers.Select(p => new GetPaymentProvidersResult.PaymentProviderData(p.Id.Value, p.DisplayName, p.Description)).ToList());
+        return new GetPaymentProvidersResult(providers.Select(p => new GetPaymentProvidersResult.PaymentProviderData(p.Id.Value, p.DisplayName)).ToList());
     }
 }
