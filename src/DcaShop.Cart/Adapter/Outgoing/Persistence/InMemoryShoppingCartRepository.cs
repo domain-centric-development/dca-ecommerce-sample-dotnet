@@ -31,4 +31,7 @@ public sealed class InMemoryShoppingCartRepository : IShoppingCartRepository
 
     public Task<ShoppingCart?> FindActiveByCustomerAsync(CustomerId customerId, CancellationToken cancellationToken = default) =>
         Task.FromResult(_carts.Values.FirstOrDefault(c => c.CustomerId == customerId && c.IsActive));
+
+    public Task<IReadOnlyList<ShoppingCart>> FindByCustomerAsync(CustomerId customerId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<ShoppingCart>>(_carts.Values.Where(c => c.CustomerId == customerId).ToList());
 }
