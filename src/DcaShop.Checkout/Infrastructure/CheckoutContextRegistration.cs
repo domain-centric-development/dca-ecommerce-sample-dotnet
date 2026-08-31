@@ -49,7 +49,7 @@ public static class CheckoutContextRegistration
         // Outgoing adapters (output ports)
         services.AddSingleton<ICheckoutSessionRepository, InMemoryCheckoutSessionRepository>();
         services.AddScoped<ICartDataPort, CartDataAdapter>();
-        services.AddScoped<ICheckoutArticleDataPort, ProductCatalogCheckoutArticleDataAdapter>();
+        services.AddScoped<ICheckoutArticleDataPort, CompositeCheckoutArticleDataAdapter>();
         services.AddSingleton<IPaymentProviderRegistry, InMemoryPaymentProviderRegistry>();
         services.AddScoped<IEventListener, CheckoutConfirmedEventPublisher>();
 

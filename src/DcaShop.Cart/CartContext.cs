@@ -7,6 +7,10 @@ namespace DcaShop.Cart;
 [BoundedContext("Shopping Cart", Description = "Cart management, item additions/removals, and cart lifecycle")]
 [Upstream("Product", Translation.AntiCorruptionLayer, Consumes.Api,
     Rationale = "Cart works with its own article snapshot; the catalog model must not leak into cart invariants")]
+[Upstream("Pricing", Translation.AntiCorruptionLayer, Consumes.Api,
+    Rationale = "Price lookups are translated into the cart's own article data")]
+[Upstream("Inventory", Translation.AntiCorruptionLayer, Consumes.Api,
+    Rationale = "Stock availability is translated into the cart's own article data")]
 [Partnership("Checkout",
     Rationale = "Cart owns the consumer-defined ICartCompletionTrigger contract that checkout events implement; both contexts evolve it together")]
 public static class CartContext

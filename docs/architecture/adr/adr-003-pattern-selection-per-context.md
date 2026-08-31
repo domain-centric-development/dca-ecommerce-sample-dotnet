@@ -16,8 +16,11 @@ Pricing, Inventory, Account, Portal and Backoffice come later.
    only; each context records its choice here when it arrives.
 2. **Stand-ins for missing upstreams keep the ports honest.** *(superseded 2026-08-30 by WP-12: the Pricing and
    Inventory contexts exist; both stand-in adapters are deleted and `PricingDataAdapter` /
-   `InventoryStockDataAdapter` call the real Open Host Services. The paragraph stays as the record of how the
-   stage-1 ports were kept honest.)* The Product Catalog already depends on
+   `InventoryStockDataAdapter` call the real Open Host Services. Completed 2026-08-31: price and stock left the
+   catalog's Api as this paragraph foresaw — Cart and Checkout declare `[Upstream("Pricing")]` and
+   `[Upstream("Inventory")]` and compose the three Open Host Services in `CompositeArticleDataAdapter` /
+   `CompositeCheckoutArticleDataAdapter`, the same shape as the Java sample. The paragraph stays as the record of
+   how the stage-1 ports were kept honest.)* The Product Catalog already depends on
    `IPricingDataPort` and `IProductStockDataPort` exactly as it will with real Pricing and Inventory contexts;
    in stage 1 both are answered by in-memory adapters seeded at start-up. The catalog's Open Host Service exposes
    `ProductArticleInfo` (name, image, current price, stock) so Cart and Checkout have one source. When Pricing and
@@ -30,5 +33,7 @@ Pricing, Inventory, Account, Portal and Backoffice come later.
 
 - Positive: the ubiquitous language of the three contexts matches the Java sample's glossaries now; growing the
   sample means adding contexts, not rewriting them.
-- Negative: the catalog Api temporarily carried data that is not the catalog's. Resolved in stage 2a — price and
-  stock now come from the Pricing and Inventory contexts through events and their Open Host Services.
+- Negative: the catalog Api temporarily carried data that is not the catalog's. Resolved — price and stock come
+  from the Pricing and Inventory contexts through events and their Open Host Services, and since 2026-08-31 the
+  catalog's Api no longer relays them at all: each consumer asks the context that owns the figure. The catalog
+  still reads both, but only to present its own pages.

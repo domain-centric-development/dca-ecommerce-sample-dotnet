@@ -23,6 +23,32 @@ public sealed class CrossContextEventFlowTest : IClassFixture<WebApplicationFact
     }
 
     [Fact]
+    public async Task AProductPricingHasNotSeenYetIsOfferedAsUnavailable()
+    {
+        // Written straight into the catalog's repository, so no ProductCreatedEvent is ever published: this is
+        // the state of every new product until Pricing and Inventory have consumed that event.
+        using var scope = _factory.Services.CreateScope();
+        var product = new Product.Domain.Model.ProductFactory().Create(
+            Product.Domain.Model.Sku.Of("UNPRICED-1"),
+            Product.Domain.Model.ProductName.Of("Unpriced Thing"),
+            Product.Domain.Model.ProductDescription.Of("Nobody has priced this yet"),
+            Product.Domain.Model.Category.Of("Home"),
+            Product.Domain.Model.ImageUrl.Of("/images/products/laptop.svg"),
+            Price.Of(Money.Euro(9.99m)),
+            5);
+        await scope.ServiceProvider.GetRequiredService<Product.Application.Shared.IProductRepository>()
+            .SaveAsync(product);
+
+        var articles = scope.ServiceProvider.GetRequiredService<Cart.Application.Shared.IArticleDataPort>();
+        var article = await articles.GetArticleDataAsync(product.Id);
+
+        Assert.NotNull(article);
+        Assert.False(article!.IsAvailable);
+        Assert.Equal(0, article.AvailableStock);
+        Assert.False(article.HasStockFor(1));
+    }
+
+    [Fact]
     public async Task CreatedProductReceivesItsPriceAndStockThroughEvents()
     {
         Guid productId;

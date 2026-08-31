@@ -38,7 +38,11 @@ graph LR
   Product["Product Catalog<br/><i>api · events</i>"]
 
   Cart -->|"ACL / api"| Product
+  Cart -->|"ACL / api"| Pricing
+  Cart -->|"ACL / api"| Inventory
   Checkout -->|"ACL / api"| Product
+  Checkout -->|"ACL / api"| Pricing
+  Checkout -->|"ACL / api"| Inventory
   Checkout -->|"ACL / api"| Cart
   Checkout -.->|"Conformist / events"| Cart
   Checkout -.->|"Conformist / events"| Inventory
@@ -65,7 +69,11 @@ Edges labeled `planned` are declared intent without a code dependency yet.
 | Downstream | Upstream | Channel | Translation | Status | Rationale |
 |---|---|---|---|---|---|
 | Cart | Product | api | ACL | implemented | Cart works with its own article snapshot; the catalog model must not leak into cart invariants |
+| Cart | Pricing | api | ACL | implemented | Price lookups are translated into the cart's own article data |
+| Cart | Inventory | api | ACL | implemented | Stock availability is translated into the cart's own article data |
 | Checkout | Product | api | ACL | implemented | Product data is translated into checkout's own article types |
+| Checkout | Pricing | api | ACL | implemented | Prices are translated into checkout's own line item amounts |
+| Checkout | Inventory | api | ACL | implemented | Stock availability is translated into checkout's own article data |
 | Checkout | Cart | api | ACL | implemented | Cart snapshots are translated into checkout's own CartData |
 | Checkout | Cart | events | Conformist | implemented | CheckoutConfirmedEvent implements cart's consumer-defined ICartCompletionTrigger contract as-is; cart's CartContentsChangedEvent is consumed as published |
 | Checkout | Inventory | events | Conformist | implemented | CheckoutConfirmedEvent implements inventory's consumer-defined IStockReductionTrigger contract as-is |

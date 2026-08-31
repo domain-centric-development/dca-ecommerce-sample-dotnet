@@ -8,5 +8,6 @@
     <ProjectReference Include="../DcaShop.Product/DcaShop.Product.csproj" />
     <ProjectReference Include="../DcaShop.Cart/DcaShop.Cart.csproj" />
     <ProjectReference Include="../DcaShop.Inventory/DcaShop.Inventory.csproj" />
+    <ProjectReference Include="../DcaShop.Pricing/DcaShop.Pricing.csproj" />
   </ItemGroup>
 </Project>

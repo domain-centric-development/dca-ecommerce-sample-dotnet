@@ -53,7 +53,7 @@ public static class CartContextRegistration
 
         // Outgoing adapters (output ports)
         services.AddSingleton<IShoppingCartRepository, InMemoryShoppingCartRepository>();
-        services.AddScoped<IArticleDataPort, ProductCatalogArticleDataAdapter>();
+        services.AddScoped<IArticleDataPort, CompositeArticleDataAdapter>();
         services.AddScoped<IEventListener, CartCheckedOutEventPublisher>();
         services.AddScoped<IEventListener, CartContentsChangedEventPublisher>();
 

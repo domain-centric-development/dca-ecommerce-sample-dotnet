@@ -7,6 +7,10 @@ namespace DcaShop.Checkout;
 [BoundedContext("Checkout", Description = "Checkout process, order placement, and payment orchestration")]
 [Upstream("Product", Translation.AntiCorruptionLayer, Consumes.Api,
     Rationale = "Product data is translated into checkout's own article types")]
+[Upstream("Pricing", Translation.AntiCorruptionLayer, Consumes.Api,
+    Rationale = "Prices are translated into checkout's own line item amounts")]
+[Upstream("Inventory", Translation.AntiCorruptionLayer, Consumes.Api,
+    Rationale = "Stock availability is translated into checkout's own article data")]
 [Upstream("Cart", Translation.AntiCorruptionLayer, Consumes.Api,
     Rationale = "Cart snapshots are translated into checkout's own CartData")]
 [Upstream("Cart", Translation.Conformist, Consumes.Events,
