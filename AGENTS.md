@@ -35,11 +35,14 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
 - A context is declared by a marker class in its root namespace (`CartContext`) carrying `[BoundedContext]`
   and the context-map attributes (`[Upstream]`, `[ExternalUpstream]`, `[Partnership]`). Context references in
   those attributes use the namespace segment (`"Product"`, `"Cart"`).
-- Layers are folders/namespaces: `Domain/Model`, `Domain/Event`, `Domain/Service`, `Application/<UseCase>/`,
+- Layers are folders/namespaces: `Domain/Model`, `Domain/Event`, `Domain/Service`, `Domain/Specification`,
+  `Application/<UseCase>/`,
   `Application/Shared/` (output ports only), `Adapter/Incoming/{Web,Event}`, `Adapter/Outgoing/<Concern>/`,
   `Adapter/Incoming/Api` (REST resources + their DTOs and converters), `Adapter/Incoming/Mcp` (MCP tools),
   `Api/` (Open Host Service), `Events/` (integration events, consumer-defined trigger interfaces),
-  `Infrastructure/` (DI registration `Add<Context>Context()`).
+  `Infrastructure/` (DI registration `Add<Context>Context()`). Each context keeps its ubiquitous language in
+  `Domain/glossary.md` — the same glossaries as the Java sample; a renamed or added domain term is changed there
+  too.
 - Naming: `I<Name>InputPort : IUseCase<TCommand|TQuery, TResult>`, `<Name>UseCase`, `<Name>Command` (writes) /
   `<Name>Query` (reads), `<Name>Result`; repositories `I<Aggregate>Repository` / `InMemory<Aggregate>Repository`;
   web adapters `*PageController` + `*PageViewModel`; REST adapters `*Resource` (`[ApiController]`,
@@ -51,6 +54,27 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
   the **domain stays synchronous**. Value objects are `sealed record`s, ids `readonly record struct : IId`.
 - Cross-context calls go **only** through the other context's `Api/` from an outgoing adapter (ACL); consumed
   integration events arrive in `Adapter/Incoming/Event`. Incoming web adapters touch only their own context.
+- Article data is composed by the **consumer**, as in the Java sample: `CompositeArticleDataAdapter` (Cart) and
+  `CompositeCheckoutArticleDataAdapter` (Checkout) each call three Open Host Services — identity and description
+  from `ProductCatalogService`, the price from `PricingService`, availability from `InventoryService` — and
+  translate them into the context's own article type. The catalog's Api carries **no** price or stock: it reads
+  both as well, but only to present its own pages. A product **nobody has priced** is offered as unavailable
+  (price 0, stock 0, `IsAvailable = false`) with a warning in the log — not with an exception: that is the state
+  of every product between its creation and Pricing consuming `ProductCreatedEvent`, and a shop must not answer
+  it with an error page. Add-to-cart then refuses with "Insufficient stock for product: …", and the checkout
+  validation names the line as `ProductUnavailable`. The Java sample behaves the same way.
+- Settlement is checked against current figures, not stored ones: `ShoppingCart.ValidateForCheckout(
+  IArticlePriceResolver)` answers a `CartValidationResult`, and `CheckoutCartUseCase` turns a non-empty one into
+  a `CartValidationException` (the REST resource renders it as `400`). An **empty or inactive** cart is not a
+  validation error with no errors: the use case lets the aggregate refuse it, so the reason reads "Cannot
+  checkout an empty cart". Same in the Java sample. The article data is fetched **before** the transaction
+  (ADR-004).
+- Query rules the domain states itself: `Domain/Specification` holds composable specifications over
+  `ICompositeSpecification<T>` (shared kernel: `And`/`Or`/`Not` plus `ISpecificationVisitor`), and
+  `IShoppingCartRepository.FindByAsync(specification, PagingRequest)` answers a `PageResult<ShoppingCart>`. The
+  port's default filters and pages in memory so an adapter can adopt push-down (via `ICartSpecificationVisitor`)
+  step by step. What the aggregate cannot see (stock, customer preferences, timestamps) evaluates neutrally in
+  memory and belongs to the push-down.
 - Events: domain events are dispatched in-process synchronously (`InProcessDomainEventPublisher`);
   integration events are registered in `IIntegrationEventOutbox` inside the use case's transaction, released after commit and delivered by `IntegrationEventDispatcherService`
   — asynchronous, after the publishing use case finished, at least once with retry/backoff; consumers are idempotent. Listeners implement `EventListener<TEvent>` and are registered as `IEventListener`.
@@ -61,7 +85,10 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
   here). Keep selectors and scenarios in sync with the Java suite.
 - Views mirror the Java sample's Pug templates one to one (classes, `data-test` attributes, routes, seed data);
   `wwwroot/css/main.css` and `wwwroot/images/products/` are copies of the Java static assets — keep them in sync
-  when the Java UI changes. `ErrorPageController` and `MiniBasketViewComponent` stay in the web host; the
+  when the Java UI changes. The one deliberate markup difference besides the antiforgery field is the corner
+  ribbon in the layout: `.stack-ribbon--dotnet` here, `.stack-ribbon--java` in the Java sample, both styled by
+  the same `.stack-ribbon` block in `main.css`. It exists so two tabs of the same-looking shop can be told
+  apart; keep the CSS identical and only the modifier class and the label different. `ErrorPageController` and `MiniBasketViewComponent` stay in the web host; the
   backoffice views live there too (`Views/Backoffice/`), rendered by `DcaShop.Backoffice`'s page controller.
 - Transactions: writing use cases wrap load → mutate → `SaveAsync` → `PublishAndClearEventsAsync` in
   `ITransactionBoundary.InTransactionAsync`; ports that may leave the process (other contexts' data ports, payment providers) are
@@ -101,8 +128,8 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
 - Consumer-defined trigger contracts (interface inversion, keeps the project graph acyclic): `ICartCompletionTrigger`
   (Cart), `IStockReductionTrigger` (Inventory) — both implemented by `CheckoutConfirmedEvent`;
   `IPriceInitializationTrigger` (Pricing) and `IStockInitializationTrigger` (Inventory) — implemented by
-  `ProductCreatedEvent`. The Java sample calls the Pricing/Inventory Api directly from its seeder instead
-  (root `TODO.md` #11); it is to be brought to this shape.
+  `ProductCreatedEvent`. The Java sample carries the same four contracts (without the `I` prefix), so the
+  creation flow is the same on both sides.
 - Backoffice, the REST API and MCP arrived in stage 2c: the footer's Event Log link is live, `/api/**` carries
   the resources of Product, Cart and Account, and `/mcp` exposes the catalog as the tools `all-products` and
   `product-by-id`. The event log is built from the **integration-event outbox**, not from a per-listener domain

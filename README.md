@@ -73,7 +73,9 @@ DcaShop.Cart/
 ├── CartContext.cs               [BoundedContext], [Upstream], [Partnership] — the context declaration
 ├── Domain/
 │   ├── Model/                   ShoppingCart (aggregate), CartItem (entity), Quantity, CartArticle, EnrichedCart …
-│   └── Event/                   CartItemAddedToCart, CartCheckedOut, CartCompleted … (past tense)
+│   ├── Event/                   CartItemAddedToCart, CartCheckedOut, CartCompleted … (past tense)
+│   ├── Specification/           ActiveCart, HasMinTotal, LastUpdatedBefore … + ICartSpecificationVisitor
+│   └── glossary.md              the context's ubiquitous language
 ├── Application/
 │   ├── AddItemToCart/           I*InputPort : IUseCase<Command, Result>, *UseCase, *Command, *Result
 │   ├── GetCartById/             … one folder per use case
@@ -81,7 +83,7 @@ DcaShop.Cart/
 ├── Adapter/
 │   ├── Incoming/Web/            CartPageController, CartPageViewModel
 │   ├── Incoming/Event/          CartCompletionEventConsumer
-│   └── Outgoing/                Persistence/ (in-memory repository), Product/ (ACL to the catalog Api), Event/
+│   └── Outgoing/                Persistence/ (in-memory repository), Product/ (ACL to Product/Pricing/Inventory), Event/
 ├── Api/                         CartService — Open Host Service for other contexts
 ├── Events/                      CartCheckedOutEvent, ICartCompletionTrigger — published language
 └── Infrastructure/              CartContextRegistration.AddCartContext() — explicit DI wiring
@@ -95,8 +97,10 @@ The pages are a one-to-one translation of the Java sample's Pug templates into R
 `delivery` → `payment` → `review` → `confirm` → `confirmation`). The active checkout session is resolved from the
 customer, not from the URL. The account pages follow the same rule (`/login`, `/register`, POST `/logout`,
 `/account`, `/account/profile`, `/account/change-password`, `/cart/merge`), and so does the backoffice
-(`/backoffice/login`, `/backoffice/events`). The only intended difference in the HTML is the antiforgery hidden
-field in every form.
+(`/backoffice/login`, `/backoffice/events`). Two differences in the HTML are intended: the antiforgery hidden
+field in every form, and the corner ribbon that names the running implementation
+(`.stack-ribbon--dotnet` here, `.stack-ribbon--java` there) — with both shops open in two tabs, the ribbon is
+what tells them apart.
 
 ## What it demonstrates
 
@@ -109,7 +113,8 @@ field in every form.
 | Domain service passed into the aggregate | `TaxCalculator` (contained VAT), `ICheckoutArticlePriceResolver` |
 | Enriched read model | `EnrichedProduct`, `EnrichedCart`, `CheckoutCart` / `EnrichedCheckoutLineItem` (persisted line item + fresh article data) |
 | Use case = input port + command/query + result | every `Application/<UseCase>/` folder |
-| Output ports in `Application/Shared`, adapters outside | `IArticleDataPort` ↔ `ProductCatalogArticleDataAdapter` |
+| Output ports in `Application/Shared`, adapters outside | `IArticleDataPort` ↔ `CompositeArticleDataAdapter` |
+| One port answered from several Open Host Services | `CompositeArticleDataAdapter` — product identity from the catalog, price from Pricing, availability from Inventory |
 | Anti-corruption layer to another context's Api | `Adapter/Outgoing/Product/`, `Adapter/Outgoing/Cart/` |
 | Open Host Service | `ProductCatalogService`, `CartService` |
 | Domain event → integration event relay | `CheckoutConfirmedEventPublisher` → `CheckoutConfirmedEvent` |
@@ -119,6 +124,9 @@ field in every form.
 | Eventual consistency between contexts | cart changed → `SyncCheckoutWithCart`; checkout confirmed → `ReduceStock` |
 | Domain gateway called by the aggregate | `IPasswordHasher` — the contract in `Account/Domain/Gateway`, BCrypt in the adapter |
 | Specification as a first-class rule | `UsableDateOfBirth` — evaluated by `Owner` and by the change-profile use case |
+| Composable specifications translatable by an adapter | `ActiveCart`, `HasMinTotal`, `HasAnyAvailableItem` … over `ICompositeSpecification<T>`, visited by `ICartSpecificationVisitor` |
+| Repository query in domain terms, paged | `IShoppingCartRepository.FindByAsync(specification, PagingRequest)` → `PageResult<ShoppingCart>` |
+| Settlement checked against current figures | `ShoppingCart.ValidateForCheckout(IArticlePriceResolver)` → `CartValidationResult`; `CheckoutCartUseCase` refuses a cart whose articles are gone or short in stock |
 | Shared-kernel port with one context's implementation | `IIdentityProvider` (shared kernel) resolved by Account's JWT middleware |
 | Async at the ports, synchronous domain | `Task<TOut> ExecuteAsync(...)` vs. plain domain methods |
 | Executable context map | `docs/context-map.md`, rendered by the architecture tests |
