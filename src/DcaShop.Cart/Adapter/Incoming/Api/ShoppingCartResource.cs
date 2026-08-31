@@ -167,6 +167,12 @@ public sealed class ShoppingCartResource : ControllerBase
         {
             await _checkoutCart.ExecuteAsync(new CheckoutCartCommand(cartId, CurrentCustomerId), cancellationToken);
         }
+        catch (CartValidationException e)
+        {
+            return BadRequest(e.ValidationResult.Errors.Count == 0
+                ? e.Message
+                : string.Join("; ", e.ValidationResult.Errors.Select(error => error.Message)));
+        }
         catch (Exception e) when (e is ArgumentException or InvalidOperationException)
         {
             return BadRequest(e.Message);

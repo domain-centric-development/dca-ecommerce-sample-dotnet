@@ -171,6 +171,68 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
         return total;
     }
 
+    /// <summary>
+    /// Total from the prices the resolver answers now, not the ones captured at addition — what the customer
+    /// actually owes at settlement time.
+    /// </summary>
+    public Money CalculateTotal(IArticlePriceResolver priceResolver)
+    {
+        ArgumentNullException.ThrowIfNull(priceResolver);
+
+        var total = Money.Euro(0m);
+        foreach (var item in _items)
+        {
+            total = total.Add(priceResolver.Resolve(item.ProductId).Price.Multiply(item.Quantity.Value));
+        }
+
+        return total;
+    }
+
+    /// <summary>
+    /// Checks every line against current availability and stock. An empty cart is valid — <see cref="Checkout"/>
+    /// is what refuses it.
+    /// </summary>
+    public CartValidationResult ValidateForCheckout(IArticlePriceResolver priceResolver)
+    {
+        ArgumentNullException.ThrowIfNull(priceResolver);
+
+        var errors = new List<CartValidationResult.ValidationError>();
+        foreach (var item in _items)
+        {
+            var article = priceResolver.Resolve(item.ProductId);
+            if (!article.IsAvailable)
+            {
+                errors.Add(CartValidationResult.ValidationError.ProductUnavailable(item.ProductId));
+            }
+            else if (article.AvailableStock < item.Quantity.Value)
+            {
+                errors.Add(CartValidationResult.ValidationError.InsufficientStock(
+                    item.ProductId, item.Quantity.Value, article.AvailableStock));
+            }
+        }
+
+        return errors.Count == 0 ? CartValidationResult.Valid() : CartValidationResult.WithErrors(errors);
+    }
+
+    /// <summary>
+    /// Takes over every line of another cart, keeping the price each was added at, and answers how many lines
+    /// moved. The source cart is left untouched — whoever merges decides what becomes of it.
+    /// </summary>
+    public int Merge(ShoppingCart sourceCart)
+    {
+        ArgumentNullException.ThrowIfNull(sourceCart);
+        EnsureCartIsActive();
+
+        var mergedCount = 0;
+        foreach (var item in sourceCart.Items)
+        {
+            AddItem(item.ProductId, item.Quantity, item.PriceAtAddition);
+            mergedCount++;
+        }
+
+        return mergedCount;
+    }
+
     public bool ContainsProduct(ProductId productId) => _items.Any(i => i.ProductId == productId);
 
     private CartItem FindItem(CartItemId itemId) =>

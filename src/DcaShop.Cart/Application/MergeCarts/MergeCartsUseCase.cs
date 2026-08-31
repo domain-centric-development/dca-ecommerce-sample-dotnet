@@ -48,7 +48,7 @@ public sealed class MergeCartsUseCase : IMergeCartsInputPort
                     switch (command.Strategy)
                     {
                         case CartMergeStrategy.MergeBoth:
-                            itemsFromAnonymous = CopyItems(anonymousCart, accountCart);
+                            itemsFromAnonymous = accountCart.Merge(anonymousCart);
                             break;
 
                         case CartMergeStrategy.UseAnonymousCart:
@@ -58,7 +58,7 @@ public sealed class MergeCartsUseCase : IMergeCartsInputPort
                                 accountCart.Clear();
                             }
 
-                            itemsFromAnonymous = CopyItems(anonymousCart, accountCart);
+                            itemsFromAnonymous = accountCart.Merge(anonymousCart);
                             break;
 
                         case CartMergeStrategy.UseAccountCart:
@@ -74,16 +74,6 @@ public sealed class MergeCartsUseCase : IMergeCartsInputPort
                 return Summarize(accountCart, command.Strategy, itemsFromAnonymous, itemsFromAccount);
             },
             cancellationToken).ConfigureAwait(false);
-    }
-
-    private static int CopyItems(ShoppingCart from, ShoppingCart to)
-    {
-        foreach (var item in from.Items)
-        {
-            to.AddItem(item.ProductId, item.Quantity, item.PriceAtAddition);
-        }
-
-        return from.ItemCount;
     }
 
     private static MergeCartsResult Summarize(
