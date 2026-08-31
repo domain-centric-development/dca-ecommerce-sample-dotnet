@@ -3834,3 +3834,93 @@ ul, ol {
     grid-template-columns: 1fr;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Stack Ribbon — which implementation of this shop is running
+   The two reference implementations (Java/Spring Boot and .NET/ASP.NET Core)
+   serve identical markup; the ribbon is the one intended difference that says
+   which of them answered the request.
+   -------------------------------------------------------------------------- */
+
+.stack-ribbon {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 118px;
+  height: 118px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 300;
+}
+
+.stack-ribbon__label {
+  position: absolute;
+  /* Offsets put the lettering on the middle of the visible chord, not on the middle
+     of the band: the box clips the band asymmetrically, so the two differ by ~8px */
+  top: 32px;
+  right: -40px;
+  width: 168px;
+  padding: 5px 0;
+  transform: rotate(45deg);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+}
+
+/* A hairline above and below the lettering, the way a printed banderole is set */
+.stack-ribbon__label::before,
+.stack-ribbon__label::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.stack-ribbon__label::before {
+  top: 2px;
+}
+
+.stack-ribbon__label::after {
+  bottom: 2px;
+}
+
+.stack-ribbon--java .stack-ribbon__label {
+  background: linear-gradient(135deg, #F0932B 0%, #C4520A 100%);
+}
+
+.stack-ribbon--dotnet .stack-ribbon__label {
+  background: linear-gradient(135deg, #7B4DF3 0%, #4522B4 100%);
+}
+
+/* Narrow viewports: the corner belongs to the navigation, so the ribbon
+   becomes a flat tag in the opposite corner instead of covering it */
+@media (max-width: 1180px) {
+  .stack-ribbon {
+    top: auto;
+    right: auto;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    height: auto;
+    overflow: visible;
+  }
+
+  .stack-ribbon__label {
+    position: static;
+    width: auto;
+    padding: 4px 12px;
+    top: auto;
+    right: auto;
+    transform: none;
+    border-radius: 0 var(--radius-sm) 0 0;
+    box-shadow: 0 -1px 8px rgba(0, 0, 0, 0.18);
+  }
+}
