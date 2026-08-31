@@ -8,6 +8,9 @@ It ships seven bounded contexts — **Product Catalog**, **Shopping Cart**, **Ch
 **Inventory**, **Account**, **Portal** — with the same ubiquitous language and use cases as the Java twin
 (`dca-ecommerce-sample-java`), plus the **Backoffice** operational module, the REST API and an MCP server.
 
+*Written with AI assistance — drafted mainly by Claude, reviewed and directed by the author since
+2025. The architecture rules in this repository's build are part of how that work is verified.*
+
 ## Run
 
 Requires the .NET 10 SDK (pinned by `global.json`).
