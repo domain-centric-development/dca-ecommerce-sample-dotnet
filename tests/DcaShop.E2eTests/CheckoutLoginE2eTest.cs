@@ -94,6 +94,31 @@ public sealed class CheckoutLoginE2eTest : BaseE2eTest
             $"Should be redirected to checkout or cart after login. Got: {CurrentPath}");
     }
 
+    [E2eFact(DisplayName = "Buyer step drops the login prompt and prefills the email once logged in")]
+    public async Task BuyerStepReflectsLoginState()
+    {
+        // As a guest the buyer step offers login and register and leaves the email blank.
+        await AddProductToCartAsync();
+        var cart = await CartPage.NavigateToAsync(Page);
+        Assert.True(await cart.HasItemsAsync(), "Cart should have items");
+        var guestBuyer = await cart.ProceedToCheckoutAsync();
+
+        Assert.True(await guestBuyer.ShowsAuthOptionsAsync(), "A guest should be offered login and register");
+        Assert.Equal(string.Empty, await guestBuyer.EmailValueAsync());
+
+        // Registering from within the checkout turns the same visitor into a registered one.
+        var email = UniqueEmail("buyerstate");
+        await RegisterAsync(email);
+
+        var cartAfterLogin = await CartPage.NavigateToAsync(Page);
+        Assert.True(await cartAfterLogin.HasItemsAsync(), "Cart should have items");
+        var buyer = await cartAfterLogin.ProceedToCheckoutAsync();
+
+        Assert.False(await buyer.ShowsAuthOptionsAsync(), "A logged-in visitor must not be asked to log in again");
+        Assert.Contains(email, await buyer.LoggedInBannerTextAsync(), StringComparison.Ordinal);
+        Assert.Equal(email, await buyer.EmailValueAsync());
+    }
+
     private static string UniqueEmail(string prefix) =>
         $"{prefix}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Guid.NewGuid():N}@example.com";
 

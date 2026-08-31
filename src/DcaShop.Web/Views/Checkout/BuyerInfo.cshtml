@@ -1,11 +1,13 @@
 @model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
-@{ ViewData["Title"] = "Checkout - Buyer Information"; var b = Model.Session.BuyerInfo; }
+@{ ViewData["Title"] = "Checkout - Buyer Information"; var b = Model.Session.BuyerInfo; var email = b?.Email ?? (Model.IsAnonymous ? string.Empty : Model.IdentityEmail); }
 <div class="checkout">
 @await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 1)
 @if (Model.Error is not null)
 {
 <div class="alert alert--error" data-test="buyer-error-message">@Model.Error</div>
 }
+@if (Model.IsAnonymous)
+{
 <div class="checkout__auth" data-test="buyer-auth-options">
 <p>Already have an account? Log in to speed up checkout.</p>
 <div class="checkout__auth-buttons">
@@ -13,12 +15,19 @@
 <a class="btn btn--secondary" href="/register?returnUrl=/checkout/buyer" data-test="buyer-register-link">Register</a>
 </div>
 </div>
+}
+else
+{
+<div class="checkout__auth checkout__auth--logged-in" data-test="buyer-logged-in">
+<p>Logged in as @Model.IdentityEmail</p>
+</div>
+}
 <h3 class="checkout__section-title">Buyer Information</h3>
 <form class="checkout__form" method="post" action="/checkout/buyer" data-test="buyer-form">
 @Html.AntiForgeryToken()
 <div class="form__group">
 <label class="form__label" for="email">Email Address</label>
-<input class="form__input" id="email" type="email" name="email" required placeholder="you@example.com" value="@(b?.Email)" data-test="buyer-email-input">
+<input class="form__input" id="email" type="email" name="email" required placeholder="you@example.com" value="@email" data-test="buyer-email-input">
 </div>
 <div class="form__row">
 <div class="form__group">
