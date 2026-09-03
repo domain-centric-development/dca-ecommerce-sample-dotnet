@@ -29,9 +29,11 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
 ## Structure and conventions
 
 - Root namespace `DcaShop`; one **project per bounded context** (`DcaShop.Product`, `DcaShop.Cart`,
-  `DcaShop.Checkout`, `DcaShop.Pricing`, `DcaShop.Inventory`, `DcaShop.Account`, `DcaShop.Portal`), plus
-  `DcaShop.SharedKernel`, `DcaShop.Infrastructure`, `DcaShop.Web` and `DcaShop.Backoffice` — the last an
-  **operational module, not a context**: no `[BoundedContext]` marker, absent from the context map.
+  `DcaShop.Checkout`, `DcaShop.Pricing`, `DcaShop.Inventory`, `DcaShop.Account`, `DcaShop.Portal`,
+  `DcaShop.Backoffice`), plus `DcaShop.SharedKernel`, `DcaShop.Infrastructure` and `DcaShop.Web`.
+  Backoffice is a **generic** subdomain — operating the application itself — and a bounded context since
+  2026-09-03: it owns the *event publication* language, so it carries `[BoundedContext]` on
+  `BackofficeContext` and appears on the context map as Separate Ways.
 - A context is declared by a marker class in its root namespace (`CartContext`) carrying `[BoundedContext]`
   and the context-map attributes (`[Upstream]`, `[ExternalUpstream]`, `[Partnership]`). Context references in
   those attributes use the namespace segment (`"Product"`, `"Cart"`).

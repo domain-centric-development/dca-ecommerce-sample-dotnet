@@ -12,7 +12,7 @@ builder.Services
         // (ADR-007). The exempt list is JwtAuthenticationMiddleware's own; the two must never drift apart.
         options.Filters.Add(new TokenOnlyAwareAntiforgeryFilter()))
     .AddApplicationPart(typeof(DcaShop.Account.AccountContext).Assembly)
-    .AddApplicationPart(typeof(DcaShop.Backoffice.BackofficeModule).Assembly)
+    .AddApplicationPart(typeof(DcaShop.Backoffice.BackofficeContext).Assembly)
     .AddApplicationPart(typeof(DcaShop.Portal.PortalContext).Assembly)
     .AddApplicationPart(typeof(DcaShop.Product.ProductContext).Assembly)
     .AddApplicationPart(typeof(DcaShop.Cart.CartContext).Assembly)

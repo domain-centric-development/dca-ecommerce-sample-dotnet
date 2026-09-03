@@ -11,7 +11,7 @@ namespace DcaShop.Backoffice.Infrastructure;
 /// <summary>Wires the Backoffice module, including its own authentication scheme.</summary>
 public static class BackofficeContextRegistration
 {
-    public static IServiceCollection AddBackofficeModule(
+    public static IServiceCollection AddBackofficeContext(
         this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -33,9 +33,9 @@ public static class BackofficeContextRegistration
                 options.Cookie.Name = BackofficeOptions.CookieName;
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
-                options.Cookie.Path = BackofficeModule.PathPrefix;
-                options.LoginPath = $"{BackofficeModule.PathPrefix}/login";
-                options.AccessDeniedPath = $"{BackofficeModule.PathPrefix}/login";
+                options.Cookie.Path = BackofficeContext.PathPrefix;
+                options.LoginPath = $"{BackofficeContext.PathPrefix}/login";
+                options.AccessDeniedPath = $"{BackofficeContext.PathPrefix}/login";
             });
 
         services.AddSingleton<IPostConfigureOptions<CookieAuthenticationOptions>, BackofficeCookieHardening>();

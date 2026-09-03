@@ -6,7 +6,7 @@ Design, Hexagonal Architecture and Clean Architecture. A small webshop built wit
 
 It ships seven bounded contexts — **Product Catalog**, **Shopping Cart**, **Checkout**, **Pricing**,
 **Inventory**, **Account**, **Portal** — with the same ubiquitous language and use cases as the Java twin
-(`dca-ecommerce-sample-java`), plus the **Backoffice** operational module, the REST API and an MCP server.
+(`dca-ecommerce-sample-java`), plus the **Backoffice** context, the REST API and an MCP server.
 
 *Written with AI assistance — drafted mainly by Claude, reviewed and directed by the author since
 2025. The architecture rules in this repository's build are part of how that work is verified.*
@@ -59,7 +59,7 @@ src/
 ├── DcaShop.Inventory/           Inventory         (namespace DcaShop.Inventory)
 ├── DcaShop.Account/             Account           (namespace DcaShop.Account) — accounts, credentials, sessions
 ├── DcaShop.Portal/              Portal            (namespace DcaShop.Portal) — the landing page; a UI shell with no domain model
-├── DcaShop.Backoffice/          operational module, *not* a bounded context — the event publication log
+├── DcaShop.Backoffice/          bounded context, generic subdomain — the event publication log
 ├── DcaShop.Infrastructure/      composition root, outbox dispatcher (retry/backoff), sample data
 └── DcaShop.Web/                 ASP.NET Core host: Razor views, layout + mini basket, home/error pages, wwwroot (controllers live in the contexts)
 tests/
@@ -162,10 +162,13 @@ legitimate for a console with no HTTP identity at all.
 `product-by-id`, over the same input ports and the same DTO converter as the REST resources — one representation
 of a product, not two that can drift. Bearer-only, like `/api/**`.
 
-**Backoffice** (`/backoffice/events`, reachable from the footer) is an operational module, not a bounded context:
-it owns no business concept, carries no `[BoundedContext]` marker and does not appear in the context map. It signs
-operators in under its own cookie scheme with its own credentials (`admin`/`admin` by default, `Backoffice`
-section in `appsettings.json`) — a staff session and a shopper session must never be the same cookie.
+**Backoffice** (`/backoffice/events`, reachable from the footer) is a bounded context of a *generic* subdomain —
+operating this application. It owns a language no business context uses (an *event publication* is a dispatched
+domain event with a completion status), so it carries `[BoundedContext]` and appears on the context map; it reads
+what others have published and negotiates no contract, hence Separate Ways. In transaction-script style it has no
+domain model of its own. It signs operators in under its own cookie scheme with its own credentials
+(`admin`/`admin` by default, `Backoffice` section in `appsettings.json`) — a staff session and a shopper session
+must never be the same cookie.
 
 > **What the event log actually shows.** The Java sample reads Spring Modulith's `EVENT_PUBLICATION` table: one
 > row per *domain* event per listener, completed when that listener returned. This shop has no such registry — its

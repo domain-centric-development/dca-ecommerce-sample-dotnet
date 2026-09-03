@@ -47,8 +47,8 @@ public static class DcaShopRegistration
         services.AddCartContext();
         services.AddCheckoutContext();
 
-        // Operational modules (not bounded contexts)
-        services.AddBackofficeModule(configuration);
+        // Generic subdomain: operating the application itself
+        services.AddBackofficeContext(configuration);
 
         // Sample data
         services.AddHostedService<SampleDataSeeder>();
