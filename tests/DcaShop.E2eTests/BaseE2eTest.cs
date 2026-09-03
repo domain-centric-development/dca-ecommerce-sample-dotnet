@@ -11,13 +11,15 @@ public sealed class BrowserFixture : IAsyncLifetime
 
     private IPlaywright? _playwright;
 
-    public IBrowser Browser { get; private set; } = null!;
+    public IBrowser Browser => _browser ?? throw new InvalidOperationException("Browser fixture not initialised — is E2E_BASE_URL set?");
+
+    private IBrowser? _browser;
 
     public async Task InitializeAsync()
     {
         _playwright = await Playwright.CreateAsync();
         var options = new BrowserTypeLaunchOptions { Headless = Headless };
-        Browser = BrowserType.ToLowerInvariant() switch
+        _browser = BrowserType.ToLowerInvariant() switch
         {
             "firefox" => await _playwright.Firefox.LaunchAsync(options),
             "webkit" => await _playwright.Webkit.LaunchAsync(options),
@@ -27,7 +29,10 @@ public sealed class BrowserFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        await Browser.CloseAsync();
+        if (_browser is not null)
+        {
+            await _browser.CloseAsync();
+        }
         _playwright?.Dispose();
     }
 }
@@ -35,7 +40,7 @@ public sealed class BrowserFixture : IAsyncLifetime
 public abstract class BaseE2eTest : IClassFixture<BrowserFixture>, IAsyncLifetime
 {
     private readonly BrowserFixture _browser;
-    private IBrowserContext _context = null!;
+    private IBrowserContext? _context;
 
     protected BaseE2eTest(BrowserFixture browser)
     {
@@ -52,7 +57,7 @@ public abstract class BaseE2eTest : IClassFixture<BrowserFixture>, IAsyncLifetim
         Page = await _context.NewPageAsync();
     }
 
-    public Task DisposeAsync() => _context.CloseAsync();
+    public Task DisposeAsync() => _context?.CloseAsync() ?? Task.CompletedTask;
 
     protected Task NavigateToAsync(string path) => Page.GotoAsync(BaseUrl + path);
 
@@ -60,7 +65,7 @@ public abstract class BaseE2eTest : IClassFixture<BrowserFixture>, IAsyncLifetim
     /// Drops every cookie of this browser, which is how a test becomes a different visitor: no identity, no
     /// session, no cart.
     /// </summary>
-    protected Task ClearCookiesAsync() => _context.ClearCookiesAsync();
+    protected Task ClearCookiesAsync() => _context!.ClearCookiesAsync();
 
     protected Task WaitForUrlAsync(string pattern) => Page.WaitForURLAsync(BaseUrl + pattern);
 
