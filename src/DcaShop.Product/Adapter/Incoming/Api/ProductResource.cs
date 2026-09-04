@@ -2,6 +2,7 @@ using DcaShop.Product.Application.CreateProduct;
 using DcaShop.Product.Application.GetAllProducts;
 using DcaShop.Product.Application.GetProductById;
 using DcaShop.SharedKernel.Application.Shared;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,7 +14,9 @@ namespace DcaShop.Product.Adapter.Incoming.Api;
 /// </summary>
 /// <remarks>
 /// Authenticated by an <c>Authorization: Bearer</c> token and nothing else: no cookie of this browser reaches
-/// this adapter, which is what lets the whole <c>/api/</c> surface skip the antiforgery token (ADR-007).
+/// this adapter, which is what lets the whole <c>/api/</c> surface skip the antiforgery token (ADR-007). The staff
+/// gate is a claims-only check and therefore a property of this exposure, stated as <c>[Authorize]</c> so the
+/// pipeline answers <c>401</c> to a stranger and <c>403</c> to a customer without the role (ADR-008).
 /// </remarks>
 [ApiController]
 [Route("api/products")]
@@ -23,31 +26,25 @@ public sealed class ProductResource : ControllerBase
     private readonly IGetAllProductsInputPort _getAllProducts;
     private readonly IGetProductByIdInputPort _getProductById;
     private readonly ProductDtoConverter _converter;
-    private readonly IIdentityProvider _identityProvider;
 
     public ProductResource(
         ICreateProductInputPort createProduct,
         IGetAllProductsInputPort getAllProducts,
         IGetProductByIdInputPort getProductById,
-        ProductDtoConverter converter,
-        IIdentityProvider identityProvider)
+        ProductDtoConverter converter)
     {
         _createProduct = createProduct;
         _getAllProducts = getAllProducts;
         _getProductById = getProductById;
         _converter = converter;
-        _identityProvider = identityProvider;
     }
 
     [HttpPost]
+    [Authorize(Roles = IIdentityProvider.IIdentity.RoleStaff)]
     public async Task<ActionResult<ProductDto>> CreateProduct(
         [FromBody] CreateProductRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (!_identityProvider.GetCurrentIdentity().HasRole(IIdentityProvider.IIdentity.RoleStaff))
-        {
-            return StatusCode(StatusCodes.Status403Forbidden);
-        }
 
         var command = new CreateProductCommand(
             request.Sku,

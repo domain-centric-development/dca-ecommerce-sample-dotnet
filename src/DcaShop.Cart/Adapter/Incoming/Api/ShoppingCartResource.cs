@@ -6,6 +6,7 @@ using DcaShop.Cart.Application.GetOrCreateActiveCart;
 using DcaShop.Cart.Application.RemoveItemFromCart;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Application.Shared;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -70,13 +71,9 @@ public sealed class ShoppingCartResource : ControllerBase
 
     /// <summary>Every cart in the shop — the operator view, and the only route that leaves the caller's own data.</summary>
     [HttpGet]
+    [Authorize(Roles = IIdentityProvider.IIdentity.RoleStaff)]
     public async Task<ActionResult<ShoppingCartListDto>> GetAllCarts(CancellationToken cancellationToken)
     {
-        if (!_identityProvider.GetCurrentIdentity().HasRole(IIdentityProvider.IIdentity.RoleStaff))
-        {
-            return StatusCode(StatusCodes.Status403Forbidden);
-        }
-
         var result = await _getAllCarts.ExecuteAsync(new GetAllCartsQuery(), cancellationToken);
         return Ok(_converter.ToListDto(result));
     }

@@ -10,10 +10,10 @@ namespace DcaShop.Web;
 /// can authenticate.
 /// </summary>
 /// <remarks>
-/// The exemption is sound only because <see cref="JwtAuthenticationMiddleware"/> neither reads nor writes cookies
-/// on those paths: a cross-site form post to <c>/api/**</c> arrives as an anonymous stranger, so there is nothing
-/// to forge. Both halves are stated in ADR-007, and the path list lives in the middleware — this filter asks it
-/// rather than keeping a second copy that could drift.
+/// The exemption is sound only because the Bearer authentication scheme selected for those paths neither reads nor
+/// writes cookies: a cross-site form post to <c>/api/**</c> arrives as an anonymous stranger, so there is nothing
+/// to forge. Both halves are stated in ADR-007, and the path list lives in <see cref="TokenOnlyPaths"/> — this
+/// filter asks it rather than keeping a second copy that could drift.
 /// </remarks>
 internal sealed class TokenOnlyAwareAntiforgeryFilter : IAsyncAuthorizationFilter
 {
@@ -25,7 +25,7 @@ internal sealed class TokenOnlyAwareAntiforgeryFilter : IAsyncAuthorizationFilte
 
         var request = context.HttpContext.Request;
         if (SafeMethods.Contains(request.Method, StringComparer.OrdinalIgnoreCase)
-            || JwtAuthenticationMiddleware.IsTokenOnlyEndpoint(request.Path))
+            || TokenOnlyPaths.IsTokenOnlyEndpoint(request.Path))
         {
             return;
         }

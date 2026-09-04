@@ -97,14 +97,22 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
   called **before** the unit of work, never inside it (ADR-004). Read use cases run without one.
 - DI is explicit: every use case, adapter and listener is registered in the context's `*ContextRegistration`.
 - Identity: every context keys its data on the visitor's `UserId`, read through the shared-kernel port
-  `IIdentityProvider`. `JwtAuthenticationMiddleware` (Account) resolves it per request from two cookies —
-  `shop-identity` (who the browser is, 30 days, rotated only on explicit logout) and `shop-session` (the
-  authentication, 7 days, expiry harmless). Expiry ends the session, never the identity, so an aged-out login
-  never costs the cart. The middleware enriches, it does not gate: a page decides who may see it (ADR-006).
-- API surface: `/api/**` and `/mcp` are **Bearer only** — on those paths the middleware reads no cookie and
-  writes none, which is the sole reason `TokenOnlyAwareAntiforgeryFilter` may exempt them from the antiforgery
-  token. The path list lives in `JwtAuthenticationMiddleware.TokenOnlyPathPrefixes` and the filter asks it;
-  never give one half a list of its own.
+  `IIdentityProvider`. `ShopIdentityAuthenticationHandler` (Account) is an ASP.NET Core authentication scheme
+  that resolves it per request into `HttpContext.User` (ADR-008) from two cookies — `shop-identity` (who the
+  browser is, 30 days, rotated only on explicit logout) and `shop-session` (the authentication, 7 days, expiry
+  harmless). Expiry ends the session, never the identity, so an aged-out login never costs the cart. The handler
+  enriches, it does not gate: every request ends with an identity, recorded as `IShopIdentityFeature` on the
+  `HttpContext` (that is what `HttpContextIdentityProvider` reads — `HttpContext.User` is replaced by any
+  `[Authorize]` that names another scheme, e.g. on backoffice pages, and the layout's mini basket still needs the
+  visitor), but only a registered session yields an authenticated principal (`ShopPrincipal.From`). An anonymous
+  visitor is `NoResult`, so `[Authorize]` challenges (login redirect on pages, `401` + `WWW-Authenticate: Bearer`
+  with a problem document on the API) and a customer without a role is forbidden (`403`). Claims-only gates are
+  attributes: `[Authorize(Roles = RoleStaff)]` on the two staff routes, `[Authorize]` on the account pages. The
+  backoffice keeps its own cookie scheme, never the default.
+- API surface: `/api/**` and `/mcp` are **Bearer only** — the default policy scheme forwards those paths to the
+  `ShopBearer` scheme, which reads no cookie and writes none; that is the sole reason `TokenOnlyAwareAntiforgeryFilter`
+  may exempt them from the antiforgery token. The path list lives in `TokenOnlyPaths` and both the scheme selector
+  and the filter ask it; never give one half a list of its own.
 - Authorization: **a guard goes where its inputs are** (ADR-007), not where it feels "business" or "technical".
   A claims-only gate may sit in the adapter — `POST /api/products` and `GET /api/carts` are staff-only there,
   because that is a property of the exposure. An **ownership** check never may: the caller is part of the command

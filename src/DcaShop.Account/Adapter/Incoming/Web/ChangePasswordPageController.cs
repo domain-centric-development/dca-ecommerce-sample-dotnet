@@ -1,12 +1,14 @@
 using DcaShop.Account.Application.ChangePassword;
 using DcaShop.Account.Application.GetAccountOverview;
 using DcaShop.SharedKernel.Application.Shared;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Account.Adapter.Incoming.Web;
 
 /// <summary>Driving adapter for the change-password page.</summary>
 [Route("account/change-password")]
+[Authorize]
 public sealed class ChangePasswordPageController : Controller
 {
     internal const string ConfirmationMismatch = "New password and confirmation do not match";
@@ -32,11 +34,6 @@ public sealed class ChangePasswordPageController : Controller
     public async Task<IActionResult> Show(CancellationToken cancellationToken)
     {
         var identity = _identityProvider.GetCurrentIdentity();
-        if (identity.IsAnonymous)
-        {
-            return LoginRedirect();
-        }
-
         var accessible = (await _getAccountOverview.ExecuteAsync(
             new GetAccountOverviewQuery(identity.UserId.Value), cancellationToken)).Found;
 
@@ -56,11 +53,6 @@ public sealed class ChangePasswordPageController : Controller
         CancellationToken cancellationToken)
     {
         var identity = _identityProvider.GetCurrentIdentity();
-        if (identity.IsAnonymous)
-        {
-            return LoginRedirect();
-        }
-
         if (newPassword != confirmPassword)
         {
             return View(ViewName, ChangePasswordPageViewModel.WithError(ConfirmationMismatch));

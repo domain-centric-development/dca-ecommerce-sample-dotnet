@@ -36,7 +36,8 @@ public sealed class ApiFlowTest : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.OK, one.StatusCode);
 
         var anonymous = await client.PostAsync("/api/products", NewProduct());
-        Assert.Equal(HttpStatusCode.Forbidden, anonymous.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+        Assert.Equal("Bearer", anonymous.Headers.WwwAuthenticate.ToString());
 
         var (customer, _) = await RegisterAsync("catalog-customer@example.com");
         var asCustomer = await Bearer(customer).PostAsync("/api/products", NewProduct());
@@ -70,7 +71,7 @@ public sealed class ApiFlowTest : IClassFixture<WebApplicationFactory<Program>>
     public async Task ListingEveryCartNeedsStaff()
     {
         var (customer, _) = await RegisterAsync("cart-lister@example.com");
-        Assert.Equal(HttpStatusCode.Forbidden, (await _factory.CreateClient().GetAsync("/api/carts")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _factory.CreateClient().GetAsync("/api/carts")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await Bearer(customer).GetAsync("/api/carts")).StatusCode);
 
         var (_, staffUserId) = await RegisterAsync("cart-operator@example.com");

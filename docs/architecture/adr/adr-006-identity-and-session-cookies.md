@@ -1,6 +1,6 @@
 # ADR-006: Two Cookies for Identity and Session, Signed by an Own JWT Middleware
 
-**Date**: 2026-08-30 · **Status**: Accepted
+**Date**: 2026-08-30 · **Status**: Accepted · Point 1 amended by [ADR-008](adr-008-identity-as-authentication-handler.md) (2026-09-03): the same tokens, resolved by an ASP.NET Core authentication handler instead of a middleware
 
 ## Context
 
@@ -30,10 +30,12 @@ implementation guide prescribes that cookie design. The two samples are the same
 | `shop-session` | the authentication: subject, email, roles | 7 days | expiry — with no effect on the identity |
 
 1. **JWT, not ASP.NET Core cookie authentication.** Both cookies carry an HS256-signed token minted by
-   `JwtTokenService`, and `JwtAuthenticationMiddleware` resolves them into an
-   `IIdentityProvider.IIdentity` on `HttpContext.Items`. `AddAuthentication().AddCookie()` would be the idiomatic
-   .NET choice for a single application, but it hides exactly the design this sample exists to show — and the Java
-   twin has to be readable next to it. The token design is the guide's, not this sample's invention.
+   `JwtTokenService`. `AddAuthentication().AddCookie()` would be the idiomatic .NET choice for a single
+   application, but it hides exactly the design this sample exists to show — and the Java twin has to be readable
+   next to it. The token design is the guide's, not this sample's invention.
+   *Amended by ADR-008:* the tokens are resolved by `ShopIdentityAuthenticationHandler`, an ASP.NET Core
+   authentication scheme, into `HttpContext.User`; the port reads the principal. Originally an own middleware put
+   the identity on `HttpContext.Items`.
 
 2. **The middleware enriches, it does not gate.** A request with an expired or forged session is not an error: it
    continues as anonymous and sees what an anonymous visitor sees. Authorization for a protected page is enforced
@@ -74,8 +76,9 @@ than the rest of this ADR. Both samples stop at the same place, on purpose.
   person on a shared device holding it. Both are asserted in `AccountFlowTest`.
 - Positive: the Java Playwright suites — including `CheckoutLoginE2ETest` and `CartMergeE2ETest` — pass against
   this shop unchanged, because the cookie names, routes and markup are the same.
-- Negative: an own middleware means an own token path to maintain, outside the ASP.NET Core authentication
-  handlers. It is deliberate (point 1), and it stays small: mint, validate, put the identity on the request.
+- Negative (resolved by ADR-008): an own middleware meant an own token path outside the ASP.NET Core
+  authentication handlers. The token path is still the sample's own (mint, validate), but it now runs as an
+  authentication scheme, so `[Authorize]` and the challenge pipeline see it.
 - Negative: no revocation until `shop-refresh` exists — a stolen session token is valid until it expires.
 - Open: whether `IIdentityProvider`, `IIdentitySession` and `ITokenService` are output ports at all is a question
   for both samples (root `TODO.md` #24); the shapes here are the Java sample's, deliberately unchanged. The same

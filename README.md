@@ -130,7 +130,7 @@ what tells them apart.
 | Composable specifications translatable by an adapter | `ActiveCart`, `HasMinTotal`, `HasAnyAvailableItem` … over `ICompositeSpecification<T>`, visited by `ICartSpecificationVisitor` |
 | Repository query in domain terms, paged | `IShoppingCartRepository.FindByAsync(specification, PagingRequest)` → `PageResult<ShoppingCart>` |
 | Settlement checked against current figures | `ShoppingCart.ValidateForCheckout(IArticlePriceResolver)` → `CartValidationResult`; `CheckoutCartUseCase` refuses a cart whose articles are gone or short in stock |
-| Shared-kernel port with one context's implementation | `IIdentityProvider` (shared kernel) resolved by Account's JWT middleware |
+| Shared-kernel port with one context's implementation | `IIdentityProvider` (shared kernel) resolved by Account's authentication handler from `HttpContext.User` |
 | Async at the ports, synchronous domain | `Task<TOut> ExecuteAsync(...)` vs. plain domain methods |
 | Executable context map | `docs/context-map.md`, rendered by the architecture tests |
 | One protocol per adapter, one set of use cases | `ProductPageController` (Razor), `ProductResource` (REST), `ProductCatalogMcpToolProvider` (MCP) |
@@ -141,9 +141,10 @@ what tells them apart.
 Three surfaces sit beside the shop pages.
 
 **REST** (`/api/**`) is authenticated by an `Authorization: Bearer` token and by **nothing else** — on those paths
-the identity middleware neither reads a cookie nor writes one, which is the only reason they may skip the
-antiforgery token (ADR-007). Authorization is stated by each resource, because the middleware enriches rather than
-gates: a request without a token is anonymous, and anonymous is still an identity.
+the Bearer authentication scheme neither reads a cookie nor writes one, which is the only reason they may skip the
+antiforgery token (ADR-007). The identity scheme enriches rather than gates: a request without a token is anonymous,
+and anonymous is still an identity — but not an authenticated one, so a staff route answers `401` to a stranger and
+`403` to a customer without the role, through `[Authorize(Roles = …)]` on the resource (ADR-008).
 
 | Route | Who |
 |---|---|

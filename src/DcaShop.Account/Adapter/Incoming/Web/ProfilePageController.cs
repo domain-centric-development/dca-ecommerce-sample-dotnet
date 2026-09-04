@@ -2,6 +2,7 @@ using DcaShop.Account.Application.ChangeProfile;
 using DcaShop.Account.Application.GetProfile;
 using DcaShop.Account.Application.Shared;
 using DcaShop.SharedKernel.Application.Shared;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Account.Adapter.Incoming.Web;
@@ -11,6 +12,7 @@ namespace DcaShop.Account.Adapter.Incoming.Web;
 /// registration.
 /// </summary>
 [Route("account/profile")]
+[Authorize]
 public sealed class ProfilePageController : Controller
 {
     internal const string ProfileUpdated = "Your profile has been updated.";
@@ -41,11 +43,6 @@ public sealed class ProfilePageController : Controller
     public async Task<IActionResult> Show(CancellationToken cancellationToken)
     {
         var identity = _identityProvider.GetCurrentIdentity();
-        if (identity.IsAnonymous)
-        {
-            return LoginRedirect();
-        }
-
         var stored = await StoredProfileAsync(identity.UserId.Value, cancellationToken);
         return stored is null
             ? LoginRedirect()
@@ -57,11 +54,6 @@ public sealed class ProfilePageController : Controller
         [FromForm] string email, [FromForm] string dateOfBirth, CancellationToken cancellationToken)
     {
         var identity = _identityProvider.GetCurrentIdentity();
-        if (identity.IsAnonymous)
-        {
-            return LoginRedirect();
-        }
-
         if (SubmittedDate.Parse(dateOfBirth) is not { } parsed)
         {
             return await RejectedAsync(identity.UserId.Value, email, dateOfBirth, SubmittedDate.NotADate, cancellationToken);

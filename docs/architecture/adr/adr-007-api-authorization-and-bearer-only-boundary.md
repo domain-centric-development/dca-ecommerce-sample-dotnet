@@ -1,6 +1,6 @@
 # ADR-007: API Authorization at the Adapter, and a Bearer-Only `/api` and `/mcp`
 
-**Date**: 2026-08-30 · **Status**: Accepted
+**Date**: 2026-08-30 · **Status**: Accepted · Amended by [ADR-008](adr-008-identity-as-authentication-handler.md) (2026-09-03): the claims-only gates are `[Authorize]` attributes, the path list lives in `TokenOnlyPaths`, and an anonymous API caller is challenged with `401`
 
 ## Context
 
@@ -24,7 +24,8 @@ anything — the middleware read a Bearer header as a *fallback* for the session
 check needs the aggregate.
 
 - **Claims only, no resource** → the adapter. `POST /api/products` and `GET /api/carts` (every cart in the shop)
-  require the staff role, read through `IIdentityProvider.IIdentity.HasRole(RoleStaff)`. This is a property of
+  require the staff role — originally read through `IIdentityProvider.IIdentity.HasRole(RoleStaff)` in the action,
+  since ADR-008 stated as `[Authorize(Roles = RoleStaff)]` on it. This is a property of
   the *exposure*, not of the operation: `GetAllCartsUseCase` is a legitimate thing for an admin console or a
   batch job with no HTTP identity to run, and forcing an identity port into it would make it unusable there.
   No registration path hands the staff role out; an account only gets it by being given it.
@@ -46,11 +47,11 @@ once, on nobody's behalf — there is no identity to check and it stays unscoped
 
 **`/api/**` and `/mcp` are authenticated by an `Authorization: Bearer` header and by nothing else.**
 
-- `JwtAuthenticationMiddleware.TokenOnlyPathPrefixes` names those paths. On them the middleware reads only the
-  Bearer header: it does not read a cookie, and it does not write one. A request from a browser that carries both
-  shop cookies arrives at the API as a stranger.
+- `TokenOnlyPaths` names those paths (originally `JwtAuthenticationMiddleware.TokenOnlyPathPrefixes`). On them
+  the Bearer scheme is selected, which reads only the header: it does not read a cookie, and it does not write one.
+  A request from a browser that carries both shop cookies arrives at the API as a stranger.
 - `TokenOnlyAwareAntiforgeryFilter` replaces the global `AutoValidateAntiforgeryTokenAttribute`. It validates
-  every unsafe method except on those same paths, and it asks the middleware which paths those are rather than
+  every unsafe method except on those same paths, and it asks `TokenOnlyPaths` which paths those are rather than
   keeping a second list that could drift.
 - `AuthResource` returns the token in the response body and sets no cookie. A browser session is established by
   the login *form* instead, which does get cookies and does need the token.
@@ -70,9 +71,9 @@ those paths. Changing one without the other is the mistake to watch for in revie
   id could open a checkout session on somebody else's cart in their name. Putting the caller into
   `StartCheckoutCommand` closed it; no amount of discipline in the REST resource would have reached it.
   `CartOwnershipTest` covers it.
-- Negative: the coarse role gate in the adapter is not enforced by the framework. A new route that forgets it
-  compiles and runs. The integration tests are the guard; a policy-based `[Authorize]` scheme over a real claims
-  principal would move it into the pipeline, and is what a production system should do.
+- Negative (resolved by ADR-008): the coarse role gate in the adapter was not enforced by the framework — a new
+  route that forgot the `if` compiled and ran. It is now an `[Authorize]` attribute over a real claims principal,
+  and a stranger is challenged (`401`) where a customer without the role is forbidden (`403`).
 - Negative: `FindByIdForCustomerAsync` sits next to `FindByIdAsync`, and a use case that reaches for the wrong one
   is back where it started. The scoped one is the default and the unscoped one is documented as the system path,
   but nothing enforces the choice.

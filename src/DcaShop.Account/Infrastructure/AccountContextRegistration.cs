@@ -9,7 +9,7 @@ using DcaShop.Account.Application.RegisterAccount;
 using DcaShop.Account.Application.Shared;
 using DcaShop.Account.Domain.Gateway;
 using DcaShop.SharedKernel.Application.Shared;
-using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -48,16 +48,25 @@ public static class AccountContextRegistration
         // but only Account can resolve one — see the port's own remarks.
         services.AddScoped<IIdentityProvider, HttpContextIdentityProvider>();
 
-        return services;
-    }
+        // The shop's identity as ASP.NET Core authentication (ADR-008). One handler, two schemes: the browser
+        // scheme reads the two cookies of ADR-006 and never the Authorization header; the API scheme reads the
+        // header and never a cookie, which is what lets /api/** and /mcp skip the antiforgery token (ADR-007).
+        // The default is a policy scheme that picks one of them by request path — so [Authorize] on a resource
+        // challenges with 401, and [Authorize] on a page redirects to the login form, without either naming a
+        // scheme. The backoffice registers its own cookie scheme next to these and names it explicitly.
+        services
+            .AddAuthentication(ShopPrincipal.Scheme)
+            .AddPolicyScheme(ShopPrincipal.Scheme, "Shop identity", options =>
+                options.ForwardDefaultSelector = context =>
+                    TokenOnlyPaths.IsTokenOnlyEndpoint(context.Request.Path)
+                        ? ShopPrincipal.BearerScheme
+                        : ShopPrincipal.CookieScheme)
+            .AddScheme<ShopIdentityAuthenticationOptions, ShopIdentityAuthenticationHandler>(
+                ShopPrincipal.CookieScheme, options => options.BearerOnly = false)
+            .AddScheme<ShopIdentityAuthenticationOptions, ShopIdentityAuthenticationHandler>(
+                ShopPrincipal.BearerScheme, options => options.BearerOnly = true);
+        services.AddAuthorization();
 
-    /// <summary>
-    /// Puts the identity resolution in front of the endpoints. It must run before anything that reads an
-    /// identity — every page controller does.
-    /// </summary>
-    public static IApplicationBuilder UseDcaShopIdentity(this IApplicationBuilder app)
-    {
-        ArgumentNullException.ThrowIfNull(app);
-        return app.UseMiddleware<JwtAuthenticationMiddleware>();
+        return services;
     }
 }

@@ -25,9 +25,10 @@ public static class BackofficeContextRegistration
         // Outgoing adapters (output ports)
         services.AddScoped<IEventPublicationLogStore, OutboxEventPublicationLogStore>();
 
-        // The operator session: its own scheme, its own cookie, no overlap with the shop's identity.
+        // The operator session: its own scheme, its own cookie, no overlap with the shop's identity. It is never
+        // the default scheme — the shop's is (Account) — so every backoffice page names it in its [Authorize].
         services
-            .AddAuthentication(BackofficeOptions.AuthenticationScheme)
+            .AddAuthentication()
             .AddCookie(BackofficeOptions.AuthenticationScheme, options =>
             {
                 options.Cookie.Name = BackofficeOptions.CookieName;

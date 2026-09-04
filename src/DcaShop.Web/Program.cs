@@ -1,4 +1,3 @@
-using DcaShop.Account.Infrastructure;
 using DcaShop.Infrastructure;
 using DcaShop.Web;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +8,7 @@ builder.Services
     .AddControllersWithViews(options =>
         // Every state-changing (non-GET) action must carry a valid antiforgery token -- except on the
         // token-only paths, which no cookie can authenticate, so there is no cross-site request to forge
-        // (ADR-007). The exempt list is JwtAuthenticationMiddleware's own; the two must never drift apart.
+        // (ADR-007). The exempt list is TokenOnlyPaths, the same one the authentication scheme is selected by.
         options.Filters.Add(new TokenOnlyAwareAntiforgeryFilter()))
     .AddApplicationPart(typeof(DcaShop.Account.AccountContext).Assembly)
     .AddApplicationPart(typeof(DcaShop.Backoffice.BackofficeContext).Assembly)
@@ -35,11 +34,9 @@ else
 app.UseStatusCodePagesWithReExecute("/error/{0}");
 app.UseStaticFiles();
 
-// Before any endpoint: every page reads the visitor identity, and the cart is keyed on it.
-app.UseDcaShopIdentity();
-
-// The backoffice signs operators in under its own scheme; the shop's identity middleware above does not know
-// about it, and it does not know about the shop's cookies.
+// Before any endpoint: the shop's default scheme puts the visitor identity on HttpContext.User — cookies on the
+// pages, Bearer header on /api/** and /mcp — and the cart is keyed on it (ADR-008). The backoffice signs operators
+// in under its own, explicitly named scheme; neither knows the other's cookies.
 app.UseAuthentication();
 app.UseAuthorization();
 
