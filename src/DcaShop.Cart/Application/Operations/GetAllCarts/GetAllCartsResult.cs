@@ -1,4 +1,4 @@
-namespace DcaShop.Cart.Application.GetAllCarts;
+namespace DcaShop.Cart.Application.Operations.GetAllCarts;
 
 /// <summary>
 /// Every cart in the shop, as an operator sees them. The summaries carry the prices captured at addition rather

@@ -1,6 +1,6 @@
 using DcaShop.Checkout.Application.Shared;
 
-namespace DcaShop.Checkout.Application.GetPaymentProviders;
+namespace DcaShop.Checkout.Application.CheckoutCompletion.GetPaymentProviders;
 
 public sealed class GetPaymentProvidersUseCase : IGetPaymentProvidersInputPort
 {

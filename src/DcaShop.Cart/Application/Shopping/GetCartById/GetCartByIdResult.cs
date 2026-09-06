@@ -1,6 +1,6 @@
 using DcaShop.Cart.Domain.Model;
 
-namespace DcaShop.Cart.Application.GetCartById;
+namespace DcaShop.Cart.Application.Shopping.GetCartById;
 
 /// <summary><see cref="Cart"/> is null when no cart with the requested id exists.</summary>
 public sealed record GetCartByIdResult(EnrichedCart? Cart)

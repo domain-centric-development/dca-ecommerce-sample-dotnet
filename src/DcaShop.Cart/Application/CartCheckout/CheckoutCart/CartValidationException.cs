@@ -1,6 +1,6 @@
 using DcaShop.Cart.Domain.Model;
 
-namespace DcaShop.Cart.Application.CheckoutCart;
+namespace DcaShop.Cart.Application.CartCheckout.CheckoutCart;
 
 /// <summary>
 /// The cart cannot be settled: an article it holds is no longer for sale, or the stock no longer covers the

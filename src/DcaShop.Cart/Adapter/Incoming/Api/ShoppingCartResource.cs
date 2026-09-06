@@ -1,9 +1,9 @@
-using DcaShop.Cart.Application.AddItemToCart;
-using DcaShop.Cart.Application.CheckoutCart;
-using DcaShop.Cart.Application.GetAllCarts;
-using DcaShop.Cart.Application.GetCartById;
-using DcaShop.Cart.Application.GetOrCreateActiveCart;
-using DcaShop.Cart.Application.RemoveItemFromCart;
+using DcaShop.Cart.Application.Shopping.AddItemToCart;
+using DcaShop.Cart.Application.CartCheckout.CheckoutCart;
+using DcaShop.Cart.Application.Operations.GetAllCarts;
+using DcaShop.Cart.Application.Shopping.GetCartById;
+using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
+using DcaShop.Cart.Application.Shopping.RemoveItemFromCart;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Application.Shared;
 using Microsoft.AspNetCore.Authorization;

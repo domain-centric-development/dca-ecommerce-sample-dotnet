@@ -1,6 +1,6 @@
 using DcaShop.Checkout.Domain.ReadModel;
 using DcaShop.Checkout.Application.Shared;
 
-namespace DcaShop.Checkout.Application.SubmitDelivery;
+namespace DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
 
 public sealed record SubmitDeliveryResult(CheckoutCartSnapshot Session);

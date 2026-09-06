@@ -1,4 +1,4 @@
-namespace DcaShop.Cart.Application.CheckoutCart;
+namespace DcaShop.Cart.Application.CartCheckout.CheckoutCart;
 
 /// <summary>Checks out one of <paramref name="CustomerId"/>'s carts.</summary>
 public sealed record CheckoutCartCommand(Guid CartId, string CustomerId);

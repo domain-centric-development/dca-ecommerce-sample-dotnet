@@ -5,7 +5,7 @@ using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.Service;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
-namespace DcaShop.Checkout.Application.SubmitDelivery;
+namespace DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
 
 public sealed class SubmitDeliveryUseCase : ISubmitDeliveryInputPort
 {

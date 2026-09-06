@@ -1,6 +1,6 @@
 using DcaShop.Checkout.Domain.ReadModel;
 using DcaShop.Checkout.Application.Shared;
 
-namespace DcaShop.Checkout.Application.StartCheckout;
+namespace DcaShop.Checkout.Application.Session.StartCheckout;
 
 public sealed record StartCheckoutResult(CheckoutCartSnapshot Session);

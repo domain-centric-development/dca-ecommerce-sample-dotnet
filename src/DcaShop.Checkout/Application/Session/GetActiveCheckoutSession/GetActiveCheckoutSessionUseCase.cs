@@ -2,7 +2,7 @@ using DcaShop.Checkout.Domain.ReadModel;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 
-namespace DcaShop.Checkout.Application.GetActiveCheckoutSession;
+namespace DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
 
 /// <summary>Reads the customer's active checkout session, if any — the web adapter resolves the current session from it instead of carrying session ids in URLs.</summary>
 public sealed class GetActiveCheckoutSessionUseCase : IGetActiveCheckoutSessionInputPort

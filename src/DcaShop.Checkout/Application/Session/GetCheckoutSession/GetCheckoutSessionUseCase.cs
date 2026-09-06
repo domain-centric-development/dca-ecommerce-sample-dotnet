@@ -2,7 +2,7 @@ using DcaShop.Checkout.Domain.ReadModel;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 
-namespace DcaShop.Checkout.Application.GetCheckoutSession;
+namespace DcaShop.Checkout.Application.Session.GetCheckoutSession;
 
 public sealed class GetCheckoutSessionUseCase : IGetCheckoutSessionInputPort
 {

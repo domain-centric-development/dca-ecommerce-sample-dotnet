@@ -1,4 +1,4 @@
-using DcaShop.Cart.Application.CheckoutCart;
+using DcaShop.Cart.Application.CartCheckout.CheckoutCart;
 using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;

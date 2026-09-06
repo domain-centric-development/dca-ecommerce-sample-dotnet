@@ -1,4 +1,4 @@
-namespace DcaShop.Cart.Application.GetCartById;
+namespace DcaShop.Cart.Application.Shopping.GetCartById;
 
 /// <summary>
 /// Reads one of <paramref name="CustomerId"/>'s carts. The cart id says <i>which</i> cart is meant; the customer

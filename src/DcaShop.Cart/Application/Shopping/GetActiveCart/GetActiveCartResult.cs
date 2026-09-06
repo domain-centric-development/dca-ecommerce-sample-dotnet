@@ -1,6 +1,6 @@
 using DcaShop.Cart.Domain.Model;
 
-namespace DcaShop.Cart.Application.GetActiveCart;
+namespace DcaShop.Cart.Application.Shopping.GetActiveCart;
 
 public sealed record GetActiveCartResult(EnrichedCart? Cart)
 {

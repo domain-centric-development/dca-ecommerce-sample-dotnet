@@ -1,6 +1,6 @@
-using DcaShop.Cart.Application.CompleteCart;
-using DcaShop.Cart.Application.GetActiveCart;
-using DcaShop.Cart.Application.GetCartById;
+using DcaShop.Cart.Application.CartCheckout.CompleteCart;
+using DcaShop.Cart.Application.Shopping.GetActiveCart;
+using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
 using DomainCentric.BuildingBlocks.Ddd.Strategic.Relationships;

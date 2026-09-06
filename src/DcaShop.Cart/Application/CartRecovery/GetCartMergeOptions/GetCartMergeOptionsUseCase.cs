@@ -2,7 +2,7 @@ using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
 
-namespace DcaShop.Cart.Application.GetCartMergeOptions;
+namespace DcaShop.Cart.Application.CartRecovery.GetCartMergeOptions;
 
 /// <summary>
 /// Decides whether the visitor has a choice to make. They have one only when both carts hold items and the two

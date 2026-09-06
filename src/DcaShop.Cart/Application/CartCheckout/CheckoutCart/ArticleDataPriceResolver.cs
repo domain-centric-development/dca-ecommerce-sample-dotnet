@@ -1,7 +1,7 @@
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
 
-namespace DcaShop.Cart.Application.CheckoutCart;
+namespace DcaShop.Cart.Application.CartCheckout.CheckoutCart;
 
 /// <summary>
 /// Adapts freshly read article data to the domain's <see cref="IArticlePriceResolver"/>. A product the catalog

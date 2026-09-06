@@ -1,4 +1,4 @@
-namespace DcaShop.Cart.Application.GetCartMergeOptions;
+namespace DcaShop.Cart.Application.CartRecovery.GetCartMergeOptions;
 
 /// <summary>
 /// The two carts, when and only when the visitor has to choose between them. A merge is required only if both

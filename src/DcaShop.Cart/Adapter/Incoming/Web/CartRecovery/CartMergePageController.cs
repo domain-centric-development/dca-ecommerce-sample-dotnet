@@ -1,11 +1,11 @@
 using System.Net;
-using DcaShop.Cart.Application.GetCartMergeOptions;
-using DcaShop.Cart.Application.MergeCarts;
-using DcaShop.Cart.Application.RecoverCartOnLogin;
+using DcaShop.Cart.Application.CartRecovery.GetCartMergeOptions;
+using DcaShop.Cart.Application.CartRecovery.MergeCarts;
+using DcaShop.Cart.Application.CartRecovery.RecoverCartOnLogin;
 using DcaShop.SharedKernel.Application.Shared;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DcaShop.Cart.Adapter.Incoming.Web;
+namespace DcaShop.Cart.Adapter.Incoming.Web.CartRecovery;
 
 /// <summary>
 /// Driving adapter for the cart merge page — where a visitor who just logged in decides what happens to the cart

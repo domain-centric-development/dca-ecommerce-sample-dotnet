@@ -4,7 +4,7 @@ using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
-namespace DcaShop.Checkout.Application.SubmitBuyerInfo;
+namespace DcaShop.Checkout.Application.CheckoutCompletion.SubmitBuyerInfo;
 
 public sealed class SubmitBuyerInfoUseCase : ISubmitBuyerInfoInputPort
 {

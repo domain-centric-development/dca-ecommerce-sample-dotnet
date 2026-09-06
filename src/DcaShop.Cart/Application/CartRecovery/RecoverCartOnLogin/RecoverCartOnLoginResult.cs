@@ -1,6 +1,6 @@
 using DcaShop.SharedKernel.Domain.Model;
 
-namespace DcaShop.Cart.Application.RecoverCartOnLogin;
+namespace DcaShop.Cart.Application.CartRecovery.RecoverCartOnLogin;
 
 /// <summary>What the recovery did, if anything.</summary>
 public sealed record RecoverCartOnLoginResult(

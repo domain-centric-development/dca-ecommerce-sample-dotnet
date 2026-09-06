@@ -1,4 +1,4 @@
-using DcaShop.Cart.Application.GetAllCarts;
+using DcaShop.Cart.Application.Operations.GetAllCarts;
 using DcaShop.Cart.Domain.Model;
 
 namespace DcaShop.Cart.Adapter.Incoming.Api;

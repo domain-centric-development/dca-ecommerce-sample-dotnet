@@ -3,7 +3,7 @@ using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Domain.Model;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
-namespace DcaShop.Cart.Application.RemoveItemFromCart;
+namespace DcaShop.Cart.Application.Shopping.RemoveItemFromCart;
 
 public sealed class RemoveItemFromCartUseCase : IRemoveItemFromCartInputPort
 {

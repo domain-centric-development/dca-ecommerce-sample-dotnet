@@ -4,7 +4,7 @@ using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
-namespace DcaShop.Cart.Application.AddItemToCart;
+namespace DcaShop.Cart.Application.Shopping.AddItemToCart;
 
 public sealed class AddItemToCartUseCase : IAddItemToCartInputPort
 {

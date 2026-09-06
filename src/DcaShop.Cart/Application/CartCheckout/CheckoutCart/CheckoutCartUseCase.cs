@@ -3,7 +3,7 @@ using DcaShop.Cart.Domain.Model;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
-namespace DcaShop.Cart.Application.CheckoutCart;
+namespace DcaShop.Cart.Application.CartCheckout.CheckoutCart;
 
 /// <summary>
 /// Hands a cart over to checkout: reads the cart, fetches current article data, and only then — inside the

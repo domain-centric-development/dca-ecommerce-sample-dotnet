@@ -1,7 +1,7 @@
 using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Domain.Model;
 
-namespace DcaShop.Cart.Application.GetCartById;
+namespace DcaShop.Cart.Application.Shopping.GetCartById;
 
 public sealed class GetCartByIdUseCase : IGetCartByIdInputPort
 {

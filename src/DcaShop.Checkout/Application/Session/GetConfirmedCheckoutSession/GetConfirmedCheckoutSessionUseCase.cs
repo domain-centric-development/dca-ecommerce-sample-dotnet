@@ -2,7 +2,7 @@ using DcaShop.Checkout.Domain.ReadModel;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 
-namespace DcaShop.Checkout.Application.GetConfirmedCheckoutSession;
+namespace DcaShop.Checkout.Application.Session.GetConfirmedCheckoutSession;
 
 /// <summary>Reads the customer's most recent confirmed or completed session — what the confirmation page shows.</summary>
 public sealed class GetConfirmedCheckoutSessionUseCase : IGetConfirmedCheckoutSessionInputPort

@@ -4,7 +4,7 @@ using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
-namespace DcaShop.Checkout.Application.SubmitPayment;
+namespace DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
 
 public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
 {

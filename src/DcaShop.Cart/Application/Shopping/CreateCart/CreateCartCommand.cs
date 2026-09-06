@@ -1,3 +1,3 @@
-namespace DcaShop.Cart.Application.CreateCart;
+namespace DcaShop.Cart.Application.Shopping.CreateCart;
 
 public sealed record CreateCartCommand(string CustomerId);

@@ -31,6 +31,21 @@ included.
 Until the packages are published on NuGet, the sibling checkout `../dca-dotnet` is referenced as projects
 (see `Directory.Build.props`); without it the `PackageReference`s are used.
 
+### Running with Docker
+
+No local SDK needed. Because of that sibling reference the build context is the *parent* directory, which
+`compose.yaml` already sets:
+
+```bash
+docker compose up --build                 # http://localhost:5080
+docker compose run --rm test              # unit, integration, architecture tests (Debug build)
+docker compose run --rm dotnet build      # any other dotnet command, packages cached in a volume
+```
+
+Without compose: `docker build -f dca-ecommerce-sample-dotnet/Dockerfile -t dca-shop-dotnet ..` from the
+parent directory, then `docker run --rm -p 5080:8080 dca-shop-dotnet`. Once the packages are on NuGet the
+context shrinks to this directory.
+
 ## End-to-end tests
 
 `tests/DcaShop.E2eTests` drives the shop through a real browser (Playwright, page objects, `data-test`
@@ -79,13 +94,17 @@ DcaShop.Cart/
 │   ├── Event/                   CartItemAddedToCart, CartCheckedOut, CartCompleted … (past tense)
 │   ├── Specification/           ActiveCart, HasMinTotal, LastUpdatedBefore … + ICartSpecificationVisitor
 │   └── glossary.md              the context's ubiquitous language
-├── Application/
-│   ├── AddItemToCart/           I*InputPort : IUseCase<Command, Result>, *UseCase, *Command, *Result
-│   ├── GetCartById/             … one folder per use case
-│   └── Shared/                  output ports: IShoppingCartRepository, IArticleDataPort
+├── Application/                 use cases grouped by feature (Cart and Checkout); the other contexts stay flat
+│   ├── Shopping/                feature — filling and reading the cart
+│   │   ├── AddItemToCart/       I*InputPort : IUseCase<Command, Result>, *UseCase, *Command, *Result
+│   │   └── GetCartById/         … one folder per use case
+│   ├── CartRecovery/            feature — RecoverCartOnLogin, GetCartMergeOptions, MergeCarts
+│   ├── CartCheckout/            feature — CheckoutCart, CompleteCart
+│   ├── Operations/              feature — GetAllCarts (staff-only)
+│   └── Shared/                  output ports, context-wide: IShoppingCartRepository, IArticleDataPort
 ├── Adapter/
-│   ├── Incoming/Web/            CartPageController, CartPageViewModel
-│   ├── Incoming/Event/          CartCompletionEventConsumer
+│   ├── Incoming/Web/            protocol first, feature below: Shopping/CartPageController, CartRecovery/CartMergePageController
+│   ├── Incoming/Event/          CartCheckout/CartCompletionEventConsumer
 │   └── Outgoing/                Persistence/ (in-memory repository), Product/ (ACL to Product/Pricing/Inventory), Event/
 ├── Api/                         CartService — Open Host Service for other contexts
 ├── Events/                      CartCheckedOutEvent, ICartCompletionTrigger — published language
@@ -115,7 +134,7 @@ what tells them apart.
 | Factory | `ProductFactory`, `EnrichedCartFactory`, `CheckoutCartFactory` |
 | Domain service passed into the aggregate | `TaxCalculator` (contained VAT), `ICheckoutArticlePriceResolver` |
 | Enriched read model | `EnrichedProduct`, `EnrichedCart`, `CheckoutCart` / `EnrichedCheckoutLineItem` (persisted line item + fresh article data) |
-| Use case = input port + command/query + result | every `Application/<UseCase>/` folder |
+| Use case = input port + command/query + result | every `Application/<UseCase>/` folder — or `Application/<Feature>/<UseCase>/` where a context groups them (Cart: `Shopping`, `CartRecovery`, `CartCheckout`, `Operations`; Checkout: `Session`, `CheckoutCompletion`, `CartSync`) |
 | Output ports in `Application/Shared`, adapters outside | `IArticleDataPort` ↔ `CompositeArticleDataAdapter` |
 | One port answered from several Open Host Services | `CompositeArticleDataAdapter` — product identity from the catalog, price from Pricing, availability from Inventory |
 | Anti-corruption layer to another context's Api | `Adapter/Outgoing/Product/`, `Adapter/Outgoing/Cart/` |

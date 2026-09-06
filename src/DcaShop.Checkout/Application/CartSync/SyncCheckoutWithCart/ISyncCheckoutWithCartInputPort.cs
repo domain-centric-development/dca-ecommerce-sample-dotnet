@@ -1,6 +1,6 @@
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.In;
 
-namespace DcaShop.Checkout.Application.SyncCheckoutWithCart;
+namespace DcaShop.Checkout.Application.CartSync.SyncCheckoutWithCart;
 
 /// <summary>
 /// Brings an active checkout session back in line with its cart. The cart stays modifiable during checkout,

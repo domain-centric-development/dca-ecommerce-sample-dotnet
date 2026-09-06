@@ -1,3 +1,3 @@
-namespace DcaShop.Checkout.Application.GetPaymentProviders;
+namespace DcaShop.Checkout.Application.CheckoutCompletion.GetPaymentProviders;
 
 public sealed record GetPaymentProvidersQuery;

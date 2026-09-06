@@ -1,4 +1,4 @@
-namespace DcaShop.Cart.Application.MergeCarts;
+namespace DcaShop.Cart.Application.CartRecovery.MergeCarts;
 
 /// <summary>The account's cart after the merge, and what the merge did.</summary>
 public sealed record MergeCartsResult(

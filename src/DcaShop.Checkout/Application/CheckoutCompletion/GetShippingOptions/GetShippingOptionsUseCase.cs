@@ -1,6 +1,6 @@
 using DcaShop.Checkout.Application.Shared;
 
-namespace DcaShop.Checkout.Application.GetShippingOptions;
+namespace DcaShop.Checkout.Application.CheckoutCompletion.GetShippingOptions;
 
 public sealed class GetShippingOptionsUseCase : IGetShippingOptionsInputPort
 {

@@ -1,6 +1,6 @@
-using DcaShop.Cart.Application.GetCartMergeOptions;
+using DcaShop.Cart.Application.CartRecovery.GetCartMergeOptions;
 
-namespace DcaShop.Cart.Adapter.Incoming.Web;
+namespace DcaShop.Cart.Adapter.Incoming.Web.CartRecovery;
 
 /// <summary>
 /// What the merge page shows: both carts side by side, plus the two values the decision has to carry back —

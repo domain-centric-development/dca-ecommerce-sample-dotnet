@@ -1,4 +1,4 @@
-namespace DcaShop.Cart.Adapter.Incoming.Web;
+namespace DcaShop.Cart.Adapter.Incoming.Web.Shopping;
 
 /// <summary>Everything the cart page renders — the same shape the Java sample's cart view consumes.</summary>
 public sealed record CartPageViewModel(

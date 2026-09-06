@@ -1,9 +1,9 @@
 using DcaShop.Cart.Events;
-using DcaShop.Checkout.Application.SyncCheckoutWithCart;
+using DcaShop.Checkout.Application.CartSync.SyncCheckoutWithCart;
 using DcaShop.SharedKernel.Infrastructure.Events;
 using Microsoft.Extensions.Logging;
 
-namespace DcaShop.Checkout.Adapter.Incoming.Event;
+namespace DcaShop.Checkout.Adapter.Incoming.Event.CartSync;
 
 /// <summary>
 /// Keeps an active checkout session in step with its cart: every published cart change re-syncs the session.

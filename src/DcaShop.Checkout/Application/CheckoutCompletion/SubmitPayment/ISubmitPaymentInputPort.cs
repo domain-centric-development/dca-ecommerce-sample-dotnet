@@ -1,6 +1,6 @@
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.In;
 
-namespace DcaShop.Checkout.Application.SubmitPayment;
+namespace DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
 
 public interface ISubmitPaymentInputPort : IUseCase<SubmitPaymentCommand, SubmitPaymentResult>
 {

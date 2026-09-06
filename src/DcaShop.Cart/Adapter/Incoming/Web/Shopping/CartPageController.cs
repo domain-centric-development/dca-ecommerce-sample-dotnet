@@ -1,13 +1,13 @@
-using DcaShop.Cart.Application.AddItemToCart;
-using DcaShop.Cart.Application.GetCartById;
-using DcaShop.Cart.Application.GetOrCreateActiveCart;
+using DcaShop.Cart.Application.Shopping.AddItemToCart;
+using DcaShop.Cart.Application.Shopping.GetCartById;
+using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.Cart.Domain.Service;
 using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DcaShop.Cart.Adapter.Incoming.Web;
+namespace DcaShop.Cart.Adapter.Incoming.Web.Shopping;
 
 /// <summary>Driving adapter for the cart page; routes and markup mirror the Java sample (<c>/cart</c>, <c>/cart/add-product</c>).</summary>
 [Route("cart")]

@@ -1,6 +1,6 @@
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.In;
 
-namespace DcaShop.Checkout.Application.GetShippingOptions;
+namespace DcaShop.Checkout.Application.CheckoutCompletion.GetShippingOptions;
 
 public interface IGetShippingOptionsInputPort : IUseCase<GetShippingOptionsQuery, GetShippingOptionsResult>
 {

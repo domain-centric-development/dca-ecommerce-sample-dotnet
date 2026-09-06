@@ -1,4 +1,4 @@
-namespace DcaShop.Checkout.Application.StartCheckout;
+namespace DcaShop.Checkout.Application.Session.StartCheckout;
 
 /// <summary>
 /// Starts a checkout for one of <paramref name="CustomerId"/>'s carts. The cart id arrives from the browser, so

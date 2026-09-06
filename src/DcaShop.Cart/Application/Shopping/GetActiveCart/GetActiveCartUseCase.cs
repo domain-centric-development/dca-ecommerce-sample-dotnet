@@ -1,7 +1,7 @@
 using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Domain.Model;
 
-namespace DcaShop.Cart.Application.GetActiveCart;
+namespace DcaShop.Cart.Application.Shopping.GetActiveCart;
 
 /// <summary>Read use case behind the mini basket: the active cart of a customer, enriched, or nothing.</summary>
 public sealed class GetActiveCartUseCase : IGetActiveCartInputPort

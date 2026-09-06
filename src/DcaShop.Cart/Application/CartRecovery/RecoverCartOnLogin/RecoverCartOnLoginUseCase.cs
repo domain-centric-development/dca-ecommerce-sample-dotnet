@@ -3,7 +3,7 @@ using DcaShop.Cart.Domain.Model;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
-namespace DcaShop.Cart.Application.RecoverCartOnLogin;
+namespace DcaShop.Cart.Application.CartRecovery.RecoverCartOnLogin;
 
 /// <summary>
 /// Carries a guest's cart over to the account at login, for the case where there is nothing to decide: the

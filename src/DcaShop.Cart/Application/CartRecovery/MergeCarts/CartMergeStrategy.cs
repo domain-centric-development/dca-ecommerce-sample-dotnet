@@ -1,4 +1,4 @@
-namespace DcaShop.Cart.Application.MergeCarts;
+namespace DcaShop.Cart.Application.CartRecovery.MergeCarts;
 
 /// <summary>
 /// How the visitor wants their two carts reconciled. It is their decision, not the system's: only they know

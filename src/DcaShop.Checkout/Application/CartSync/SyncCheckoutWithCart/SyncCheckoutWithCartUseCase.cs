@@ -6,7 +6,7 @@ using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 using Microsoft.Extensions.Logging;
 
-namespace DcaShop.Checkout.Application.SyncCheckoutWithCart;
+namespace DcaShop.Checkout.Application.CartSync.SyncCheckoutWithCart;
 
 /// <summary>
 /// Rebuilds the line items of the active checkout session from the current cart. Prices are the ones the customer

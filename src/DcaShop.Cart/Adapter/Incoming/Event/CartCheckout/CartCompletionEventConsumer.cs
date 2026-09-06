@@ -1,9 +1,9 @@
-using DcaShop.Cart.Application.CompleteCart;
+using DcaShop.Cart.Application.CartCheckout.CompleteCart;
 using DcaShop.Cart.Events;
 using DcaShop.SharedKernel.Infrastructure.Events;
 using Microsoft.Extensions.Logging;
 
-namespace DcaShop.Cart.Adapter.Incoming.Event;
+namespace DcaShop.Cart.Adapter.Incoming.Event.CartCheckout;
 
 /// <summary>Completes the cart when any integration event implementing <see cref="ICartCompletionTrigger"/> arrives.</summary>
 public sealed class CartCompletionEventConsumer : EventListener<ICartCompletionTrigger>

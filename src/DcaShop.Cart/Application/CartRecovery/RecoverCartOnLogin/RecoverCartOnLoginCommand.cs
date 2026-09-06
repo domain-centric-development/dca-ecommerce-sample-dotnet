@@ -1,4 +1,4 @@
-namespace DcaShop.Cart.Application.RecoverCartOnLogin;
+namespace DcaShop.Cart.Application.CartRecovery.RecoverCartOnLogin;
 
 /// <summary>
 /// Brings the cart a visitor filled as a guest over to the account they just logged into.

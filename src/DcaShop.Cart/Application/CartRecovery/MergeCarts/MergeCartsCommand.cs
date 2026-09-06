@@ -1,4 +1,4 @@
-namespace DcaShop.Cart.Application.MergeCarts;
+namespace DcaShop.Cart.Application.CartRecovery.MergeCarts;
 
 /// <summary>Reconciles the cart of the identity a visitor had before login with the account's own.</summary>
 public sealed record MergeCartsCommand(string AnonymousUserId, string RegisteredUserId, CartMergeStrategy Strategy)

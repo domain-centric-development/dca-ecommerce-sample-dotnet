@@ -6,7 +6,7 @@ using DcaShop.Checkout.Domain.Service;
 using DcaShop.SharedKernel.Domain.Model;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
-namespace DcaShop.Checkout.Application.StartCheckout;
+namespace DcaShop.Checkout.Application.Session.StartCheckout;
 
 /// <summary>Starts a checkout from an active cart. Line items get fresh prices; the cart stays active until confirmation.</summary>
 public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
