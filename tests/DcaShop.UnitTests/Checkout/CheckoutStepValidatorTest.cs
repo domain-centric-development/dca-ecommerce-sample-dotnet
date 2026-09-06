@@ -47,32 +47,32 @@ public sealed class CheckoutStepValidatorTest
     [InlineData(CheckoutStep.Review)]
     [InlineData(CheckoutStep.Confirmation)]
     public void WithoutSessionEveryStepRedirectsToTheCart(CheckoutStep step) =>
-        Assert.Equal("/cart", _validator.ValidateStepAccess(null, step));
+        Assert.Equal(StepAccess.BackToCart(), _validator.AccessTo(null, step));
 
     [Fact]
     public void FirstStepIsAlwaysAccessible() =>
-        Assert.Null(_validator.ValidateStepAccess(Snapshot(Started()), CheckoutStep.BuyerInfo));
+        Assert.Equal(StepAccess.Grant(), _validator.AccessTo(Snapshot(Started()), CheckoutStep.BuyerInfo));
 
     [Theory]
     [InlineData(CheckoutStep.Delivery)]
     [InlineData(CheckoutStep.Payment)]
     [InlineData(CheckoutStep.Review)]
     public void SkippingAheadRedirectsToTheCurrentStep(CheckoutStep step) =>
-        Assert.Equal("/checkout/buyer", _validator.ValidateStepAccess(Snapshot(Started()), step));
+        Assert.Equal(StepAccess.RedirectTo(CheckoutStep.BuyerInfo), _validator.AccessTo(Snapshot(Started()), step));
 
     [Fact]
     public void PrematureConfirmationRedirectsToTheCurrentStep() =>
-        Assert.Equal("/checkout/buyer", _validator.ValidateStepAccess(Snapshot(Started()), CheckoutStep.Confirmation));
+        Assert.Equal(StepAccess.RedirectTo(CheckoutStep.BuyerInfo), _validator.AccessTo(Snapshot(Started()), CheckoutStep.Confirmation));
 
     [Fact]
     public void CompletedStepsCanBeVisitedAgain()
     {
         var snapshot = Snapshot(AtReview());
 
-        Assert.Null(_validator.ValidateStepAccess(snapshot, CheckoutStep.BuyerInfo));
-        Assert.Null(_validator.ValidateStepAccess(snapshot, CheckoutStep.Delivery));
-        Assert.Null(_validator.ValidateStepAccess(snapshot, CheckoutStep.Payment));
-        Assert.Null(_validator.ValidateStepAccess(snapshot, CheckoutStep.Review));
+        Assert.Equal(StepAccess.Grant(), _validator.AccessTo(snapshot, CheckoutStep.BuyerInfo));
+        Assert.Equal(StepAccess.Grant(), _validator.AccessTo(snapshot, CheckoutStep.Delivery));
+        Assert.Equal(StepAccess.Grant(), _validator.AccessTo(snapshot, CheckoutStep.Payment));
+        Assert.Equal(StepAccess.Grant(), _validator.AccessTo(snapshot, CheckoutStep.Review));
     }
 
     [Fact]
@@ -80,8 +80,8 @@ public sealed class CheckoutStepValidatorTest
     {
         var snapshot = Snapshot(Confirmed());
 
-        Assert.Null(_validator.ValidateStepAccess(snapshot, CheckoutStep.Confirmation));
-        Assert.Equal("/checkout/confirmation", _validator.ValidateStepAccess(snapshot, CheckoutStep.Payment));
+        Assert.Equal(StepAccess.Grant(), _validator.AccessTo(snapshot, CheckoutStep.Confirmation));
+        Assert.Equal(StepAccess.RedirectTo(CheckoutStep.Confirmation), _validator.AccessTo(snapshot, CheckoutStep.Payment));
     }
 
     [Fact]
@@ -91,8 +91,8 @@ public sealed class CheckoutStepValidatorTest
         session.Complete("ORDER-1");
         var snapshot = Snapshot(session);
 
-        Assert.Null(_validator.ValidateStepAccess(snapshot, CheckoutStep.Confirmation));
-        Assert.Equal("/checkout/confirmation", _validator.ValidateStepAccess(snapshot, CheckoutStep.BuyerInfo));
+        Assert.Equal(StepAccess.Grant(), _validator.AccessTo(snapshot, CheckoutStep.Confirmation));
+        Assert.Equal(StepAccess.RedirectTo(CheckoutStep.Confirmation), _validator.AccessTo(snapshot, CheckoutStep.BuyerInfo));
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public sealed class CheckoutStepValidatorTest
         var session = Started();
         session.Abandon();
 
-        Assert.Equal("/cart", _validator.ValidateStepAccess(Snapshot(session), CheckoutStep.BuyerInfo));
+        Assert.Equal(StepAccess.BackToCart(), _validator.AccessTo(Snapshot(session), CheckoutStep.BuyerInfo));
     }
 
     [Fact]
@@ -110,13 +110,16 @@ public sealed class CheckoutStepValidatorTest
         var session = Started();
         session.Expire();
 
-        Assert.Equal("/cart", _validator.ValidateStepAccess(Snapshot(session), CheckoutStep.Confirmation));
+        Assert.Equal(StepAccess.BackToCart(), _validator.AccessTo(Snapshot(session), CheckoutStep.Confirmation));
     }
 
     [Fact]
-    public void CurrentStepPathFollowsTheSessionsProgress()
+    public void ADeniedAccessNamesTheStepTheSessionIsOn()
     {
-        Assert.Equal("/checkout/buyer", _validator.CurrentStepPath(Snapshot(Started())));
-        Assert.Equal("/checkout/review", _validator.CurrentStepPath(Snapshot(AtReview())));
+        var access = _validator.AccessTo(Snapshot(Started()), CheckoutStep.Review);
+
+        Assert.False(access.Granted);
+        Assert.False(access.IsBackToCart);
+        Assert.Equal(CheckoutStep.BuyerInfo, access.RedirectStep);
     }
 }

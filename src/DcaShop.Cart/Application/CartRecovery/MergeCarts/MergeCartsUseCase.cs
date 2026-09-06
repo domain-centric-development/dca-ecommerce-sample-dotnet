@@ -83,9 +83,9 @@ public sealed class MergeCartsUseCase : IMergeCartsInputPort
             cart.CustomerId.Value,
             cart.Items
                 .Select(i => new MergeCartsResult.CartItemSummary(
-                    i.Id.Value, i.ProductId.Value, i.Quantity.Value, i.PriceAtAddition.Value.ToString()))
+                    i.Id.Value, i.ProductId.Value, i.Quantity.Value, i.PriceAtAddition.Value))
                 .ToList(),
-            cart.CalculateTotal().ToString(),
+            cart.CalculateTotal(),
             strategy,
             itemsFromAnonymous,
             itemsFromAccount,

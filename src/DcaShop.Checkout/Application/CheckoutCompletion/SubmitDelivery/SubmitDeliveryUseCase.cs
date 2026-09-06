@@ -1,4 +1,3 @@
-using DcaShop.Checkout.Domain.ReadModel;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
@@ -39,7 +38,7 @@ public sealed class SubmitDeliveryUseCase : ISubmitDeliveryInputPort
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
 
-                return new SubmitDeliveryResult(CheckoutCartSnapshot.From(session));
+                return SubmitDeliveryResult.From(session);
             },
             cancellationToken).ConfigureAwait(false);
     }

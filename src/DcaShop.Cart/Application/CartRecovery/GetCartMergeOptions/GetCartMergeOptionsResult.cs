@@ -1,3 +1,4 @@
+using DcaShop.SharedKernel.Domain.Model;
 namespace DcaShop.Cart.Application.CartRecovery.GetCartMergeOptions;
 
 /// <summary>
@@ -19,9 +20,9 @@ public sealed record GetCartMergeOptionsResult(
         Guid CartId,
         int ItemCount,
         int TotalQuantity,
-        string Total,
+        Money Total,
         IReadOnlyList<CartItemSummary> Items);
 
     public sealed record CartItemSummary(
-        Guid ProductId, string ProductName, string? ImageUrl, int Quantity, string UnitPrice);
+        Guid ProductId, string ProductName, string? ImageUrl, int Quantity, Money UnitPrice);
 }

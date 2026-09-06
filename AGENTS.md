@@ -52,7 +52,12 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
   `Domain/glossary.md` — the same glossaries as the Java sample; a renamed or added domain term is changed there
   too.
 - Naming: `I<Name>InputPort : IUseCase<TCommand|TQuery, TResult>`, `<Name>UseCase`, `<Name>Command` (writes) /
-  `<Name>Query` (reads), `<Name>Result`; repositories `I<Aggregate>Repository` / `InMemory<Aggregate>Repository`;
+  `<Name>Query` (reads), `<Name>Result` — values only, never an aggregate root or entity (`DCA-USE-015`); part records
+  named by content (`CartItemSummary`), nested in the result; command results small (the checkout wizard's
+  `Submit*`/`ConfirmCheckout` answer `(SessionId, CurrentStep, Status)`, the queries return the
+  `CheckoutCartSnapshot`); Cart results carry `Money`; step access is decided by the `GetActiveCheckoutSession`
+  query and delivered as a `StepAccess` value that the web adapter maps to a route — no `IDomainService` in an
+  incoming adapter (`DCA-HEX-012`); repositories `I<Aggregate>Repository` / `InMemory<Aggregate>Repository`;
   web adapters `*PageController` + `*PageViewModel`; REST adapters `*Resource` (`[ApiController]`,
   `Adapter/Incoming/Api/`) — the layout's `RestControllerSuffix` is set to `Resource` in `ArchitectureRulesTest`
   so `DCA-NAM-006` enforces the Java sample's name rather than the .NET default `Controller`; event adapters `*EventConsumer` (incoming) and

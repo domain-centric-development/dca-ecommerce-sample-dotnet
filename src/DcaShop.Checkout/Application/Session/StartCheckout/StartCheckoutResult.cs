@@ -1,6 +1,9 @@
-using DcaShop.Checkout.Domain.ReadModel;
-using DcaShop.Checkout.Application.Shared;
+using DcaShop.Checkout.Domain.Model;
 
 namespace DcaShop.Checkout.Application.Session.StartCheckout;
 
-public sealed record StartCheckoutResult(CheckoutCartSnapshot Session);
+/// <summary>What the caller needs for its next step: the session and where it stands. The page itself comes from a session query.</summary>
+public sealed record StartCheckoutResult(Guid SessionId, CheckoutStep CurrentStep, CheckoutSessionStatus Status)
+{
+    public static StartCheckoutResult From(CheckoutSession session) => new(session.Id.Value, session.CurrentStep, session.Status);
+}

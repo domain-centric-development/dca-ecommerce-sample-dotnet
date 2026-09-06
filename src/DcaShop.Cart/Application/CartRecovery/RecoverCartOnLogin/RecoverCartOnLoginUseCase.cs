@@ -72,9 +72,9 @@ public sealed class RecoverCartOnLoginUseCase : IRecoverCartOnLoginInputPort
                     accountCart.CustomerId.Value,
                     accountCart.Items
                         .Select(i => new RecoverCartOnLoginResult.CartItemSummary(
-                            i.Id.Value, i.ProductId.Value, i.Quantity.Value, i.PriceAtAddition.Value.ToString()))
+                            i.Id.Value, i.ProductId.Value, i.Quantity.Value, i.PriceAtAddition.Value))
                         .ToList(),
-                    accountCart.CalculateTotal().ToString(),
+                    accountCart.CalculateTotal(),
                     itemsRecovered,
                     AnonymousCartDeleted: true);
             },

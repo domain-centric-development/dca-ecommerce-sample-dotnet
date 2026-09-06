@@ -16,6 +16,10 @@ public sealed record EnrichedCart(CartId CartId, CustomerId CustomerId, CartStat
 
     public Money OriginalSubtotal => Items.Aggregate(Money.Euro(0m), (sum, i) => sum.Add(i.OriginalLineTotal));
 
+    /// <summary>Absolute difference between the current and the original subtotal — prices may have dropped.</summary>
+    public Money TotalPriceDifference =>
+        CurrentSubtotal.IsGreaterThan(OriginalSubtotal) ? CurrentSubtotal.Subtract(OriginalSubtotal) : OriginalSubtotal.Subtract(CurrentSubtotal);
+
     public bool HasAnyPriceChanges => Items.Any(i => i.HasPriceChanged);
 
     public bool IsValidForCheckout => Status == CartStatus.Active && !IsEmpty && Items.All(i => i.IsValidForCheckout);

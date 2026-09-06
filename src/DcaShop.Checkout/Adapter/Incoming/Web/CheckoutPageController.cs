@@ -10,7 +10,6 @@ using DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
 using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.ReadModel;
-using DcaShop.Checkout.Domain.Service;
 using DcaShop.SharedKernel.Application.Shared;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,7 +31,6 @@ public sealed class CheckoutPageController : Controller
     private readonly ISubmitPaymentInputPort _submitPayment;
     private readonly IGetPaymentProvidersInputPort _paymentProviders;
     private readonly IConfirmCheckoutInputPort _confirm;
-    private readonly CheckoutStepValidator _stepValidator;
     private readonly IIdentityProvider _identityProvider;
 
     public CheckoutPageController(
@@ -45,7 +43,6 @@ public sealed class CheckoutPageController : Controller
         ISubmitPaymentInputPort submitPayment,
         IGetPaymentProvidersInputPort paymentProviders,
         IConfirmCheckoutInputPort confirm,
-        CheckoutStepValidator stepValidator,
         IIdentityProvider identityProvider)
     {
         _start = start;
@@ -57,7 +54,6 @@ public sealed class CheckoutPageController : Controller
         _submitPayment = submitPayment;
         _paymentProviders = paymentProviders;
         _confirm = confirm;
-        _stepValidator = stepValidator;
         _identityProvider = identityProvider;
     }
 
@@ -79,7 +75,7 @@ public sealed class CheckoutPageController : Controller
         catch (Exception e) when (e is ArgumentException or InvalidOperationException)
         {
             TempData["Error"] = e.Message;
-            return Redirect("/cart");
+            return Redirect(CheckoutRoutes.Cart);
         }
     }
 
@@ -118,7 +114,7 @@ public sealed class CheckoutPageController : Controller
         if (result?.Session is not { } session)
         {
             TempData["Error"] = "No confirmed order found";
-            return Redirect("/cart");
+            return Redirect(CheckoutRoutes.Cart);
         }
 
         return View("~/Views/Checkout/Confirmation.cshtml", await ViewModelAsync(session, null, cancellationToken));
@@ -126,17 +122,17 @@ public sealed class CheckoutPageController : Controller
 
     private async Task<IActionResult> Page(CheckoutStep step, CancellationToken cancellationToken, string? error = null)
     {
-        var session = await ActiveSessionAsync(cancellationToken);
-        if (session is null)
+        // Re-rendering a step after a rejected submit keeps the page; otherwise the domain decides who may see it
+        var result = await _active.ExecuteAsync(new GetActiveCheckoutSessionQuery(CurrentCustomerId(), error is null ? step : null), cancellationToken);
+        if (result.Session is not { } session)
         {
             TempData["Error"] = "No active checkout session found";
-            return Redirect("/cart");
+            return Redirect(CheckoutRoutes.Cart);
         }
 
-        // Re-rendering a step after a rejected submit keeps the page; otherwise the domain decides who may see it
-        if (error is null && _stepValidator.ValidateStepAccess(session, step) is { } redirect)
+        if (result.StepAccess is { Granted: false } access)
         {
-            return Redirect(redirect);
+            return Redirect(CheckoutRoutes.PathTo(access));
         }
 
         return View($"~/Views/Checkout/{step}.cshtml", await ViewModelAsync(session, error, cancellationToken));
@@ -148,7 +144,7 @@ public sealed class CheckoutPageController : Controller
         if (session is null)
         {
             TempData["Error"] = "No active checkout session found";
-            return Redirect("/cart");
+            return Redirect(CheckoutRoutes.Cart);
         }
 
         try

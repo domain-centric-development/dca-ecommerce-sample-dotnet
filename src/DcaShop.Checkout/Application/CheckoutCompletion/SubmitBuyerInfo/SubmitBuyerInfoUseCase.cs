@@ -1,4 +1,3 @@
-using DcaShop.Checkout.Domain.ReadModel;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
@@ -33,7 +32,7 @@ public sealed class SubmitBuyerInfoUseCase : ISubmitBuyerInfoInputPort
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
 
-                return new SubmitBuyerInfoResult(CheckoutCartSnapshot.From(session));
+                return SubmitBuyerInfoResult.From(session);
             },
             cancellationToken).ConfigureAwait(false);
     }

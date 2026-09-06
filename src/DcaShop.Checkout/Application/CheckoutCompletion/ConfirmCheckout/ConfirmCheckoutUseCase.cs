@@ -1,4 +1,3 @@
-using DcaShop.Checkout.Domain.ReadModel;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
@@ -38,7 +37,7 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
                 session.Confirm(resolver);
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
-                return new ConfirmCheckoutResult(CheckoutCartSnapshot.From(session));
+                return ConfirmCheckoutResult.From(session);
             },
             cancellationToken).ConfigureAwait(false);
     }

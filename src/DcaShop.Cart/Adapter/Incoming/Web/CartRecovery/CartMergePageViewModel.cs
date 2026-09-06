@@ -40,7 +40,7 @@ public sealed record CartMergePageViewModel(
                 summary.CartId,
                 summary.ItemCount,
                 summary.TotalQuantity,
-                summary.Total,
+                summary.Total.ToString(),
                 summary.Items.Select(CartItemViewModel.From).ToList());
     }
 
@@ -48,6 +48,6 @@ public sealed record CartMergePageViewModel(
         Guid ProductId, string ProductName, string? ImageUrl, int Quantity, string UnitPrice)
     {
         internal static CartItemViewModel From(GetCartMergeOptionsResult.CartItemSummary item) =>
-            new(item.ProductId, item.ProductName, item.ImageUrl, item.Quantity, item.UnitPrice);
+            new(item.ProductId, item.ProductName, item.ImageUrl, item.Quantity, item.UnitPrice.ToString());
     }
 }

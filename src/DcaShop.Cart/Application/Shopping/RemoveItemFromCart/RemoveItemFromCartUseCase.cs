@@ -33,7 +33,7 @@ public sealed class RemoveItemFromCartUseCase : IRemoveItemFromCartInputPort
                 await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);
 
-                return new RemoveItemFromCartResult(cart.Id.Value, cart.ItemCount, cart.CalculateTotal().ToString());
+                return new RemoveItemFromCartResult(cart.Id.Value, cart.ItemCount, cart.CalculateTotal());
             },
             cancellationToken).ConfigureAwait(false);
     }

@@ -17,7 +17,7 @@ Requires the .NET 10 SDK (pinned by `global.json`).
 
 ```bash
 dotnet build
-dotnet test                                   # unit, integration, architecture (112 DCA rules)
+dotnet test                                   # unit, integration, architecture (116 DCA rules)
 dotnet run --project src/DcaShop.Web          # http://localhost:5080
 ```
 

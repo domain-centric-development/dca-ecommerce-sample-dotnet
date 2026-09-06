@@ -1,4 +1,3 @@
-using DcaShop.Checkout.Domain.ReadModel;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
@@ -36,7 +35,7 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
         var existing = await _sessions.FindActiveByCartIdAsync(cartId, cancellationToken).ConfigureAwait(false);
         if (existing is not null)
         {
-            return new StartCheckoutResult(CheckoutCartSnapshot.From(existing));
+            return StartCheckoutResult.From(existing);
         }
 
         // Cart and article data come from other contexts (remote-capable) — outside the transaction
@@ -82,7 +81,7 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
                 var session = CheckoutSession.Start(cart.CartId, cart.CustomerId, lineItems, subtotal, _taxCalculator);
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
-                return new StartCheckoutResult(CheckoutCartSnapshot.From(session));
+                return StartCheckoutResult.From(session);
             },
             cancellationToken).ConfigureAwait(false);
     }

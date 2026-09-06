@@ -70,7 +70,7 @@ public sealed class CheckoutCartUseCase : ICheckoutCartInputPort
                 await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);
 
-                return new CheckoutCartResult(cart.Id.Value, cart.Status.ToString(), enrichedCart.CurrentSubtotal.ToString());
+                return new CheckoutCartResult(cart.Id.Value, cart.Status.ToString(), enrichedCart.CurrentSubtotal);
             },
             cancellationToken).ConfigureAwait(false);
     }

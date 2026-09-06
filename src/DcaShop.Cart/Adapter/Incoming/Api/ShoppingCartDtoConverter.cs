@@ -34,8 +34,8 @@ public sealed class ShoppingCartDtoConverter
                     c.CustomerId,
                     c.Status,
                     c.ItemCount,
-                    c.TotalAmount,
-                    c.TotalCurrency))
+                    c.Total.Amount,
+                    c.Total.Currency))
                 .ToList());
     }
 

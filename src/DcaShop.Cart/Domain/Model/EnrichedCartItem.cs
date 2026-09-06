@@ -12,6 +12,11 @@ public sealed record EnrichedCartItem(CartItemId Id, ProductId ProductId, Quanti
 
     public bool HasPriceChanged => Article.CurrentPrice != PriceAtAddition.Value;
 
+    /// <summary>How far the current price has moved from the price captured at addition, as an absolute amount.</summary>
+    public Money PriceDifference => Money.Of(Math.Abs(Article.CurrentPrice.Amount - PriceAtAddition.Value.Amount), Article.CurrentPrice.Currency);
+
+    public bool PriceIncreased => Article.CurrentPrice.IsGreaterThan(PriceAtAddition.Value);
+
     public bool HasSufficientStock => Article.HasStockFor(Quantity.Value);
 
     public bool IsValidForCheckout => Article.IsAvailable && HasSufficientStock;

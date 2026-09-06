@@ -46,7 +46,7 @@ public sealed class AddItemToCartUseCase : IAddItemToCartInputPort
                 cart.AddItem(productId, quantity, priceAtAddition);
                 await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);
-                return new AddItemToCartResult(cart.Id.Value, cart.ItemCount, cart.TotalQuantity, cart.CalculateTotal().ToString());
+                return new AddItemToCartResult(cart.Id.Value, cart.ItemCount, cart.TotalQuantity, cart.CalculateTotal());
             },
             cancellationToken).ConfigureAwait(false);
     }

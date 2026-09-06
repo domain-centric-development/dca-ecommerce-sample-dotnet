@@ -1,3 +1,4 @@
+using DcaShop.SharedKernel.Domain.Model;
 namespace DcaShop.Cart.Application.Operations.GetAllCarts;
 
 /// <summary>
@@ -11,6 +12,5 @@ public sealed record GetAllCartsResult(IReadOnlyList<GetAllCartsResult.CartSumma
         string CustomerId,
         string Status,
         int ItemCount,
-        decimal TotalAmount,
-        string TotalCurrency);
+        Money Total);
 }

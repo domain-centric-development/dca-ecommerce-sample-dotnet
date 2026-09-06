@@ -27,8 +27,7 @@ public sealed class GetAllCartsUseCase : IGetAllCartsInputPort
                     cart.CustomerId.Value,
                     cart.Status.ToString(),
                     cart.ItemCount,
-                    total.Amount,
-                    total.Currency);
+                    total);
             })
             .ToList();
 

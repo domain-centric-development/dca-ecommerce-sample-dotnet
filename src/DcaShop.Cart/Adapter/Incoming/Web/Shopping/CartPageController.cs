@@ -2,9 +2,7 @@ using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Cart.Domain.Model;
-using DcaShop.Cart.Domain.Service;
 using DcaShop.SharedKernel.Application.Shared;
-using DcaShop.SharedKernel.Domain.Model;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Cart.Adapter.Incoming.Web.Shopping;
@@ -16,20 +14,17 @@ public sealed class CartPageController : Controller
     private readonly IGetOrCreateActiveCartInputPort _getOrCreateActiveCart;
     private readonly IGetCartByIdInputPort _getCartById;
     private readonly IAddItemToCartInputPort _addItemToCart;
-    private readonly CartTotalCalculator _totalCalculator;
     private readonly IIdentityProvider _identityProvider;
 
     public CartPageController(
         IGetOrCreateActiveCartInputPort getOrCreateActiveCart,
         IGetCartByIdInputPort getCartById,
         IAddItemToCartInputPort addItemToCart,
-        CartTotalCalculator totalCalculator,
         IIdentityProvider identityProvider)
     {
         _getOrCreateActiveCart = getOrCreateActiveCart;
         _getCartById = getCartById;
         _addItemToCart = addItemToCart;
-        _totalCalculator = totalCalculator;
         _identityProvider = identityProvider;
     }
 
@@ -38,7 +33,7 @@ public sealed class CartPageController : Controller
     {
         var cartId = await ActiveCartIdAsync(cancellationToken);
         var result = await _getCartById.ExecuteAsync(new GetCartByIdQuery(cartId, CurrentCustomerId), cancellationToken);
-        return result.Cart is { } cart ? View("~/Views/Cart/View.cshtml", ToViewModel(cart)) : NotFound();
+        return result is { Cart: { } cart, Totals: { } totals } ? View("~/Views/Cart/View.cshtml", ToViewModel(cart, totals)) : NotFound();
     }
 
     [HttpPost("add-product")]
@@ -66,35 +61,30 @@ public sealed class CartPageController : Controller
         return result.CartId;
     }
 
-    private CartPageViewModel ToViewModel(EnrichedCart cart) =>
+    private static CartPageViewModel ToViewModel(EnrichedCart cart, CartTotals totals) =>
         new(
             cart.CartId.Value,
             cart.Status.ToString(),
             cart.Items.Select(ToLine).ToList(),
             cart.ItemCount,
             cart.TotalQuantity,
-            cart.CurrentSubtotal.ToString(),
-            _totalCalculator.ContainedTax(cart.CurrentSubtotal).ToString(),
+            totals.CurrentSubtotal.ToString(),
+            totals.ContainedTax.ToString(),
             cart.HasAnyPriceChanges,
             cart.IsValidForCheckout);
 
-    private static CartPageViewModel.Line ToLine(EnrichedCartItem i)
-    {
-        var current = i.Article.CurrentPrice;
-        var original = i.PriceAtAddition.Value;
-        var difference = Money.Of(Math.Abs(current.Amount - original.Amount), current.Currency);
-        return new CartPageViewModel.Line(
+    private static CartPageViewModel.Line ToLine(EnrichedCartItem i) =>
+        new(
             i.Id.Value,
             i.ProductId.Value,
             i.Article.Name,
             i.Article.ImageUrl,
             i.Quantity.Value,
-            current.ToString(),
+            i.Article.CurrentPrice.ToString(),
             i.CurrentLineTotal.ToString(),
             i.HasPriceChanged,
-            current.Amount > original.Amount,
-            difference.ToString(),
+            i.PriceIncreased,
+            i.PriceDifference.ToString(),
             i.Article.IsAvailable,
             i.HasSufficientStock);
-    }
 }

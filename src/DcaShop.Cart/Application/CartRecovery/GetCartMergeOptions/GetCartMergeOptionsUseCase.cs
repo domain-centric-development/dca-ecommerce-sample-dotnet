@@ -56,7 +56,7 @@ public sealed class GetCartMergeOptionsUseCase : IGetCartMergeOptionsInputPort
             cart.Id.Value,
             cart.ItemCount,
             cart.TotalQuantity,
-            cart.CalculateTotal().ToString(),
+            cart.CalculateTotal(),
             cart.Items.Select(item => ToItemSummary(item, articles)).ToList());
 
     private static GetCartMergeOptionsResult.CartItemSummary ToItemSummary(
@@ -70,6 +70,6 @@ public sealed class GetCartMergeOptionsUseCase : IGetCartMergeOptionsInputPort
             article?.Name ?? item.ProductId.Value.ToString(),
             article?.ImageUrl,
             item.Quantity.Value,
-            item.PriceAtAddition.Value.ToString());
+            item.PriceAtAddition.Value);
     }
 }
