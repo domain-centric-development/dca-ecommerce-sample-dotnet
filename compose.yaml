@@ -1,0 +1,35 @@
+# docker compose up --build          → shop on http://localhost:5080
+# docker compose run --rm test       → unit, integration and architecture tests (Debug build, as the rules require)
+# docker compose run --rm dotnet <args>  → any other dotnet command with a cached package store
+#
+# Build context is the parent directory because the sibling ../dca-dotnet is referenced as projects
+# until the packages are on NuGet (see Dockerfile).
+services:
+  shop-dotnet:
+    build:
+      context: ..
+      dockerfile: dca-ecommerce-sample-dotnet/Dockerfile
+    image: dca-shop-dotnet
+    ports:
+      - "5080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+
+  dotnet:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    profiles: [tools]
+    working_dir: /src/dca-ecommerce-sample-dotnet
+    volumes:
+      - ..:/src
+      - nuget-cache:/root/.nuget/packages
+    environment:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    entrypoint: ["dotnet"]
+    command: ["build"]
+
+  test:
+    extends: dotnet
+    command: ["test"]
+
+volumes:
+  nuget-cache:
