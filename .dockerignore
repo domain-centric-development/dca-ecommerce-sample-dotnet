@@ -1,0 +1,8 @@
+# Own-directory context: admit only what the image build reads
+*
+!DcaShop.sln
+!Directory.Build.props
+!global.json
+!src
+**/bin
+**/obj

@@ -2,13 +2,11 @@
 # docker compose run --rm test       → unit, integration and architecture tests (Debug build, as the rules require)
 # docker compose run --rm dotnet <args>  → any other dotnet command with a cached package store
 #
-# Build context is the parent directory because the sibling ../dca-dotnet is referenced as projects
-# until the packages are on NuGet (see Dockerfile).
+# The DomainCentric.* packages come from NuGet.org. The tools service mounts the parent directory so
+# `docker compose run --rm dotnet test -p:UseLocalDcaDotnet=true` can reference the sibling ../dca-dotnet.
 services:
   shop-dotnet:
-    build:
-      context: ..
-      dockerfile: dca-ecommerce-sample-dotnet/Dockerfile
+    build: .
     image: dca-shop-dotnet
     ports:
       - "5080:8080"

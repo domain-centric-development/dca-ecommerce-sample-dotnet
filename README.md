@@ -33,8 +33,7 @@ Until the packages are published on NuGet, the sibling checkout `../dca-dotnet` 
 
 ### Running with Docker
 
-No local SDK needed. Because of that sibling reference the build context is the *parent* directory, which
-`compose.yaml` already sets:
+No local SDK needed:
 
 ```bash
 docker compose up --build                 # http://localhost:5080
@@ -42,9 +41,9 @@ docker compose run --rm test              # unit, integration, architecture test
 docker compose run --rm dotnet build      # any other dotnet command, packages cached in a volume
 ```
 
-Without compose: `docker build -f dca-ecommerce-sample-dotnet/Dockerfile -t dca-shop-dotnet ..` from the
-parent directory, then `docker run --rm -p 5080:8080 dca-shop-dotnet`. Once the packages are on NuGet the
-context shrinks to this directory.
+Without compose: `docker build -t dca-shop-dotnet .`, then `docker run --rm -p 5080:8080 dca-shop-dotnet`.
+The tools service mounts the parent directory, so `docker compose run --rm dotnet test -p:UseLocalDcaDotnet=true`
+works against the sibling `../dca-dotnet` checkout as well.
 
 ## End-to-end tests
 

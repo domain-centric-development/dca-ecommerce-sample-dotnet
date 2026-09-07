@@ -17,7 +17,7 @@ dotnet test tests/DcaShop.ArchitectureTests   # DCA rule catalog (Debug build re
 dotnet test tests/DcaShop.UnitTests --filter "FullyQualifiedName~ShoppingCart"
 dotnet run --project src/DcaShop.Web     # http://localhost:5080
 E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests   # Playwright; skipped without E2E_BASE_URL
-docker compose up --build                                                # same shop in a container (build context: parent dir, see Dockerfile)
+docker compose up --build                                                # same shop in a container
 docker compose run --rm test                                             # tests without a local SDK
 ```
 
@@ -26,7 +26,9 @@ The architecture tests also (re)generate `docs/context-map.md` — commit it wit
 ## Tech stack
 
 .NET 10 (LTS; SDK pinned via `global.json`), ASP.NET Core MVC + Razor views, xUnit, `DomainCentric.BuildingBlocks` + `DomainCentric.ArchRules(.Xunit)`
-from `../dca-dotnet` (project references while unpublished; NuGet afterwards). In-memory persistence only.
+from NuGet.org (`DomainCentric.BuildingBlocks` 0.1.0, `DomainCentric.ArchRules.Xunit` 0.2.0, pinned in `Directory.Build.props`;
+`-p:UseLocalDcaDotnet=true` references the sibling `../dca-dotnet` as projects for unreleased rules — the counterpart of
+the Java sample's `-PwithDcaJava`). In-memory persistence only.
 
 ## Structure and conventions
 

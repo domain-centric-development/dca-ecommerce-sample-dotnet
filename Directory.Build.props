@@ -6,10 +6,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <IsPackable>false</IsPackable>
-    <!-- Local-first: the sibling dca-dotnet checkout is referenced as projects; without it the
-         published NuGet packages are used. Remove the project references once the packages are released. -->
+    <!-- The DomainCentric.* packages come from NuGet.org. Working on unreleased rules or markers:
+         `dotnet test -p:UseLocalDcaDotnet=true` references the sibling checkout ../dca-dotnet as projects
+         instead - the counterpart of the Java sample's `-PwithDcaJava`. -->
     <DcaDotnetDir>$(MSBuildThisFileDirectory)../dca-dotnet/src/</DcaDotnetDir>
-    <UseLocalDcaDotnet Condition="Exists('$(DcaDotnetDir)DomainCentric.BuildingBlocks/DomainCentric.BuildingBlocks.csproj')">true</UseLocalDcaDotnet>
-    <DcaDotnetVersion>0.1.0</DcaDotnetVersion>
+    <UseLocalDcaDotnet Condition="'$(UseLocalDcaDotnet)' == ''">false</UseLocalDcaDotnet>
+    <DcaBuildingBlocksVersion>0.1.0</DcaBuildingBlocksVersion>
+    <DcaArchRulesVersion>0.2.0</DcaArchRulesVersion>
   </PropertyGroup>
 </Project>

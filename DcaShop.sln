@@ -29,8 +29,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DcaShop.E2eTests", "tests\D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DcaShop.Pricing", "src\DcaShop.Pricing\DcaShop.Pricing.csproj", "{F63FB106-DA33-4AD6-BA06-99046BD10966}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomainCentric.BuildingBlocks", "..\dca-dotnet\src\DomainCentric.BuildingBlocks\DomainCentric.BuildingBlocks.csproj", "{D9D266FC-FF5F-439F-B844-7BA0AB6573BD}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DcaShop.Inventory", "src\DcaShop.Inventory\DcaShop.Inventory.csproj", "{F78E429A-9DDD-4F12-96A0-08F05CFB4E15}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DcaShop.Account", "src\DcaShop.Account\DcaShop.Account.csproj", "{13304AFE-1608-4A9D-8AFB-24FEAC106E15}"
@@ -181,18 +179,6 @@ Global
 		{F63FB106-DA33-4AD6-BA06-99046BD10966}.Release|x64.Build.0 = Release|Any CPU
 		{F63FB106-DA33-4AD6-BA06-99046BD10966}.Release|x86.ActiveCfg = Release|Any CPU
 		{F63FB106-DA33-4AD6-BA06-99046BD10966}.Release|x86.Build.0 = Release|Any CPU
-		{D9D266FC-FF5F-439F-B844-7BA0AB6573BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D9D266FC-FF5F-439F-B844-7BA0AB6573BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D9D266FC-FF5F-439F-B844-7BA0AB6573BD}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{D9D266FC-FF5F-439F-B844-7BA0AB6573BD}.Debug|x64.Build.0 = Debug|Any CPU
-		{D9D266FC-FF5F-439F-B844-7BA0AB6573BD}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{D9D266FC-FF5F-439F-B844-7BA0AB6573BD}.Debug|x86.Build.0 = Debug|Any CPU
-		{D9D266FC-FF5F-439F-B844-7BA0AB6573BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D9D266FC-FF5F-439F-B844-7BA0AB6573BD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D9D266FC-FF5F-439F-B844-7BA0AB6573BD}.Release|x64.ActiveCfg = Release|Any CPU
-		{D9D266FC-FF5F-439F-B844-7BA0AB6573BD}.Release|x64.Build.0 = Release|Any CPU
-		{D9D266FC-FF5F-439F-B844-7BA0AB6573BD}.Release|x86.ActiveCfg = Release|Any CPU
-		{D9D266FC-FF5F-439F-B844-7BA0AB6573BD}.Release|x86.Build.0 = Release|Any CPU
 		{F78E429A-9DDD-4F12-96A0-08F05CFB4E15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F78E429A-9DDD-4F12-96A0-08F05CFB4E15}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F78E429A-9DDD-4F12-96A0-08F05CFB4E15}.Debug|x64.ActiveCfg = Debug|Any CPU

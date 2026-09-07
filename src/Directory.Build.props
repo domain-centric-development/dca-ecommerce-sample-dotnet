@@ -4,6 +4,6 @@
     <ProjectReference Include="$(DcaDotnetDir)DomainCentric.BuildingBlocks/DomainCentric.BuildingBlocks.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseLocalDcaDotnet)' != 'true'">
-    <PackageReference Include="DomainCentric.BuildingBlocks" Version="$(DcaDotnetVersion)" />
+    <PackageReference Include="DomainCentric.BuildingBlocks" Version="$(DcaBuildingBlocksVersion)" />
   </ItemGroup>
 </Project>
