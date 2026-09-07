@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using DcaShop.Backoffice.Application.GetEventPublications;
-using DcaShop.Backoffice.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;

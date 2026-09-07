@@ -1,7 +1,8 @@
-namespace DcaShop.Backoffice.Infrastructure;
+namespace DcaShop.Backoffice.Adapter.Incoming.Web;
 
 /// <summary>
-/// The operator account and the session it gets. A single credential pair is enough for a sample; a real
+/// The operator account and the session it gets — cookie name, scheme and credentials of the backoffice web
+/// adapter, so the class lives there; the module registration binds it from configuration. A single credential pair is enough for a sample; a real
 /// deployment would put operators behind the same account store as everyone else and give them a role.
 /// </summary>
 public sealed class BackofficeOptions

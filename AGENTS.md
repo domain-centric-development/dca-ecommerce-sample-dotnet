@@ -132,7 +132,7 @@ from `../dca-dotnet` (project references while unpublished; NuGet afterwards). I
   demands the customer too, so Checkout inherits the rule. `FindByIdAsync` stays for the system paths that act on
   nobody's behalf (`CompleteCart`, from an integration event). The refusal is *rendered* at the edge: a stranger's
   cart answers `404`, never `403`.
-- The backoffice has its **own** cookie scheme and its own credentials (`BackofficeOptions`, defaults
+- The backoffice has its **own** cookie scheme and its own credentials (`Adapter.Incoming.Web.BackofficeOptions`, defaults
   `admin`/`admin`). A staff session and a shopper session are never the same cookie.
 
 ## Stand-ins still in place (remove when the contexts arrive)
