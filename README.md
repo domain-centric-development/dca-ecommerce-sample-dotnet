@@ -28,8 +28,9 @@ included.
 > Architecture tests must run on **Debug** builds — ArchUnitNET drops the async state machines of optimized
 > builds and would miss dependencies inside `async` method bodies. `dotnet test` defaults to Debug.
 
-Until the packages are published on NuGet, the sibling checkout `../dca-dotnet` is referenced as projects
-(see `Directory.Build.props`); without it the `PackageReference`s are used.
+The packages come from NuGet.org (`DomainCentric.BuildingBlocks`, `DomainCentric.ArchRules.Xunit`). For work on
+unreleased rules, `-p:UseLocalDcaDotnet=true` references the sibling checkout `../dca-dotnet` as projects instead
+(see `Directory.Build.props`).
 
 ### Running with Docker
 
