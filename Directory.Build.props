@@ -12,6 +12,6 @@
     <DcaDotnetDir>$(MSBuildThisFileDirectory)../dca-dotnet/src/</DcaDotnetDir>
     <UseLocalDcaDotnet Condition="'$(UseLocalDcaDotnet)' == ''">false</UseLocalDcaDotnet>
     <DcaBuildingBlocksVersion>0.1.0</DcaBuildingBlocksVersion>
-    <DcaArchRulesVersion>0.2.0</DcaArchRulesVersion>
+    <DcaArchRulesVersion>0.3.0</DcaArchRulesVersion>
   </PropertyGroup>
 </Project>
