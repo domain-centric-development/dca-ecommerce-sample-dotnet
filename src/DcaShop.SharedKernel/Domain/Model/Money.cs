@@ -13,13 +13,15 @@ public sealed record Money : IValue
             throw new ArgumentException("Amount cannot be negative", nameof(amount));
         }
 
-        if (string.IsNullOrWhiteSpace(currency) || currency.Length != 3)
+        if (string.IsNullOrWhiteSpace(currency) || !IsoCurrencyCodes.Contains(currency))
         {
             throw new ArgumentException("Currency must be an ISO 4217 code", nameof(currency));
         }
 
+        if (amount > 999999999999.99m) throw new ArgumentException("Amount exceeds maximum monetary value", nameof(amount));
+
         Amount = decimal.Round(amount, 2, MidpointRounding.AwayFromZero);
-        Currency = currency.ToUpperInvariant();
+        Currency = currency;
     }
 
     public decimal Amount { get; }

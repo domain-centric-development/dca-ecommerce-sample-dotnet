@@ -13,6 +13,22 @@ public sealed class ShoppingCartTest
     private static ShoppingCart NewCart() => new(CartId.Generate(), CustomerId.Of("guest-1"));
 
     [Fact]
+    public void DefaultQuantityIsRejectedAtEveryEntryIncludingReconstitution()
+    {
+        var cart = NewCart();
+        var product = ProductId.Generate();
+        Assert.Throws<ArgumentException>(() => cart.AddItem(product, default, Ten));
+        cart.AddItem(product, Quantity.Of(2), Ten);
+        cart.ClearDomainEvents();
+        Assert.Throws<ArgumentException>(() => cart.AddItem(product, default, Ten));
+        Assert.Throws<ArgumentException>(() => cart.UpdateItemQuantity(cart.Items[0].Id, default));
+        Assert.Equal(2, cart.Items[0].Quantity.Value);
+        Assert.Empty(cart.DomainEvents);
+        var stored = new ShoppingCart.StoredItem(CartItemId.Generate(), product, default, Ten);
+        Assert.Throws<ArgumentException>(() => ShoppingCart.Reconstitute(CartId.Generate(), CustomerId.Of("c"), CartStatus.Active, new[] { stored }));
+    }
+
+    [Fact]
     public void AddingSameProductTwiceIncreasesQuantityInsteadOfAddingLine()
     {
         var cart = NewCart();
@@ -43,7 +59,7 @@ public sealed class ShoppingCartTest
     }
 
     [Fact]
-    public void CheckoutLocksCartAndCarriesTotal()
+    public void CheckoutKeepsCartEditableAndCarriesTotal()
     {
         var cart = NewCart();
         cart.AddItem(ProductId.Generate(), Quantity.Of(2), Ten);
@@ -51,10 +67,11 @@ public sealed class ShoppingCartTest
 
         cart.Checkout();
 
-        Assert.Equal(CartStatus.CheckedOut, cart.Status);
+        Assert.Equal(CartStatus.Active, cart.Status);
         var checkedOut = Assert.IsType<CartCheckedOut>(Assert.Single(cart.DomainEvents));
         Assert.Equal(Money.Euro(20m), checkedOut.TotalAmount);
-        Assert.Throws<InvalidOperationException>(() => cart.AddItem(ProductId.Generate(), Quantity.Of(1), Ten));
+        cart.AddItem(ProductId.Generate(), Quantity.Of(1), Ten);
+        Assert.Equal(3, cart.TotalQuantity);
     }
 
     [Fact]

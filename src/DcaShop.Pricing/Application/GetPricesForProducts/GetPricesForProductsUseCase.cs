@@ -24,7 +24,7 @@ public sealed class GetPricesForProductsUseCase : IGetPricesForProductsInputPort
         var found = await _prices.FindByProductIdsAsync(input.ProductIds, cancellationToken).ConfigureAwait(false);
         var prices = found.ToDictionary(
             p => p.ProductId,
-            p => new GetPricesForProductsResult.PriceData(p.ProductId, p.CurrentPrice, p.EffectiveFrom));
+            p => new GetPricesForProductsResult.PriceData(p.ProductId, p.CurrentPrice.Value, p.EffectiveFrom));
         return new GetPricesForProductsResult(prices);
     }
 }

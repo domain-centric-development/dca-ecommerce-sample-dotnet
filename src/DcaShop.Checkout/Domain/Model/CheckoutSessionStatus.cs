@@ -8,6 +8,7 @@ public enum CheckoutSessionStatus
     Completed,
     Abandoned,
     Expired,
+    Superseded,
 }
 
 public static class CheckoutSessionStatusExtensions
@@ -15,7 +16,7 @@ public static class CheckoutSessionStatusExtensions
     public static bool IsModifiable(this CheckoutSessionStatus status) => status == CheckoutSessionStatus.Active;
 
     public static bool IsTerminal(this CheckoutSessionStatus status) =>
-        status is CheckoutSessionStatus.Completed or CheckoutSessionStatus.Abandoned or CheckoutSessionStatus.Expired;
+        status is CheckoutSessionStatus.Superseded or CheckoutSessionStatus.Completed or CheckoutSessionStatus.Abandoned or CheckoutSessionStatus.Expired;
 
     public static bool CanConfirm(this CheckoutSessionStatus status) => status == CheckoutSessionStatus.Active;
 

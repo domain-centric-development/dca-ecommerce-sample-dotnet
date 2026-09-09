@@ -45,7 +45,7 @@ public sealed record EventPublicationPageViewModel(
                 Format(summary.PublicationDate)!,
                 Format(summary.CompletionDate),
                 summary.IsCompleted,
-                summary.IsCompleted ? "Completed" : "Incomplete");
+                summary.IsCompleted ? "Completed" : summary.Status);
 
         private static string? Format(DateTimeOffset? value) =>
             value?.LocalDateTime.ToString(DateFormat, CultureInfo.InvariantCulture);

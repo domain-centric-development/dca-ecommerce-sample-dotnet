@@ -20,7 +20,7 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
     }
 
     /// <summary>A stored line as the repository hands it back; only the aggregate turns it into a <see cref="CartItem"/>.</summary>
-    public sealed record StoredItem(CartItemId Id, ProductId ProductId, Quantity Quantity, Price PriceAtAddition);
+    public sealed record StoredItem(CartItemId Id, ProductId ProductId, Quantity Quantity, Price PriceAtAddition, string? Units = null);
 
     /// <summary>Restores a stored cart as it was — no rule is re-evaluated, no event is raised.</summary>
     public static ShoppingCart Reconstitute(CartId id, CustomerId customerId, CartStatus status, IEnumerable<StoredItem> storedItems)
@@ -28,10 +28,28 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
         var cart = new ShoppingCart(id, customerId) { Status = status };
         foreach (var stored in storedItems)
         {
-            cart._items.Add(new CartItem(stored.Id, stored.ProductId, stored.Quantity, stored.PriceAtAddition));
+            var item = new CartItem(stored.Id, stored.ProductId, stored.Quantity, stored.PriceAtAddition);
+            if (stored.Units is not null) item.RestoreUnits(stored.Units);
+            cart._items.Add(item);
         }
 
         return cart;
+    }
+
+    public void ReconcileCheckout(string sessionId, IReadOnlyList<string> positions)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId)) throw new ArgumentException("Session identity required");
+        var purchased = new Dictionary<CartItemId, PositionUnits>();
+        foreach (var snapshot in positions)
+        {
+            var parts = snapshot.Split(':', 2); if (parts.Length != 2) throw new ArgumentException("Position identity required");
+            purchased[CartItemId.Of(parts[0])] = PositionUnits.Parse(parts[1]);
+        }
+        bool changed = false;
+        foreach (var item in _items)
+            if (purchased.TryGetValue(item.Id, out var units)) changed |= item.Reconcile(units);
+        _items.RemoveAll(i => !i.HasUnits);
+        if (changed) RegisterEvent(CartCompleted.Now(Id));
     }
 
     public override CartId Id { get; }
@@ -53,6 +71,7 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
     public void AddItem(ProductId productId, Quantity quantity, Price price)
     {
         EnsureCartIsActive();
+        if (quantity.Value <= 0) throw new ArgumentException("Quantity must be positive", nameof(quantity));
         var existing = _items.FirstOrDefault(i => i.ProductId == productId);
         if (existing is not null)
         {
@@ -122,10 +141,7 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
 
     public void Checkout()
     {
-        if (Status == CartStatus.CheckedOut)
-        {
-            throw new InvalidOperationException("Cart is already checked out");
-        }
+        EnsureCartIsActive();
 
         if (IsEmpty)
         {
@@ -133,7 +149,7 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
         }
 
         var total = CalculateTotal();
-        Status = CartStatus.CheckedOut;
+        // Snapshot submission leaves the cart editable.
         RegisterEvent(CartCheckedOut.Now(Id, CustomerId, total, _items));
     }
 
@@ -175,43 +191,18 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
     /// Total from the prices the resolver answers now, not the ones captured at addition — what the customer
     /// actually owes at settlement time.
     /// </summary>
-    public Money CalculateTotal(IArticlePriceResolver priceResolver)
+    public Money CalculateTotal(IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
-        ArgumentNullException.ThrowIfNull(priceResolver);
-
-        var total = Money.Euro(0m);
-        foreach (var item in _items)
-        {
-            total = total.Add(priceResolver.Resolve(item.ProductId).Price.Multiply(item.Quantity.Value));
-        }
-
-        return total;
+        return new DcaShop.Cart.Domain.Service.CartPricing().CalculateTotal(PricingLines(), facts);
     }
 
     /// <summary>
     /// Checks every line against current availability and stock. An empty cart is valid — <see cref="Checkout"/>
     /// is what refuses it.
     /// </summary>
-    public CartValidationResult ValidateForCheckout(IArticlePriceResolver priceResolver)
+    public CartValidationResult ValidateForCheckout(IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
-        ArgumentNullException.ThrowIfNull(priceResolver);
-
-        var errors = new List<CartValidationResult.ValidationError>();
-        foreach (var item in _items)
-        {
-            var article = priceResolver.Resolve(item.ProductId);
-            if (!article.IsAvailable)
-            {
-                errors.Add(CartValidationResult.ValidationError.ProductUnavailable(item.ProductId));
-            }
-            else if (article.AvailableStock < item.Quantity.Value)
-            {
-                errors.Add(CartValidationResult.ValidationError.InsufficientStock(
-                    item.ProductId, item.Quantity.Value, article.AvailableStock));
-            }
-        }
-
-        return errors.Count == 0 ? CartValidationResult.Valid() : CartValidationResult.WithErrors(errors);
+        return new DcaShop.Cart.Domain.Service.CartPricing().ValidateForCheckout(PricingLines(), facts);
     }
 
     /// <summary>
@@ -234,6 +225,8 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
     }
 
     public bool ContainsProduct(ProductId productId) => _items.Any(i => i.ProductId == productId);
+
+    private IReadOnlyList<DcaShop.Cart.Domain.Service.CartPricing.Line> PricingLines() => _items.Select(i => new DcaShop.Cart.Domain.Service.CartPricing.Line(i.ProductId, i.Quantity)).ToArray();
 
     private CartItem FindItem(CartItemId itemId) =>
         _items.FirstOrDefault(i => i.Id == itemId)

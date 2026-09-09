@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using DcaShop.Account.Domain.Event;
 using DcaShop.Account.Domain.Gateway;
 using DcaShop.SharedKernel.Domain.Model;
@@ -63,7 +64,7 @@ public sealed class Account : AggregateRootBase<Account, AccountId>
 
     public AccountStatus Status { get; private set; }
 
-    public IReadOnlySet<string> Roles => _roles;
+    public IReadOnlySet<string> Roles => _roles.ToFrozenSet(StringComparer.Ordinal);
 
     public DateTimeOffset CreatedAt { get; }
 

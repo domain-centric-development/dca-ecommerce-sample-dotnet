@@ -19,6 +19,19 @@ public sealed class AccountTest
             Hasher);
 
     [Fact]
+    public void RolesAreImmutableSnapshots()
+    {
+        var account = NewAccount();
+        var snapshot = account.Roles;
+        if (snapshot is ISet<string> mutable)
+            Assert.Throws<NotSupportedException>(() => mutable.Add("injected"));
+        Assert.DoesNotContain("injected", account.Roles);
+        account.AddRole("later-role");
+        Assert.DoesNotContain("later-role", snapshot);
+        Assert.Contains("later-role", account.Roles);
+    }
+
+    [Fact]
     public void RegistrationKeepsTheVisitorIdentitySoTheCartSurvives()
     {
         var account = NewAccount();

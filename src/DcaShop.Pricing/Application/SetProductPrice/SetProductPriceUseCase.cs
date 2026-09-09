@@ -27,7 +27,7 @@ public sealed class SetProductPriceUseCase : ISetProductPriceInputPort
     {
         ArgumentNullException.ThrowIfNull(input);
         var productId = new ProductId(input.ProductId);
-        var newPrice = Money.Of(input.PriceAmount, input.PriceCurrency);
+        var newPrice = Price.Of(Money.Of(input.PriceAmount, input.PriceCurrency));
 
         return _transactionBoundary.InTransactionAsync(async ct =>
         {
@@ -52,8 +52,8 @@ public sealed class SetProductPriceUseCase : ISetProductPriceInputPort
             return new SetProductPriceResult(
                 productPrice.Id.Value,
                 productPrice.ProductId.Value,
-                productPrice.CurrentPrice.Amount,
-                productPrice.CurrentPrice.Currency,
+                productPrice.CurrentPrice.Value.Amount,
+                productPrice.CurrentPrice.Value.Currency,
                 productPrice.EffectiveFrom,
                 created);
         }, cancellationToken);

@@ -32,12 +32,6 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
     public async Task<StartCheckoutResult> ExecuteAsync(StartCheckoutCommand command, CancellationToken cancellationToken = default)
     {
         var cartId = new CartId(command.CartId);
-        var existing = await _sessions.FindActiveByCartIdAsync(cartId, cancellationToken).ConfigureAwait(false);
-        if (existing is not null)
-        {
-            return StartCheckoutResult.From(existing);
-        }
-
         // Cart and article data come from other contexts (remote-capable) — outside the transaction
         // Scoped to the caller: a cart that is not theirs is indistinguishable from one that does not exist.
         var cart = await _cartData.FindByIdAsync(cartId, CustomerId.Of(command.CustomerId), cancellationToken).ConfigureAwait(false)
@@ -61,7 +55,7 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
                 throw new ArgumentException($"Product not found: {cartItem.ProductId}", nameof(command));
             }
 
-            lineItems.Add(new CheckoutLineItem(CheckoutLineItemId.Generate(), cartItem.ProductId, article.Name, article.CurrentPrice, cartItem.Quantity, article.ImageUrl));
+            lineItems.Add(new CheckoutLineItem(CheckoutLineItemId.Generate(), cartItem.ProductId, article.Name, article.CurrentPrice, cartItem.Quantity, article.ImageUrl, cartItem.PositionSnapshot));
         }
 
         // The enriched read model pairs each line item with its current article data, so the domain can
@@ -75,14 +69,16 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
         var subtotal = checkoutCart.CalculateCurrentSubtotal();
 
         // Short transaction: create, save, publish
-        return await _transactionBoundary.InTransactionAsync(
+        return await _sessions.InCartSessionAsync(cartId, () => _transactionBoundary.InTransactionAsync(
             async ct =>
             {
+                var previous = await _sessions.FindActiveByCartIdAsync(cartId, ct).ConfigureAwait(false);
+                if (previous is not null) { previous.Supersede(); await _sessions.SaveAsync(previous, ct).ConfigureAwait(false); }
                 var session = CheckoutSession.Start(cart.CartId, cart.CustomerId, lineItems, subtotal, _taxCalculator);
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
                 return StartCheckoutResult.From(session);
             },
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken), cancellationToken).ConfigureAwait(false);
     }
 }

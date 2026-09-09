@@ -40,7 +40,7 @@ public sealed class CheckoutStepValidator : IDomainService
     private static StepAccess TerminalStateAccess(CheckoutCartSnapshot session, CheckoutStep targetStep) => session.Status switch
     {
         CheckoutSessionStatus.Completed => targetStep == CheckoutStep.Confirmation ? StepAccess.Grant() : StepAccess.RedirectTo(CheckoutStep.Confirmation),
-        CheckoutSessionStatus.Abandoned or CheckoutSessionStatus.Expired => StepAccess.BackToCart(),
+        CheckoutSessionStatus.Superseded or CheckoutSessionStatus.Abandoned or CheckoutSessionStatus.Expired => StepAccess.BackToCart(),
         _ => StepAccess.Grant(),
     };
 

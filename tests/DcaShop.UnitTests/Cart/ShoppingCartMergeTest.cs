@@ -105,11 +105,11 @@ public sealed class ShoppingCartMergeTest
     }
 
     [Fact]
-    public void ACheckedOutTargetRefusesTheMerge()
+    public void AnAbandonedTargetRefusesTheMerge()
     {
         var productId = ProductId.Generate();
         _target.AddItem(productId, Quantity.Of(1), Ten);
-        _target.Checkout();
+        _target.Abandon();
         _source.AddItem(productId, Quantity.Of(1), Ten);
 
         Assert.Throws<InvalidOperationException>(() => _target.Merge(_source));

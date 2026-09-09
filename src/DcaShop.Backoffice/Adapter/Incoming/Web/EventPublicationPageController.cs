@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using DcaShop.Backoffice.Application.ReplayFailedPublication;
 using DcaShop.Backoffice.Application.GetEventPublications;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -22,13 +23,15 @@ public sealed class EventPublicationPageController : Controller
 {
     private readonly IGetEventPublicationsInputPort _getEventPublications;
     private readonly BackofficeOptions _options;
+    private readonly IReplayFailedPublicationInputPort _replay;
 
     public EventPublicationPageController(
-        IGetEventPublicationsInputPort getEventPublications, IOptions<BackofficeOptions> options)
+        IGetEventPublicationsInputPort getEventPublications, IOptions<BackofficeOptions> options, IReplayFailedPublicationInputPort replay)
     {
         ArgumentNullException.ThrowIfNull(options);
         _getEventPublications = getEventPublications;
         _options = options.Value;
+        _replay = replay;
     }
 
     [HttpGet("login")]
@@ -66,6 +69,14 @@ public sealed class EventPublicationPageController : Controller
     {
         var result = await _getEventPublications.ExecuteAsync(new GetEventPublicationsQuery(), cancellationToken);
         return View("~/Views/Backoffice/Events.cshtml", EventPublicationPageViewModel.From(result));
+    }
+
+    [HttpPost("events/{id:guid}/replay")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReplayFailed(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _replay.ExecuteAsync(new ReplayFailedPublicationCommand(id), cancellationToken);
+        return result.Found ? Redirect("/backoffice/events") : NotFound();
     }
 
     /// <summary>

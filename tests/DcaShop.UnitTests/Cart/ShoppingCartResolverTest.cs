@@ -11,8 +11,10 @@ public sealed class ShoppingCartResolverTest
     private readonly ShoppingCart _cart = new(CartId.Generate(), CustomerId.Of("test-customer"));
     private readonly StubPriceResolver _resolver = new();
 
+    private IReadOnlyDictionary<ProductId, ArticlePrice> Facts() => _cart.Items.ToDictionary(i => i.ProductId, i => _resolver.Resolve(i.ProductId));
+
     [Fact]
-    public void AnEmptyCartOwesNothing() => Assert.Equal(Money.Euro(0m), _cart.CalculateTotal(_resolver));
+    public void AnEmptyCartOwesNothing() => Assert.Equal(Money.Euro(0m), _cart.CalculateTotal(Facts()));
 
     [Fact]
     public void TheTotalFollowsTheResolvedPricesNotThePricesAtAddition()
@@ -24,7 +26,7 @@ public sealed class ShoppingCartResolverTest
         _resolver.Set(product1, Money.Euro(15m), true, 100);
         _resolver.Set(product2, Money.Euro(25m), true, 100);
 
-        Assert.Equal(Money.Euro(105m), _cart.CalculateTotal(_resolver));
+        Assert.Equal(Money.Euro(105m), _cart.CalculateTotal(Facts()));
     }
 
     [Fact]
@@ -34,7 +36,7 @@ public sealed class ShoppingCartResolverTest
     [Fact]
     public void AnEmptyCartHasNothingToObjectTo()
     {
-        var outcome = _cart.ValidateForCheckout(_resolver);
+        var outcome = _cart.ValidateForCheckout(Facts());
 
         Assert.True(outcome.IsValid);
         Assert.Empty(outcome.Errors);
@@ -50,7 +52,7 @@ public sealed class ShoppingCartResolverTest
         _resolver.Set(product1, Money.Euro(10m), true, 10);
         _resolver.Set(product2, Money.Euro(10m), true, 10);
 
-        Assert.True(_cart.ValidateForCheckout(_resolver).IsValid);
+        Assert.True(_cart.ValidateForCheckout(Facts()).IsValid);
     }
 
     [Fact]
@@ -60,7 +62,7 @@ public sealed class ShoppingCartResolverTest
         _cart.AddItem(productId, Quantity.Of(1), Ten);
         _resolver.Set(productId, Money.Euro(10m), false, 0);
 
-        var outcome = _cart.ValidateForCheckout(_resolver);
+        var outcome = _cart.ValidateForCheckout(Facts());
 
         Assert.False(outcome.IsValid);
         var error = Assert.Single(outcome.Errors);
@@ -75,7 +77,7 @@ public sealed class ShoppingCartResolverTest
         _cart.AddItem(productId, Quantity.Of(5), Ten);
         _resolver.Set(productId, Money.Euro(10m), true, 3);
 
-        var outcome = _cart.ValidateForCheckout(_resolver);
+        var outcome = _cart.ValidateForCheckout(Facts());
 
         Assert.False(outcome.IsValid);
         var error = Assert.Single(outcome.Errors);
@@ -93,7 +95,7 @@ public sealed class ShoppingCartResolverTest
         _resolver.Set(unavailable, Money.Euro(10m), false, 0);
         _resolver.Set(lowStock, Money.Euro(10m), true, 5);
 
-        Assert.Equal(2, _cart.ValidateForCheckout(_resolver).Errors.Count);
+        Assert.Equal(2, _cart.ValidateForCheckout(Facts()).Errors.Count);
     }
 
     [Fact]
@@ -103,7 +105,7 @@ public sealed class ShoppingCartResolverTest
         _cart.AddItem(productId, Quantity.Of(5), Ten);
         _resolver.Set(productId, Money.Euro(10m), true, 5);
 
-        Assert.True(_cart.ValidateForCheckout(_resolver).IsValid);
+        Assert.True(_cart.ValidateForCheckout(Facts()).IsValid);
     }
 
     [Fact]

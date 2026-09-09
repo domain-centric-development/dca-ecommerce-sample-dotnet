@@ -63,7 +63,7 @@ public sealed class IntegrationEventDeliveryTest : IClassFixture<WebApplicationF
             await publisher.PublishAsync(@event, ct);
             insideTransaction = Publication(@event.EventId);   // outbox row exists together with the aggregate
             await Task.Delay(100, ct);                         // dispatcher must not see it yet
-            Assert.Equal(PublicationStatus.Pending, Publication(@event.EventId).Status);
+            Assert.Equal(PublicationStatus.Staged, Publication(@event.EventId).Status);
             Assert.Equal(0, Publication(@event.EventId).Attempts);
         });
 

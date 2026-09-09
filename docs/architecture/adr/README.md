@@ -10,3 +10,11 @@
 | [ADR-006](adr-006-identity-and-session-cookies.md) | Two cookies for identity and session, signed by an own JWT middleware | Accepted, point 1 amended by ADR-008 |
 | [ADR-007](adr-007-api-authorization-and-bearer-only-boundary.md) | API authorization at the adapter, and a Bearer-only `/api` and `/mcp` | Accepted, amended by ADR-008 |
 | [ADR-008](adr-008-identity-as-authentication-handler.md) | The shop's identity as an ASP.NET Core authentication handler; `[Authorize]` for the claims-only gates | Accepted |
+
+| [ADR-009](adr-009-outbox-transactional-eligibility.md) | Transactional outbox eligibility and per-consumer completion | Accepted |
+
+| [ADR-010](adr-010-product-created-payload.md) | Product-created notification payload | Accepted |
+
+| [ADR-011](adr-011-aggregate-owned-event-registration.md) | Aggregate-owned event registration | Accepted |
+
+| [ADR-012](adr-012-checkout-snapshots-and-reconciliation.md) | Checkout snapshots and reconciliation | Accepted |

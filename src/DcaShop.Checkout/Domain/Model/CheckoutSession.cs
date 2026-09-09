@@ -36,6 +36,8 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         return session;
     }
 
+    public void Supersede() { EnsureModifiable(); Status = CheckoutSessionStatus.Superseded; }
+
     public override CheckoutSessionId Id { get; }
 
     public CartId CartId { get; }
@@ -66,15 +68,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
 
     public void SyncLineItems(IReadOnlyList<CheckoutLineItem> newLineItems, Money newSubtotal, TaxCalculator taxCalculator)
     {
-        EnsureModifiable();
-        if (newLineItems is null || newLineItems.Count == 0)
-        {
-            throw new ArgumentException("Cannot sync with empty line items", nameof(newLineItems));
-        }
-
-        _lineItems.Clear();
-        _lineItems.AddRange(newLineItems);
-        Totals = CheckoutTotals.Calculate(newSubtotal, Totals.Shipping, taxCalculator.ContainedTax(newSubtotal.Add(Totals.Shipping)));
+        throw new InvalidOperationException("Checkout snapshots are immutable; start a new session");
     }
 
     public void SubmitBuyerInfo(BuyerInfo buyerInfo)
@@ -123,39 +117,17 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         RegisterEvent(PaymentSubmitted.Now(Id, payment));
     }
 
-    public Money CalculateOrderTotal(ICheckoutArticlePriceResolver resolver)
+    public Money CalculateOrderTotal(IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
-        ArgumentNullException.ThrowIfNull(resolver);
-        var total = Money.Zero(Totals.Subtotal.Currency);
-        foreach (var item in _lineItems)
-        {
-            total = total.Add(resolver.Resolve(item.ProductId).Price.Multiply(item.Quantity));
-        }
-
-        return total;
+        return new DcaShop.Checkout.Domain.Service.CheckoutPricing().CalculateOrderTotal(LineItems, facts, Totals.Subtotal.Currency);
     }
 
-    public CheckoutValidationResult ValidateItems(ICheckoutArticlePriceResolver resolver)
+    public CheckoutValidationResult ValidateItems(IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
-        ArgumentNullException.ThrowIfNull(resolver);
-        var errors = new List<ValidationError>();
-        foreach (var item in _lineItems)
-        {
-            var article = resolver.Resolve(item.ProductId);
-            if (!article.IsAvailable)
-            {
-                errors.Add(ValidationError.ProductUnavailable(item.ProductId));
-            }
-            else if (article.AvailableStock < item.Quantity)
-            {
-                errors.Add(ValidationError.InsufficientStock(item.ProductId, item.Quantity, article.AvailableStock));
-            }
-        }
-
-        return errors.Count == 0 ? CheckoutValidationResult.Valid() : CheckoutValidationResult.WithErrors(errors);
+        return new DcaShop.Checkout.Domain.Service.CheckoutPricing().ValidateItems(LineItems, facts, Totals.Subtotal.Currency);
     }
 
-    public void Confirm(ICheckoutArticlePriceResolver resolver)
+    public void Confirm(IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
         EnsureModifiable();
         EnsureAllStepsCompleted();
@@ -164,12 +136,14 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
             throw new InvalidOperationException("Can only confirm from review step");
         }
 
-        var validation = ValidateItems(resolver);
+        var validation = ValidateItems(facts);
         if (!validation.IsValid)
         {
-            throw new InvalidOperationException($"Cannot confirm checkout: validation failed with {validation.Errors.Count} error(s)");
+            throw new CheckoutValidationException(validation);
         }
 
+        var recomputed = CalculateOrderTotal(facts);
+        Totals = CheckoutTotals.Calculate(recomputed, Totals.Shipping, new TaxCalculator().ContainedTax(recomputed.Add(Totals.Shipping)));
         Status = CheckoutSessionStatus.Confirmed;
         CurrentStep = CheckoutStep.Confirmation;
         RegisterEvent(CheckoutConfirmed.Now(Id, CartId, CustomerId, Totals.Total, _lineItems));
@@ -189,7 +163,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
 
     public void Abandon()
     {
-        if (Status.IsTerminal())
+        if (!Status.IsModifiable())
         {
             throw new InvalidOperationException($"Cannot abandon checkout with status: {Status}");
         }
@@ -201,7 +175,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
 
     public void Expire()
     {
-        if (Status.IsTerminal())
+        if (!Status.IsModifiable())
         {
             throw new InvalidOperationException($"Cannot expire checkout with status: {Status}");
         }

@@ -44,7 +44,7 @@
 }
 else
 {
-<span class="event-log__badge event-log__badge--incomplete" data-test="event-status">Incomplete</span>
+<span class="event-log__badge event-log__badge--incomplete" data-test="event-status">@item.StatusLabel</span>
 }
 </div>
 <div class="event-log__item-details">
@@ -64,6 +64,13 @@ else
 </div>
 }
 </div>
+@if (item.StatusLabel == "Failed")
+{
+<form method="post" action="/backoffice/events/@item.Id/replay">
+@Html.AntiForgeryToken()
+<button type="submit">Retry failed consumers</button>
+</form>
+}
 <details class="event-log__payload" data-test="event-payload">
 <summary class="event-log__payload-toggle">Event Payload</summary>
 <pre class="event-log__payload-content">@item.SerializedEvent</pre>

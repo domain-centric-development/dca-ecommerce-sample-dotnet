@@ -25,7 +25,7 @@ public sealed class PriceInitializationEventConsumer : EventListener<IPriceIniti
     {
         _logger.LogInformation("Initialising price for product {ProductId}", @event.ProductId);
         await _setProductPrice.ExecuteAsync(
-            new SetProductPriceCommand(@event.ProductId.Value, @event.InitialPrice.Amount, @event.InitialPrice.Currency),
+            new SetProductPriceCommand(@event.ProductId, decimal.Parse(@event.Amount, System.Globalization.CultureInfo.InvariantCulture), @event.Currency),
             cancellationToken).ConfigureAwait(false);
     }
 }

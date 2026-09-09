@@ -20,11 +20,9 @@ public sealed class ProductCreatedEventPublisher : EventListener<ProductCreated>
             new ProductCreatedEvent(
                 @event.EventId,
                 @event.OccurredOn,
-                @event.ProductId,
-                @event.Sku.Value,
-                @event.Name.Value,
-                @event.Category.Name,
-                @event.InitialPrice.Value,
+                @event.ProductId.Value,
+                @event.InitialPrice.Value.Amount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+                @event.InitialPrice.Value.Currency,
                 @event.InitialStock),
             cancellationToken);
 }

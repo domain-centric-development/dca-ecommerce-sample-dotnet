@@ -43,3 +43,5 @@ smaller than the use case.
 - Negative: every writing use case carries an `ITransactionBoundary` dependency and a lambda. A decorator around
   `IUseCase<,>` would remove the boilerplate for use cases without remote reads, at the price of hiding the
   boundary; the sample prefers the explicit form so both shapes stay readable side by side.
+
+Amended 2026-09-09 by [ADR-009](./adr-009-outbox-transactional-eligibility.md): registration is Staged; an enlisted commit participant establishes Pending eligibility; after-commit release is a wakeup only. Completion/retry are per consumer. The in-memory boundary models enlisted resources, not universal rollback of live repository objects.

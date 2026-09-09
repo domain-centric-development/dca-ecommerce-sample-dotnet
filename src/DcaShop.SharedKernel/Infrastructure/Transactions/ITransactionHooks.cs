@@ -11,6 +11,10 @@ public interface ITransactionHooks
     /// <summary>True while a transaction is running on this scope.</summary>
     bool InTransaction { get; }
 
+    /// <summary>Enlists state eligibility in the modeled commit, before notification hooks.
+    /// Outside a transaction it is applied immediately.</summary>
+    void EnlistCommit(Action action);
+
     /// <summary>Runs <paramref name="action"/> after the outermost transaction committed; dropped on rollback.
     /// Outside a transaction the action runs immediately.</summary>
     void AfterCommit(Action action);

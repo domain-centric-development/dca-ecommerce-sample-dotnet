@@ -61,7 +61,7 @@ public sealed class CheckoutSessionTest
         Assert.Equal(CheckoutStep.Review, session.CurrentStep);
 
         session.ClearDomainEvents();
-        session.Confirm(new FixedResolver(available: true, stock: 5));
+        session.Confirm(session.LineItems.ToDictionary(i => i.ProductId, i => new FixedResolver(available: true, stock: 5).Resolve(i.ProductId)));
 
         Assert.Equal(CheckoutSessionStatus.Confirmed, session.Status);
         Assert.Equal(CheckoutStep.Confirmation, session.CurrentStep);
@@ -77,7 +77,7 @@ public sealed class CheckoutSessionTest
         session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard, new TaxCalculator());
         session.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice")));
 
-        Assert.Throws<InvalidOperationException>(() => session.Confirm(new FixedResolver(available: true, stock: 1)));
+        Assert.Throws<CheckoutValidationException>(() => session.Confirm(session.LineItems.ToDictionary(i => i.ProductId, i => new FixedResolver(available: true, stock: 1).Resolve(i.ProductId))));
         Assert.Equal(CheckoutSessionStatus.Active, session.Status);
     }
 
@@ -88,7 +88,7 @@ public sealed class CheckoutSessionTest
         session.SubmitBuyerInfo(new BuyerInfo("a@b.de", "Ada", "Lovelace", "123"));
         session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard, new TaxCalculator());
         session.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice")));
-        session.Confirm(new FixedResolver(available: true, stock: 5));
+        session.Confirm(session.LineItems.ToDictionary(i => i.ProductId, i => new FixedResolver(available: true, stock: 5).Resolve(i.ProductId)));
 
         Assert.Throws<InvalidOperationException>(() => session.SubmitBuyerInfo(new BuyerInfo("x@y.de", "B", "C", "1")));
     }

@@ -27,8 +27,10 @@ public sealed class OutboxIntegrationEventPublisher : IIntegrationEventPublisher
     {
         ArgumentNullException.ThrowIfNull(@event);
         var publication = _outbox.Register(@event);
+        _transaction.EnlistCommit(() => _outbox.Commit(publication.Id));
         _transaction.AfterCommit(() => _outbox.Release(publication.Id));
-        _transaction.AfterRollback(() => _outbox.Discard(publication.Id));
+        if (publication.Status == PublicationStatus.Staged)
+            _transaction.AfterRollback(() => _outbox.Discard(publication.Id));
         return Task.CompletedTask;
     }
 }

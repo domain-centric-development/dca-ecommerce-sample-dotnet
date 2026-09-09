@@ -67,7 +67,7 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
         Assert.Contains("data-test=\"confirmation-title\"", confirmation, StringComparison.Ordinal);
         Assert.Contains($"Order Reference: ", confirmation, StringComparison.Ordinal);
 
-        // Cross-context, eventually consistent: the cart completes via CheckoutConfirmedEvent → ICartCompletionTrigger
+        // Cross-context, eventually consistent: the captured positions reconcile via CheckoutConfirmedEvent → ICartCompletionTrigger
         await Eventually(async () =>
         {
             // Read through the repository, not the Open Host Service: the assertion is about the system's own
@@ -75,10 +75,10 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
             using var scope = _factory.Services.CreateScope();
             var cart = await scope.ServiceProvider.GetRequiredService<IShoppingCartRepository>()
                 .FindByIdAsync(new CartId(Guid.Parse(cartId)));
-            return cart is { IsActive: false };
+            return cart is { IsActive: true, IsEmpty: true };
         });
 
-        // A new, empty cart is handed out afterwards
+        // The same editable cart is empty after purchasing its captured contents
         var freshCart = await client.GetStringAsync("/cart");
         Assert.Contains("data-test=\"cart-browse-link\"", freshCart, StringComparison.Ordinal);
     }

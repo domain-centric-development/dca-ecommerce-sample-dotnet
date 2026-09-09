@@ -18,7 +18,7 @@ public sealed class EnrichedCartFactory : IFactory
                 throw new ArgumentException($"Missing article data for product {item.ProductId}", nameof(articles));
             }
 
-            items.Add(new EnrichedCartItem(item.Id, item.ProductId, item.Quantity, item.PriceAtAddition, article));
+            items.Add(new EnrichedCartItem(item.Id, item.ProductId, item.Quantity, item.PriceAtAddition, article, item.PositionSnapshot));
         }
 
         return new EnrichedCart(cart.Id, cart.CustomerId, cart.Status, items);

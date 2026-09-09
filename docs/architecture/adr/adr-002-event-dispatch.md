@@ -44,3 +44,5 @@ port and blurs the distinction between commands and events.
   writes the publication in the aggregate's transaction; the interface, the publisher, the dispatcher, the ports
   and the use cases stay as they are. Synchronous domain-event listeners
   run inside the use case, so a failure there is a failure of the use case — no outbox needed on that leg.
+
+Amended 2026-09-09 by [ADR-009](./adr-009-outbox-transactional-eligibility.md): registration is Staged; an enlisted commit participant establishes Pending eligibility; after-commit release is a wakeup only. Completion/retry are per consumer. The in-memory boundary models enlisted resources, not universal rollback of live repository objects.

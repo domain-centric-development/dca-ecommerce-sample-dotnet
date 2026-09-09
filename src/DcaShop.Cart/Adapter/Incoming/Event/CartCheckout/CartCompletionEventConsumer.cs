@@ -20,6 +20,6 @@ public sealed class CartCompletionEventConsumer : EventListener<ICartCompletionT
     protected override async Task OnAsync(ICartCompletionTrigger @event, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Completing cart {CartId} after checkout confirmation", @event.CartId);
-        await _completeCart.ExecuteAsync(new CompleteCartCommand(Guid.Parse(@event.CartId)), cancellationToken).ConfigureAwait(false);
+        await _completeCart.ExecuteAsync(new CompleteCartCommand(Guid.Parse(@event.CartId), @event.SessionId, @event.PurchasedPositions), cancellationToken).ConfigureAwait(false);
     }
 }

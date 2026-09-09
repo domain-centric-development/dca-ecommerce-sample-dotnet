@@ -24,6 +24,6 @@ public sealed class CheckoutConfirmedEventPublisher : EventListener<CheckoutConf
                 @event.CartId.Value.ToString(),
                 @event.CustomerId.Value,
                 @event.TotalAmount,
-                @event.Items.Select(i => new CheckoutConfirmedEvent.LineItemInfo(i.ProductId, i.Quantity)).ToList()),
+                @event.Items.Select(i => new CheckoutConfirmedEvent.LineItemInfo(i.ProductId, i.Quantity, i.PositionSnapshot)).ToList()),
             cancellationToken);
 }
