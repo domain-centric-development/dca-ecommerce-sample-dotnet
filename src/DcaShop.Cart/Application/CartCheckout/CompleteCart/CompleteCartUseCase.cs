@@ -28,13 +28,7 @@ public sealed class CompleteCartUseCase : ICompleteCartInputPort
                 var cart = await _carts.FindByIdAsync(cartId, ct).ConfigureAwait(false)
                            ?? throw new ArgumentException($"Cart not found: {cartId}", nameof(command));
 
-                if (cart.Status == CartStatus.Completed)
-                {
-                    // Idempotent: the completion trigger is delivered at least once.
-                    return new CompleteCartResult(cart.Id.Value, cart.Status.ToString());
-                }
-
-                cart.Complete();
+                cart.ReconcileCheckout(command.SessionId, command.PurchasedPositions);
 
                 await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);

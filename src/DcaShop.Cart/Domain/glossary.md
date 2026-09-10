@@ -30,38 +30,7 @@ adapters mirror `Shopping` and `CartRecovery`; the REST resource serves every fe
 
 ### ShoppingCart
 
-**Definition:** A customer's shopping cart — a collection of items the
-customer intends to purchase, with a lifecycle from Active through CheckedOut
-to Completed or Abandoned.
-
-**Type:** Aggregate Root
-
-**Identity:** `CartId`
-
-**Synonyms (avoid):** "Cart" on its own is ambiguous; always use
-`ShoppingCart` when referring to the aggregate.
-
-**Related terms:**
-- `CartItem` — item within the shopping cart (Entity)
-- `CartStatus` — lifecycle state
-- `CustomerId` — owner of the shopping cart
-- `IArticlePriceResolver` — external price/availability lookup
-- `CartValidationResult` — result of checkout validation
-- `EnrichedCart` — enriched read model
-
-**Operations:** `Reconstitute`, `AddItem`, `RemoveItem`, `RemoveItemByProductId`,
-`UpdateItemQuantity`, `IncreaseItemQuantity`, `DecreaseItemQuantity`, `Clear`,
-`Checkout`, `Abandon`, `Complete`, `Merge`, `CalculateTotal`,
-`ValidateForCheckout`
-
-**Notes:** A `ProductId` may only appear once — adding it again increases the
-quantity. Modifications are only allowed in state Active. `Reconstitute` restores a
-stored cart — status and lines as they were — without re-evaluating a rule and
-without raising an event: a stored cart is a fact, not a decision. Repositories hand
-over the lines as `ShoppingCart.StoredItem`, so `CartItem`'s constructor can stay
-internal and only the aggregate assembles its own lines.
-
-## Entities
+An editable collection of stable positions. Checkout copies a snapshot; completion reconciles captured unit identities without completing the current cart. Abandoned carts reject edits. Legacy CheckedOut/Completed states remain readable.
 
 ### CartItem
 
@@ -119,16 +88,7 @@ protection against values ≤ 0.
 
 ### CartStatus
 
-**Definition:** Lifecycle state of a shopping cart: `Active` (modifiable),
-`CheckedOut` (checkout triggered, locked), `Completed` (order confirmed), or
-`Abandoned` (given up by the customer).
-
-**Type:** Value Object (Enum)
-
-**Notes:** Open question — clarify the relationship between `CheckedOut` and
-`Completed`. Today `CheckedOut` is an intermediate state before `Completed`,
-but `Complete()` may also be invoked directly from `Active`. Does the domain
-expert expect a strict state machine?
+ACTIVE/Active permits editing before, during and after snapshot checkout. ABANDONED/Abandoned rejects edits. CHECKED_OUT/CheckedOut and COMPLETED/Completed are legacy whole-cart states, not transitions caused by the current checkout flow.
 
 ### ArticlePrice
 
@@ -212,30 +172,11 @@ via "clear cart").
 
 ### CartCheckedOut
 
-**Definition:** The checkout process was triggered — the shopping cart is
-closed and no longer modifiable. Contains a snapshot of total and items for
-integration into other contexts (notably Checkout/Order).
-
-**Type:** Domain Event
-
-**Synonyms (avoid):** `CartCompleted` — functionally different (see there).
-
-**Notes:** Cross-context propagation occurs via the integration event
-`CartCheckedOutEvent` in the outgoing adapter, not via this Domain Event
-directly.
+A snapshot-submission fact. It does not lock an active cart. Explicit Checkout start creates the session; cart-change notifications do not.
 
 ### CartCompleted
 
-**Definition:** The entire checkout process including customer confirmation
-(payment/review) is finished. Final state for successfully processed shopping
-carts.
-
-**Type:** Domain Event
-
-**Synonyms (avoid):** Do not use synonymously with `CartCheckedOut` —
-`CheckedOut` marks the triggering, `Completed` the final closing. Open
-question for the domain expert: should these two events be merged
-functionally, or does the distinction remain?
+Legacy event name retained for the cart reconciliation notification. The current completion handler removes only captured units; it does not change an active cart to Completed. Replays with no intersection emit nothing.
 
 ### CartAbandoned
 
@@ -348,3 +289,9 @@ from the `IArticlePriceResolver`).
 
 **Notes:** Open question: which price is binding for the customer — the one
 at the time of adding or the current one? Clarify the business policy.
+
+### Shared contract revision (2026-09-09)
+
+Price wraps strictly positive Money; Money is ISO 4217, non-negative, two decimals half-up, maximum 999999999999.99.
+Default quantities must be rejected before mutation/reconstitution. ProductCreated is raised by aggregate creation;
+product-created v1 exposes only eventId, occurredOn, productId, amount, currency and initialStock.

@@ -32,5 +32,11 @@ public sealed class ProductCatalogPage : BasePage
         return await ProductDetailPage.OpenAsync(Page);
     }
 
+    public async Task<ProductDetailPage> ViewProductAsync(int index)
+    {
+        await Page.Locator($"[data-test='{ViewDetailsLink}']").Nth(index).ClickAsync();
+        return await ProductDetailPage.OpenAsync(Page);
+    }
+
     public Task<bool> HasProductsAsync() => ExistsAsync(ProductCard);
 }

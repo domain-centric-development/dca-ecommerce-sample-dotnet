@@ -54,9 +54,10 @@ The architecture tests also (re)generate `docs/context-map.md` — commit it wit
 ## Tech stack
 
 .NET 10 (LTS; SDK pinned via `global.json`), ASP.NET Core MVC + Razor views, xUnit, `DomainCentric.BuildingBlocks` + `DomainCentric.ArchRules(.Xunit)`
-from NuGet.org (`DomainCentric.BuildingBlocks` 0.1.0, `DomainCentric.ArchRules.Xunit` 0.3.0, pinned in `Directory.Build.props`;
+from NuGet.org (`DomainCentric.BuildingBlocks` 0.1.1, `DomainCentric.ArchRules.Xunit` 0.4.0, pinned in `Directory.Build.props`;
 `-p:UseLocalDcaDotnet=true` references the sibling `../dca-dotnet` as projects for unreleased rules — the counterpart of
-the Java sample's `-PwithDcaJava`). In-memory persistence only.
+the Java sample's `-PwithDcaJava`; **run the tests once without it before calling anything done**, and CI
+(`.github/workflows/ci.yml`) does exactly that on every push). In-memory persistence only.
 
 ## Structure and conventions
 
@@ -107,7 +108,7 @@ the Java sample's `-PwithDcaJava`). In-memory persistence only.
   it with an error page. Add-to-cart then refuses with "Insufficient stock for product: …", and the checkout
   validation names the line as `ProductUnavailable`. The Java sample behaves the same way.
 - Settlement is checked against current figures, not stored ones: `ShoppingCart.ValidateForCheckout(
-  IArticlePriceResolver)` answers a `CartValidationResult`, and `CheckoutCartUseCase` turns a non-empty one into
+  IReadOnlyDictionary<ProductId, ArticlePrice>)` delegates to pure `CartPricing` over line snapshots and answers a `CartValidationResult`, and `CheckoutCartUseCase` turns a non-empty one into
   a `CartValidationException` (the REST resource renders it as `400`). An **empty or inactive** cart is not a
   validation error with no errors: the use case lets the aggregate refuse it, so the reason reads "Cannot
   checkout an empty cart". Same in the Java sample. The article data is fetched **before** the transaction
@@ -197,3 +198,42 @@ This repository is one of several artifacts describing the same architecture. Wh
 change here, keep the Java sample, the guide and `planning/porting-status.md` in the parent working directory
 in step (see the root `AGENTS.md` there). ADRs in `docs/architecture/adr/` are local to this sample and are
 not a knowledge-catalog source.
+
+A domain term such as `PortfolioManager` is valid; the remaining technical suffix
+restrictions still apply. Operation implementations are discovered by InputPort
+assignability or the configured use-case suffix. Optional organisational segments
+are configured with `withOperationContainers(...)` / `WithOperationContainers(...)`
+and removed before measuring flat/grouped operation depth. Supporting subfolders do
+not define operations. One context must still use one depth. A Repository or Store
+used by one use case may live with it; `application/shared` is the reuse default.
+
+WP-34 policy: use-case stereotypes are optional; configuration registration is equally valid.
+NAM-002 is a non-failing Java diagnostic, not a wiring guarantee. Outgoing adapters may
+reuse global/own infrastructure. Domain metadata rules classify configured roles on
+types and members (including composed metadata), allow unclassified metadata, and assign
+exclusive ownership to ADV-004/011/015/018 before ONI-003.
+
+## Shared semantics since WP-39
+
+`../dca-sample-specification/` is the semantic authority; read its CONTRIBUTING.md, vectors and checkout-lifecycle.md before
+business changes. The user owns semantics. The specification is **unpublished and not part of the build** (decided
+2026-09-10): nothing is downloaded, no revision is pinned, and a plain checkout builds without it. The specification tests
+run only with `-p:SpecificationPath=<checkout>/dca-sample-specification` and are skipped otherwise; no vector may lack a test
+adapter. Update both samples' adapters, schema compatibility records and glossaries together.
+
+An explicit checkout action captures immutable positions, quantities and prices into a session. Cart edits do not
+create or mutate sessions. A new action supersedes the previous OPEN/Active session; confirmed/completed orders remain.
+Confirmation and replacement serialize through the same repository operation, including transaction completion.
+Superseded confirmation has no completion effect. Abandonment/expiry closes only an open session and leaves cart contents.
+
+Cart reconciliation intersects purchased unit intervals with the current stable position id. Later additions (also of
+the same product), removed/re-added positions and other contents survive. Replay and overlapping completed snapshots
+cannot remove a unit twice. JDBC/JPA cart persistence preserves the interval allocation watermark; in-memory persistence
+retains the same domain state. Legacy CheckedOut/Completed cart statuses remain readable, but snapshot checkout leaves
+an active cart editable and never completes the whole cart.
+
+Confirmation retrieves current price/availability/stock facts before its local transaction. Pure domain services consume
+immutable line/fact snapshots. Any changed price or shortage reports affected lines and leaves state, totals and events
+unchanged. The buyer explicitly starts a fresh checkout against the new prices. Success stores the recomputed total and
+publishes the same total; there is no no-argument confirmation path. Local in-memory repository serialization is not a
+claim of durable distributed transactions or universal rollback of unenlisted resources.

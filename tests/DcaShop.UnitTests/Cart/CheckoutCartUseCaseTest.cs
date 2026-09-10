@@ -33,18 +33,18 @@ public sealed class CheckoutCartUseCaseTest
     }
 
     [Fact]
-    public async Task ACartThatIsAlreadyCheckedOutSaysSo()
+    public async Task AnAbandonedCartIsRefused()
     {
         var cart = new ShoppingCart(CartId.Generate(), Customer);
         var productId = ProductId.Generate();
         cart.AddItem(productId, Quantity.Of(1), Ten);
-        cart.Checkout();
+        cart.Abandon();
         await _repository.SaveAsync(cart);
         _articles.Available(productId, 5);
 
         var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => Execute(cart));
 
-        Assert.Equal("Cart is already checked out", failure.Message);
+        Assert.Equal("Cannot modify cart with status: Abandoned", failure.Message);
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public sealed class CheckoutCartUseCaseTest
     }
 
     [Fact]
-    public async Task ACartWithAvailableArticlesIsCheckedOut()
+    public async Task ACartWithAvailableArticlesRemainsEditable()
     {
         var cart = new ShoppingCart(CartId.Generate(), Customer);
         var productId = ProductId.Generate();
@@ -89,7 +89,7 @@ public sealed class CheckoutCartUseCaseTest
         var result = await Execute(cart);
 
         Assert.Equal(cart.Id.Value, result.CartId);
-        Assert.Equal(CartStatus.CheckedOut, cart.Status);
+        Assert.Equal(CartStatus.Active, cart.Status);
     }
 
     private Task<CheckoutCartResult> Execute(ShoppingCart cart) =>

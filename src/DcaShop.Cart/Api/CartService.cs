@@ -24,7 +24,7 @@ public sealed class CartService
 
     public sealed record CartSnapshot(Guid CartId, string CustomerId, IReadOnlyList<CartItemSnapshot> Items, bool Active);
 
-    public sealed record CartItemSnapshot(ProductId ProductId, Price PriceAtAddition, int Quantity);
+    public sealed record CartItemSnapshot(ProductId ProductId, Price PriceAtAddition, int Quantity, string PositionSnapshot = "");
 
     /// <summary>What the site header needs to render the mini basket.</summary>
     public sealed record MiniBasket(Guid CartId, int ItemCount, IReadOnlyList<MiniBasketItem> Items, string Total);
@@ -60,7 +60,7 @@ public sealed class CartService
             return null;
         }
 
-        var items = cart.Items.Select(i => new CartItemSnapshot(i.ProductId, i.PriceAtAddition, i.Quantity.Value)).ToList();
+        var items = cart.Items.Select(i => new CartItemSnapshot(i.ProductId, i.PriceAtAddition, i.Quantity.Value, i.PositionSnapshot)).ToList();
         return new CartSnapshot(cart.CartId.Value, cart.CustomerId.Value, items, cart.Status == CartStatus.Active);
     }
 
@@ -68,6 +68,6 @@ public sealed class CartService
     /// Completes a cart after a confirmed checkout. Unscoped on purpose: this one acts on nobody's behalf — it is
     /// the system reacting to its own event, delivered at least once, with no caller to check.
     /// </summary>
-    public Task CompleteCartAsync(Guid cartId, CancellationToken cancellationToken = default) =>
-        _completeCart.ExecuteAsync(new CompleteCartCommand(cartId), cancellationToken);
+    public Task CompleteCartAsync(Guid cartId, string sessionId, IReadOnlyList<string> purchasedPositions, CancellationToken cancellationToken = default) =>
+        _completeCart.ExecuteAsync(new CompleteCartCommand(cartId, sessionId, purchasedPositions), cancellationToken);
 }

@@ -14,14 +14,14 @@ public sealed class CartSpecificationTest
     private static readonly Price Ten = Price.Of(Money.Euro(10m));
 
     [Fact]
-    public void ActiveCartHoldsUntilTheCartIsCheckedOut()
+    public void ActiveCartHoldsUntilTheCartIsAbandoned()
     {
         var cart = CartWithOneItem();
         var specification = new ActiveCart();
 
         Assert.True(specification.IsSatisfiedBy(cart));
 
-        cart.Checkout();
+        cart.Abandon();
 
         Assert.False(specification.IsSatisfiedBy(cart));
     }

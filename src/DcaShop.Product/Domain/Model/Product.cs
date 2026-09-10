@@ -56,7 +56,13 @@ public sealed class Product : AggregateRootBase<Product, ProductId>
         RegisterEvent(ProductCategoryChanged.Now(Id, oldCategory, newCategory));
     }
 
-    /// <summary>Only the factory raises <see cref="ProductCreated"/>: creation carries data (price, stock) the aggregate does not own.</summary>
-    internal void RaiseCreated(Price initialPrice, int initialStock) =>
-        RegisterEvent(ProductCreated.Now(Id, Sku, Name, Category, initialPrice, initialStock));
+    /// <summary>The aggregate owns creation and event registration; factories delegate here.</summary>
+    public static Product Create(Sku sku, ProductName name, ProductDescription description, Category category, ImageUrl imageUrl, Price initialPrice, int initialStock)
+    {
+        if (initialStock < 0) throw new ArgumentOutOfRangeException(nameof(initialStock));
+        ArgumentNullException.ThrowIfNull(initialPrice);
+        var product = new Product(ProductId.Generate(), sku, name, description, category, imageUrl);
+        product.RegisterEvent(ProductCreated.Now(product.Id, sku, name, category, initialPrice, initialStock));
+        return product;
+    }
 }

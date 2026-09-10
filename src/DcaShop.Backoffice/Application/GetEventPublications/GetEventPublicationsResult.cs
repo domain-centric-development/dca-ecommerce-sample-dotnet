@@ -25,7 +25,8 @@ public sealed record EventPublicationSummary(
     string SerializedEvent,
     string ListenerId,
     DateTimeOffset PublicationDate,
-    DateTimeOffset? CompletionDate)
+    DateTimeOffset? CompletionDate,
+    string Status = "Pending")
 {
     public static EventPublicationSummary From(EventPublicationEntry entry)
     {
@@ -36,7 +37,7 @@ public sealed record EventPublicationSummary(
             entry.SerializedEvent,
             entry.ListenerId,
             entry.PublicationDate,
-            entry.CompletionDate);
+            entry.CompletionDate, entry.Status);
     }
 
     public bool IsCompleted => CompletionDate is not null;

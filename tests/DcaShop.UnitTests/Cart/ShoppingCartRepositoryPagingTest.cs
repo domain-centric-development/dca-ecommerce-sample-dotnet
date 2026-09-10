@@ -24,7 +24,7 @@ public sealed class ShoppingCartRepositoryPagingTest
         }
 
         var checkedOut = CartWith(Quantity.Of(1));
-        checkedOut.Checkout();
+        checkedOut.Abandon();
         await repository.SaveAsync(checkedOut);
 
         var firstPage = await repository.FindByAsync(new ActiveCart(), PagingRequest.Of(0, 2));

@@ -6,7 +6,7 @@ namespace DcaShop.Checkout.Domain.Model;
 /// <summary>A line of the checkout session: product reference, label, unit price at the time of addition, quantity, image.</summary>
 public sealed record CheckoutLineItem : IValue
 {
-    public CheckoutLineItem(CheckoutLineItemId id, ProductId productId, string productName, Money unitPrice, int quantity, string? imageUrl)
+    public CheckoutLineItem(CheckoutLineItemId id, ProductId productId, string productName, Money unitPrice, int quantity, string? imageUrl, string positionSnapshot = "")
     {
         if (string.IsNullOrWhiteSpace(productName))
         {
@@ -18,6 +18,7 @@ public sealed record CheckoutLineItem : IValue
             throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero");
         }
 
+        PositionSnapshot = positionSnapshot;
         Id = id;
         ProductId = productId;
         ProductName = productName;
@@ -25,6 +26,8 @@ public sealed record CheckoutLineItem : IValue
         Quantity = quantity;
         ImageUrl = imageUrl;
     }
+
+    public string PositionSnapshot { get; }
 
     public CheckoutLineItemId Id { get; }
 
@@ -40,5 +43,5 @@ public sealed record CheckoutLineItem : IValue
 
     public Money LineTotal => UnitPrice.Multiply(Quantity);
 
-    public CheckoutLineItem WithQuantity(int newQuantity) => new(Id, ProductId, ProductName, UnitPrice, newQuantity, ImageUrl);
+    public CheckoutLineItem WithQuantity(int newQuantity) => new(Id, ProductId, ProductName, UnitPrice, newQuantity, ImageUrl, PositionSnapshot);
 }

@@ -1,4 +1,3 @@
-using DcaShop.SharedKernel.Domain.Model;
 
 namespace DcaShop.Pricing.Events;
 
@@ -9,7 +8,9 @@ namespace DcaShop.Pricing.Events;
 /// </summary>
 public interface IPriceInitializationTrigger
 {
-    ProductId ProductId { get; }
+    Guid ProductId { get; }
 
-    Money InitialPrice { get; }
+    string Amount { get; }
+
+    string Currency { get; }
 }

@@ -10,9 +10,9 @@ public sealed record PriceCreated(
     DateTimeOffset OccurredOn,
     PriceId PriceId,
     ProductId ProductId,
-    Money Price,
+    Price Price,
     DateTimeOffset EffectiveFrom) : IDomainEvent
 {
-    public static PriceCreated Now(PriceId priceId, ProductId productId, Money price, DateTimeOffset effectiveFrom) =>
+    public static PriceCreated Now(PriceId priceId, ProductId productId, Price price, DateTimeOffset effectiveFrom) =>
         new(Guid.NewGuid(), DateTimeOffset.UtcNow, priceId, productId, price, effectiveFrom);
 }

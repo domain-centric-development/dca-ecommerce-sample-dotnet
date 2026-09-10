@@ -31,10 +31,10 @@ public sealed record PaymentSubmitted(Guid EventId, DateTimeOffset OccurredOn, C
 /// <summary>The customer confirmed the order at the review step. Relayed to other contexts as <c>CheckoutConfirmedEvent</c>.</summary>
 public sealed record CheckoutConfirmed(Guid EventId, DateTimeOffset OccurredOn, CheckoutSessionId SessionId, CartId CartId, CustomerId CustomerId, Money TotalAmount, IReadOnlyList<CheckoutConfirmed.LineItemInfo> Items) : IDomainEvent
 {
-    public sealed record LineItemInfo(ProductId ProductId, int Quantity);
+    public sealed record LineItemInfo(ProductId ProductId, int Quantity, string PositionSnapshot = "");
 
     public static CheckoutConfirmed Now(CheckoutSessionId sessionId, CartId cartId, CustomerId customerId, Money totalAmount, IEnumerable<CheckoutLineItem> items) =>
-        new(Guid.NewGuid(), DateTimeOffset.UtcNow, sessionId, cartId, customerId, totalAmount, items.Select(i => new LineItemInfo(i.ProductId, i.Quantity)).ToList());
+        new(Guid.NewGuid(), DateTimeOffset.UtcNow, sessionId, cartId, customerId, totalAmount, items.Select(i => new LineItemInfo(i.ProductId, i.Quantity, i.PositionSnapshot)).ToList());
 }
 
 public sealed record CheckoutCompleted(Guid EventId, DateTimeOffset OccurredOn, CheckoutSessionId SessionId, Money TotalAmount, string? OrderReference) : IDomainEvent

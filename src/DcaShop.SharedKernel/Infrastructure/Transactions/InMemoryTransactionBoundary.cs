@@ -14,12 +14,22 @@ namespace DcaShop.SharedKernel.Infrastructure.Transactions;
 /// </summary>
 public sealed class InMemoryTransactionBoundary : ITransactionBoundary, ITransactionHooks
 {
+    internal static readonly object CommitGate = new();
+    private readonly List<Action> _commitParticipants = new();
+    private bool _committed;
     private readonly List<Action> _afterCommit = new();
     private readonly List<Action> _afterRollback = new();
     private int _depth;
     private bool _rollbackOnly;
 
     public bool InTransaction => _depth > 0;
+
+    public void EnlistCommit(Action action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        if (InTransaction) _commitParticipants.Add(action);
+        else lock (CommitGate) action();
+    }
 
     public void AfterCommit(Action action)
     {
@@ -45,6 +55,7 @@ public sealed class InMemoryTransactionBoundary : ITransactionBoundary, ITransac
     public async Task<T> InTransactionAsync<T>(Func<CancellationToken, Task<T>> work, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(work);
+        if (_depth == 0) _committed = false;
         _depth++;
         try
         {
@@ -68,6 +79,7 @@ public sealed class InMemoryTransactionBoundary : ITransactionBoundary, ITransac
         }
         catch
         {
+            if (_committed) throw;
             _rollbackOnly = true;   // an inner failure poisons the shared transaction
             if (_depth == 1)
             {
@@ -84,13 +96,20 @@ public sealed class InMemoryTransactionBoundary : ITransactionBoundary, ITransac
 
     private void Commit()
     {
-        _afterRollback.Clear();
+        lock (CommitGate)
+        {
+            try { Run(_commitParticipants); }
+            catch { Rollback(); throw; }
+            _committed = true;
+            _afterRollback.Clear();
+        }
         Run(_afterCommit);
     }
 
     private void Rollback()
     {
         _rollbackOnly = false;
+        _commitParticipants.Clear();
         _afterCommit.Clear();
         Run(_afterRollback);
     }

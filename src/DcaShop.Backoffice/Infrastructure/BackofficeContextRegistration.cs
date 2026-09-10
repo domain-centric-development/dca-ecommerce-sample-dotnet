@@ -2,6 +2,7 @@ using DcaShop.Backoffice.Adapter.Incoming.Web;
 using DcaShop.Backoffice.Adapter.Outgoing.Persistence;
 using DcaShop.Backoffice.Application.GetEventPublications;
 using DcaShop.Backoffice.Application.Shared;
+using DcaShop.Backoffice.Application.ReplayFailedPublication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,9 @@ public static class BackofficeContextRegistration
 
         // Use cases (input ports)
         services.AddScoped<IGetEventPublicationsInputPort, GetEventPublicationsUseCase>();
+
+        services.AddScoped<IReplayFailedPublicationInputPort, ReplayFailedPublicationUseCase>();
+        services.AddScoped<IEventPublicationRecoveryPort, OutboxEventPublicationRecoveryAdapter>();
 
         // Outgoing adapters (output ports)
         services.AddScoped<IEventPublicationLogStore, OutboxEventPublicationLogStore>();

@@ -24,6 +24,6 @@ public sealed class StockInitializationEventConsumer : EventListener<IStockIniti
     protected override async Task OnAsync(IStockInitializationTrigger @event, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Initialising stock for product {ProductId}", @event.ProductId);
-        await _setStockLevel.ExecuteAsync(new SetStockLevelCommand(@event.ProductId.Value, @event.InitialStock), cancellationToken).ConfigureAwait(false);
+        await _setStockLevel.ExecuteAsync(new SetStockLevelCommand(@event.ProductId, @event.InitialStock), cancellationToken).ConfigureAwait(false);
     }
 }

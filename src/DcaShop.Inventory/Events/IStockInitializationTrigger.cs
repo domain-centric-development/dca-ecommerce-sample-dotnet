@@ -1,4 +1,3 @@
-using DcaShop.SharedKernel.Domain.Model;
 
 namespace DcaShop.Inventory.Events;
 
@@ -9,7 +8,7 @@ namespace DcaShop.Inventory.Events;
 /// </summary>
 public interface IStockInitializationTrigger
 {
-    ProductId ProductId { get; }
+    Guid ProductId { get; }
 
     int InitialStock { get; }
 }

@@ -10,7 +10,7 @@ namespace DcaShop.Pricing.Domain.Model;
 /// </summary>
 public sealed class ProductPrice : AggregateRootBase<ProductPrice, PriceId>
 {
-    private ProductPrice(PriceId id, ProductId productId, Money currentPrice, DateTimeOffset effectiveFrom)
+    private ProductPrice(PriceId id, ProductId productId, Price currentPrice, DateTimeOffset effectiveFrom)
     {
         Id = id;
         ProductId = productId;
@@ -22,12 +22,12 @@ public sealed class ProductPrice : AggregateRootBase<ProductPrice, PriceId>
 
     public ProductId ProductId { get; }
 
-    public Money CurrentPrice { get; private set; }
+    public Price CurrentPrice { get; private set; }
 
     public DateTimeOffset EffectiveFrom { get; private set; }
 
     /// <summary>Creates the first price of a product and registers <see cref="PriceCreated"/>.</summary>
-    public static ProductPrice Create(ProductId productId, Money price)
+    public static ProductPrice Create(ProductId productId, Price price)
     {
         ValidateGreaterThanZero(price);
         var effectiveFrom = DateTimeOffset.UtcNow;
@@ -37,7 +37,7 @@ public sealed class ProductPrice : AggregateRootBase<ProductPrice, PriceId>
     }
 
     /// <summary>Sets a new price and registers <see cref="PriceChanged"/> with the previous one.</summary>
-    public void UpdatePrice(Money newPrice)
+    public void UpdatePrice(Price newPrice)
     {
         ValidateGreaterThanZero(newPrice);
         var oldPrice = CurrentPrice;
@@ -46,12 +46,8 @@ public sealed class ProductPrice : AggregateRootBase<ProductPrice, PriceId>
         RegisterEvent(PriceChanged.Now(Id, ProductId, oldPrice, newPrice, EffectiveFrom));
     }
 
-    private static void ValidateGreaterThanZero(Money price)
+    private static void ValidateGreaterThanZero(Price price)
     {
         ArgumentNullException.ThrowIfNull(price);
-        if (price.Amount <= 0m)
-        {
-            throw new ArgumentException("Price must be greater than zero", nameof(price));
-        }
     }
 }

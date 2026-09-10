@@ -1,6 +1,6 @@
 namespace DcaShop.Checkout.Application.CartSync.SyncCheckoutWithCart;
 
-/// <summary><see cref="SessionId"/> is null when the cart had no active checkout session — then nothing was synced.</summary>
+/// <summary>Legacy response shape. Snapshot checkout always returns the no-synchronization result.</summary>
 public sealed record SyncCheckoutWithCartResult(Guid? SessionId, int ItemCount)
 {
     public static SyncCheckoutWithCartResult NoActiveSession() => new(null, 0);

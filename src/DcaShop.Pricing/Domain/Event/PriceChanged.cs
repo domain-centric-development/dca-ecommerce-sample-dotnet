@@ -10,10 +10,10 @@ public sealed record PriceChanged(
     DateTimeOffset OccurredOn,
     PriceId PriceId,
     ProductId ProductId,
-    Money OldPrice,
-    Money NewPrice,
+    Price OldPrice,
+    Price NewPrice,
     DateTimeOffset EffectiveFrom) : IDomainEvent
 {
-    public static PriceChanged Now(PriceId priceId, ProductId productId, Money oldPrice, Money newPrice, DateTimeOffset effectiveFrom) =>
+    public static PriceChanged Now(PriceId priceId, ProductId productId, Price oldPrice, Price newPrice, DateTimeOffset effectiveFrom) =>
         new(Guid.NewGuid(), DateTimeOffset.UtcNow, priceId, productId, oldPrice, newPrice, effectiveFrom);
 }

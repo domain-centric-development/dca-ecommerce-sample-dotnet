@@ -18,7 +18,8 @@ public sealed record EventPublicationEntry(
     string SerializedEvent,
     string ListenerId,
     DateTimeOffset PublicationDate,
-    DateTimeOffset? CompletionDate)
+    DateTimeOffset? CompletionDate,
+    string Status = "Pending")
 {
     public bool IsCompleted => CompletionDate is not null;
 

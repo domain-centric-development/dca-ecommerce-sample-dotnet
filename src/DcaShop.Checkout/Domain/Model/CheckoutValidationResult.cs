@@ -17,6 +17,7 @@ public enum ErrorType
 {
     ProductUnavailable,
     InsufficientStock,
+    PriceChanged,
 }
 
 public sealed record ValidationError(ProductId ProductId, ErrorType Type, string Message) : IValue

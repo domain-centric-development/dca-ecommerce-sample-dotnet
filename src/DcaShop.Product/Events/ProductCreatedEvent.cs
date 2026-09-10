@@ -1,6 +1,6 @@
+using System.Text.Json.Serialization;
 using DcaShop.Inventory.Events;
 using DcaShop.Pricing.Events;
-using DcaShop.SharedKernel.Domain.Model;
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Product.Events;
@@ -12,11 +12,9 @@ namespace DcaShop.Product.Events;
 /// </summary>
 [IntegrationEventType("product-created", Version = 1)]
 public sealed record ProductCreatedEvent(
-    Guid EventId,
-    DateTimeOffset OccurredOn,
-    ProductId ProductId,
-    string Sku,
-    string Name,
-    string Category,
-    Money InitialPrice,
-    int InitialStock) : IIntegrationEvent, IPriceInitializationTrigger, IStockInitializationTrigger;
+    [property: JsonPropertyName("eventId")] Guid EventId,
+    [property: JsonPropertyName("occurredOn")] DateTimeOffset OccurredOn,
+    [property: JsonPropertyName("productId")] Guid ProductId,
+    [property: JsonPropertyName("amount")] string Amount,
+    [property: JsonPropertyName("currency")] string Currency,
+    [property: JsonPropertyName("initialStock")] int InitialStock) : IIntegrationEvent, IPriceInitializationTrigger, IStockInitializationTrigger;

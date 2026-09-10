@@ -14,5 +14,5 @@ public interface ICartDataPort : IOutputPort
 
 public sealed record CartData(CartId CartId, CustomerId CustomerId, IReadOnlyList<CartData.CartItemData> Items, bool Active)
 {
-    public sealed record CartItemData(ProductId ProductId, Money PriceAtAddition, int Quantity);
+    public sealed record CartItemData(ProductId ProductId, Money PriceAtAddition, int Quantity, string PositionSnapshot = "");
 }

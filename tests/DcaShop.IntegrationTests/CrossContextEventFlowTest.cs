@@ -83,7 +83,7 @@ public sealed class CrossContextEventFlowTest : IClassFixture<WebApplicationFact
     }
 
     [Fact]
-    public async Task CartChangedDuringCheckoutSyncsTheSession()
+    public async Task CartEditPreservesSnapshotAndExplicitRestartReplacesIt()
     {
         var client = Client();
         var catalog = await client.GetStringAsync("/products");
@@ -97,10 +97,21 @@ public sealed class CrossContextEventFlowTest : IClassFixture<WebApplicationFact
         Assert.Equal(HttpStatusCode.Redirect, started.StatusCode);
         Assert.Single(OrderSummaryItems(await client.GetStringAsync("/checkout/buyer")));
 
-        // The cart stays modifiable during checkout — the session must follow
+        // The cart remains editable; its existing checkout snapshot does not follow edits.
         await AddToCartAsync(client, productIds[1], quantity: 3);
 
-        await Eventually(async () => OrderSummaryItems(await client.GetStringAsync("/checkout/buyer")).Count == 2);
+        await Eventually(() =>
+        {
+            using var scope = _factory.Services.CreateScope();
+            var publications = scope.ServiceProvider.GetRequiredService<DcaShop.SharedKernel.Infrastructure.Events.IIntegrationEventOutbox>().All()
+                .Where(p => p.EventType.Name == "CartContentsChangedEvent" && p.Payload.Contains(cartId, StringComparison.OrdinalIgnoreCase)).ToArray();
+            return Task.FromResult(publications.Length >= 2 && publications.All(p => p.Status == DcaShop.SharedKernel.Infrastructure.Events.PublicationStatus.Completed));
+        });
+        Assert.Single(OrderSummaryItems(await client.GetStringAsync("/checkout/buyer")));
+        var currentCart = await client.GetStringAsync("/cart");
+        var restarted = await client.PostAsync("/checkout/start", Form(currentCart, ("cartId", cartId)));
+        Assert.Equal(HttpStatusCode.Redirect, restarted.StatusCode);
+        Assert.Equal(2, OrderSummaryItems(await client.GetStringAsync("/checkout/buyer")).Count);
     }
 
     private HttpClient Client() =>
@@ -121,7 +132,7 @@ public sealed class CrossContextEventFlowTest : IClassFixture<WebApplicationFact
     }
 
     private static IReadOnlyList<string> OrderSummaryItems(string page) =>
-        Regex.Matches(page, "order-summary__item-name\">([^<]+)<").Select(m => m.Groups[1].Value).ToList();
+        Regex.Matches(page, "order-summary__item-name\"[^>]*>([^<]+)<").Select(m => m.Groups[1].Value).ToList();
 
     private static async Task AddToCartAsync(HttpClient client, string productId, int quantity)
     {

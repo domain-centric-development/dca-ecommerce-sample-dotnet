@@ -55,7 +55,7 @@ public sealed class CheckoutCartUseCase : ICheckoutCartInputPort
                 var enrichedCart = _enrichedCarts.Create(cart, articleData);
                 if (!enrichedCart.IsValidForCheckout)
                 {
-                    var validation = cart.ValidateForCheckout(new ArticleDataPriceResolver(articleData));
+                    var validation = cart.ValidateForCheckout(articleData.ToDictionary(e => e.Key, e => new ArticlePrice(e.Value.CurrentPrice, e.Value.IsAvailable, e.Value.AvailableStock)));
                     if (!validation.IsValid)
                     {
                         throw new CartValidationException(validation);

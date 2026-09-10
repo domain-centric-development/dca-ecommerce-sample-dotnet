@@ -24,6 +24,6 @@ public sealed class CartDataAdapter : ICartDataPort
         new(
             new CartId(snapshot.CartId),
             CustomerId.Of(snapshot.CustomerId),
-            snapshot.Items.Select(i => new CartData.CartItemData(i.ProductId, i.PriceAtAddition.Value, i.Quantity)).ToList(),
+            snapshot.Items.Select(i => new CartData.CartItemData(i.ProductId, i.PriceAtAddition.Value, i.Quantity, i.PositionSnapshot)).ToList(),
             snapshot.Active);
 }

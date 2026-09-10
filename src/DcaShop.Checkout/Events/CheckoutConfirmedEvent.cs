@@ -10,7 +10,7 @@ namespace DcaShop.Checkout.Events;
 /// contexts that react to it — the cart's <see cref="ICartCompletionTrigger"/> and inventory's
 /// <see cref="IStockReductionTrigger"/> — so neither of them depends on Checkout.
 /// </summary>
-[IntegrationEventType("checkout-confirmed", Version = 1)]
+[IntegrationEventType("checkout-confirmed", Version = 2)]
 public sealed record CheckoutConfirmedEvent(
     Guid EventId,
     DateTimeOffset OccurredOn,
@@ -20,7 +20,9 @@ public sealed record CheckoutConfirmedEvent(
     Money TotalAmount,
     IReadOnlyList<CheckoutConfirmedEvent.LineItemInfo> Items) : IIntegrationEvent, ICartCompletionTrigger, IStockReductionTrigger
 {
-    public sealed record LineItemInfo(ProductId ProductId, int Quantity);
+    public IReadOnlyList<string> PurchasedPositions => Items.Select(i => i.PositionSnapshot).ToArray();
+
+    public sealed record LineItemInfo(ProductId ProductId, int Quantity, string PositionSnapshot = "");
 
     /// <summary>The confirmed lines, in the shape Inventory defined for its stock reduction.</summary>
     public IReadOnlyList<StockReductionLineItem> OrderLineItems =>

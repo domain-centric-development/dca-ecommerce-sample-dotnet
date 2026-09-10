@@ -7,4 +7,6 @@ namespace DcaShop.Cart.Events;
 public interface ICartCompletionTrigger
 {
     string CartId { get; }
+    string SessionId { get; }
+    IReadOnlyList<string> PurchasedPositions { get; }
 }

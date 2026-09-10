@@ -29,7 +29,7 @@ public sealed class CheckoutStepValidatorTest
     private static CheckoutSession Confirmed()
     {
         var session = AtReview();
-        session.Confirm(new AlwaysAvailable());
+        session.Confirm(session.LineItems.ToDictionary(i => i.ProductId, i => new AlwaysAvailable().Resolve(i.ProductId)));
         return session;
     }
 

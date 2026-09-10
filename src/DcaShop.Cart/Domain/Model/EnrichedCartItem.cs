@@ -4,7 +4,7 @@ using DomainCentric.BuildingBlocks.Ddd.Tactical;
 namespace DcaShop.Cart.Domain.Model;
 
 /// <summary>A cart item combined with current article data — enables price comparison, stock checks and line totals.</summary>
-public sealed record EnrichedCartItem(CartItemId Id, ProductId ProductId, Quantity Quantity, Price PriceAtAddition, CartArticle Article) : IValue
+public sealed record EnrichedCartItem(CartItemId Id, ProductId ProductId, Quantity Quantity, Price PriceAtAddition, CartArticle Article, string PositionSnapshot = "") : IValue
 {
     public Money CurrentLineTotal => Article.CurrentPrice.Multiply(Quantity.Value);
 

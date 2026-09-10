@@ -27,19 +27,19 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
         // Article data comes from the Product Catalog (remote-capable) — fetched outside the transaction
         var current = await LoadAsync(sessionId, cancellationToken).ConfigureAwait(false);
         var articles = await _articleData.GetArticleDataAsync(current.LineItems.Select(i => i.ProductId).ToArray(), cancellationToken).ConfigureAwait(false);
-        var resolver = new ArticleDataPriceResolver(articles);
+        var facts = articles.ToDictionary(e => e.Key, e => new ArticlePrice(e.Value.CurrentPrice, e.Value.IsAvailable, e.Value.AvailableStock));
 
         // Short transaction: reload, confirm, save, publish
-        return await _transactionBoundary.InTransactionAsync(
+        return await _sessions.InCartSessionAsync(current.CartId, () => _transactionBoundary.InTransactionAsync(
             async ct =>
             {
                 var session = await LoadAsync(sessionId, ct).ConfigureAwait(false);
-                session.Confirm(resolver);
+                session.Confirm(facts);
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
                 return ConfirmCheckoutResult.From(session);
             },
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken), cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<CheckoutSession> LoadAsync(CheckoutSessionId sessionId, CancellationToken cancellationToken) =>
