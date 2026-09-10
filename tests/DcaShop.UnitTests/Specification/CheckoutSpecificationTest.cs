@@ -19,10 +19,11 @@ public sealed class CheckoutSpecificationTest
 {
     public static IEnumerable<object[]> Vectors()
     {
+        if (!SpecificationVectors.Present) yield break;
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "specification/vectors/checkout.json")));
         foreach (var v in document.RootElement.EnumerateArray()) yield return new object[] { v.GetProperty("id").GetString()! };
     }
-    [Theory, MemberData(nameof(Vectors))]
+    [SpecificationTheory, MemberData(nameof(Vectors))]
     public async Task DrivesRealUseCases(string id)
     {
         var f = new Fixture(); var session = await f.Start(); Ready(session); session.ClearDomainEvents();

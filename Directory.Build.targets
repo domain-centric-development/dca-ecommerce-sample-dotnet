@@ -1,14 +1,15 @@
 <Project>
-  <Target Name="MaterializeSpecification" BeforeTargets="Build" Condition="('$(MSBuildProjectName)' == 'DcaShop.UnitTests' or '$(MSBuildProjectName)' == 'DcaShop.IntegrationTests')">
-    <Error Condition="'$(CI)' != '' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(SpecificationRevision)', '^[0-9a-f]{40}$'))" Text="Specification revision is unpinned; CI requires a published commit SHA" />
-    <Error Condition="'$(SpecificationPath)' == '' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(SpecificationRevision)', '^[0-9a-f]{40}$'))" Text="Specification is unpublished: use -p:SpecificationPath=/workspace/dca-sample-specification for paired local work" />
-    <DownloadFile Condition="'$(SpecificationPath)' == ''" SourceUrl="https://github.com/domain-centric-development/dca-sample-specification/archive/$(SpecificationRevision).zip" DestinationFolder="$(SpecificationRoot)../" DestinationFileName="specification.zip" />
-    <Unzip Condition="'$(SpecificationPath)' == ''" SourceFiles="$(SpecificationRoot)../specification.zip" DestinationFolder="$(SpecificationRoot)../specification-source" />
-    <PropertyGroup><SpecificationPath Condition="'$(SpecificationPath)' == ''">$(SpecificationRoot)../specification-source/dca-sample-specification-$(SpecificationRevision)</SpecificationPath></PropertyGroup>
-    <Error Condition="!Exists('$(SpecificationPath)/vectors')" Text="Specification vectors are missing" />
+  <!-- The shared sample specification (../dca-sample-specification) is an optional, local-only check: nothing is
+       downloaded and the build does not depend on it. Pass -p:SpecificationPath=<checkout> to copy its vectors next to
+       the test assemblies; without the property the specification tests are skipped and every other test runs. -->
+  <Target Name="MaterializeSpecification" BeforeTargets="Build" Condition="'$(SpecificationPath)' != '' and ('$(MSBuildProjectName)' == 'DcaShop.UnitTests' or '$(MSBuildProjectName)' == 'DcaShop.IntegrationTests')">
+    <Error Condition="!Exists('$(SpecificationPath)/vectors')" Text="Specification vectors are missing under $(SpecificationPath)" />
     <RemoveDir Directories="$(SpecificationRoot);$(OutDir)specification" />
     <ItemGroup><SpecificationFiles Include="$(SpecificationPath)/**/*.json;$(SpecificationPath)/**/*.md" /></ItemGroup>
     <Copy SourceFiles="@(SpecificationFiles)" DestinationFiles="@(SpecificationFiles->'$(SpecificationRoot)%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(SpecificationFiles)" DestinationFiles="@(SpecificationFiles->'$(OutDir)specification/%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+  <Target Name="RemoveStaleSpecification" BeforeTargets="Build" Condition="'$(SpecificationPath)' == '' and ('$(MSBuildProjectName)' == 'DcaShop.UnitTests' or '$(MSBuildProjectName)' == 'DcaShop.IntegrationTests')">
+    <RemoveDir Directories="$(SpecificationRoot);$(OutDir)specification" />
   </Target>
 </Project>

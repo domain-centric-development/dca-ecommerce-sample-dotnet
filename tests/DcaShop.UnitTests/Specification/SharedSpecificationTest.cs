@@ -6,7 +6,7 @@ namespace DcaShop.UnitTests.Specification;
 
 public sealed class SharedSpecificationTest
 {
-    [Fact]
+    [SpecificationFact]
     public void EveryVectorFamilyHasAnAdapterAndExceptionsAreCurrent()
     {
         var root = Path.Combine(AppContext.BaseDirectory, "specification");
@@ -27,13 +27,14 @@ public sealed class SharedSpecificationTest
 
     public static IEnumerable<object[]> Vectors()
     {
+        if (!SpecificationVectors.Present) yield break;
         foreach (var file in new[] { "money.json", "quantity.json", "product.json", "cart-reconciliation.json" })
         {
             using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "specification", "vectors", file)));
             foreach (var vector in document.RootElement.EnumerateArray()) yield return new object[] { file, vector.GetRawText() };
         }
     }
-    [Theory, MemberData(nameof(Vectors))]
+    [SpecificationTheory, MemberData(nameof(Vectors))]
     public void DrivesRealDomain(string file, string json)
     {
         using var document = JsonDocument.Parse(json); var v = document.RootElement;

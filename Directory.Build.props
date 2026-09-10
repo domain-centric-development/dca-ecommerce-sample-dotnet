@@ -11,8 +11,7 @@
          instead - the counterpart of the Java sample's `-PwithDcaJava`. -->
     <DcaDotnetDir>$(MSBuildThisFileDirectory)../dca-dotnet/src/</DcaDotnetDir>
     <UseLocalDcaDotnet Condition="'$(UseLocalDcaDotnet)' == ''">false</UseLocalDcaDotnet>
-    <!-- Shared specification review commit; use the local path override until publication. -->
-    <SpecificationRevision>1e6be664a8535ad604b3686daf9e9ea2d0b02b59</SpecificationRevision>
+    <!-- Optional shared sample specification check (local only, not part of the build): -p:SpecificationPath=../dca-sample-specification -->
     <SpecificationRoot>$(MSBuildThisFileDirectory)build/specification/$(MSBuildProjectName)/</SpecificationRoot>
     <DcaBuildingBlocksVersion>0.1.0</DcaBuildingBlocksVersion>
     <DcaArchRulesVersion>0.3.0</DcaArchRulesVersion>

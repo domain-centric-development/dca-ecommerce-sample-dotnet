@@ -261,10 +261,11 @@ unchanged. The buyer explicitly starts a fresh checkout against the new prices. 
 publishes the same total; there is no no-argument confirmation path. Local in-memory repository serialization is not a
 claim of durable distributed transactions or universal rollback of unenlisted resources.
 
-The language-neutral specification is an independently owned repository. Until its first publication, paired local checks
-materialize the explicit checkout into the gitignored build/specification directory. Both builds pin the same local review commit; CI
-rejects an empty specification revision. Remote archive consumption awaits publication of that commit.
+The language-neutral specification is an independently owned, currently unpublished repository. It is **not part of the
+build**: a plain checkout builds and runs without it, and the specification tests are reported as skipped. To run them,
+point the build at a local checkout; the vectors are copied next to the test assemblies and the adapters in
+`SharedSpecificationTest`, `CheckoutSpecificationTest` and `RetainedDeliveryTest` drive the production code with them.
 
 ```bash
-dotnet test -c Debug -p:UseLocalDcaDotnet=true -p:SpecificationPath=/workspace/dca-sample-specification
+dotnet test -c Debug -p:SpecificationPath=$PWD/../dca-sample-specification
 ```

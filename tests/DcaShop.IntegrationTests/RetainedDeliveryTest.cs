@@ -12,10 +12,11 @@ public sealed class RetainedDeliveryTest
 {
     public static IEnumerable<object[]> SharedVectors()
     {
+        if (!SpecificationVectors.Present) yield break;
         using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "specification/vectors/delivery.json")));
         foreach (var v in document.RootElement.EnumerateArray()) yield return new object[] { v.GetProperty("id").GetString()! };
     }
-    [Theory, MemberData(nameof(SharedVectors))]
+    [SpecificationTheory, MemberData(nameof(SharedVectors))]
     public async Task SharedDeliveryVector(string id)
     {
         switch (id)
