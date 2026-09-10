@@ -13,7 +13,7 @@
     <UseLocalDcaDotnet Condition="'$(UseLocalDcaDotnet)' == ''">false</UseLocalDcaDotnet>
     <!-- Optional shared sample specification check (local only, not part of the build): -p:SpecificationPath=../dca-sample-specification -->
     <SpecificationRoot>$(MSBuildThisFileDirectory)build/specification/$(MSBuildProjectName)/</SpecificationRoot>
-    <DcaBuildingBlocksVersion>0.1.0</DcaBuildingBlocksVersion>
-    <DcaArchRulesVersion>0.3.0</DcaArchRulesVersion>
+    <DcaBuildingBlocksVersion>0.1.1</DcaBuildingBlocksVersion>
+    <DcaArchRulesVersion>0.4.0</DcaArchRulesVersion>
   </PropertyGroup>
 </Project>
