@@ -30,9 +30,9 @@
 }
 </div>
 <div class="cart__item-details">
-<div class="cart__item-name">@item.ProductName</div>
+<div class="cart__item-name" data-test="cart-item-name">@item.ProductName</div>
 <div class="cart__item-info">
-<div class="cart__item-row"><span class="cart__item-label">Quantity</span><span class="cart__item-value">@item.Quantity</span></div>
+<div class="cart__item-row"><span class="cart__item-label">Quantity</span><span class="cart__item-value" data-test="cart-item-quantity">@item.Quantity</span></div>
 <div class="cart__item-row"><span class="cart__item-label">Unit Price</span><span class="cart__item-value">@item.UnitPrice</span></div>
 <div class="cart__item-row"><span class="cart__item-label">Line Total</span><span class="cart__item-price">@item.LineTotal</span></div>
 </div>

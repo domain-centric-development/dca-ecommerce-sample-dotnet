@@ -4,4 +4,4 @@
 - [Architecture decision records](adr/README.md).
 - The repository [README](../../README.md) explains the solution layout and which pattern lives where.
 
-Rule-by-rule reference: `RULES.md` in the `DomainCentric.ArchRules` package (110 rules, ids `DCA-<SET>-<NNN>`).
+Rule-by-rule reference: `RULES.md` in the `DomainCentric.ArchRules` package (counts in its `rules.json`, ids `DCA-<SET>-<NNN>`).

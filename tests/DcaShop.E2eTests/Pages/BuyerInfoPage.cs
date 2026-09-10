@@ -67,5 +67,20 @@ public sealed class BuyerInfoPage : BasePage
     /// <summary>The current value of the email input — prefilled from the identity for a registered visitor.</summary>
     public Task<string> EmailValueAsync() => Page.Locator($"[data-test='{EmailInput}']").InputValueAsync();
 
+    /// <summary>The session's order summary as <c>name xquantity</c> pairs — the snapshot, not the current cart.</summary>
+    public async Task<IReadOnlyList<string>> SummaryItemsAsync()
+    {
+        var items = Page.Locator("[data-test='order-summary-item']");
+        var lines = new List<string>();
+        for (var i = 0; i < await items.CountAsync(); i++)
+        {
+            var item = items.Nth(i);
+            var name = (await item.Locator("[data-test='order-summary-item-name']").TextContentAsync() ?? string.Empty).Trim();
+            var quantity = (await item.Locator("[data-test='order-summary-item-qty']").TextContentAsync() ?? string.Empty).Trim();
+            lines.Add($"{name} {quantity}");
+        }
+        return lines;
+    }
+
     public bool IsOnPage => CurrentPath.Contains("/checkout/buyer", StringComparison.Ordinal);
 }

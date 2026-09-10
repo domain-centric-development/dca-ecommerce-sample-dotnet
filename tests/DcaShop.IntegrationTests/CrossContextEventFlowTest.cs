@@ -132,7 +132,7 @@ public sealed class CrossContextEventFlowTest : IClassFixture<WebApplicationFact
     }
 
     private static IReadOnlyList<string> OrderSummaryItems(string page) =>
-        Regex.Matches(page, "order-summary__item-name\">([^<]+)<").Select(m => m.Groups[1].Value).ToList();
+        Regex.Matches(page, "order-summary__item-name\"[^>]*>([^<]+)<").Select(m => m.Groups[1].Value).ToList();
 
     private static async Task AddToCartAsync(HttpClient client, string productId, int quantity)
     {
