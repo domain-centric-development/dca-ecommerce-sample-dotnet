@@ -1,0 +1,22 @@
+# Stack profile — the only place in the pipeline that knows how this project builds and tests.
+# The gate and the pre-commit hook read it; a command that is not declared is skipped and named.
+# Architecture tests need a Debug build: ArchUnitNET drops Release async state machines.
+
+compile: dotnet build
+test: dotnet test tests/DcaShop.UnitTests tests/DcaShop.IntegrationTests
+e2eTest: dotnet test tests/DcaShop.E2eTests
+filterFlag: --filter
+filterFormat: "FullyQualifiedName~{class}.{method}"
+architecture: dotnet test tests/DcaShop.ArchitectureTests
+
+# The one source a stage may treat as an authority. Generated from the same sources as the
+# building blocks and the rule catalog this project consumes.
+knowledge: dca-knowledge
+
+carrier.build: ddd-modelling
+carrier.test: e2e-testing
+review.domain: review-domain
+review.boundaries: review-boundaries
+review.craft: review-craft
+
+contextMap: docs/context-map.md

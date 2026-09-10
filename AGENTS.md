@@ -237,3 +237,22 @@ immutable line/fact snapshots. Any changed price or shortage reports affected li
 unchanged. The buyer explicitly starts a fresh checkout against the new prices. Success stores the recomputed total and
 publishes the same total; there is no no-argument confirmation path. Local in-memory repository serialization is not a
 claim of durable distributed transactions or universal rollback of unenlisted resources.
+
+## Delivery pipeline
+
+New work runs through the factory pipeline from `dca-marketplace/plugins/dca-factory`, installed
+into this repository (not vendored — `.claude/skills/` is gitignored, re-install with
+`factory.sh install`):
+
+- `backlog/<epic>/<story>.md` — new stories; the porting log and the work packages keep the delivered work
+- `.agents/factory/factory.profile.yaml` — the only file that tells the pipeline how this project
+  builds: `dotnet build`, the unit/integration/E2E test projects and `dotnet test tests/DcaShop.ArchitectureTests` (Debug), plus the knowledge
+  source (`dca-knowledge`), the stage carriers and the review perspectives
+- `.agents/factory/story-gate.py` — the gate between the stages
+  (`--story <id> --stage plan|test|build|document`)
+- `.githooks/pre-commit` — the same profile commands on every commit
+  (`git config core.hooksPath .githooks`); narrow it with
+  `FACTORY_PRECOMMIT_CHECKS="compile architecture"` when the full suite is too slow to wait for
+
+Run one story with `/factory-run <story id>`. The pipeline owns the process; the architecture comes
+from `dca-core` (`/dca-bootstrap` once, then `/ddd-modelling`, `/review-*`, `/dca-knowledge`).
