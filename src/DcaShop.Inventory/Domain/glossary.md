@@ -169,7 +169,28 @@ _None._
 
 ## Specifications
 
-_None._
+### IStockLevelSpecification
+
+**Definition:** Common interface of all stock-related specifications; enables
+persistence adapters to translate them into queries via the Visitor pattern
+(`IStockLevelSpecificationVisitor`).
+
+**Type:** Specification (Marker)
+
+### AvailableQuantityBelow
+
+**Definition:** The available quantity of a stock level is strictly below a
+given threshold — the stock level is *low*. The threshold itself is not low.
+
+**Type:** Specification
+
+**Related terms:** `StockQuantity`, Available quantity, Low stock, Stock
+threshold
+
+**Notes:** Compares the quantity **held**; reservations do not enter the
+comparison (see Open Issues). Evaluated in memory by the default
+`IStockLevelRepository.FindByAsync`; the visitor exists so an adapter can adopt
+predicate push-down without query technology entering the domain.
 
 ---
 
@@ -247,6 +268,38 @@ still be reserved.
 
 ---
 
+### Low stock
+
+**Definition:** State of a stock level whose available quantity is strictly
+below a threshold the asker gives — the state an operator must react to before
+the product runs out.
+
+**Type:** Concept
+
+**Related terms:** `AvailableQuantityBelow`, Available quantity, Stock
+threshold
+
+**Notes:** Realised by `AvailableQuantityBelow`; asked for through the
+`GetLowStockProducts` use case, which answers a `LowStockProduct` per stock
+level with the quantity it holds.
+
+---
+
+### Stock threshold
+
+**Definition:** The quantity, supplied by the asker, at or above which a stock
+level is not low.
+
+**Type:** Concept
+
+**Related terms:** Low stock, `AvailableQuantityBelow`
+
+**Notes:** Not a property of a product: no stock level carries a reorder level
+of its own (see Open Issues). Carried per request by
+`GetLowStockProductsQuery.Threshold`.
+
+---
+
 ## Open Issues (from DCA review)
 
 These points are intentionally left open and should be clarified with the
@@ -274,3 +327,12 @@ business before the model is consolidated:
 
 4. **Arithmetic on `StockQuantity`** is currently done in the aggregate.
    Candidate for moving addition and subtraction into the value object.
+
+5. **Which quantity is "low"?** `AvailableQuantityBelow` compares the
+   available quantity, so a stock level of 4 with 4 units reserved is not low
+   at a threshold of 4. Whether the operator means available quantity or
+   unreserved quantity (available-to-promise) is unanswered; both readings are
+   in this glossary.
+
+6. **Whose threshold?** One threshold is supplied per request. Whether a stock
+   level should instead carry its own reorder level is unanswered.

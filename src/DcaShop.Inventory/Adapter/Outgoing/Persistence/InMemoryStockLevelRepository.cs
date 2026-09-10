@@ -34,6 +34,9 @@ public sealed class InMemoryStockLevelRepository : IStockLevelRepository
         return Task.FromResult<IReadOnlyList<StockLevel>>(found);
     }
 
+    public Task<IReadOnlyList<StockLevel>> FindAllAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<StockLevel>>(_stockLevels.Values.ToList());
+
     public Task<StockLevel> SaveAsync(StockLevel aggregate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(aggregate);

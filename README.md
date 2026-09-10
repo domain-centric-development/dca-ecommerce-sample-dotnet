@@ -146,7 +146,7 @@ what tells them apart.
 | Eventual consistency between contexts | explicit checkout → immutable snapshot; checkout confirmed → snapshot reconciliation and `ReduceStock` |
 | Domain gateway called by the aggregate | `IPasswordHasher` — the contract in `Account/Domain/Gateway`, BCrypt in the adapter |
 | Specification as a first-class rule | `UsableDateOfBirth` — evaluated by `Owner` and by the change-profile use case |
-| Composable specifications translatable by an adapter | `ActiveCart`, `HasMinTotal`, `HasAnyAvailableItem` … over `ICompositeSpecification<T>`, visited by `ICartSpecificationVisitor` |
+| Composable specifications translatable by an adapter | `ActiveCart`, `HasMinTotal`, `HasAnyAvailableItem` … over `ICompositeSpecification<T>`, visited by `ICartSpecificationVisitor`; `AvailableQuantityBelow` in Inventory, visited by `IStockLevelSpecificationVisitor` |
 | Repository query in domain terms, paged | `IShoppingCartRepository.FindByAsync(specification, PagingRequest)` → `PageResult<ShoppingCart>` |
 | Settlement checked against current figures | `ShoppingCart.ValidateForCheckout(IArticlePriceResolver)` → `CartValidationResult`; `CheckoutCartUseCase` refuses a cart whose articles are gone or short in stock |
 | Shared-kernel port with one context's implementation | `IIdentityProvider` (shared kernel) resolved by Account's authentication handler from `HttpContext.User` |

@@ -3,7 +3,10 @@
 # Architecture tests need a Debug build: ArchUnitNET drops Release async state machines.
 
 compile: dotnet build
-test: dotnet test tests/DcaShop.UnitTests tests/DcaShop.IntegrationTests
+# `dotnet test` takes one project per invocation — two paths in one call is an MSBuild error
+# (MSB1008). Each test project is its own entry, so the gate can select a single test in it.
+test: dotnet test tests/DcaShop.UnitTests
+test.integration: dotnet test tests/DcaShop.IntegrationTests
 e2eTest: dotnet test tests/DcaShop.E2eTests
 filterFlag: --filter
 filterFormat: "FullyQualifiedName~{class}.{method}"
