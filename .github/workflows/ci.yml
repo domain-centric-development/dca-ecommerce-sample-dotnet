@@ -1,0 +1,50 @@
+name: CI
+
+# Builds the sample the way somebody who just cloned it does: against the DomainCentric packages
+# published on NuGet.org, with no sibling checkout and no `-p:UseLocalDcaDotnet=true`. That switch
+# swaps the package references for project references into `../dca-dotnet` and is the right tool while
+# working on unreleased rules — but it hides what a stranger sees. The Java twin had exactly that gap
+# for a day (its sample matched no published rule version and nothing reported it), so both samples
+# now build against the registry here.
+#
+# The Playwright suite needs a running shop: without `E2E_BASE_URL` those tests report as skipped, and
+# so do the shared-specification adapters, which are an opt-in local check.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          # global.json pins the SDK to 10.0.x.
+          dotnet-version: 10.0.x
+
+      - run: dotnet restore
+
+      # Debug on purpose: the architecture tests read IL, and ArchUnitNET drops the struct-based async
+      # state machines a Release build produces.
+      - run: dotnet build -c Debug --no-restore
+
+      - run: dotnet test -c Debug --no-build --logger "trx"
+
+      - name: Context map is up to date
+        # The architecture suite regenerates it; a diff means the committed document was stale.
+        run: git diff --exit-code -- docs/context-map.md
+
+      - name: No local library switch leaked into the build
+        # The published versions must be the default; UseLocalDcaDotnet stays opt-in.
+        run: |
+          grep -q '>false</UseLocalDcaDotnet>' Directory.Build.props
+          grep -q "<DcaArchRulesVersion>[0-9]" Directory.Build.props
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results
+          path: '**/TestResults/'
