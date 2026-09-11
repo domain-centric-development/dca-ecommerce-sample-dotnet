@@ -8,7 +8,7 @@ It ships seven bounded contexts — **Product Catalog**, **Shopping Cart**, **Ch
 **Inventory**, **Account**, **Portal** — with the same ubiquitous language and use cases as the Java twin
 (`dca-ecommerce-sample-java`), plus the **Backoffice** context, the REST API and an MCP server.
 
-*Written with AI assistance — drafted mainly by Claude, reviewed and directed by the author since
+*Written with AI assistance — drafted mainly by Claude, reviewed and directed by Christoph Bloemer since
 2025. The architecture rules in this repository's build are part of how that work is verified.*
 
 ## Run
@@ -227,6 +227,10 @@ All three live entirely in adapters — the domain and application layers are un
 ## Decisions
 
 Architecture decision records live in [docs/architecture/adr/](docs/architecture/adr/README.md).
+
+## Author
+
+**Christoph Bloemer** — [@chbloemer](https://github.com/chbloemer)
 
 ## License
 
