@@ -5,9 +5,11 @@
 compile: dotnet build
 # `dotnet test` takes one project per invocation — two paths in one call is an MSBuild error
 # (MSB1008). Each test project is its own entry, so the gate can select a single test in it.
-test: dotnet test tests/DcaShop.UnitTests
-test.integration: dotnet test tests/DcaShop.IntegrationTests
-e2eTest: dotnet test tests/DcaShop.E2eTests
+test: dotnet test tests/DcaShop.UnitTests --logger trx
+test.integration: dotnet test tests/DcaShop.IntegrationTests --logger trx
+e2eTest: dotnet test tests/DcaShop.E2eTests --logger trx
+# The gate reads which tests actually ran from the runner's report; the .NET test
+# platform writes one only when asked (`--logger trx`), so it is asked above.
 filterFlag: --filter
 filterFormat: "FullyQualifiedName~{class}.{method}"
 architecture: dotnet test tests/DcaShop.ArchitectureTests
