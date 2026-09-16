@@ -2,7 +2,7 @@ using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Cart.Domain.Model;
-using DcaShop.SharedKernel.Application.Shared;
+using DcaShop.Account.Api;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Cart.Adapter.Incoming.Web.Shopping;
@@ -14,18 +14,18 @@ public sealed class CartPageController : Controller
     private readonly IGetOrCreateActiveCartInputPort _getOrCreateActiveCart;
     private readonly IGetCartByIdInputPort _getCartById;
     private readonly IAddItemToCartInputPort _addItemToCart;
-    private readonly IIdentityProvider _identityProvider;
+    private readonly IIdentityService _identityService;
 
     public CartPageController(
         IGetOrCreateActiveCartInputPort getOrCreateActiveCart,
         IGetCartByIdInputPort getCartById,
         IAddItemToCartInputPort addItemToCart,
-        IIdentityProvider identityProvider)
+        IIdentityService identityService)
     {
         _getOrCreateActiveCart = getOrCreateActiveCart;
         _getCartById = getCartById;
         _addItemToCart = addItemToCart;
-        _identityProvider = identityProvider;
+        _identityService = identityService;
     }
 
     [HttpGet("")]
@@ -53,7 +53,7 @@ public sealed class CartPageController : Controller
         return RedirectToAction(nameof(Show));
     }
 
-    private string CurrentCustomerId => _identityProvider.GetCurrentIdentity().UserId.Value;
+    private string CurrentCustomerId => _identityService.CurrentIdentity().UserId.Value;
 
     private async Task<Guid> ActiveCartIdAsync(CancellationToken cancellationToken)
     {

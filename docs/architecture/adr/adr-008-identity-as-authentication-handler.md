@@ -1,7 +1,7 @@
 # ADR-008: The Shop's Identity as an ASP.NET Core Authentication Handler
 
 **Date**: 2026-09-03 · **Status**: Accepted · Amends [ADR-006](adr-006-identity-and-session-cookies.md) point 1 and
-[ADR-007](adr-007-api-authorization-and-bearer-only-boundary.md)
+[ADR-007](adr-007-api-authorization-and-bearer-only-boundary.md) · Amended 2026-09-16 (see the amendment at the end)
 
 ## Context
 
@@ -110,3 +110,12 @@ the deleted-account check; and it would split token reading across two code path
 - [ADR-007](adr-007-api-authorization-and-bearer-only-boundary.md) — the Bearer-only boundary; the path list now
   lives in `TokenOnlyPaths`, and the claims-only gates it placed in the adapter are attributes.
 - [ADR-005](adr-005-antiforgery-and-safe-methods.md) — the antiforgery filter unchanged, asking the same path list.
+
+## 2026-09-16 amendment: names and placement
+
+The handler is unchanged; what it serves has moved. `IIdentityProvider` (shared kernel) became the Account context's
+published `IIdentityService` (`Account/Api`), read from the same `IShopIdentityFeature` by `HttpContextIdentityService`.
+`IRegisteredUserValidator` became the input port `IIsAccountRegistered`, which the handler asks before honouring a
+session. The handler, `JwtTokenService`, `JwtIdentitySession`, `CookieWriter`, `JwtOptions`, `ShopPrincipal`,
+`TokenOnlyPaths` and the feature live in `Adapter/Incoming/Security` — the request side of the context — and point 7's
+open question is answered: cookie writing is adapter business, not a port (ADR-006 amendment of the same date).

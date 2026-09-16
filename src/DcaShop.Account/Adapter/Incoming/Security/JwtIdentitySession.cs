@@ -1,15 +1,16 @@
-using DcaShop.Account.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-namespace DcaShop.Account.Adapter.Outgoing.Security;
+namespace DcaShop.Account.Adapter.Incoming.Security;
 
 /// <summary>
-/// Writes the two cookies of ADR-030 on the current response. It is request-scoped because it needs that
-/// response.
+/// Establishes and ends the authenticated session of the current browser by writing the two cookies of ADR-006 on
+/// the current response. A collaborator of the Account context's web adapter — the login, registration, profile and
+/// logout controllers — not a port: only this context modifies a session, and cookie mechanics are adapter business.
+/// Request-scoped because it needs that response.
 /// </summary>
-public sealed class JwtIdentitySession : IIdentitySession
+public sealed class JwtIdentitySession
 {
     private readonly JwtOptions _options;
     private readonly JwtTokenService _tokenService;
@@ -24,6 +25,10 @@ public sealed class JwtIdentitySession : IIdentitySession
         _httpContextAccessor = httpContextAccessor;
     }
 
+    /// <summary>
+    /// Starts an authenticated session for the given token and aligns the visitor identity with the account it
+    /// names, so a later session expiry drops the browser onto the account's cart rather than a superseded one.
+    /// </summary>
     public void SetRegisteredIdentity(string token)
     {
         var response = CurrentResponse();
@@ -45,6 +50,10 @@ public sealed class JwtIdentitySession : IIdentitySession
         }
     }
 
+    /// <summary>
+    /// Ends the session and rotates the visitor identity: the next person on a shared device must not inherit
+    /// this cart, while the account's own cart returns at the next login.
+    /// </summary>
     public void LogOut()
     {
         var response = CurrentResponse();

@@ -1,6 +1,6 @@
 using System.Text.Encodings.Web;
-using DcaShop.Account.Application.Shared;
-using DcaShop.SharedKernel.Application.Shared;
+using DcaShop.Account.Api;
+using DcaShop.Account.Application.IsAccountRegistered;
 using DcaShop.SharedKernel.Domain.Model;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 
-namespace DcaShop.Account.Adapter.Outgoing.Security;
+namespace DcaShop.Account.Adapter.Incoming.Security;
 
 /// <summary>Options of <see cref="ShopIdentityAuthenticationHandler"/>.</summary>
 public sealed class ShopIdentityAuthenticationOptions : AuthenticationSchemeOptions
@@ -31,7 +31,7 @@ public sealed class ShopIdentityAuthenticationOptions : AuthenticationSchemeOpti
 /// <para>
 /// It enriches, it does not gate (ADR-006): a request with an expired or forged session is not an error, it
 /// proceeds as an anonymous visitor and sees what an anonymous visitor sees. Every request therefore ends with an
-/// identity on it — recorded as <see cref="IShopIdentityFeature"/> for the port — but only a registered session
+/// identity on it — recorded as <see cref="IShopIdentityFeature"/> for the Account context's published <c>IIdentityService</c> — but only a registered session
 /// yields an <i>authenticated</i> principal on <c>HttpContext.User</c>. An anonymous visitor is no result for the
 /// scheme, so <c>[Authorize]</c> challenges them (a redirect to the login form, or <c>401</c> on the API) instead
 /// of forbidding them, and a registered caller without a role gets the <c>403</c> that distinction exists for.
@@ -48,7 +48,7 @@ public sealed class ShopIdentityAuthenticationHandler : AuthenticationHandler<Sh
 
     private readonly JwtOptions _jwtOptions;
     private readonly JwtTokenService _tokenService;
-    private readonly IRegisteredUserValidator _registeredUserValidator;
+    private readonly IIsAccountRegisteredInputPort _isAccountRegistered;
 
     public ShopIdentityAuthenticationHandler(
         IOptionsMonitor<ShopIdentityAuthenticationOptions> options,
@@ -56,13 +56,13 @@ public sealed class ShopIdentityAuthenticationHandler : AuthenticationHandler<Sh
         UrlEncoder encoder,
         IOptions<JwtOptions> jwtOptions,
         JwtTokenService tokenService,
-        IRegisteredUserValidator registeredUserValidator)
+        IIsAccountRegisteredInputPort isAccountRegistered)
         : base(options, logger, encoder)
     {
         ArgumentNullException.ThrowIfNull(jwtOptions);
         _jwtOptions = jwtOptions.Value;
         _tokenService = tokenService;
-        _registeredUserValidator = registeredUserValidator;
+        _isAccountRegistered = isAccountRegistered;
     }
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -149,23 +149,21 @@ public sealed class ShopIdentityAuthenticationHandler : AuthenticationHandler<Sh
     /// Resolves the authenticated session, falling back to an anonymous identity that keeps the browser's
     /// existing <see cref="UserId"/>. Every fallback is deliberately silent and non-blocking.
     /// </summary>
-    private async Task<IIdentityProvider.IIdentity> ResolveSessionAsync(UserId identityUserId)
+    private async Task<Identity> ResolveSessionAsync(UserId identityUserId)
     {
         if (ReadCookie(_jwtOptions.SessionCookieName) is not { } token
             || _tokenService.Validate(token) is not JwtTokenService.TokenValidation.Valid valid
             || !valid.Identity.IsRegistered)
         {
-            return JwtIdentity.Anonymous(identityUserId);
+            return Identity.Anonymous(identityUserId);
         }
 
         // The token is self-contained, so it outlives the account it names: a deleted account leaves a session
         // that still validates and still carries roles.
-        if (!await _registeredUserValidator
-                .ExistsForUserIdAsync(valid.Identity.UserId, Context.RequestAborted)
-                .ConfigureAwait(false))
+        if (!await AccountExistsAsync(valid.Identity.UserId).ConfigureAwait(false))
         {
             Logger.LogInformation("Session has no account, continuing anonymously");
-            return JwtIdentity.Anonymous(identityUserId);
+            return Identity.Anonymous(identityUserId);
         }
 
         return valid.Identity;
@@ -176,24 +174,27 @@ public sealed class ShopIdentityAuthenticationHandler : AuthenticationHandler<Sh
     /// when there is none. No cookie is read and none is issued — that is what makes the antiforgery exemption
     /// sound, and it is why a cross-site form post to the API arrives as a stranger.
     /// </summary>
-    private async Task<IIdentityProvider.IIdentity> ResolveBearerIdentityAsync()
+    private async Task<Identity> ResolveBearerIdentityAsync()
     {
         if (BearerToken() is not { } token
             || _tokenService.Validate(token) is not JwtTokenService.TokenValidation.Valid valid)
         {
-            return JwtIdentity.Anonymous(UserId.GenerateAnonymous());
+            return Identity.Anonymous(UserId.GenerateAnonymous());
         }
 
-        if (valid.Identity.IsRegistered
-            && !await _registeredUserValidator
-                .ExistsForUserIdAsync(valid.Identity.UserId, Context.RequestAborted)
-                .ConfigureAwait(false))
+        if (valid.Identity.IsRegistered && !await AccountExistsAsync(valid.Identity.UserId).ConfigureAwait(false))
         {
-            return JwtIdentity.Anonymous(valid.Identity.UserId);
+            return Identity.Anonymous(valid.Identity.UserId);
         }
 
         return valid.Identity;
     }
+
+    /// <summary>Asks the Account context, through its input port, whether the session's account still exists.</summary>
+    private async Task<bool> AccountExistsAsync(UserId userId) =>
+        (await _isAccountRegistered
+            .ExecuteAsync(new IsAccountRegisteredQuery(userId.Value), Context.RequestAborted)
+            .ConfigureAwait(false)).Registered;
 
     private string? ReadCookie(string name) =>
         Request.Cookies.TryGetValue(name, out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;

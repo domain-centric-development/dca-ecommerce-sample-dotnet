@@ -13,6 +13,8 @@ namespace DcaShop.Cart;
     Rationale = "Stock availability is translated into the cart's own article data")]
 [Partnership("Checkout",
     Rationale = "Cart owns the consumer-defined ICartCompletionTrigger contract that checkout events implement; both contexts evolve it together")]
+[Upstream("Account", Translation.Conformist, Consumes.Api,
+    Rationale = "Incoming adapters read the caller's identity from Account's published IIdentityService as-is and hand the customer to their use cases as a command or query parameter")]
 public static class CartContext
 {
 }

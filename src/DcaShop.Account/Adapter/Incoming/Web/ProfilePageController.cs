@@ -1,7 +1,7 @@
 using DcaShop.Account.Application.ChangeProfile;
 using DcaShop.Account.Application.GetProfile;
-using DcaShop.Account.Application.Shared;
-using DcaShop.SharedKernel.Application.Shared;
+using DcaShop.Account.Adapter.Incoming.Security;
+using DcaShop.Account.Api;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,20 +21,20 @@ public sealed class ProfilePageController : Controller
 
     private readonly IGetProfileInputPort _getProfile;
     private readonly IChangeProfileInputPort _changeProfile;
-    private readonly IIdentityProvider _identityProvider;
-    private readonly ITokenService _tokenService;
-    private readonly IIdentitySession _identitySession;
+    private readonly IIdentityService _identityService;
+    private readonly JwtTokenService _tokenService;
+    private readonly JwtIdentitySession _identitySession;
 
     public ProfilePageController(
         IGetProfileInputPort getProfile,
         IChangeProfileInputPort changeProfile,
-        IIdentityProvider identityProvider,
-        ITokenService tokenService,
-        IIdentitySession identitySession)
+        IIdentityService identityService,
+        JwtTokenService tokenService,
+        JwtIdentitySession identitySession)
     {
         _getProfile = getProfile;
         _changeProfile = changeProfile;
-        _identityProvider = identityProvider;
+        _identityService = identityService;
         _tokenService = tokenService;
         _identitySession = identitySession;
     }
@@ -42,7 +42,7 @@ public sealed class ProfilePageController : Controller
     [HttpGet("")]
     public async Task<IActionResult> Show(CancellationToken cancellationToken)
     {
-        var identity = _identityProvider.GetCurrentIdentity();
+        var identity = _identityService.CurrentIdentity();
         var stored = await StoredProfileAsync(identity.UserId.Value, cancellationToken);
         return stored is null
             ? LoginRedirect()
@@ -53,7 +53,7 @@ public sealed class ProfilePageController : Controller
     public async Task<IActionResult> Update(
         [FromForm] string email, [FromForm] string dateOfBirth, CancellationToken cancellationToken)
     {
-        var identity = _identityProvider.GetCurrentIdentity();
+        var identity = _identityService.CurrentIdentity();
         if (SubmittedDate.Parse(dateOfBirth) is not { } parsed)
         {
             return await RejectedAsync(identity.UserId.Value, email, dateOfBirth, SubmittedDate.NotADate, cancellationToken);

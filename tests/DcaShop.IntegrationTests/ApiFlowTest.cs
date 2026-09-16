@@ -3,8 +3,8 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using DcaShop.Account.Adapter.Outgoing.Security;
-using DcaShop.SharedKernel.Application.Shared;
+using DcaShop.Account.Adapter.Incoming.Security;
+using DcaShop.Account.Api;
 using DcaShop.SharedKernel.Domain.Model;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -139,7 +139,7 @@ public sealed class ApiFlowTest : IClassFixture<WebApplicationFactory<Program>>
         return scope.ServiceProvider.GetRequiredService<JwtTokenService>().GenerateRegisteredToken(
             UserId.Of(userId),
             email,
-            new HashSet<string> { IIdentityProvider.IIdentity.RoleCustomer, IIdentityProvider.IIdentity.RoleStaff });
+            new HashSet<string> { Identity.RoleCustomer, Identity.RoleStaff });
     }
 
     private static StringContent NewProduct() => new(

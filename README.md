@@ -159,7 +159,7 @@ what tells them apart.
 | Composable specifications translatable by an adapter | `ActiveCart`, `HasMinTotal`, `HasAnyAvailableItem` … over `ICompositeSpecification<T>`, visited by `ICartSpecificationVisitor`; `AvailableQuantityBelow` in Inventory, visited by `IStockLevelSpecificationVisitor` |
 | Repository query in domain terms, paged | `IShoppingCartRepository.FindByAsync(specification, PagingRequest)` → `PageResult<ShoppingCart>` |
 | Settlement checked against current figures | `ShoppingCart.ValidateForCheckout(facts)` → `CartValidationResult`; Checkout's `StartCheckoutUseCase` refuses a cart whose articles are gone or short in stock |
-| Shared-kernel port with one context's implementation | `IIdentityProvider` (shared kernel) resolved by Account's authentication handler from `HttpContext.User` |
+| Identity as a published contract, not a shared-kernel port | `IIdentityService` in `Account/Api` — the incoming adapters of Cart and Checkout read the caller's `Identity` there and hand the customer to their use cases as a command or query parameter; Account's authentication handler resolves it per request |
 | Async at the ports, synchronous domain | `Task<TOut> ExecuteAsync(...)` vs. plain domain methods |
 | Executable context map | `docs/context-map.md`, rendered by the architecture tests |
 | One protocol per adapter, one set of use cases | `ProductPageController` (Razor), `ProductResource` (REST), `ProductCatalogMcpToolProvider` (MCP) |

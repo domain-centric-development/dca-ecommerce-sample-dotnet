@@ -1,6 +1,6 @@
 # ADR-006: Two Cookies for Identity and Session, Signed by an Own JWT Middleware
 
-**Date**: 2026-08-30 · **Status**: Accepted · Point 1 amended by [ADR-008](adr-008-identity-as-authentication-handler.md) (2026-09-03): the same tokens, resolved by an ASP.NET Core authentication handler instead of a middleware
+**Date**: 2026-08-30 · **Status**: Accepted · Point 1 amended by [ADR-008](adr-008-identity-as-authentication-handler.md) (2026-09-03): the same tokens, resolved by an ASP.NET Core authentication handler instead of a middleware · Point 7 amended 2026-09-16 (see the amendment at the end)
 
 ## Context
 
@@ -90,3 +90,14 @@ than the rest of this ADR. Both samples stop at the same place, on purpose.
 - [ADR-005](adr-005-antiforgery-and-safe-methods.md) — the login, register and logout forms are writing forms and
   carry an antiforgery token like every other.
 - [ADR-001](adr-001-solution-layout.md) — Account and Portal are projects like every other context.
+
+## 2026-09-16 amendment: the identity is a published contract, not a shared-kernel port
+
+Point 7 and the open item close: `IIdentityProvider` is gone from the shared kernel. The Account context publishes
+the caller's identity as the Open Host Service `IIdentityService` (`Account/Api`, with the `Identity` record), the
+incoming adapters of Cart and Checkout read it there and declare Account as an upstream (Conformist via `Api`), and
+they hand the customer to their use cases as a command or query parameter — no use case depends on it.
+`IIdentitySession` and `ITokenService` are no ports either: `JwtIdentitySession` and `JwtTokenService` are plain
+collaborators of the Account web and REST adapters in `Adapter/Incoming/Security`. The account-exists check the
+handler makes before honouring a session is the input port `IIsAccountRegistered`. The cookie design itself is
+unchanged.

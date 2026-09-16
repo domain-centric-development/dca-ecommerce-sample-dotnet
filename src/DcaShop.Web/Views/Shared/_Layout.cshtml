@@ -1,5 +1,5 @@
-@inject DcaShop.SharedKernel.Application.Shared.IIdentityProvider IdentityProvider
-@{ var identity = IdentityProvider.GetCurrentIdentity(); }
+@inject DcaShop.Account.Api.IIdentityService IdentityService
+@{ var identity = IdentityService.CurrentIdentity(); }
 <!DOCTYPE html>
 <html lang="en">
 <head>

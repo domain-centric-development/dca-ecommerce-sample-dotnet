@@ -1,7 +1,7 @@
 using DcaShop.Product.Application.CreateProduct;
 using DcaShop.Product.Application.GetAllProducts;
 using DcaShop.Product.Application.GetProductById;
-using DcaShop.SharedKernel.Application.Shared;
+using DcaShop.Account.Api;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -40,7 +40,10 @@ public sealed class ProductResource : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = IIdentityProvider.IIdentity.RoleStaff)]
+    // The role name is Account's published vocabulary (Api.Identity); as an attribute argument the compiler inlines
+    // the constant, so this is a compile-time reference and no context-map edge — unlike the Java twin's runtime
+    // check through IdentityService.
+    [Authorize(Roles = Identity.RoleStaff)]
     public async Task<ActionResult<ProductDto>> CreateProduct(
         [FromBody] CreateProductRequest request, CancellationToken cancellationToken)
     {
