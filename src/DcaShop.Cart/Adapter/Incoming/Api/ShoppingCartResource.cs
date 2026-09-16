@@ -1,5 +1,4 @@
 using DcaShop.Cart.Application.Shopping.AddItemToCart;
-using DcaShop.Cart.Application.CartCheckout.CheckoutCart;
 using DcaShop.Cart.Application.Operations.GetAllCarts;
 using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
@@ -35,7 +34,6 @@ public sealed class ShoppingCartResource : ControllerBase
     private readonly IGetCartByIdInputPort _getCartById;
     private readonly IAddItemToCartInputPort _addItemToCart;
     private readonly IRemoveItemFromCartInputPort _removeItemFromCart;
-    private readonly ICheckoutCartInputPort _checkoutCart;
     private readonly ShoppingCartDtoConverter _converter;
     private readonly IIdentityProvider _identityProvider;
 
@@ -45,7 +43,6 @@ public sealed class ShoppingCartResource : ControllerBase
         IGetCartByIdInputPort getCartById,
         IAddItemToCartInputPort addItemToCart,
         IRemoveItemFromCartInputPort removeItemFromCart,
-        ICheckoutCartInputPort checkoutCart,
         ShoppingCartDtoConverter converter,
         IIdentityProvider identityProvider)
     {
@@ -54,7 +51,6 @@ public sealed class ShoppingCartResource : ControllerBase
         _getCartById = getCartById;
         _addItemToCart = addItemToCart;
         _removeItemFromCart = removeItemFromCart;
-        _checkoutCart = checkoutCart;
         _converter = converter;
         _identityProvider = identityProvider;
     }
@@ -143,32 +139,6 @@ public sealed class ShoppingCartResource : ControllerBase
         try
         {
             await _removeItemFromCart.ExecuteAsync(new RemoveItemFromCartCommand(cartId, CurrentCustomerId, itemId), cancellationToken);
-        }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
-        {
-            return BadRequest(e.Message);
-        }
-
-        return Ok(_converter.ToDto((await ReadAsync(cartId, cancellationToken))!));
-    }
-
-    [HttpPost("{cartId:guid}/checkout")]
-    public async Task<ActionResult<ShoppingCartDto>> Checkout(Guid cartId, CancellationToken cancellationToken)
-    {
-        if (await ReadOwnAsync(cartId, cancellationToken) is null)
-        {
-            return NotFound();
-        }
-
-        try
-        {
-            await _checkoutCart.ExecuteAsync(new CheckoutCartCommand(cartId, CurrentCustomerId), cancellationToken);
-        }
-        catch (CartValidationException e)
-        {
-            return BadRequest(e.ValidationResult.Errors.Count == 0
-                ? e.Message
-                : string.Join("; ", e.ValidationResult.Errors.Select(error => error.Message)));
         }
         catch (Exception e) when (e is ArgumentException or InvalidOperationException)
         {

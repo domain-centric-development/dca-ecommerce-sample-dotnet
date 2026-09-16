@@ -14,7 +14,7 @@ public sealed class GetEventPublicationsTest
     {
         var log = new StubLog(
             Entry("CheckoutConfirmedEvent", completed: true),
-            Entry("CartCheckedOutEvent", completed: true),
+            Entry("CartContentsChangedEvent", completed: true),
             Entry("ProductCreatedEvent", completed: false));
 
         var result = await new GetEventPublicationsUseCase(log).ExecuteAsync(new GetEventPublicationsQuery());

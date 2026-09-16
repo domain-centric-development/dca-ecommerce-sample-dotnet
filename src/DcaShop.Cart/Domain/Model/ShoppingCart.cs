@@ -139,20 +139,6 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
         RegisterEvent(CartCleared.Now(Id, count));
     }
 
-    public void Checkout()
-    {
-        EnsureCartIsActive();
-
-        if (IsEmpty)
-        {
-            throw new InvalidOperationException("Cannot checkout an empty cart");
-        }
-
-        var total = CalculateTotal();
-        // Snapshot submission leaves the cart editable.
-        RegisterEvent(CartCheckedOut.Now(Id, CustomerId, total, _items));
-    }
-
     public void Abandon()
     {
         Status = CartStatus.Abandoned;
@@ -197,8 +183,8 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
     }
 
     /// <summary>
-    /// Checks every line against current availability and stock. An empty cart is valid — <see cref="Checkout"/>
-    /// is what refuses it.
+    /// Checks every line against current availability and stock. An empty cart is valid — the aggregate
+    /// refuses it elsewhere, not as a line error.
     /// </summary>
     public CartValidationResult ValidateForCheckout(IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {

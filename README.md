@@ -101,7 +101,7 @@ DcaShop.Cart/
 ├── CartContext.cs               [BoundedContext], [Upstream], [Partnership] — the context declaration
 ├── Domain/
 │   ├── Model/                   ShoppingCart (aggregate), CartItem (entity), Quantity, CartArticle, EnrichedCart …
-│   ├── Event/                   CartItemAddedToCart, CartCheckedOut, CartCompleted … (past tense)
+│   ├── Event/                   CartItemAddedToCart, CartCompleted … (past tense)
 │   ├── Specification/           ActiveCart, HasMinTotal, LastUpdatedBefore … + ICartSpecificationVisitor
 │   └── glossary.md              the context's ubiquitous language
 ├── Application/                 use cases grouped by feature (Cart and Checkout); the other contexts stay flat
@@ -109,7 +109,7 @@ DcaShop.Cart/
 │   │   ├── AddItemToCart/       I*InputPort : IUseCase<Command, Result>, *UseCase, *Command, *Result
 │   │   └── GetCartById/         … one folder per use case
 │   ├── CartRecovery/            feature — RecoverCartOnLogin, GetCartMergeOptions, MergeCarts
-│   ├── CartCheckout/            feature — CheckoutCart, CompleteCart
+│   ├── CartCheckout/            feature — CompleteCart
 │   ├── Operations/              feature — GetAllCarts (staff-only)
 │   └── Shared/                  output ports, context-wide: IShoppingCartRepository, IArticleDataPort
 ├── Adapter/
@@ -117,7 +117,7 @@ DcaShop.Cart/
 │   ├── Incoming/Event/          CartCheckout/CartCompletionEventConsumer
 │   └── Outgoing/                Persistence/ (in-memory repository), Product/ (ACL to Product/Pricing/Inventory), Event/
 ├── Api/                         CartService — Open Host Service for other contexts
-├── Events/                      CartCheckedOutEvent, ICartCompletionTrigger — published language
+├── Events/                      CartContentsChangedEvent, ICartCompletionTrigger — published language
 └── Infrastructure/              CartContextRegistration.AddCartContext() — explicit DI wiring
 ```
 
@@ -158,7 +158,7 @@ what tells them apart.
 | Specification as a first-class rule | `UsableDateOfBirth` — evaluated by `Owner` and by the change-profile use case |
 | Composable specifications translatable by an adapter | `ActiveCart`, `HasMinTotal`, `HasAnyAvailableItem` … over `ICompositeSpecification<T>`, visited by `ICartSpecificationVisitor`; `AvailableQuantityBelow` in Inventory, visited by `IStockLevelSpecificationVisitor` |
 | Repository query in domain terms, paged | `IShoppingCartRepository.FindByAsync(specification, PagingRequest)` → `PageResult<ShoppingCart>` |
-| Settlement checked against current figures | `ShoppingCart.ValidateForCheckout(IArticlePriceResolver)` → `CartValidationResult`; `CheckoutCartUseCase` refuses a cart whose articles are gone or short in stock |
+| Settlement checked against current figures | `ShoppingCart.ValidateForCheckout(facts)` → `CartValidationResult`; Checkout's `StartCheckoutUseCase` refuses a cart whose articles are gone or short in stock |
 | Shared-kernel port with one context's implementation | `IIdentityProvider` (shared kernel) resolved by Account's authentication handler from `HttpContext.User` |
 | Async at the ports, synchronous domain | `Task<TOut> ExecuteAsync(...)` vs. plain domain methods |
 | Executable context map | `docs/context-map.md`, rendered by the architecture tests |
@@ -266,7 +266,7 @@ Superseded confirmation has no completion effect. Abandonment/expiry closes only
 Cart reconciliation intersects purchased unit intervals with the current stable position id. Later additions (also of
 the same product), removed/re-added positions and other contents survive. Replay and overlapping completed snapshots
 cannot remove a unit twice. JDBC/JPA cart persistence preserves the interval allocation watermark; in-memory persistence
-retains the same domain state. Legacy CheckedOut/Completed cart statuses remain readable, but snapshot checkout leaves
+retains the same domain state. The legacy Completed cart status remains readable, but snapshot checkout leaves
 an active cart editable and never completes the whole cart.
 
 Confirmation retrieves current price/availability/stock facts before its local transaction. Pure domain services consume

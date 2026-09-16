@@ -108,11 +108,11 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   it with an error page. Add-to-cart then refuses with "Insufficient stock for product: …", and the checkout
   validation names the line as `ProductUnavailable`. The Java sample behaves the same way.
 - Settlement is checked against current figures, not stored ones: `ShoppingCart.ValidateForCheckout(
-  IReadOnlyDictionary<ProductId, ArticlePrice>)` delegates to pure `CartPricing` over line snapshots and answers a `CartValidationResult`, and `CheckoutCartUseCase` turns a non-empty one into
-  a `CartValidationException` (the REST resource renders it as `400`). An **empty or inactive** cart is not a
-  validation error with no errors: the use case lets the aggregate refuse it, so the reason reads "Cannot
-  checkout an empty cart". Same in the Java sample. The article data is fetched **before** the transaction
-  (ADR-004).
+  IReadOnlyDictionary<ProductId, ArticlePrice>)` delegates to pure `CartPricing` over line snapshots and answers a
+  `CartValidationResult`; the Checkout context's `StartCheckoutUseCase` refuses a cart whose articles are gone or
+  short in stock. The Cart context has no checkout use case of its own and no checked-out status — Checkout reads
+  the cart through Cart's Api and captures the snapshot. Same in the Java sample. The article data is fetched
+  **before** the transaction (ADR-004).
 - Query rules the domain states itself: `Domain/Specification` holds composable specifications over
   `ICompositeSpecification<T>` (shared kernel: `And`/`Or`/`Not` plus `ISpecificationVisitor`), and
   `IShoppingCartRepository.FindByAsync(specification, PagingRequest)` answers a `PageResult<ShoppingCart>`. The
@@ -158,7 +158,7 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
 - Authorization: **a guard goes where its inputs are** (ADR-007), not where it feels "business" or "technical".
   A claims-only gate may sit in the adapter — `POST /api/products` and `GET /api/carts` are staff-only there,
   because that is a property of the exposure. An **ownership** check never may: the caller is part of the command
-  (`GetCartByIdQuery(CartId, CustomerId)`, `CheckoutCartCommand`, `StartCheckoutCommand`) and the use case asks
+  (`GetCartByIdQuery(CartId, CustomerId)`, `AddItemToCartCommand`, `StartCheckoutCommand`) and the use case asks
   `IShoppingCartRepository.FindByIdForCustomerAsync`, not `FindByIdAsync` plus an `if`. Cart's Open Host Service
   demands the customer too, so Checkout inherits the rule. `FindByIdAsync` stays for the system paths that act on
   nobody's behalf (`CompleteCart`, from an integration event). The refusal is *rendered* at the edge: a stranger's
@@ -229,7 +229,7 @@ Superseded confirmation has no completion effect. Abandonment/expiry closes only
 Cart reconciliation intersects purchased unit intervals with the current stable position id. Later additions (also of
 the same product), removed/re-added positions and other contents survive. Replay and overlapping completed snapshots
 cannot remove a unit twice. JDBC/JPA cart persistence preserves the interval allocation watermark; in-memory persistence
-retains the same domain state. Legacy CheckedOut/Completed cart statuses remain readable, but snapshot checkout leaves
+retains the same domain state. The legacy Completed cart status remains readable, but snapshot checkout leaves
 an active cart editable and never completes the whole cart.
 
 Confirmation retrieves current price/availability/stock facts before its local transaction. Pure domain services consume

@@ -63,7 +63,6 @@ public sealed class ApiFlowTest : IClassFixture<WebApplicationFactory<Program>>
 
         // Not 403: telling a stranger they are forbidden confirms the id exists.
         Assert.Equal(HttpStatusCode.NotFound, (await Bearer(theirs).GetAsync($"/api/carts/{cartId}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await Bearer(theirs).PostAsync($"/api/carts/{cartId}/checkout", Empty())).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await Bearer(theirs).DeleteAsync($"/api/carts/{cartId}/items/{Guid.NewGuid()}")).StatusCode);
     }
 

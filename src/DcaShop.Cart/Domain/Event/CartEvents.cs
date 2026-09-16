@@ -32,15 +32,6 @@ public sealed record CartCleared(Guid EventId, DateTimeOffset OccurredOn, CartId
         new(Guid.NewGuid(), DateTimeOffset.UtcNow, cartId, removedItemCount);
 }
 
-/// <summary>Checkout was triggered — the cart is locked. Carries a snapshot of total and items for other contexts.</summary>
-public sealed record CartCheckedOut(Guid EventId, DateTimeOffset OccurredOn, CartId CartId, CustomerId CustomerId, Money TotalAmount, IReadOnlyList<CartCheckedOut.ItemInfo> Items) : IDomainEvent
-{
-    public sealed record ItemInfo(ProductId ProductId, int Quantity);
-
-    public static CartCheckedOut Now(CartId cartId, CustomerId customerId, Money totalAmount, IEnumerable<CartItem> items) =>
-        new(Guid.NewGuid(), DateTimeOffset.UtcNow, cartId, customerId, totalAmount, items.Select(i => new ItemInfo(i.ProductId, i.Quantity.Value)).ToList());
-}
-
 /// <summary>The checkout including confirmation is finished — final state of a successful cart.</summary>
 public sealed record CartCompleted(Guid EventId, DateTimeOffset OccurredOn, CartId CartId) : IDomainEvent
 {

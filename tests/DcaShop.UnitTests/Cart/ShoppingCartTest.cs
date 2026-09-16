@@ -59,26 +59,6 @@ public sealed class ShoppingCartTest
     }
 
     [Fact]
-    public void CheckoutKeepsCartEditableAndCarriesTotal()
-    {
-        var cart = NewCart();
-        cart.AddItem(ProductId.Generate(), Quantity.Of(2), Ten);
-        cart.ClearDomainEvents();
-
-        cart.Checkout();
-
-        Assert.Equal(CartStatus.Active, cart.Status);
-        var checkedOut = Assert.IsType<CartCheckedOut>(Assert.Single(cart.DomainEvents));
-        Assert.Equal(Money.Euro(20m), checkedOut.TotalAmount);
-        cart.AddItem(ProductId.Generate(), Quantity.Of(1), Ten);
-        Assert.Equal(3, cart.TotalQuantity);
-    }
-
-    [Fact]
-    public void EmptyCartCannotBeCheckedOut() =>
-        Assert.Throws<InvalidOperationException>(() => NewCart().Checkout());
-
-    [Fact]
     public void CompleteFromActiveIsAllowedButNotFromAbandoned()
     {
         var cart = NewCart();
@@ -96,10 +76,10 @@ public sealed class ShoppingCartTest
         var id = CartId.Generate();
         var stored = new ShoppingCart.StoredItem(CartItemId.Generate(), ProductId.Generate(), Quantity.Of(4), Ten);
 
-        var cart = ShoppingCart.Reconstitute(id, CustomerId.Of("c"), CartStatus.CheckedOut, new[] { stored });
+        var cart = ShoppingCart.Reconstitute(id, CustomerId.Of("c"), CartStatus.Completed, new[] { stored });
 
         Assert.Empty(cart.DomainEvents);
-        Assert.Equal(CartStatus.CheckedOut, cart.Status);
+        Assert.Equal(CartStatus.Completed, cart.Status);
         Assert.Equal(stored.Id, Assert.Single(cart.Items).Id);
     }
 

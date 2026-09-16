@@ -43,7 +43,7 @@ public sealed class ShoppingCartRepositoryPagingTest
         var customerId = CustomerId.Of("customer-1");
         var first = new ShoppingCart(CartId.Generate(), customerId);
         first.AddItem(ProductId.Generate(), Quantity.Of(1), Ten);
-        first.Checkout();
+        first.Abandon();
         await repository.SaveAsync(first);
         await repository.SaveAsync(new ShoppingCart(CartId.Generate(), customerId));
         await repository.SaveAsync(CartWith(Quantity.Of(1)));

@@ -19,7 +19,7 @@ The Cart context groups its use cases into four features — domain-named naviga
 |---------|---------|-----------|
 | `Shopping` | Filling and reading the shopping cart while the customer shops | `CreateCart`, `GetOrCreateActiveCart`, `GetActiveCart`, `GetCartById`, `AddItemToCart`, `RemoveItemFromCart` |
 | `CartRecovery` | Recovering a guest cart on login — offering and applying a merge | `RecoverCartOnLogin`, `GetCartMergeOptions`, `MergeCarts` |
-| `CartCheckout` | Handing the cart over to Checkout (`Checkout`) and closing it once the order is confirmed (`Complete`) | `CheckoutCart`, `CompleteCart` |
+| `CartCheckout` | Reconciling the cart once Checkout confirms an order — the purchased units leave the cart (`CompleteCart`) | `CompleteCart` |
 | `Operations` | Operating the shop — staff-only views across all carts | `GetAllCarts` |
 
 `Application/Shared/` stays context-wide (`IShoppingCartRepository`, `IArticleDataPort`). The web
@@ -30,7 +30,7 @@ adapters mirror `Shopping` and `CartRecovery`; the REST resource serves every fe
 
 ### ShoppingCart
 
-An editable collection of stable positions. Checkout copies a snapshot; completion reconciles captured unit identities without completing the current cart. Abandoned carts reject edits. Legacy CheckedOut/Completed states remain readable.
+An editable collection of stable positions. Checkout copies a snapshot through the Cart's Open Host Service; completion reconciles captured unit identities without completing the current cart. Abandoned carts reject edits. The legacy Completed state remains readable.
 
 ### CartItem
 
@@ -88,7 +88,7 @@ protection against values ≤ 0.
 
 ### CartStatus
 
-ACTIVE/Active permits editing before, during and after snapshot checkout. ABANDONED/Abandoned rejects edits. CHECKED_OUT/CheckedOut and COMPLETED/Completed are legacy whole-cart states, not transitions caused by the current checkout flow.
+ACTIVE/Active permits editing before, during and after snapshot checkout. ABANDONED/Abandoned rejects edits. COMPLETED/Completed is a legacy whole-cart state, not a transition caused by the current checkout flow. There is no checked-out state: a cart is never locked by Checkout.
 
 ### ArticlePrice
 
@@ -169,10 +169,6 @@ or decreased). Carries the old and new quantity.
 via "clear cart").
 
 **Type:** Domain Event
-
-### CartCheckedOut
-
-A snapshot-submission fact. It does not lock an active cart. Explicit Checkout start creates the session; cart-change notifications do not.
 
 ### CartCompleted
 
