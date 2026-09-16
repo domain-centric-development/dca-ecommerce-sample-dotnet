@@ -13,8 +13,13 @@ namespace DcaShop.Checkout.Adapter.Outgoing.Product;
 /// identity and description from the Product Catalog, the price from Pricing, availability from Inventory.
 /// </summary>
 /// <remarks>
+/// Cart's <c>CompositeArticleDataAdapter</c> composes the same three services. The two adapters are not consolidated
+/// on purpose — each context translates the siblings' published data into its <i>own</i> article model, and sharing
+/// the translation would couple the two models to each other (context isolation).
+/// <para>
 /// A product nobody has priced cannot be sold: the adapter offers it as unavailable and logs a warning, rather
 /// than settling on a figure nobody set. The checkout's own validation then names the line.
+/// </para>
 /// </remarks>
 public sealed class CompositeCheckoutArticleDataAdapter : ICheckoutArticleDataPort
 {

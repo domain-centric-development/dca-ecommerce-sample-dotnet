@@ -14,6 +14,9 @@ namespace DcaShop.Cart.Adapter.Outgoing.Product;
 /// </summary>
 /// <remarks>
 /// The only place in this context that knows those Apis — every other layer sees the cart's own article type.
+/// Checkout's <c>CompositeCheckoutArticleDataAdapter</c> composes the same three services; the two are not
+/// consolidated on purpose — each context translates the siblings' published data into its <i>own</i> article
+/// model, and sharing the translation would couple the two models to each other (context isolation).
 /// A product nobody has priced cannot be sold: the adapter offers it as unavailable and logs a warning, rather
 /// than inventing a figure or failing the request. That is also the state right after a product is created,
 /// until Pricing has consumed the catalog's event.
