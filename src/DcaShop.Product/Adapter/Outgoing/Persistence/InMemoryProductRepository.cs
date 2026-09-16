@@ -5,6 +5,10 @@ using DcaShop.SharedKernel.Domain.Model;
 
 namespace DcaShop.Product.Adapter.Outgoing.Persistence;
 
+/// <summary>
+/// In-memory <see cref="IProductRepository"/>. A concurrent dictionary has no order of its own, so listings sort by
+/// product name as the contract requires.
+/// </summary>
 public sealed class InMemoryProductRepository : IProductRepository
 {
     private readonly ConcurrentDictionary<ProductId, Domain.Model.Product> _products = new();
