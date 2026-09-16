@@ -1,7 +1,7 @@
 using System.Net;
 using DcaShop.Account.Application.AuthenticateAccount;
-using DcaShop.Account.Adapter.Incoming.Security;
-using DcaShop.Account.Api;
+using DcaShop.Account.Application.Shared;
+using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,19 +19,19 @@ namespace DcaShop.Account.Adapter.Incoming.Web;
 public sealed class LoginPageController : Controller
 {
     private readonly IAuthenticateAccountInputPort _authenticateAccount;
-    private readonly JwtTokenService _tokenService;
-    private readonly IIdentityService _identityService;
-    private readonly JwtIdentitySession _identitySession;
+    private readonly ITokenService _tokenService;
+    private readonly IIdentityProvider _identityProvider;
+    private readonly IIdentitySession _identitySession;
 
     public LoginPageController(
         IAuthenticateAccountInputPort authenticateAccount,
-        JwtTokenService tokenService,
-        IIdentityService identityService,
-        JwtIdentitySession identitySession)
+        ITokenService tokenService,
+        IIdentityProvider identityProvider,
+        IIdentitySession identitySession)
     {
         _authenticateAccount = authenticateAccount;
         _tokenService = tokenService;
-        _identityService = identityService;
+        _identityProvider = identityProvider;
         _identitySession = identitySession;
     }
 
@@ -47,7 +47,7 @@ public sealed class LoginPageController : Controller
         CancellationToken cancellationToken)
     {
         // Captured before authentication, which replaces the identity with the account's own.
-        var anonymousUserId = _identityService.CurrentIdentity().UserId.Value;
+        var anonymousUserId = _identityProvider.GetCurrentIdentity().UserId.Value;
 
         AuthenticateAccountResult result;
         try

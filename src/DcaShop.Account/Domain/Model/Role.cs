@@ -5,9 +5,9 @@ namespace DcaShop.Account.Domain.Model;
 /// glossary records promoting them to a value object as an open item.
 ///
 /// <para>
-/// The same two names appear on <c>Identity</c> in this context's published Api, where the adapters of other
-/// contexts read them: the domain must not reach into the Api to borrow a constant, so the literal is spelled
-/// out on both sides. Change one, change the other.
+/// The same two names appear on <c>IIdentityProvider.IIdentity</c> in the shared kernel, where the adapters of
+/// other contexts read them: the domain must not reach into an application port to borrow a constant, so the
+/// literal is spelled out on both sides. Change one, change the other.
 /// </para>
 /// </summary>
 public static class Role

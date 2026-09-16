@@ -2,7 +2,7 @@ using System.Net;
 using DcaShop.Cart.Application.CartRecovery.GetCartMergeOptions;
 using DcaShop.Cart.Application.CartRecovery.MergeCarts;
 using DcaShop.Cart.Application.CartRecovery.RecoverCartOnLogin;
-using DcaShop.Account.Api;
+using DcaShop.SharedKernel.Application.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Cart.Adapter.Incoming.Web.CartRecovery;
@@ -27,25 +27,25 @@ public sealed class CartMergePageController : Controller
     private readonly IGetCartMergeOptionsInputPort _getMergeOptions;
     private readonly IMergeCartsInputPort _mergeCarts;
     private readonly IRecoverCartOnLoginInputPort _recoverCart;
-    private readonly IIdentityService _identityService;
+    private readonly IIdentityProvider _identityProvider;
 
     public CartMergePageController(
         IGetCartMergeOptionsInputPort getMergeOptions,
         IMergeCartsInputPort mergeCarts,
         IRecoverCartOnLoginInputPort recoverCart,
-        IIdentityService identityService)
+        IIdentityProvider identityProvider)
     {
         _getMergeOptions = getMergeOptions;
         _mergeCarts = mergeCarts;
         _recoverCart = recoverCart;
-        _identityService = identityService;
+        _identityProvider = identityProvider;
     }
 
     [HttpGet("")]
     public async Task<IActionResult> Show(
         [FromQuery] string anonymousUserId, [FromQuery] string? returnUrl, CancellationToken cancellationToken)
     {
-        var registeredUserId = _identityService.CurrentIdentity().UserId.Value;
+        var registeredUserId = _identityProvider.GetCurrentIdentity().UserId.Value;
         var options = await _getMergeOptions.ExecuteAsync(
             new GetCartMergeOptionsQuery(anonymousUserId, registeredUserId), cancellationToken);
 
@@ -82,7 +82,7 @@ public sealed class CartMergePageController : Controller
         }
 
         await _mergeCarts.ExecuteAsync(
-            new MergeCartsCommand(anonymousUserId, _identityService.CurrentIdentity().UserId.Value, chosen),
+            new MergeCartsCommand(anonymousUserId, _identityProvider.GetCurrentIdentity().UserId.Value, chosen),
             cancellationToken);
 
         TempData["Message"] = chosen switch

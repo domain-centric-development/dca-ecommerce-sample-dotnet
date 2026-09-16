@@ -1,5 +1,5 @@
 using DcaShop.Account.Application.GetAccountOverview;
-using DcaShop.Account.Api;
+using DcaShop.SharedKernel.Application.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,19 +14,19 @@ namespace DcaShop.Account.Adapter.Incoming.Web;
 public sealed class MyAccountPageController : Controller
 {
     private readonly IGetAccountOverviewInputPort _getAccountOverview;
-    private readonly IIdentityService _identityService;
+    private readonly IIdentityProvider _identityProvider;
 
     public MyAccountPageController(
-        IGetAccountOverviewInputPort getAccountOverview, IIdentityService identityService)
+        IGetAccountOverviewInputPort getAccountOverview, IIdentityProvider identityProvider)
     {
         _getAccountOverview = getAccountOverview;
-        _identityService = identityService;
+        _identityProvider = identityProvider;
     }
 
     [HttpGet("")]
     public async Task<IActionResult> Show(CancellationToken cancellationToken)
     {
-        var identity = _identityService.CurrentIdentity();
+        var identity = _identityProvider.GetCurrentIdentity();
         var result = await _getAccountOverview.ExecuteAsync(
             new GetAccountOverviewQuery(identity.UserId.Value), cancellationToken);
 

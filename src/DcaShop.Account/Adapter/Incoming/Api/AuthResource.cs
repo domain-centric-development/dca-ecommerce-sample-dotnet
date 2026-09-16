@@ -1,7 +1,7 @@
 using DcaShop.Account.Application.AuthenticateAccount;
 using DcaShop.Account.Application.RegisterAccount;
-using DcaShop.Account.Adapter.Incoming.Security;
-using DcaShop.Account.Api;
+using DcaShop.Account.Application.Shared;
+using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -23,19 +23,19 @@ public sealed class AuthResource : ControllerBase
 {
     private readonly IAuthenticateAccountInputPort _authenticateAccount;
     private readonly IRegisterAccountInputPort _registerAccount;
-    private readonly JwtTokenService _tokenService;
-    private readonly IIdentityService _identityService;
+    private readonly ITokenService _tokenService;
+    private readonly IIdentityProvider _identityProvider;
 
     public AuthResource(
         IAuthenticateAccountInputPort authenticateAccount,
         IRegisterAccountInputPort registerAccount,
-        JwtTokenService tokenService,
-        IIdentityService identityService)
+        ITokenService tokenService,
+        IIdentityProvider identityProvider)
     {
         _authenticateAccount = authenticateAccount;
         _registerAccount = registerAccount;
         _tokenService = tokenService;
-        _identityService = identityService;
+        _identityProvider = identityProvider;
     }
 
     [HttpPost("login")]
@@ -61,7 +61,7 @@ public sealed class AuthResource : ControllerBase
         [FromBody] RegisterRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var currentUserId = _identityService.CurrentIdentity().UserId.Value;
+        var currentUserId = _identityProvider.GetCurrentIdentity().UserId.Value;
 
         try
         {

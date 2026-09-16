@@ -10,7 +10,7 @@ using DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
 using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.ReadModel;
-using DcaShop.Account.Api;
+using DcaShop.SharedKernel.Application.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Checkout.Adapter.Incoming.Web;
@@ -31,7 +31,7 @@ public sealed class CheckoutPageController : Controller
     private readonly ISubmitPaymentInputPort _submitPayment;
     private readonly IGetPaymentProvidersInputPort _paymentProviders;
     private readonly IConfirmCheckoutInputPort _confirm;
-    private readonly IIdentityService _identityService;
+    private readonly IIdentityProvider _identityProvider;
 
     public CheckoutPageController(
         IStartCheckoutInputPort start,
@@ -43,7 +43,7 @@ public sealed class CheckoutPageController : Controller
         ISubmitPaymentInputPort submitPayment,
         IGetPaymentProvidersInputPort paymentProviders,
         IConfirmCheckoutInputPort confirm,
-        IIdentityService identityService)
+        IIdentityProvider identityProvider)
     {
         _start = start;
         _active = active;
@@ -54,14 +54,14 @@ public sealed class CheckoutPageController : Controller
         _submitPayment = submitPayment;
         _paymentProviders = paymentProviders;
         _confirm = confirm;
-        _identityService = identityService;
+        _identityProvider = identityProvider;
     }
 
     /// <summary>
     /// The checkout session is keyed on the visitor identity, exactly as the cart is — so a guest who registers
     /// mid-checkout keeps the session they started.
     /// </summary>
-    private string CurrentCustomerId() => _identityService.CurrentIdentity().UserId.Value;
+    private string CurrentCustomerId() => _identityProvider.GetCurrentIdentity().UserId.Value;
 
     /// <summary>POST: starting a checkout creates a session — never reachable through a link.</summary>
     [HttpPost("start")]
@@ -168,7 +168,7 @@ public sealed class CheckoutPageController : Controller
     {
         var shipping = await _shippingOptions.ExecuteAsync(new GetShippingOptionsQuery(), cancellationToken);
         var providers = await _paymentProviders.ExecuteAsync(new GetPaymentProvidersQuery(), cancellationToken);
-        var identity = _identityService.CurrentIdentity();
+        var identity = _identityProvider.GetCurrentIdentity();
         return new CheckoutPageViewModel(
             session,
             shipping.Options.Select(o => new CheckoutPageViewModel.ShippingChoice(o.Id, o.Name, o.EstimatedDelivery, AmountOf(o.Cost), CurrencyOf(o.Cost))).ToList(),

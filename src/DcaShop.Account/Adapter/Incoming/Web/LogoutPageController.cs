@@ -1,4 +1,4 @@
-using DcaShop.Account.Adapter.Incoming.Security;
+using DcaShop.Account.Application.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Account.Adapter.Incoming.Web;
@@ -10,9 +10,9 @@ namespace DcaShop.Account.Adapter.Incoming.Web;
 [Route("logout")]
 public sealed class LogoutPageController : Controller
 {
-    private readonly JwtIdentitySession _identitySession;
+    private readonly IIdentitySession _identitySession;
 
-    public LogoutPageController(JwtIdentitySession identitySession) => _identitySession = identitySession;
+    public LogoutPageController(IIdentitySession identitySession) => _identitySession = identitySession;
 
     [HttpPost("")]
     public IActionResult Logout()

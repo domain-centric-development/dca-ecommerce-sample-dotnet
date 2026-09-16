@@ -1,6 +1,6 @@
 using DcaShop.Account.Application.RegisterAccount;
-using DcaShop.Account.Adapter.Incoming.Security;
-using DcaShop.Account.Api;
+using DcaShop.Account.Application.Shared;
+using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,19 +14,19 @@ namespace DcaShop.Account.Adapter.Incoming.Web;
 public sealed class RegisterPageController : Controller
 {
     private readonly IRegisterAccountInputPort _registerAccount;
-    private readonly JwtTokenService _tokenService;
-    private readonly IIdentityService _identityService;
-    private readonly JwtIdentitySession _identitySession;
+    private readonly ITokenService _tokenService;
+    private readonly IIdentityProvider _identityProvider;
+    private readonly IIdentitySession _identitySession;
 
     public RegisterPageController(
         IRegisterAccountInputPort registerAccount,
-        JwtTokenService tokenService,
-        IIdentityService identityService,
-        JwtIdentitySession identitySession)
+        ITokenService tokenService,
+        IIdentityProvider identityProvider,
+        IIdentitySession identitySession)
     {
         _registerAccount = registerAccount;
         _tokenService = tokenService;
-        _identityService = identityService;
+        _identityProvider = identityProvider;
         _identitySession = identitySession;
     }
 
@@ -68,7 +68,7 @@ public sealed class RegisterPageController : Controller
                 new RegisterAccountCommand(
                     email,
                     password,
-                    _identityService.CurrentIdentity().UserId.Value,
+                    _identityProvider.GetCurrentIdentity().UserId.Value,
                     firstName,
                     lastName,
                     parsedDateOfBirth),

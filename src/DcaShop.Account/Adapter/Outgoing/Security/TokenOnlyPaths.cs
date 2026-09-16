@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace DcaShop.Account.Adapter.Incoming.Security;
+namespace DcaShop.Account.Adapter.Outgoing.Security;
 
 /// <summary>
 /// The paths authenticated by an <c>Authorization: Bearer</c> header and nothing else.

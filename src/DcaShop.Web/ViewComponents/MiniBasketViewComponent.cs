@@ -1,5 +1,5 @@
 using DcaShop.Cart.Api;
-using DcaShop.Account.Api;
+using DcaShop.SharedKernel.Application.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Web.ViewComponents;
@@ -11,17 +11,17 @@ namespace DcaShop.Web.ViewComponents;
 public sealed class MiniBasketViewComponent : ViewComponent
 {
     private readonly CartService _carts;
-    private readonly IIdentityService _identityService;
+    private readonly IIdentityProvider _identityProvider;
 
-    public MiniBasketViewComponent(CartService carts, IIdentityService identityService)
+    public MiniBasketViewComponent(CartService carts, IIdentityProvider identityProvider)
     {
         _carts = carts;
-        _identityService = identityService;
+        _identityProvider = identityProvider;
     }
 
     public async Task<IViewComponentResult> InvokeAsync()
     {
-        var customerId = _identityService.CurrentIdentity().UserId.Value;
+        var customerId = _identityProvider.GetCurrentIdentity().UserId.Value;
         return View(await _carts.FindMiniBasketAsync(customerId, HttpContext.RequestAborted));
     }
 }

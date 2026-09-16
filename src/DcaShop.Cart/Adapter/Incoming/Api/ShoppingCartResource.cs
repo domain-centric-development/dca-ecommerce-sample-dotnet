@@ -4,7 +4,7 @@ using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Cart.Application.Shopping.RemoveItemFromCart;
 using DcaShop.Cart.Domain.Model;
-using DcaShop.Account.Api;
+using DcaShop.SharedKernel.Application.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -35,7 +35,7 @@ public sealed class ShoppingCartResource : ControllerBase
     private readonly IAddItemToCartInputPort _addItemToCart;
     private readonly IRemoveItemFromCartInputPort _removeItemFromCart;
     private readonly ShoppingCartDtoConverter _converter;
-    private readonly IIdentityService _identityService;
+    private readonly IIdentityProvider _identityProvider;
 
     public ShoppingCartResource(
         IGetOrCreateActiveCartInputPort getOrCreateActiveCart,
@@ -44,7 +44,7 @@ public sealed class ShoppingCartResource : ControllerBase
         IAddItemToCartInputPort addItemToCart,
         IRemoveItemFromCartInputPort removeItemFromCart,
         ShoppingCartDtoConverter converter,
-        IIdentityService identityService)
+        IIdentityProvider identityProvider)
     {
         _getOrCreateActiveCart = getOrCreateActiveCart;
         _getAllCarts = getAllCarts;
@@ -52,7 +52,7 @@ public sealed class ShoppingCartResource : ControllerBase
         _addItemToCart = addItemToCart;
         _removeItemFromCart = removeItemFromCart;
         _converter = converter;
-        _identityService = identityService;
+        _identityProvider = identityProvider;
     }
 
     /// <summary>Creates the caller's active cart, or returns the one they already have.</summary>
@@ -67,7 +67,7 @@ public sealed class ShoppingCartResource : ControllerBase
 
     /// <summary>Every cart in the shop — the operator view, and the only route that leaves the caller's own data.</summary>
     [HttpGet]
-    [Authorize(Roles = Identity.RoleStaff)]
+    [Authorize(Roles = IIdentityProvider.IIdentity.RoleStaff)]
     public async Task<ActionResult<ShoppingCartListDto>> GetAllCarts(CancellationToken cancellationToken)
     {
         var result = await _getAllCarts.ExecuteAsync(new GetAllCartsQuery(), cancellationToken);
@@ -148,7 +148,7 @@ public sealed class ShoppingCartResource : ControllerBase
         return Ok(_converter.ToDto((await ReadAsync(cartId, cancellationToken))!));
     }
 
-    private string CurrentCustomerId => _identityService.CurrentIdentity().UserId.Value;
+    private string CurrentCustomerId => _identityProvider.GetCurrentIdentity().UserId.Value;
 
     private async Task<EnrichedCart?> ReadAsync(Guid cartId, CancellationToken cancellationToken) =>
         (await _getCartById.ExecuteAsync(new GetCartByIdQuery(cartId, CurrentCustomerId), cancellationToken)).Cart;

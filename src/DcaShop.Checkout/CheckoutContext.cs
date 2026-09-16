@@ -24,8 +24,6 @@ namespace DcaShop.Checkout;
     Rationale = "Checkout implements cart's consumer-defined ICartCompletionTrigger contract; both contexts evolve it together")]
 [Partnership("Inventory",
     Rationale = "Checkout implements inventory's consumer-defined IStockReductionTrigger contract; both contexts evolve it together")]
-[Upstream("Account", Translation.Conformist, Consumes.Api,
-    Rationale = "Incoming adapters read the caller's identity from Account's published IIdentityService as-is and hand the customer to their use cases as a command or query parameter")]
 public static class CheckoutContext
 {
 }

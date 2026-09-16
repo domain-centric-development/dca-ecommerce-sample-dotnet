@@ -1,21 +1,20 @@
-using DcaShop.Account.Api;
+using DcaShop.SharedKernel.Application.Shared;
 using Microsoft.AspNetCore.Http;
 
-namespace DcaShop.Account.Adapter.Incoming.Security;
+namespace DcaShop.Account.Adapter.Outgoing.Security;
 
 /// <summary>
-/// Implements the Account context's <see cref="IIdentityService"/>: reads the identity
-/// <see cref="ShopIdentityAuthenticationHandler"/> resolved for the current request from its
+/// Reads the identity <see cref="ShopIdentityAuthenticationHandler"/> resolved for the current request from its
 /// <see cref="IShopIdentityFeature"/>.
 /// </summary>
-public sealed class HttpContextIdentityService : IIdentityService
+public sealed class HttpContextIdentityProvider : IIdentityProvider
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public HttpContextIdentityService(IHttpContextAccessor httpContextAccessor) =>
+    public HttpContextIdentityProvider(IHttpContextAccessor httpContextAccessor) =>
         _httpContextAccessor = httpContextAccessor;
 
-    public Identity CurrentIdentity()
+    public IIdentityProvider.IIdentity GetCurrentIdentity()
     {
         var context = _httpContextAccessor.HttpContext
                       ?? throw new InvalidOperationException(

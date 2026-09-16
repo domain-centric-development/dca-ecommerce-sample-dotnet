@@ -78,8 +78,6 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   protocol: `Adapter/Incoming/Web/<Feature>/`; the domain is never mirrored by feature),
   `Application/Shared/` (output ports only, context-wide — never per feature), `Adapter/Incoming/{Web,Event}`, `Adapter/Outgoing/<Concern>/`,
   `Adapter/Incoming/Api` (REST resources + their DTOs and converters), `Adapter/Incoming/Mcp` (MCP tools),
-  `Adapter/Incoming/Security` (Account only: the authentication handler, token and cookie mechanics and the
-  `IIdentityService` implementation — plain collaborators of the web and REST adapters, not ports),
   `Api/` (Open Host Service), `Events/` (integration events, consumer-defined trigger interfaces),
   `Infrastructure/` (DI registration `Add<Context>Context()`). Each context keeps its ubiquitous language in
   `Domain/glossary.md` — the same glossaries as the Java sample; a renamed or added domain term is changed there
@@ -140,17 +138,13 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   `ITransactionBoundary.InTransactionAsync`; ports that may leave the process (other contexts' data ports, payment providers) are
   called **before** the unit of work, never inside it (ADR-004). Read use cases run without one.
 - DI is explicit: every use case, adapter and listener is registered in the context's `*ContextRegistration`.
-- Identity: every context keys its data on the visitor's `UserId`. The Account context publishes the caller's
-  identity as the Open Host Service `IIdentityService` (`Account/Api`, with the `Identity` record and its role
-  constants); the incoming adapters of Cart and Checkout read it there — declared as `[Upstream("Account",
-  Conformist, Api)]` — and hand the customer to their use cases as a command or query parameter. No use case and
-  no shared-kernel port depends on it; Product's staff gate is an `[Authorize]` attribute whose role constant the
-  compiler inlines, so Product declares no edge. `ShopIdentityAuthenticationHandler` (Account) is an ASP.NET Core authentication scheme
+- Identity: every context keys its data on the visitor's `UserId`, read through the shared-kernel port
+  `IIdentityProvider`. `ShopIdentityAuthenticationHandler` (Account) is an ASP.NET Core authentication scheme
   that resolves it per request into `HttpContext.User` (ADR-008) from two cookies — `shop-identity` (who the
   browser is, 30 days, rotated only on explicit logout) and `shop-session` (the authentication, 7 days, expiry
   harmless). Expiry ends the session, never the identity, so an aged-out login never costs the cart. The handler
   enriches, it does not gate: every request ends with an identity, recorded as `IShopIdentityFeature` on the
-  `HttpContext` (that is what `HttpContextIdentityService` reads — `HttpContext.User` is replaced by any
+  `HttpContext` (that is what `HttpContextIdentityProvider` reads — `HttpContext.User` is replaced by any
   `[Authorize]` that names another scheme, e.g. on backoffice pages, and the layout's mini basket still needs the
   visitor), but only a registered session yields an authenticated principal (`ShopPrincipal.From`). An anonymous
   visitor is `NoResult`, so `[Authorize]` challenges (login redirect on pages, `401` + `WWW-Authenticate: Bearer`

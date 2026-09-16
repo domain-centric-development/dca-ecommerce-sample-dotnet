@@ -17,7 +17,7 @@ modules and the shared kernel are intentionally not part of this map.
 
 | Module | Name | Description | Published interfaces |
 |---|---|---|---|
-| Account | Account | Registered accounts, credentials, profile and authenticated sessions | api |
+| Account | Account | Registered accounts, credentials, profile and authenticated sessions | — |
 | Backoffice | Backoffice | Operating this application: event publication log, dashboards, operator views | — |
 | Cart | Shopping Cart | Cart management, item additions/removals, and cart lifecycle | api, events |
 | Checkout | Checkout | Checkout process, order placement, and payment orchestration | events |
@@ -30,7 +30,7 @@ modules and the shared kernel are intentionally not part of this map.
 
 ```mermaid
 graph LR
-  Account["Account<br/><i>api</i>"]
+  Account["Account"]
   Backoffice["Backoffice"]
   Cart["Shopping Cart<br/><i>api · events</i>"]
   Checkout["Checkout<br/><i>events</i>"]
@@ -42,14 +42,12 @@ graph LR
   Cart -->|"ACL / api"| Product
   Cart -->|"ACL / api"| Pricing
   Cart -->|"ACL / api"| Inventory
-  Cart -->|"Conformist / api"| Account
   Checkout -->|"ACL / api"| Product
   Checkout -->|"ACL / api"| Pricing
   Checkout -->|"ACL / api"| Inventory
   Checkout -->|"ACL / api"| Cart
   Checkout -.->|"Conformist / events"| Cart
   Checkout -.->|"Conformist / events"| Inventory
-  Checkout -->|"Conformist / api"| Account
   Product -->|"ACL / api"| Pricing
   Product -->|"ACL / api"| Inventory
   Product -.->|"Conformist / events"| Pricing
@@ -75,14 +73,12 @@ Edges labeled `planned` are declared intent without a code dependency yet.
 | Cart | Product | api | ACL | implemented | Cart works with its own article snapshot; the catalog model must not leak into cart invariants |
 | Cart | Pricing | api | ACL | implemented | Price lookups are translated into the cart's own article data |
 | Cart | Inventory | api | ACL | implemented | Stock availability is translated into the cart's own article data |
-| Cart | Account | api | Conformist | implemented | Incoming adapters read the caller's identity from Account's published IIdentityService as-is and hand the customer to their use cases as a command or query parameter |
 | Checkout | Product | api | ACL | implemented | Product data is translated into checkout's own article types |
 | Checkout | Pricing | api | ACL | implemented | Prices are translated into checkout's own line item amounts |
 | Checkout | Inventory | api | ACL | implemented | Stock availability is translated into checkout's own article data |
 | Checkout | Cart | api | ACL | implemented | Cart snapshots are translated into checkout's own CartData |
 | Checkout | Cart | events | Conformist | implemented | CheckoutConfirmedEvent implements cart's consumer-defined ICartCompletionTrigger contract as-is; cart's CartContentsChangedEvent is consumed as published |
 | Checkout | Inventory | events | Conformist | implemented | CheckoutConfirmedEvent implements inventory's consumer-defined IStockReductionTrigger contract as-is |
-| Checkout | Account | api | Conformist | implemented | Incoming adapters read the caller's identity from Account's published IIdentityService as-is and hand the customer to their use cases as a command or query parameter |
 | Product | Pricing | api | ACL | implemented | The catalog shows a price but does not own it; the pricing model is translated into the catalog's own article view |
 | Product | Inventory | api | ACL | implemented | Availability is an inventory statement; the catalog translates it into its own article view |
 | Product | Pricing | events | Conformist | implemented | ProductCreatedEvent implements pricing's consumer-defined IPriceInitializationTrigger contract as-is |

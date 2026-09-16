@@ -1,6 +1,6 @@
 using DcaShop.Account.Application.ChangePassword;
 using DcaShop.Account.Application.GetAccountOverview;
-using DcaShop.Account.Api;
+using DcaShop.SharedKernel.Application.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,22 +18,22 @@ public sealed class ChangePasswordPageController : Controller
 
     private readonly IChangePasswordInputPort _changePassword;
     private readonly IGetAccountOverviewInputPort _getAccountOverview;
-    private readonly IIdentityService _identityService;
+    private readonly IIdentityProvider _identityProvider;
 
     public ChangePasswordPageController(
         IChangePasswordInputPort changePassword,
         IGetAccountOverviewInputPort getAccountOverview,
-        IIdentityService identityService)
+        IIdentityProvider identityProvider)
     {
         _changePassword = changePassword;
         _getAccountOverview = getAccountOverview;
-        _identityService = identityService;
+        _identityProvider = identityProvider;
     }
 
     [HttpGet("")]
     public async Task<IActionResult> Show(CancellationToken cancellationToken)
     {
-        var identity = _identityService.CurrentIdentity();
+        var identity = _identityProvider.GetCurrentIdentity();
         var accessible = (await _getAccountOverview.ExecuteAsync(
             new GetAccountOverviewQuery(identity.UserId.Value), cancellationToken)).Found;
 
@@ -52,7 +52,7 @@ public sealed class ChangePasswordPageController : Controller
         [FromForm] string confirmPassword,
         CancellationToken cancellationToken)
     {
-        var identity = _identityService.CurrentIdentity();
+        var identity = _identityProvider.GetCurrentIdentity();
         if (newPassword != confirmPassword)
         {
             return View(ViewName, ChangePasswordPageViewModel.WithError(ConfirmationMismatch));

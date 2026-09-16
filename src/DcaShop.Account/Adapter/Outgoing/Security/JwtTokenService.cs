@@ -1,20 +1,21 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using DcaShop.Account.Api;
+using DcaShop.Account.Application.Shared;
+using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-namespace DcaShop.Account.Adapter.Incoming.Security;
+namespace DcaShop.Account.Adapter.Outgoing.Security;
 
 /// <summary>
 /// Mints and reads the HS256 tokens the two cookies carry. It reports an <i>expired</i> token separately from an
 /// <i>unreadable</i> one (ADR-029): the first is the routine end of a session, the second is an attack or a bug,
 /// and collapsing both into "no identity" erases that distinction at the boundary.
 /// </summary>
-public sealed class JwtTokenService
+public sealed class JwtTokenService : ITokenService
 {
     private const string ClaimType = "type";
     private const string ClaimEmail = "email";
@@ -69,7 +70,7 @@ public sealed class JwtTokenService
         }
 
         /// <summary>The token verified and named an identity.</summary>
-        public sealed record Valid(Identity Identity) : TokenValidation;
+        public sealed record Valid(IIdentityProvider.IIdentity Identity) : TokenValidation;
 
         /// <summary>The token verified but has aged out. Routine.</summary>
         public sealed record Expired : TokenValidation;
@@ -99,7 +100,7 @@ public sealed class JwtTokenService
     }
 
     /// <summary>The identity a token names, or <see langword="null"/> when it cannot be read.</summary>
-    public Identity? ValidateAndParse(string token) =>
+    public IIdentityProvider.IIdentity? ValidateAndParse(string token) =>
         Validate(token) is TokenValidation.Valid valid ? valid.Identity : null;
 
     private string Write(IEnumerable<Claim> claims, UserId userId, TimeSpan lifetime)
@@ -114,7 +115,7 @@ public sealed class JwtTokenService
         return _handler.WriteToken(token);
     }
 
-    private static Identity IdentityFrom(JwtSecurityToken token)
+    private static IIdentityProvider.IIdentity IdentityFrom(JwtSecurityToken token)
     {
         var subject = token.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
         if (string.IsNullOrWhiteSpace(subject))
@@ -128,7 +129,7 @@ public sealed class JwtTokenService
             // Anything that is not explicitly registered is anonymous — including a legacy identity cookie whose
             // token still carries registered claims. Honouring those would let the identity cookie grant
             // authentication, which is the conflation ADR-030 removes.
-            return Identity.Anonymous(userId);
+            return JwtIdentity.Anonymous(userId);
         }
 
         var email = token.Claims.FirstOrDefault(c => c.Type == ClaimEmail)?.Value;
@@ -138,6 +139,6 @@ public sealed class JwtTokenService
         }
 
         var roles = token.Claims.Where(c => c.Type == ClaimRoles).Select(c => c.Value).ToHashSet();
-        return Identity.Registered(userId, email, roles);
+        return JwtIdentity.Registered(userId, email, roles);
     }
 }
