@@ -1,7 +1,7 @@
 # ADR-008: The Shop's Identity as an ASP.NET Core Authentication Handler
 
 **Date**: 2026-09-03 · **Status**: Accepted · Amends [ADR-006](adr-006-identity-and-session-cookies.md) point 1 and
-[ADR-007](adr-007-api-authorization-and-bearer-only-boundary.md)
+[ADR-007](adr-007-api-authorization-and-bearer-only-boundary.md) · Point 7 amended 2026-09-16 (see the amendment at the end)
 
 ## Context
 
@@ -110,3 +110,12 @@ the deleted-account check; and it would split token reading across two code path
 - [ADR-007](adr-007-api-authorization-and-bearer-only-boundary.md) — the Bearer-only boundary; the path list now
   lives in `TokenOnlyPaths`, and the claims-only gates it placed in the adapter are attributes.
 - [ADR-005](adr-005-antiforgery-and-safe-methods.md) — the antiforgery filter unchanged, asking the same path list.
+
+## 2026-09-16 amendment: point 7, the shape of the session interface
+
+Point 7 calls `IIdentitySession` a port whose shape is an open question. The question is closed in the amendment to
+[ADR-006](adr-006-identity-and-session-cookies.md): `IIdentitySession` and `ITokenService` are adapter mechanics, not
+ports, and live in `Adapter/Incoming/Security` without a port marker. The handler still does not implement
+`SignInAsync` / `SignOutAsync`, for the reason given there. The deleted-account check the handler performs is now the
+query use case `IsAccountRegistered`, called through its input port, instead of the `IRegisteredUserValidator` output
+port.

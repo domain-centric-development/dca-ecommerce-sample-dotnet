@@ -1,6 +1,6 @@
 using DcaShop.Account.Application.AuthenticateAccount;
 using DcaShop.Account.Application.RegisterAccount;
-using DcaShop.Account.Application.Shared;
+using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 using Microsoft.AspNetCore.Http;

@@ -1,6 +1,4 @@
-using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
-
-namespace DcaShop.Account.Application.Shared;
+namespace DcaShop.Account.Adapter.Incoming.Security;
 
 /// <summary>
 /// Establishes and ends the authenticated session of the current browser. Only the Account context modifies a
@@ -8,11 +6,12 @@ namespace DcaShop.Account.Application.Shared;
 /// <see cref="SharedKernel.Application.Shared.IIdentityProvider"/>.
 /// </summary>
 /// <remarks>
-/// The implementation writes cookies on the current response and is therefore request-scoped. Whether cookie
-/// mechanics belong behind an output port at all is an open question for both samples (root <c>TODO.md</c>);
-/// the shape here is the Java sample's, deliberately unchanged.
+/// Adapter-internal mechanics, not a port: setting and clearing cookies belongs to the incoming adapter that owns
+/// the HTTP protocol, and no use case depends on it. The interface therefore lives with its callers in the adapter
+/// layer and carries no <c>IOutputPort</c> marker. The cookie-writing implementation is <c>JwtIdentitySession</c>
+/// in the security adapter; it is request-scoped because it needs the current response.
 /// </remarks>
-public interface IIdentitySession : IOutputPort
+public interface IIdentitySession
 {
     /// <summary>
     /// Starts an authenticated session for the given token and aligns the visitor identity with the account it

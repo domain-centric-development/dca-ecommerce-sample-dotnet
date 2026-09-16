@@ -1,5 +1,5 @@
 using System.Text.Encodings.Web;
-using DcaShop.Account.Application.Shared;
+using DcaShop.Account.Application.IsAccountRegistered;
 using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 using Microsoft.AspNetCore.Authentication;
@@ -48,7 +48,7 @@ public sealed class ShopIdentityAuthenticationHandler : AuthenticationHandler<Sh
 
     private readonly JwtOptions _jwtOptions;
     private readonly JwtTokenService _tokenService;
-    private readonly IRegisteredUserValidator _registeredUserValidator;
+    private readonly IIsAccountRegisteredInputPort _isAccountRegistered;
 
     public ShopIdentityAuthenticationHandler(
         IOptionsMonitor<ShopIdentityAuthenticationOptions> options,
@@ -56,13 +56,13 @@ public sealed class ShopIdentityAuthenticationHandler : AuthenticationHandler<Sh
         UrlEncoder encoder,
         IOptions<JwtOptions> jwtOptions,
         JwtTokenService tokenService,
-        IRegisteredUserValidator registeredUserValidator)
+        IIsAccountRegisteredInputPort isAccountRegistered)
         : base(options, logger, encoder)
     {
         ArgumentNullException.ThrowIfNull(jwtOptions);
         _jwtOptions = jwtOptions.Value;
         _tokenService = tokenService;
-        _registeredUserValidator = registeredUserValidator;
+        _isAccountRegistered = isAccountRegistered;
     }
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -159,10 +159,9 @@ public sealed class ShopIdentityAuthenticationHandler : AuthenticationHandler<Sh
         }
 
         // The token is self-contained, so it outlives the account it names: a deleted account leaves a session
-        // that still validates and still carries roles.
-        if (!await _registeredUserValidator
-                .ExistsForUserIdAsync(valid.Identity.UserId, Context.RequestAborted)
-                .ConfigureAwait(false))
+        // that still validates and still carries roles. The question points inward, so it is asked of the Account
+        // context through a query use case, not through an output port.
+        if (!await IsRegisteredAsync(valid.Identity.UserId).ConfigureAwait(false))
         {
             Logger.LogInformation("Session has no account, continuing anonymously");
             return JwtIdentity.Anonymous(identityUserId);
@@ -184,15 +183,20 @@ public sealed class ShopIdentityAuthenticationHandler : AuthenticationHandler<Sh
             return JwtIdentity.Anonymous(UserId.GenerateAnonymous());
         }
 
-        if (valid.Identity.IsRegistered
-            && !await _registeredUserValidator
-                .ExistsForUserIdAsync(valid.Identity.UserId, Context.RequestAborted)
-                .ConfigureAwait(false))
+        if (valid.Identity.IsRegistered && !await IsRegisteredAsync(valid.Identity.UserId).ConfigureAwait(false))
         {
             return JwtIdentity.Anonymous(valid.Identity.UserId);
         }
 
         return valid.Identity;
+    }
+
+    private async Task<bool> IsRegisteredAsync(UserId userId)
+    {
+        var result = await _isAccountRegistered
+            .ExecuteAsync(new IsAccountRegisteredQuery(userId.Value), Context.RequestAborted)
+            .ConfigureAwait(false);
+        return result.Registered;
     }
 
     private string? ReadCookie(string name) =>

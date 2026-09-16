@@ -1,6 +1,6 @@
 # ADR-006: Two Cookies for Identity and Session, Signed by an Own JWT Middleware
 
-**Date**: 2026-08-30 · **Status**: Accepted · Point 1 amended by [ADR-008](adr-008-identity-as-authentication-handler.md) (2026-09-03): the same tokens, resolved by an ASP.NET Core authentication handler instead of a middleware
+**Date**: 2026-08-30 · **Status**: Accepted · Point 1 amended by [ADR-008](adr-008-identity-as-authentication-handler.md) (2026-09-03): the same tokens, resolved by an ASP.NET Core authentication handler instead of a middleware · Open item on the ports resolved 2026-09-16 (see the amendment at the end)
 
 ## Context
 
@@ -90,3 +90,20 @@ than the rest of this ADR. Both samples stop at the same place, on purpose.
 - [ADR-005](adr-005-antiforgery-and-safe-methods.md) — the login, register and logout forms are writing forms and
   carry an antiforgery token like every other.
 - [ADR-001](adr-001-solution-layout.md) — Account and Portal are projects like every other context.
+
+## 2026-09-16 amendment: the session and token interfaces are not ports
+
+The open consequence above asked whether `IIdentityProvider`, `IIdentitySession` and `ITokenService` are output
+ports at all. Resolved, for both samples alike:
+
+- `IIdentityProvider` **is** an output port and stays in the shared kernel: the caller's identity is something the
+  application needs from outside the process, and every context's incoming adapters read it there.
+- `IIdentitySession` and `ITokenService` are **not** ports. Cookies and tokens are mechanics of the incoming adapters;
+  no use case depends on either. They remain interfaces, without the `IOutputPort` marker, in
+  `Adapter/Incoming/Security` next to their callers; `JwtIdentitySession` and `JwtTokenService` keep implementing
+  them from the security adapter.
+- `IRegisteredUserValidator` was an inbound question dressed as an output port — the handler asking its own context
+  whether the account behind a token still exists. It is now the query use case `IsAccountRegistered`, which the
+  authentication handler calls through its input port.
+
+The behaviour of the two cookies is unchanged.
