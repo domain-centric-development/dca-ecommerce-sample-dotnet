@@ -1,3 +1,4 @@
+using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.Account.Adapter.Outgoing.Persistence;
 using DcaShop.Account.Adapter.Outgoing.Security;
 using DcaShop.Account.Application.AuthenticateAccount;
@@ -5,6 +6,7 @@ using DcaShop.Account.Application.ChangePassword;
 using DcaShop.Account.Application.ChangeProfile;
 using DcaShop.Account.Application.GetAccountOverview;
 using DcaShop.Account.Application.GetProfile;
+using DcaShop.Account.Application.IsAccountRegistered;
 using DcaShop.Account.Application.RegisterAccount;
 using DcaShop.Account.Application.Shared;
 using DcaShop.Account.Domain.Gateway;
@@ -39,10 +41,13 @@ public static class AccountContextRegistration
 
         // Outgoing adapters (output ports)
         services.AddSingleton<IAccountRepository, InMemoryAccountRepository>();
+        services.AddScoped<IIsAccountRegisteredInputPort, IsAccountRegisteredUseCase>();
         services.AddSingleton<JwtTokenService>();
         services.AddSingleton<ITokenService>(sp => sp.GetRequiredService<JwtTokenService>());
         services.AddScoped<IIdentitySession, JwtIdentitySession>();
-        services.AddScoped<IRegisteredUserValidator, AccountBasedRegisteredUserValidator>();
+
+        // Token and cookie mechanics of the incoming adapters — interfaces without a port marker, implemented in
+        // the security adapter
 
         // The identity port is declared in the shared kernel because every context keys its data on the UserId,
         // but only Account can resolve one — see the port's own remarks.
