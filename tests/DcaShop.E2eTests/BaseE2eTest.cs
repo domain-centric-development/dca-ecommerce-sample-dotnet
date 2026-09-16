@@ -51,9 +51,12 @@ public abstract class BaseE2eTest : IClassFixture<BrowserFixture>, IAsyncLifetim
 
     protected static string BaseUrl => BrowserFixture.BaseUrl;
 
+    /// <summary>Options for the browser context of each test; a suite that needs a phone viewport overrides this.</summary>
+    protected virtual BrowserNewContextOptions? ContextOptions => null;
+
     public async Task InitializeAsync()
     {
-        _context = await _browser.Browser.NewContextAsync();
+        _context = await _browser.Browser.NewContextAsync(ContextOptions);
         Page = await _context.NewPageAsync();
     }
 

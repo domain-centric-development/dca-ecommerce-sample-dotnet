@@ -28,6 +28,10 @@ public abstract class BasePage
 
     protected Task SelectFirstRadioAsync(string dataTest) => Page.Locator($"[data-test='{dataTest}']").First.CheckAsync();
 
+    /// <summary>True when nothing on the page reaches past the viewport, i.e. the document cannot scroll sideways.</summary>
+    public Task<bool> FitsViewportAsync() =>
+        Page.EvaluateAsync<bool>("() => document.documentElement.scrollWidth <= document.documentElement.clientWidth");
+
     protected string CurrentPath => Page.Url.Replace(BaseUrl, string.Empty, StringComparison.Ordinal);
 
     protected async Task<bool> PageContainsAsync(string text) => (await Page.Locator("body").TextContentAsync() ?? string.Empty).Contains(text, StringComparison.Ordinal);
