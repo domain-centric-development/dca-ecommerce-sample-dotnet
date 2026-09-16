@@ -25,8 +25,17 @@ services:
     entrypoint: ["dotnet"]
     command: ["build"]
 
+  # Spelled out rather than `extends: dotnet` — podman-compose 1.6 cannot resolve extends.
   test:
-    extends: dotnet
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    profiles: [tools]
+    working_dir: /src/dca-ecommerce-sample-dotnet
+    volumes:
+      - ..:/src
+      - nuget-cache:/root/.nuget/packages
+    environment:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    entrypoint: ["dotnet"]
     command: ["test"]
 
 volumes:
