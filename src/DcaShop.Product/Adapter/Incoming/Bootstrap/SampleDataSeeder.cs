@@ -3,14 +3,18 @@ using DcaShop.SharedKernel.Infrastructure.Events;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace DcaShop.Infrastructure.Seed;
+namespace DcaShop.Product.Adapter.Incoming.Bootstrap;
 
 /// <summary>
-/// Fills the in-memory catalog at start-up with what this architecture is made of: the books the guide grew
-/// out of, modelling supplies for a design workshop, and hexagon merchandise. Only products are created here: the price and the stock of each
+/// Incoming adapter that fills the in-memory catalog at start-up with what this architecture is made of: the books
+/// the guide grew out of, modelling supplies for a design workshop, and hexagon merchandise. Start-up is a driving
+/// protocol like HTTP or an event stream: the seeder drives the catalog through <see cref="ICreateProductInputPort"/>,
+/// the same port the REST resource uses, and therefore lives inside the Product context — the one context it belongs
+/// to — rather than in the host's infrastructure. Only products are created here: the price and the stock of each
 /// product are set by the Pricing and Inventory contexts when they receive <c>ProductCreatedEvent</c>. Delivery is
 /// asynchronous, so the seeder waits until the outbox has no pending publication left — a start-up convenience, not
-/// a pattern: nothing else in the shop waits for an integration event.
+/// a pattern: nothing else in the shop waits for an integration event. The Java twin's <c>SampleDataInitializer</c>
+/// has the same place and shape.
 /// </summary>
 public sealed class SampleDataSeeder : IHostedService
 {
