@@ -84,6 +84,16 @@ tests/
 └── DcaShop.E2eTests/            Playwright browser tests with page objects (run against a started shop)
 ```
 
+The project boundaries organise the code; they do not isolate it. Every context project references
+`Microsoft.AspNetCore.App`, because its controllers live inside the context, and the context projects it
+integrates with (`DcaShop.Cart` references Product, Pricing and Inventory). The compiler would therefore accept a
+domain class that uses an MVC type or a sibling's repository. What stops it is the rule catalog in
+`tests/DcaShop.ArchitectureTests`: `DCA-ONI-002` keeps the domain on `System`, the building blocks and the
+layout's allow-list, and `DCA-STR-006` lets an outgoing adapter reach a sibling only through its `Api/` and
+`Events/` namespaces. The isolation is logical, enforced by the rules. The eight contexts are deliberately not
+split into Domain, Application and Adapters projects: that would triple the project count for a boundary the
+rules already hold.
+
 Inside a context project the folders are the DCA layers:
 
 ```
