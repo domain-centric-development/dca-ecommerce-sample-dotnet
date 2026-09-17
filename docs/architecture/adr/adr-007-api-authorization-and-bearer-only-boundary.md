@@ -1,6 +1,6 @@
 # ADR-007: API Authorization at the Adapter, and a Bearer-Only `/api` and `/mcp`
 
-**Date**: 2026-08-30 · **Status**: Accepted · Amended by [ADR-008](adr-008-identity-as-authentication-handler.md) (2026-09-03): the claims-only gates are `[Authorize]` attributes, the path list lives in `TokenOnlyPaths`, and an anonymous API caller is challenged with `401`
+**Date**: 2026-08-30 · **Status**: Accepted · Amended by [ADR-008](adr-008-identity-as-authentication-handler.md) (2026-09-03): the claims-only gates are `[Authorize]` attributes, the path list lives in `TokenOnlyPaths`, and an anonymous API caller is challenged with `401` · Amended 2026-09-17: the checkout step commands carry the caller
 
 ## Context
 
@@ -87,3 +87,24 @@ those paths. Changing one without the other is the mistake to watch for in revie
   the five that needed a guard bolted onto the adapter. Read that way this is less a decision about authorization
   than a correction of five under-specified commands: "check out cart X" without saying on whose behalf is an
   incomplete instruction.
+
+## Amendment (2026-09-17): the checkout steps carry the caller too
+
+**Context.** The ownership rule above reached `StartCheckoutCommand` and stopped there. `SubmitBuyerInfoCommand`,
+`SubmitDeliveryCommand`, `SubmitPaymentCommand`, `ConfirmCheckoutCommand` and `GetCheckoutSessionQuery` carried
+the session id alone and loaded through `FindByIdAsync`, so at the use-case boundary any caller who knew a
+session id could act on it. The web adapter resolves the visitor's *active* session and never takes a session id
+from the request, which is why nothing exploited it — a guard in one exposure rather than in the operation, the
+shape this ADR exists to refuse. The Java sample carried the same gap and was changed in the same work package.
+
+**Decision.** The caller is part of those commands and that query, and every step loads through
+`ICheckoutSessionRepository.FindByIdForCustomerAsync`, beside the unscoped `FindByIdAsync` that stays for the
+system paths. A session that is not the caller's is not found.
+
+**Consequences.**
+
+- Positive: `CheckoutOwnershipTest` holds the rule at the use-case level and fails without the scoped lookup —
+  verified by removing the customer predicate from the in-memory repository.
+- Negative: the page controller passes the caller through five call sites that had already resolved the session
+  from that same caller.
+- Neutral: `GetActiveCheckoutSession` and `GetConfirmedCheckoutSession` were already keyed on the customer.

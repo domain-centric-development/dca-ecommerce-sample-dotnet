@@ -27,7 +27,8 @@ public sealed class SubmitDeliveryUseCase : ISubmitDeliveryInputPort
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
-                var session = await _sessions.FindByIdAsync(new CheckoutSessionId(command.SessionId), ct).ConfigureAwait(false)
+                // The caller's own session: one that is not theirs is not found
+                var session = await _sessions.FindByIdForCustomerAsync(new CheckoutSessionId(command.SessionId), CustomerId.Of(command.CustomerId), ct).ConfigureAwait(false)
                               ?? throw new ArgumentException($"Session not found: {command.SessionId}", nameof(command));
 
                 var shippingOption = ShippingOptions.Find(command.ShippingOptionId)
