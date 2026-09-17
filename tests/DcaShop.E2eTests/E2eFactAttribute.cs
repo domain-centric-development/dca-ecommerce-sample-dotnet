@@ -22,6 +22,8 @@ public sealed class E2eFactAttribute : FactAttribute
 /// </summary>
 public sealed class EmbeddedModeFactAttribute : FactAttribute
 {
+    private static string BaseUrlOfShop => Environment.GetEnvironmentVariable("E2E_BASE_URL") ?? string.Empty;
+
     public EmbeddedModeFactAttribute(bool embedded)
     {
         var shopRunsEmbedded = string.Equals(
@@ -30,6 +32,13 @@ public sealed class EmbeddedModeFactAttribute : FactAttribute
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("E2E_BASE_URL")))
         {
             Skip = "set E2E_BASE_URL to the running shop to run E2E tests";
+        }
+        else if (string.IsNullOrEmpty(EmbeddedShopE2eTest.OtherOriginUrl)
+                 || EmbeddedShopE2eTest.OtherOriginUrl == BaseUrlOfShop)
+        {
+            // Cross-site means two names for one server. Running the scenario same-origin would pass while proving
+            // nothing.
+            Skip = "no second name for the shop under test — set E2E_OTHER_ORIGIN_BASE_URL=<same shop, other host name>";
         }
         else if (embedded && !shopRunsEmbedded)
         {

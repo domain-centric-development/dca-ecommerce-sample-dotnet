@@ -5,11 +5,16 @@ namespace DcaShop.E2eTests;
 /// <summary>
 /// The shop inside an iframe on another origin — the case the SameSite and frame-options switch exists for.
 ///
-/// The embedding page is the shop's own landing page reached under its other name — <c>127.0.0.1</c> where the shop
-/// under test is <c>localhost</c> — with an iframe put into it by the test. No second server is needed. The two
-/// names are different sites to the browser, so the frame is cross-site exactly as a real foreign host would be, and
-/// both stay inside the local network: a page on a public domain may not frame localhost at all (private network
-/// access), which would hide the very behaviour under test.
+/// The embedding page is the shop's own landing page reached under a second name for the same server, with an iframe
+/// put into it by the test. No second server is needed. The two names are different sites to the browser, so the
+/// frame is cross-site exactly as a real foreign host would be, and both stay inside the local network: a page on a
+/// public domain may not frame localhost at all (private network access), which would hide the very behaviour under
+/// test.
+///
+/// That second name defaults to <c>127.0.0.1</c> where the shop under test is <c>localhost</c>. Anywhere else — a
+/// shop reached by service name in a container network, say — it has to be given:
+/// <c>E2E_OTHER_ORIGIN_BASE_URL=http://shop-dotnet-other-origin:8080</c>. Without a second name these tests skip
+/// rather than quietly run same-origin and prove nothing.
 ///
 /// Two deployments, two expectations: the normal shop refuses to be framed and says so in <c>X-Frame-Options</c>;
 /// the embedded shop (<c>Jwt__SameSite=None Jwt__SecureCookies=true</c>, behind TLS) renders in the frame and a form
@@ -20,8 +25,12 @@ namespace DcaShop.E2eTests;
 /// </summary>
 public sealed class EmbeddedShopE2eTest : BaseE2eTest
 {
-    /// <summary>The shop's own address under its other name — a different site to the browser, the same server.</summary>
-    private static string OtherOriginUrl => BaseUrl.Replace("localhost", "127.0.0.1", StringComparison.Ordinal);
+    /// <summary>The shop's own address under a second name — a different site to the browser, the same server.</summary>
+    internal static string OtherOriginUrl =>
+        Environment.GetEnvironmentVariable("E2E_OTHER_ORIGIN_BASE_URL")
+        ?? (BaseUrl.Contains("localhost", StringComparison.Ordinal)
+            ? BaseUrl.Replace("localhost", "127.0.0.1", StringComparison.Ordinal)
+            : string.Empty);
 
     public EmbeddedShopE2eTest(BrowserFixture browser) : base(browser)
     {
