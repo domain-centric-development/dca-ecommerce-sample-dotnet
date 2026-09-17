@@ -10,19 +10,16 @@ services:
   shop-dotnet:
     build: .
     image: dca-shop-dotnet
-    networks:
-      default:
-        # A second name for the same server: the embedded-shop tests need a cross-site origin, and two names are
-        # what makes a frame cross-site to the browser.
-        aliases: [shop-dotnet, shop-dotnet-other-origin]
     ports:
       - "5080:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      # Both default to the safe value. Set them only to run the shop inside an
-      # iframe on another origin (a demo): a Lax cookie is withheld there, so every
-      # request arrives anonymous and the cart is never found.
-      #   Jwt__SameSite=None Jwt__SecureCookies=true docker compose up
+      # The sample runs embeddable out of the box: another page may frame it, and on another port of
+      # the same host its Lax cookies travel into the frame unchanged. Nothing to set for a demo.
+      # A real deployment hardens both: Jwt__AllowFraming=false Jwt__SecureCookies=true.
+      # A page on another *site* (a different domain) additionally needs Jwt__SameSite=None, which
+      # requires Secure cookies and therefore HTTPS.
+      Jwt__AllowFraming: ${Jwt__AllowFraming:-true}
       Jwt__SameSite: ${Jwt__SameSite:-Lax}
       Jwt__SecureCookies: ${Jwt__SecureCookies:-false}
 
@@ -34,9 +31,11 @@ services:
     profiles: [tools]
     working_dir: /src/dca-ecommerce-sample-dotnet
     depends_on: [shop-dotnet]
+    # Share the shop's network namespace, so the shop is `localhost:8080` in here too. The embedded-shop tests put
+    # their own page on another port of that same host, which is what makes the frame same-site.
+    network_mode: "service:shop-dotnet"
     environment:
-      E2E_BASE_URL: http://shop-dotnet:8080
-      E2E_OTHER_ORIGIN_BASE_URL: http://shop-dotnet-other-origin:8080
+      E2E_BASE_URL: http://localhost:8080
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
     volumes:
       - ..:/src

@@ -68,12 +68,13 @@ Playwright release the suite references, so the run is the same everywhere:
 docker compose --profile tools run --rm e2e     # podman-compose needs the --profile flag as shown
 ```
 
-One suite describes both deployments. `EmbeddedShopE2eTest` frames the shop from a second name for the same server —
-`127.0.0.1` while the shop is `localhost`, two sites to the browser — and expects a normal shop to refuse it. Where
-the shop is reached by another name (a container network, say), give the second one with
-`E2E_OTHER_ORIGIN_BASE_URL=http://shop-dotnet-other-origin:8080`; without it those tests skip rather than run
-same-origin and prove nothing. The embedded case needs a shop started for it, and TLS — `SameSite=None` demands
-`Secure`, and ASP.NET Core refuses to issue an antiforgery token for a Secure cookie over plain HTTP:
+`EmbeddedShopE2eTest` covers the shop inside someone else's iframe — a slide deck, a docs page, a demo. It starts a
+throwaway page on another port of this host, frames the shop in it and adds a product to the cart. That case needs
+no configuration: the shop allows framing out of the box, and another port is the same *site*, so its `Lax` cookies
+travel into the frame unchanged.
+
+Framing from another *site* is the second case, and only that one needs the cookie policy relaxed. It runs against a
+shop started for it, over TLS — a browser demands `Secure` for a `SameSite=None` cookie:
 
 ```bash
 Jwt__SameSite=None Jwt__SecureCookies=true dotnet run --project src/DcaShop.Web --urls https://localhost:5443 &

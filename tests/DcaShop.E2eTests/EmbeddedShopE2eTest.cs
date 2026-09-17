@@ -1,76 +1,73 @@
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using Microsoft.Playwright;
 
 namespace DcaShop.E2eTests;
 
 /// <summary>
-/// The shop inside an iframe on another origin — the case the SameSite and frame-options switch exists for.
+/// The shop inside someone else's iframe — a slide deck, a docs page, a demo.
 ///
-/// The embedding page is the shop's own landing page reached under a second name for the same server, with an iframe
-/// put into it by the test. No second server is needed. The two names are different sites to the browser, so the
-/// frame is cross-site exactly as a real foreign host would be, and both stay inside the local network: a page on a
-/// public domain may not frame localhost at all (private network access), which would hide the very behaviour under
-/// test.
+/// Two cases, and the difference is what "someone else" means to the browser. Another port of the same host is a
+/// different <em>origin</em>, so the shop has to allow framing — which it does out of the box — but the same
+/// <em>site</em>, so its <c>Lax</c> cookies travel into the frame unchanged; that is the slide-deck case and needs no
+/// configuration at all. Another site — <c>127.0.0.1</c> against <c>localhost</c> here — leaves the cookies behind
+/// unless the shop is started for it (<c>Jwt__SameSite=None Jwt__SecureCookies=true</c>, behind TLS), so that case
+/// runs only against such a shop and skips otherwise.
 ///
-/// That second name defaults to <c>127.0.0.1</c> where the shop under test is <c>localhost</c>. Anywhere else — a
-/// shop reached by service name in a container network, say — it has to be given:
-/// <c>E2E_OTHER_ORIGIN_BASE_URL=http://shop-dotnet-other-origin:8080</c>. Without a second name these tests skip
-/// rather than quietly run same-origin and prove nothing.
+/// Both embedding pages come from a throwaway HTTP server the test starts on a free port, bound to <c>localhost</c>
+/// for the first case and to <c>127.0.0.1</c> for the second. A real origin rather than an intercepted one, because a
+/// browser refuses to frame anything on the local network from a page whose own origin it could not resolve.
 ///
-/// Two deployments, two expectations: the normal shop refuses to be framed and says so in <c>X-Frame-Options</c>;
-/// the embedded shop (<c>Jwt__SameSite=None Jwt__SecureCookies=true</c>, behind TLS) renders in the frame and a form
-/// POST from inside it reaches the cart — which is what fails while any of its cookies stays same-site. The second
-/// runs only against a shop started that way: <c>E2E_EMBEDDED=true</c>.
-///
-/// Same scenario as the Java sample's <c>EmbeddedShopE2ETest</c>.
+/// Same scenarios as the Java sample's <c>EmbeddedShopE2ETest</c>.
 /// </summary>
-public sealed class EmbeddedShopE2eTest : BaseE2eTest
+public sealed class EmbeddedShopE2eTest : BaseE2eTest, IDisposable
 {
-    /// <summary>The shop's own address under a second name — a different site to the browser, the same server.</summary>
-    internal static string OtherOriginUrl =>
-        Environment.GetEnvironmentVariable("E2E_OTHER_ORIGIN_BASE_URL")
-        ?? (BaseUrl.Contains("localhost", StringComparison.Ordinal)
-            ? BaseUrl.Replace("localhost", "127.0.0.1", StringComparison.Ordinal)
-            : string.Empty);
+    private HttpListener? _embeddingServer;
 
     public EmbeddedShopE2eTest(BrowserFixture browser) : base(browser)
     {
     }
 
     /// <summary>
-    /// The embedded shop is reached over TLS, and locally that means the development certificate — issued for
+    /// The cross-site shop is reached over TLS, and locally that means the development certificate — issued for
     /// <c>localhost</c>, so the browser rejects it under the second name this test needs. Accepting it here says
     /// nothing about the shop; the certificate is not what is under test.
     /// </summary>
     protected override BrowserNewContextOptions? ContextOptions => new() { IgnoreHTTPSErrors = true };
 
     [EmbeddedModeFact(embedded: false)]
-    public async Task ANormalShopRefusesToRenderInsideAFrameOnAnotherOrigin()
+    public async Task ASlideDeckOnAnotherPortFramesTheShopAndAddsToTheCart()
     {
-        await OpenEmbeddingPageAsync();
-        var framedPage = Page.WaitForResponseAsync(response => response.Url == BaseUrl + "/products");
+        await Page.GotoAsync(StartEmbeddingServer("localhost", "/products"));
 
-        await FrameTheShopAsync("/products");
-
-        var headers = await (await framedPage).AllHeadersAsync();
-        Assert.Equal("SAMEORIGIN", headers["x-frame-options"]);
-        Assert.False(
-            await FramedShop().Locator("[data-test='product-card']").First.IsVisibleAsync(),
-            "the shop must not render inside a foreign frame");
+        await AddFirstProductToTheCartInTheFrameAsync();
     }
 
     [EmbeddedModeFact(embedded: true)]
-    public async Task AnEmbeddedShopAcceptsAFormPostMadeFromInsideTheForeignFrame()
+    public async Task APageOnAnotherSiteFramesTheShopAndAddsToTheCart()
     {
-        await OpenEmbeddingPageAsync();
-        await FrameTheShopAsync("/products");
+        Assert.Contains("localhost", BaseUrl, StringComparison.Ordinal);
 
-        var shop = FramedShop();
+        // 127.0.0.1 is the same machine under a name the browser counts as a different site — which is what makes
+        // the shop's cookies cross-site here, unlike the port-only difference above.
+        await Page.GotoAsync(StartEmbeddingServer("127.0.0.1", "/products"));
+
+        await AddFirstProductToTheCartInTheFrameAsync();
+    }
+
+    /// <summary>
+    /// The whole point of framing the shop: the visitor can still use it. Adding to the cart is a form POST carrying
+    /// the antiforgery token, so it only arrives complete when the identity cookie and the token cookie both
+    /// travelled into the frame.
+    /// </summary>
+    private async Task AddFirstProductToTheCartInTheFrameAsync()
+    {
+        var shop = Page.FrameLocator("#shop");
         var firstProduct = shop.Locator("[data-test='view-product']").First;
         await firstProduct.WaitForAsync();
         await firstProduct.ClickAsync();
 
-        // Adding to the cart is a form POST carrying the antiforgery token. It arrives complete only when the
-        // identity cookie and the token cookie both travel into the frame.
         await shop.Locator("[data-test='product-add-to-cart-button']").ClickAsync();
 
         var cartItems = shop.Locator("[data-test='cart-item']");
@@ -78,22 +75,55 @@ public sealed class EmbeddedShopE2eTest : BaseE2eTest
         Assert.True(await cartItems.CountAsync() >= 1, "the product reached the cart of the framed shop");
     }
 
-    /// <summary>Opens a page on the other origin — any page of it will do, it only has to host the frame.</summary>
-    private Task OpenEmbeddingPageAsync() => Page.GotoAsync(OtherOriginUrl + "/");
+    /// <summary>A throwaway server on a free port of this host, serving nothing but the embedding page.</summary>
+    /// <returns>The address of that page.</returns>
+    private string StartEmbeddingServer(string host, string shopPath)
+    {
+        var address = $"http://{host}:{FreePort()}/";
+        _embeddingServer = new HttpListener();
+        _embeddingServer.Prefixes.Add(address);
+        _embeddingServer.Start();
 
-    /// <summary>Puts the shop into a frame of that page, the way a foreign site would embed it.</summary>
-    private Task FrameTheShopAsync(string shopPath) => Page.EvaluateAsync(
-        """
-        src => {
-            const frame = document.createElement('iframe');
-            frame.id = 'shop';
-            frame.src = src;
-            frame.width = 1000;
-            frame.height = 800;
-            document.body.appendChild(frame);
-        }
-        """,
-        BaseUrl + shopPath);
+        var page = Encoding.UTF8.GetBytes(
+            $"<!doctype html>\n<title>A page that frames the shop</title>\n"
+            + $"<iframe id=\"shop\" src=\"{BaseUrl}{shopPath}\" width=\"1000\" height=\"800\"></iframe>\n");
 
-    private IFrameLocator FramedShop() => Page.FrameLocator("#shop");
+        _ = Task.Run(async () =>
+        {
+            while (_embeddingServer?.IsListening == true)
+            {
+                HttpListenerContext context;
+                try
+                {
+                    context = await _embeddingServer.GetContextAsync();
+                }
+                catch (Exception)
+                {
+                    return; // the listener was closed with the test
+                }
+
+                context.Response.ContentType = "text/html; charset=utf-8";
+                context.Response.ContentLength64 = page.Length;
+                await context.Response.OutputStream.WriteAsync(page);
+                context.Response.Close();
+            }
+        });
+
+        return address;
+    }
+
+    private static int FreePort()
+    {
+        var probe = new TcpListener(IPAddress.Loopback, 0);
+        probe.Start();
+        var port = ((IPEndPoint)probe.LocalEndpoint).Port;
+        probe.Stop();
+        return port;
+    }
+
+    public void Dispose()
+    {
+        _embeddingServer?.Close();
+        _embeddingServer = null;
+    }
 }

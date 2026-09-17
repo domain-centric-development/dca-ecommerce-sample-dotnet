@@ -4,13 +4,15 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace DcaShop.IntegrationTests;
 
 /// <summary>
-/// The cookie and framing policy of the two deployments. A normal shop keeps its cookies same-site and refuses to be
-/// framed; the embedded shop — the demo inside an iframe on another origin — needs every cookie it relies on to be
-/// <c>SameSite=None; Secure</c>, the identity and the antiforgery token alike, or the request arrives anonymous or
-/// without its form token.
+/// The cookie and framing policy of the three deployments. With no configuration the sample keeps its cookies
+/// same-site and lets itself be framed, so it runs embedded in a slide deck or a docs page straight from
+/// <c>docker compose up</c> or the IDE. A real installation turns framing off and marks the cookies Secure. Only a
+/// shop framed by another <em>site</em> — a different domain, not merely another port — needs every cookie it relies
+/// on to be <c>SameSite=None; Secure</c>, the identity and the antiforgery token alike, or the request arrives
+/// anonymous or without its form token.
 ///
-/// Same two scenarios as the Java sample's <c>CookiePolicyIntegrationTest</c> and
-/// <c>EmbeddedShopCookiePolicyIntegrationTest</c>.
+/// Same scenarios as the Java sample's <c>CookiePolicyIntegrationTest</c>,
+/// <c>HardenedShopCookiePolicyIntegrationTest</c> and <c>EmbeddedShopCookiePolicyIntegrationTest</c>.
 /// </summary>
 public sealed class CookiePolicyTest : IClassFixture<WebApplicationFactory<Program>>
 {
@@ -21,7 +23,7 @@ public sealed class CookiePolicyTest : IClassFixture<WebApplicationFactory<Progr
     public CookiePolicyTest(WebApplicationFactory<Program> factory) => _factory = factory;
 
     [Fact]
-    public async Task ANormalShopKeepsItsCookiesSameSiteAndRefusesToBeFramed()
+    public async Task TheUnconfiguredSampleKeepsItsCookiesSameSiteAndMayBeFramed()
     {
         var client = _factory.CreateClient();
 
@@ -36,7 +38,7 @@ public sealed class CookiePolicyTest : IClassFixture<WebApplicationFactory<Progr
         AssertSameSite("Lax", antiforgery);
 
         var products = await client.GetAsync("/products");
-        Assert.Equal("SAMEORIGIN", products.Headers.GetValues("X-Frame-Options").Single());
+        Assert.False(products.Headers.Contains("X-Frame-Options"));
     }
 
     [Fact]
@@ -56,13 +58,18 @@ public sealed class CookiePolicyTest : IClassFixture<WebApplicationFactory<Progr
     }
 
     [Fact]
-    public async Task AnEmbeddedShopMayBeFramedByAnotherOrigin()
+    public async Task AHardenedShopRefusesToBeFramedAndMarksItsCookiesSecure()
     {
-        var client = EmbeddedShopClient();
+        var client = HardenedShop().CreateClient();
 
+        // The cookies first: the client keeps what it was handed, so a page fetched earlier would swallow them.
+        var cookies = await SetCookieHeadersOfAPageWithAFormAsync(client);
         var products = await client.GetAsync("/products");
+        Assert.Equal("SAMEORIGIN", products.Headers.GetValues("X-Frame-Options").Single());
 
-        Assert.False(products.Headers.Contains("X-Frame-Options"));
+        var identity = Required(cookies, CookiePolicy.Named(cookies, "shop-identity"), "shop-identity");
+        AssertSameSite("Lax", identity);
+        Assert.True(identity.Secure);
     }
 
     /// <summary>A cookie the policy is about — with the whole Set-Cookie list in the message when it is missing.</summary>
@@ -77,6 +84,12 @@ public sealed class CookiePolicyTest : IClassFixture<WebApplicationFactory<Progr
     private WebApplicationFactory<Program> EmbeddedShop() =>
         _factory.WithWebHostBuilder(builder => builder
             .UseSetting("Jwt:SameSite", "None")
+            .UseSetting("Jwt:SecureCookies", "true"));
+
+    /// <summary>The deployment a real installation runs: no framing, cookies marked Secure.</summary>
+    private WebApplicationFactory<Program> HardenedShop() =>
+        _factory.WithWebHostBuilder(builder => builder
+            .UseSetting("Jwt:AllowFraming", "false")
             .UseSetting("Jwt:SecureCookies", "true"));
 
     /// <summary>

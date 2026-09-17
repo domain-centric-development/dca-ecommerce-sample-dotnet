@@ -41,14 +41,24 @@ public sealed class JwtOptions
     public bool SecureCookies { get; set; }
 
     /// <summary>
-    /// The <c>SameSite</c> policy of both cookies. <c>Lax</c> unless configured otherwise. The one reason to set
-    /// <c>None</c> is running the shop inside an iframe on another origin — a demo or a presentation — where the
-    /// browser withholds a <c>Lax</c> cookie, so every request arrives without an identity and the cart is never
-    /// found. That widens the CSRF surface, which is why it is opt-in and never the default. Browsers also reject
-    /// <c>None</c> without <c>Secure</c>; <see cref="Validate"/> refuses the combination rather than letting the
-    /// browser drop the cookie silently.
+    /// The <c>SameSite</c> policy of both cookies. <c>Lax</c> unless configured otherwise. Set <c>None</c> only where
+    /// the embedding page is on another <em>site</em> — a different domain, not merely a different port — because a
+    /// browser withholds a <c>Lax</c> cookie there, so every request would arrive without an identity and the cart
+    /// would never be found. That widens the CSRF surface, which is why it is opt-in and never the default. Browsers
+    /// also reject <c>None</c> without <c>Secure</c>; <see cref="Validate"/> refuses the combination rather than
+    /// letting the browser drop the cookie silently.
     /// </summary>
     public Microsoft.AspNetCore.Http.SameSiteMode SameSite { get; set; } = DefaultSameSite;
+
+    /// <summary>
+    /// Whether another origin may put the shop in a frame. Separate from <see cref="SameSite"/> because the two
+    /// answer different questions: framing is about the <em>origin</em>, where the port counts, and cookies are about
+    /// the <em>site</em>, where it does not. A slide deck on <c>localhost:3030</c> framing this shop on
+    /// <c>localhost:5080</c> needs framing allowed and nothing else — its cookies are same-site already. This sample
+    /// leaves it on so it runs embedded without configuration; a real deployment turns it off along with setting
+    /// <see cref="SecureCookies"/>.
+    /// </summary>
+    public bool AllowFraming { get; set; } = true;
 
     public TimeSpan IdentityLifetime => TimeSpan.FromDays(AnonymousExpirationDays);
 

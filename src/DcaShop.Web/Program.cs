@@ -22,17 +22,22 @@ builder.Services.AddDcaShop(builder.Configuration);
 // The antiforgery cookie follows the identity cookie's policy: a form inside a foreign frame sends its token
 // only if the cookie carrying it may travel there too. Its default is SameSite=Strict, which the browser withholds
 // exactly where the identity still arrives -- every POST would then fail as a missing token rather than a refused one.
-var embedded = string.Equals(
-    builder.Configuration[$"{DcaShop.Account.Adapter.Outgoing.Security.JwtOptions.SectionName}:SameSite"],
+var jwtSection = DcaShop.Account.Adapter.Outgoing.Security.JwtOptions.SectionName;
+var crossSiteCookies = string.Equals(
+    builder.Configuration[$"{jwtSection}:SameSite"],
     "None",
     StringComparison.OrdinalIgnoreCase);
-var secureCookies = builder.Configuration.GetValue<bool>(
-    $"{DcaShop.Account.Adapter.Outgoing.Security.JwtOptions.SectionName}:SecureCookies");
+var secureCookies = builder.Configuration.GetValue<bool>($"{jwtSection}:SecureCookies");
+var allowFraming = builder.Configuration.GetValue<bool>($"{jwtSection}:AllowFraming");
 
 builder.Services.AddAntiforgery(options =>
 {
-    options.Cookie.SameSite = embedded ? SameSiteMode.None : SameSiteMode.Lax;
-    options.Cookie.SecurePolicy = secureCookies ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = crossSiteCookies ? SameSiteMode.None : SameSiteMode.Lax;
+
+    // SameAsRequest rather than Always: ASP.NET Core refuses to issue a token at all when the cookie is Secure and
+    // the request is not, which would turn a shop demoed over plain HTTP into a 500 on every page with a form. Over
+    // HTTPS -- the only place a cross-site cookie works anyway -- this marks the cookie Secure just the same.
+    options.Cookie.SecurePolicy = secureCookies ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.None;
 
     // The framing decision is made once, by the middleware below, and for every response rather than only for the
     // pages that happen to render a token -- which is all ASP.NET Core's own header would cover.
@@ -52,10 +57,11 @@ else
     app.UseHttpsRedirection();
 }
 
-// Framing is refused unless the shop is configured as embeddable. That switch already says the shop is meant to
-// run in a foreign frame -- a demo or a presentation -- and without it the browser withholds the identity cookie
-// there anyway, so the two belong to one decision. The Java sample does the same in SecurityConfiguration.
-if (!embedded)
+// Framing is refused unless the shop is configured as embeddable (Jwt:AllowFraming). Its own switch, because
+// framing is about the origin -- where the port counts -- while the cookie policy is about the site, where it does
+// not: a slide deck on another port needs framing allowed and nothing else. The Java sample does the same in
+// SecurityConfiguration.
+if (!allowFraming)
 {
     app.Use(async (context, next) =>
     {
