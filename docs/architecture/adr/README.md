@@ -18,3 +18,5 @@
 | [ADR-011](adr-011-aggregate-owned-event-registration.md) | Aggregate-owned event registration | Accepted |
 
 | [ADR-012](adr-012-checkout-snapshots-and-reconciliation.md) | Checkout snapshots and reconciliation | Accepted |
+
+| [ADR-013](adr-013-local-preconditions-before-a-remote-effect.md) | Local preconditions come before a remote effect, and an unusable effect is released | Accepted |

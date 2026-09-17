@@ -102,6 +102,27 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         RegisterEvent(DeliverySubmitted.Now(Id, address, shippingOption));
     }
 
+    /// <summary>
+    /// Asserts that this session may be paid for right now — the same preconditions
+    /// <see cref="SubmitPayment"/> enforces, without changing anything.
+    /// </summary>
+    /// <remarks>
+    /// A caller about to reach a payment provider asks this first, so a session that would be rejected afterwards
+    /// never produces a payment intent at the provider.
+    /// </remarks>
+    public void AssertReadyForPayment()
+    {
+        EnsureModifiable();
+        EnsureStepCompleted(CheckoutStep.BuyerInfo);
+        EnsureStepCompleted(CheckoutStep.Delivery);
+        EnsureAtOrBeforeStep(CheckoutStep.Payment);
+
+        if (Totals.Total.Amount <= 0m)
+        {
+            throw new InvalidOperationException($"Nothing to pay: the total is {Totals.Total}");
+        }
+    }
+
     public void SubmitPayment(PaymentSelection payment)
     {
         EnsureModifiable();
