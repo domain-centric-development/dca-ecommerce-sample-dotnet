@@ -39,6 +39,7 @@ No local SDK needed:
 ```bash
 docker compose up --build                 # http://localhost:5080
 docker compose run --rm test              # unit, integration, architecture tests (Debug build)
+                                          # (podman-compose: podman-compose --profile tools run --rm test)
 docker compose run --rm dotnet build      # any other dotnet command, packages cached in a volume
 ```
 

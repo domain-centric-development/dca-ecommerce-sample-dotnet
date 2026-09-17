@@ -4,6 +4,7 @@
 #
 # The DomainCentric.* packages come from NuGet.org. The tools service mounts the parent directory so
 # `docker compose run --rm dotnet test -p:UseLocalDcaDotnet=true` can reference the sibling ../dca-dotnet.
+# podman-compose does not activate a service's profile on `run`: `podman-compose --profile tools run --rm test`.
 services:
   shop-dotnet:
     build: .
