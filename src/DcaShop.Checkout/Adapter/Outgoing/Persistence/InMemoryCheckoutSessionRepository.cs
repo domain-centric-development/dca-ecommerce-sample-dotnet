@@ -13,6 +13,9 @@ public sealed class InMemoryCheckoutSessionRepository : ICheckoutSessionReposito
     public Task<CheckoutSession?> FindByIdAsync(CheckoutSessionId id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_sessions.TryGetValue(id, out var session) ? session : null);
 
+    public Task<CheckoutSession?> FindByIdForCustomerAsync(CheckoutSessionId id, CustomerId customerId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_sessions.TryGetValue(id, out var session) && session.CustomerId == customerId ? session : null);
+
     public Task<CheckoutSession> SaveAsync(CheckoutSession aggregate, CancellationToken cancellationToken = default)
     {
         _sessions[aggregate.Id] = aggregate;

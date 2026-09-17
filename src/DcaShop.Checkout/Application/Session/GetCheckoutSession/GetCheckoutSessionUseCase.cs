@@ -15,7 +15,7 @@ public sealed class GetCheckoutSessionUseCase : IGetCheckoutSessionInputPort
 
     public async Task<GetCheckoutSessionResult> ExecuteAsync(GetCheckoutSessionQuery query, CancellationToken cancellationToken = default)
     {
-        var session = await _sessions.FindByIdAsync(new CheckoutSessionId(query.SessionId), cancellationToken).ConfigureAwait(false);
+        var session = await _sessions.FindByIdForCustomerAsync(new CheckoutSessionId(query.SessionId), CustomerId.Of(query.CustomerId), cancellationToken).ConfigureAwait(false);
         return new GetCheckoutSessionResult(session is null ? null : CheckoutCartSnapshot.From(session));
     }
 }

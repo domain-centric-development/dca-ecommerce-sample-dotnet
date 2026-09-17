@@ -13,6 +13,17 @@ public interface ICheckoutSessionRepository : IRepository<CheckoutSession, Check
         try { return await operation().ConfigureAwait(false); } finally { gate.Release(); }
     }
 
+    /// <summary>
+    /// The session under that id that belongs to this customer, or nothing.
+    /// </summary>
+    /// <remarks>
+    /// Every use case acting on a session a caller named asks this rather than <see cref="FindByIdAsync"/>: a
+    /// session that is not theirs and a session that does not exist are indistinguishable on purpose, and a
+    /// persistence adapter expresses it as one predicate. <c>FindByIdAsync</c> stays for the system paths that
+    /// act on nobody's behalf.
+    /// </remarks>
+    Task<CheckoutSession?> FindByIdForCustomerAsync(CheckoutSessionId id, CustomerId customerId, CancellationToken cancellationToken = default);
+
     Task<CheckoutSession?> FindActiveByCartIdAsync(CartId cartId, CancellationToken cancellationToken = default);
 
     Task<CheckoutSession?> FindActiveByCustomerAsync(CustomerId customerId, CancellationToken cancellationToken = default);

@@ -23,6 +23,7 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
     public async Task<SubmitPaymentResult> ExecuteAsync(SubmitPaymentCommand command, CancellationToken cancellationToken = default)
     {
         var sessionId = new CheckoutSessionId(command.SessionId);
+        var customerId = CustomerId.Of(command.CustomerId);
         var providerId = PaymentProviderId.Of(command.PaymentProviderId);
 
         // Provider lookup and payment initiation are remote-capable (payment service provider) —
@@ -36,7 +37,7 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
         }
 
         // The amount to charge is the session total as it stands when payment is submitted
-        var amount = (await _sessions.FindByIdAsync(sessionId, cancellationToken).ConfigureAwait(false)
+        var amount = (await _sessions.FindByIdForCustomerAsync(sessionId, customerId, cancellationToken).ConfigureAwait(false)
                       ?? throw new ArgumentException($"Session not found: {command.SessionId}", nameof(command)))
             .Totals.Total;
 
@@ -50,7 +51,7 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
-                var session = await _sessions.FindByIdAsync(sessionId, ct).ConfigureAwait(false)
+                var session = await _sessions.FindByIdForCustomerAsync(sessionId, customerId, ct).ConfigureAwait(false)
                               ?? throw new ArgumentException($"Session not found: {command.SessionId}", nameof(command));
                 session.SubmitPayment(new PaymentSelection(providerId, initiation.ProviderReference));
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);

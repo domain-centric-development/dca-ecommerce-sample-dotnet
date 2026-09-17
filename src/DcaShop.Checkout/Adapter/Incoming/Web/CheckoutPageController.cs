@@ -84,28 +84,28 @@ public sealed class CheckoutPageController : Controller
 
     [HttpPost("buyer")]
     public Task<IActionResult> SubmitBuyer([FromForm] string email, [FromForm] string firstName, [FromForm] string lastName, [FromForm] string phone, CancellationToken cancellationToken) =>
-        Submit(CheckoutStep.BuyerInfo, "/checkout/delivery", id => _submitBuyerInfo.ExecuteAsync(new SubmitBuyerInfoCommand(id, email, firstName, lastName, phone), cancellationToken), cancellationToken);
+        Submit(CheckoutStep.BuyerInfo, "/checkout/delivery", id => _submitBuyerInfo.ExecuteAsync(new SubmitBuyerInfoCommand(id, CurrentCustomerId(), email, firstName, lastName, phone), cancellationToken), cancellationToken);
 
     [HttpGet("delivery")]
     public Task<IActionResult> Delivery(CancellationToken cancellationToken) => Page(CheckoutStep.Delivery, cancellationToken);
 
     [HttpPost("delivery")]
     public Task<IActionResult> SubmitDelivery([FromForm] string street, [FromForm] string? streetLine2, [FromForm] string city, [FromForm] string postalCode, [FromForm] string country, [FromForm] string? state, [FromForm] string shippingOptionId, CancellationToken cancellationToken) =>
-        Submit(CheckoutStep.Delivery, "/checkout/payment", id => _submitDelivery.ExecuteAsync(new SubmitDeliveryCommand(id, street, streetLine2, city, postalCode, country, state, shippingOptionId), cancellationToken), cancellationToken);
+        Submit(CheckoutStep.Delivery, "/checkout/payment", id => _submitDelivery.ExecuteAsync(new SubmitDeliveryCommand(id, CurrentCustomerId(), street, streetLine2, city, postalCode, country, state, shippingOptionId), cancellationToken), cancellationToken);
 
     [HttpGet("payment")]
     public Task<IActionResult> Payment(CancellationToken cancellationToken) => Page(CheckoutStep.Payment, cancellationToken);
 
     [HttpPost("payment")]
     public Task<IActionResult> SubmitPayment([FromForm] string providerId, CancellationToken cancellationToken) =>
-        Submit(CheckoutStep.Payment, "/checkout/review", id => _submitPayment.ExecuteAsync(new SubmitPaymentCommand(id, providerId), cancellationToken), cancellationToken);
+        Submit(CheckoutStep.Payment, "/checkout/review", id => _submitPayment.ExecuteAsync(new SubmitPaymentCommand(id, CurrentCustomerId(), providerId), cancellationToken), cancellationToken);
 
     [HttpGet("review")]
     public Task<IActionResult> Review(CancellationToken cancellationToken) => Page(CheckoutStep.Review, cancellationToken);
 
     [HttpPost("confirm")]
     public Task<IActionResult> Confirm(CancellationToken cancellationToken) =>
-        Submit(CheckoutStep.Review, "/checkout/confirmation", id => _confirm.ExecuteAsync(new ConfirmCheckoutCommand(id), cancellationToken), cancellationToken);
+        Submit(CheckoutStep.Review, "/checkout/confirmation", id => _confirm.ExecuteAsync(new ConfirmCheckoutCommand(id, CurrentCustomerId()), cancellationToken), cancellationToken);
 
     [HttpGet("confirmation")]
     public async Task<IActionResult> Confirmation(CancellationToken cancellationToken)

@@ -25,7 +25,8 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
         var sessionId = new CheckoutSessionId(command.SessionId);
 
         // Article data comes from the Product Catalog (remote-capable) — fetched outside the transaction
-        var current = await LoadAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        var customerId = CustomerId.Of(command.CustomerId);
+        var current = await LoadAsync(sessionId, customerId, cancellationToken).ConfigureAwait(false);
         var articles = await _articleData.GetArticleDataAsync(current.LineItems.Select(i => i.ProductId).ToArray(), cancellationToken).ConfigureAwait(false);
         var facts = articles.ToDictionary(e => e.Key, e => new ArticlePrice(e.Value.CurrentPrice, e.Value.IsAvailable, e.Value.AvailableStock));
 
@@ -33,7 +34,7 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
         return await _sessions.InCartSessionAsync(current.CartId, () => _transactionBoundary.InTransactionAsync(
             async ct =>
             {
-                var session = await LoadAsync(sessionId, ct).ConfigureAwait(false);
+                var session = await LoadAsync(sessionId, customerId, ct).ConfigureAwait(false);
                 session.Confirm(facts);
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
@@ -42,7 +43,8 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
             cancellationToken), cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<CheckoutSession> LoadAsync(CheckoutSessionId sessionId, CancellationToken cancellationToken) =>
-        await _sessions.FindByIdAsync(sessionId, cancellationToken).ConfigureAwait(false)
+    /// <summary>Loads the session as the caller's own: one that is not theirs is not found.</summary>
+    private async Task<CheckoutSession> LoadAsync(CheckoutSessionId sessionId, CustomerId customerId, CancellationToken cancellationToken) =>
+        await _sessions.FindByIdForCustomerAsync(sessionId, customerId, cancellationToken).ConfigureAwait(false)
         ?? throw new ArgumentException($"Session not found: {sessionId}", nameof(sessionId));
 }
