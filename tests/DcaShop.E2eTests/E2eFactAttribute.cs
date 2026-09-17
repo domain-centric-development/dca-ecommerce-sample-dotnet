@@ -14,3 +14,30 @@ public sealed class E2eFactAttribute : FactAttribute
         }
     }
 }
+
+/// <summary>
+/// An E2E test that holds for one of the two deployments only. The shop under test runs embedded when
+/// <c>E2E_EMBEDDED=true</c> (started with <c>Jwt__SameSite=None Jwt__SecureCookies=true</c> behind TLS); a test for
+/// the other deployment skips instead of failing against a shop it does not describe.
+/// </summary>
+public sealed class EmbeddedModeFactAttribute : FactAttribute
+{
+    public EmbeddedModeFactAttribute(bool embedded)
+    {
+        var shopRunsEmbedded = string.Equals(
+            Environment.GetEnvironmentVariable("E2E_EMBEDDED"), "true", StringComparison.OrdinalIgnoreCase);
+
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("E2E_BASE_URL")))
+        {
+            Skip = "set E2E_BASE_URL to the running shop to run E2E tests";
+        }
+        else if (embedded && !shopRunsEmbedded)
+        {
+            Skip = "needs a shop started with Jwt__SameSite=None Jwt__SecureCookies=true behind TLS (E2E_EMBEDDED=true)";
+        }
+        else if (!embedded && shopRunsEmbedded)
+        {
+            Skip = "the shop under test runs embedded — framing is allowed there by design";
+        }
+    }
+}

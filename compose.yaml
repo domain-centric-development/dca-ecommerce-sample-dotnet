@@ -1,5 +1,6 @@
 # docker compose up --build          → shop on http://localhost:5080
 # docker compose run --rm test       → unit, integration and architecture tests (Debug build, as the rules require)
+# docker compose --profile tools run --rm e2e  → the browser suite against the shop service; the image brings the browsers
 # docker compose run --rm dotnet <args>  → any other dotnet command with a cached package store
 #
 # The DomainCentric.* packages come from NuGet.org. The tools service mounts the parent directory so
@@ -19,6 +20,22 @@ services:
       #   Jwt__SameSite=None Jwt__SecureCookies=true docker compose up
       Jwt__SameSite: ${Jwt__SameSite:-Lax}
       Jwt__SecureCookies: ${Jwt__SecureCookies:-false}
+
+  # The E2E suite needs a browser, which the SDK image does not have. This image ships the browser builds of the
+  # Playwright release the suite references — keep the tag and DcaShop.E2eTests.csproj on one version.
+  # `docker compose --profile tools run --rm e2e` runs it against the shop service over the compose network.
+  e2e:
+    image: mcr.microsoft.com/playwright/dotnet:v1.62.0-noble
+    profiles: [tools]
+    working_dir: /src/dca-ecommerce-sample-dotnet
+    depends_on: [shop-dotnet]
+    environment:
+      E2E_BASE_URL: http://shop-dotnet:8080
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    volumes:
+      - ..:/src
+      - nuget-cache:/root/.nuget/packages
+    entrypoint: ["dotnet", "test", "tests/DcaShop.E2eTests"]
 
   dotnet:
     image: mcr.microsoft.com/dotnet/sdk:10.0

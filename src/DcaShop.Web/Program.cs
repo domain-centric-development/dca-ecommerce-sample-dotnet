@@ -1,5 +1,6 @@
 using DcaShop.Infrastructure;
 using DcaShop.Web;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,19 +19,25 @@ builder.Services
     .AddApplicationPart(typeof(DcaShop.Checkout.CheckoutContext).Assembly);
 builder.Services.AddDcaShop(builder.Configuration);
 
-// Embedded-demo mode, off by default and turned on by one switch: SameSite=None.
-// ASP.NET Core stamps X-Frame-Options: SAMEORIGIN on every response that emits an antiforgery
-// token, which is every page with a form -- so the shop loads in a foreign iframe but the product
-// page inside it does not. Suppressing the header is only defensible while the cookie policy
-// already says the shop is meant to be embedded, so both hang on the same decision.
-// The Java sample allows framing in the same case (SecurityConfiguration).
-if (string.Equals(
-        builder.Configuration[$"{DcaShop.Account.Adapter.Outgoing.Security.JwtOptions.SectionName}:SameSite"],
-        "None",
-        StringComparison.OrdinalIgnoreCase))
+// The antiforgery cookie follows the identity cookie's policy: a form inside a foreign frame sends its token
+// only if the cookie carrying it may travel there too. Its default is SameSite=Strict, which the browser withholds
+// exactly where the identity still arrives -- every POST would then fail as a missing token rather than a refused one.
+var embedded = string.Equals(
+    builder.Configuration[$"{DcaShop.Account.Adapter.Outgoing.Security.JwtOptions.SectionName}:SameSite"],
+    "None",
+    StringComparison.OrdinalIgnoreCase);
+var secureCookies = builder.Configuration.GetValue<bool>(
+    $"{DcaShop.Account.Adapter.Outgoing.Security.JwtOptions.SectionName}:SecureCookies");
+
+builder.Services.AddAntiforgery(options =>
 {
-    builder.Services.AddAntiforgery(options => options.SuppressXFrameOptionsHeader = true);
-}
+    options.Cookie.SameSite = embedded ? SameSiteMode.None : SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = secureCookies ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
+
+    // The framing decision is made once, by the middleware below, and for every response rather than only for the
+    // pages that happen to render a token -- which is all ASP.NET Core's own header would cover.
+    options.SuppressXFrameOptionsHeader = true;
+});
 
 var app = builder.Build();
 
@@ -43,6 +50,18 @@ else
     app.UseExceptionHandler("/error");
     app.UseHsts();
     app.UseHttpsRedirection();
+}
+
+// Framing is refused unless the shop is configured as embeddable. That switch already says the shop is meant to
+// run in a foreign frame -- a demo or a presentation -- and without it the browser withholds the identity cookie
+// there anyway, so the two belong to one decision. The Java sample does the same in SecurityConfiguration.
+if (!embedded)
+{
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
+        await next();
+    });
 }
 
 app.UseStatusCodePagesWithReExecute("/error/{0}");

@@ -61,6 +61,23 @@ E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests
 same as the Java sample's, the suite passes against either shop — the browser tests are the language-neutral
 acceptance test of the architecture.
 
+Without a local browser install, the compose service brings its own — the image ships the browser builds of the
+Playwright release the suite references, so the run is the same everywhere:
+
+```bash
+docker compose --profile tools run --rm e2e     # podman-compose needs the --profile flag as shown
+```
+
+One suite describes both deployments. `EmbeddedShopE2eTest` frames the shop from the machine's other name
+(`127.0.0.1` while the shop is `localhost`) and expects a normal shop to refuse it. The embedded case needs a shop
+started for it, and TLS — `SameSite=None` demands `Secure`, and ASP.NET Core refuses to issue an antiforgery token
+for a Secure cookie over plain HTTP:
+
+```bash
+Jwt__SameSite=None Jwt__SecureCookies=true dotnet run --project src/DcaShop.Web --urls https://localhost:5443 &
+E2E_BASE_URL=https://localhost:5443 E2E_EMBEDDED=true dotnet test tests/DcaShop.E2eTests
+```
+
 ## Solution layout
 
 One assembly per bounded context, one for the shared kernel, one for global infrastructure, one web host:
