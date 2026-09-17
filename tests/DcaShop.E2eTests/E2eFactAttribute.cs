@@ -35,6 +35,10 @@ public sealed class EmbeddedModeFactAttribute : FactAttribute
         {
             Skip = "needs a shop started with Jwt__SameSite=None Jwt__SecureCookies=true behind TLS (E2E_EMBEDDED=true)";
         }
+        else if (embedded && !Environment.GetEnvironmentVariable("E2E_BASE_URL")!.Contains("localhost", StringComparison.Ordinal))
+        {
+            Skip = "the cross-site case pairs localhost with 127.0.0.1; point E2E_BASE_URL at localhost to run it";
+        }
         else if (!embedded && shopRunsEmbedded)
         {
             Skip = "the shop under test runs embedded — framing is allowed there by design";

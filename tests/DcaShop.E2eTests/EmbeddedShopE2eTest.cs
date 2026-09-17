@@ -36,7 +36,7 @@ public sealed class EmbeddedShopE2eTest : BaseE2eTest, IDisposable
     /// </summary>
     protected override BrowserNewContextOptions? ContextOptions => new() { IgnoreHTTPSErrors = true };
 
-    [EmbeddedModeFact(embedded: false)]
+    [EmbeddedModeFact(embedded: false, DisplayName = "A slide deck on another port frames the shop and adds to the cart")]
     public async Task ASlideDeckOnAnotherPortFramesTheShopAndAddsToTheCart()
     {
         await Page.GotoAsync(StartEmbeddingServer("localhost", "/products"));
@@ -44,11 +44,9 @@ public sealed class EmbeddedShopE2eTest : BaseE2eTest, IDisposable
         await AddFirstProductToTheCartInTheFrameAsync();
     }
 
-    [EmbeddedModeFact(embedded: true)]
+    [EmbeddedModeFact(embedded: true, DisplayName = "A page on another site frames the shop and adds to the cart")]
     public async Task APageOnAnotherSiteFramesTheShopAndAddsToTheCart()
     {
-        Assert.Contains("localhost", BaseUrl, StringComparison.Ordinal);
-
         // 127.0.0.1 is the same machine under a name the browser counts as a different site — which is what makes
         // the shop's cookies cross-site here, unlike the port-only difference above.
         await Page.GotoAsync(StartEmbeddingServer("127.0.0.1", "/products"));

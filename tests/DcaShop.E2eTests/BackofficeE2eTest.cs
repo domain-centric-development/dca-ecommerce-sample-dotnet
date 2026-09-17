@@ -30,7 +30,7 @@ public sealed class BackofficeE2eTest : BaseE2eTest
         Assert.True(await events.TotalEventsAsync() >= 0, "Total events count should be a non-negative number");
     }
 
-    [E2eFact(DisplayName = "Event log shows published events with correct counts")]
+    [E2eFact(DisplayName = "Event log shows published domain events with correct counts")]
     public async Task EventLogShowsPublishedEvents()
     {
         var events = await SignInAsync();

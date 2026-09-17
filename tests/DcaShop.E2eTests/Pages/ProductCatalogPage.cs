@@ -7,6 +7,7 @@ public sealed class ProductCatalogPage : BasePage
     private const string UrlPattern = "/products";
     private const string ProductCard = "product-card";
     private const string ViewDetailsLink = "view-product";
+    private const string ProductTitle = "product-card-title";
 
     private ProductCatalogPage(IPage page) : base(page)
     {
@@ -39,4 +40,8 @@ public sealed class ProductCatalogPage : BasePage
     }
 
     public Task<bool> HasProductsAsync() => ExistsAsync(ProductCard);
+
+    /// <summary>The product names as the catalog shows them, in page order.</summary>
+    public async Task<IReadOnlyList<string>> ProductTitlesAsync() =>
+        (await Page.Locator($"[data-test='{ProductTitle}']").AllTextContentsAsync()).Select(t => t.Trim()).ToList();
 }
