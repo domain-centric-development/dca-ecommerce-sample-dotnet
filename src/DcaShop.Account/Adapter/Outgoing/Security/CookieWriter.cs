@@ -19,7 +19,7 @@ internal static class CookieWriter
     {
         HttpOnly = true,
         Secure = options.SecureCookies,
-        SameSite = JwtOptions.SameSite,
+        SameSite = options.SameSite,
         Path = "/",
         MaxAge = maxAge,
 

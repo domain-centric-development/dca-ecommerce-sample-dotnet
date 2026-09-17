@@ -13,6 +13,12 @@ services:
       - "5080:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      # Both default to the safe value. Set them only to run the shop inside an
+      # iframe on another origin (a demo): a Lax cookie is withheld there, so every
+      # request arrives anonymous and the cart is never found.
+      #   Jwt__SameSite=None Jwt__SecureCookies=true docker compose up
+      Jwt__SameSite: ${Jwt__SameSite:-Lax}
+      Jwt__SecureCookies: ${Jwt__SecureCookies:-false}
 
   dotnet:
     image: mcr.microsoft.com/dotnet/sdk:10.0

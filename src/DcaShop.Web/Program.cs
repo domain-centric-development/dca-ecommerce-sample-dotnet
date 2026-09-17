@@ -18,6 +18,20 @@ builder.Services
     .AddApplicationPart(typeof(DcaShop.Checkout.CheckoutContext).Assembly);
 builder.Services.AddDcaShop(builder.Configuration);
 
+// Embedded-demo mode, off by default and turned on by one switch: SameSite=None.
+// ASP.NET Core stamps X-Frame-Options: SAMEORIGIN on every response that emits an antiforgery
+// token, which is every page with a form -- so the shop loads in a foreign iframe but the product
+// page inside it does not. Suppressing the header is only defensible while the cookie policy
+// already says the shop is meant to be embedded, so both hang on the same decision.
+// The Java sample allows framing in the same case (SecurityConfiguration).
+if (string.Equals(
+        builder.Configuration[$"{DcaShop.Account.Adapter.Outgoing.Security.JwtOptions.SectionName}:SameSite"],
+        "None",
+        StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddAntiforgery(options => options.SuppressXFrameOptionsHeader = true);
+}
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

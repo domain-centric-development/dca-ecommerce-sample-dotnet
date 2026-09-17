@@ -26,6 +26,9 @@ public static class AccountContextRegistration
         ArgumentNullException.ThrowIfNull(configuration);
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+
+        // Fail at startup, not silently in the browser: SameSite=None without Secure is dropped.
+        services.PostConfigure<JwtOptions>(options => options.Validate());
         services.AddHttpContextAccessor();
 
         // Domain
@@ -38,16 +41,16 @@ public static class AccountContextRegistration
         services.AddScoped<IChangeProfileInputPort, ChangeProfileUseCase>();
         services.AddScoped<IGetProfileInputPort, GetProfileUseCase>();
         services.AddScoped<IGetAccountOverviewInputPort, GetAccountOverviewUseCase>();
+        services.AddScoped<IIsAccountRegisteredInputPort, IsAccountRegisteredUseCase>();
 
         // Outgoing adapters (output ports)
         services.AddSingleton<IAccountRepository, InMemoryAccountRepository>();
-        services.AddScoped<IIsAccountRegisteredInputPort, IsAccountRegisteredUseCase>();
-        services.AddSingleton<JwtTokenService>();
-        services.AddSingleton<ITokenService>(sp => sp.GetRequiredService<JwtTokenService>());
-        services.AddScoped<IIdentitySession, JwtIdentitySession>();
 
         // Token and cookie mechanics of the incoming adapters — interfaces without a port marker, implemented in
         // the security adapter
+        services.AddSingleton<JwtTokenService>();
+        services.AddSingleton<ITokenService>(sp => sp.GetRequiredService<JwtTokenService>());
+        services.AddScoped<IIdentitySession, JwtIdentitySession>();
 
         // The identity port is declared in the shared kernel because every context keys its data on the UserId,
         // but only Account can resolve one — see the port's own remarks.
