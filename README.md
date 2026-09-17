@@ -300,6 +300,8 @@ The language-neutral specification is an independently owned, currently unpublis
 build**: a plain checkout builds and runs without it, and the specification tests are reported as skipped. To run them,
 point the build at a local checkout; the vectors are copied next to the test assemblies and the adapters in
 `SharedSpecificationTest`, `CheckoutSpecificationTest` and `RetainedDeliveryTest` drive the production code with them.
+The specification's `scenarios.md` names the end-user scenarios both samples' browser suites implement, test for test
+under the scenario title; `SharedScenariosTest` checks that binding against the sources of `tests/DcaShop.E2eTests`.
 
 ```bash
 dotnet test -c Debug -p:SpecificationPath=$PWD/../dca-sample-specification

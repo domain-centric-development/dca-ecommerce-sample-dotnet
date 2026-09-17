@@ -123,9 +123,8 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
 - Events: domain events are dispatched in-process synchronously (`InProcessDomainEventPublisher`);
   integration events are registered in `IIntegrationEventOutbox` inside the use case's transaction, released after commit and delivered by `IntegrationEventDispatcherService`
   — asynchronous, after the publishing use case finished, at least once with retry/backoff; consumers are idempotent. Listeners implement `EventListener<TEvent>` and are registered as `IEventListener`.
-- E2E: `tests/DcaShop.E2eTests` is a one-to-one port of the Java `src/test-e2e` page objects and suites
-  (`CheckoutGuestE2ETest`, `CheckoutLoginE2ETest`, `CartMergeE2ETest`, `BackofficeE2ETest` — 15 scenarios, same
-  `data-test` selectors, same scenario names). Either suite runs against either shop
+- E2E: `tests/DcaShop.E2eTests` is a one-to-one port of the Java `src/test-e2e` page objects and suites: the same
+  `data-test` selectors and, test for test, the scenario titles of `../dca-sample-specification/scenarios.md`. Either suite runs against either shop
   (`./gradlew test-e2e -De2e.baseUrl=http://localhost:5080` in the Java repo; `E2E_BASE_URL=http://localhost:8080`
   here). Keep selectors and scenarios in sync with the Java suite.
 - Views mirror the Java sample's Pug templates one to one (classes, `data-test` attributes, routes, seed data);
@@ -221,6 +220,11 @@ business changes. The user owns semantics. The specification is **unpublished an
 2026-09-10): nothing is downloaded, no revision is pinned, and a plain checkout builds without it. The specification tests
 run only with `-p:SpecificationPath=<checkout>/dca-sample-specification` and are skipped otherwise; no vector may lack a test
 adapter. Update both samples' adapters, schema compatibility records and glossaries together.
+
+The browser suite in `tests/DcaShop.E2eTests` implements the specification's `scenarios.md` and nothing else: each
+scenario title is the `DisplayName` of exactly one test, and `SharedScenariosTest` (same switch) fails on a scenario
+without a test, a test without a scenario or two tests for one title. A new end-user test therefore starts as a scenario
+in the specification, then lands in both suites under the same title.
 
 An explicit checkout action captures immutable positions, quantities and prices into a session. Cart edits do not
 create or mutate sessions. A new action supersedes the previous OPEN/Active session; confirmed/completed orders remain.
