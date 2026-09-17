@@ -1,3 +1,6 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using System.Text.Encodings.Web;
 using DcaShop.Account.Adapter.Outgoing.Security;
 using DcaShop.Account.Application.IsAccountRegistered;
@@ -7,6 +10,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 namespace DcaShop.UnitTests.Account;
 
@@ -63,7 +67,7 @@ public sealed class ShopIdentityAuthenticationHandlerTest
     }
 
     [Fact]
-    public async Task ExpiredSessionKeepsTheVisitorIdentity()
+    public async Task MissingSessionCookieKeepsTheVisitorIdentity()
     {
         var visitor = UserId.GenerateAnonymous();
 
@@ -71,6 +75,18 @@ public sealed class ShopIdentityAuthenticationHandlerTest
 
         Assert.False(identity.IsRegistered);
         Assert.Equal(visitor, identity.UserId);
+    }
+
+    [Fact]
+    public async Task ExpiredSessionKeepsTheVisitorIdentity()
+    {
+        var visitor = UserId.GenerateAnonymous();
+        _accounts.Register(visitor);
+
+        var identity = await RunHandlerAsync(IdentityCookieFor(visitor), (SessionCookie, ExpiredSessionTokenFor(visitor)));
+
+        Assert.False(identity.IsRegistered, "an expired session must not authenticate");
+        Assert.True(visitor.Equals(identity.UserId), "but the identity the cart is keyed on survives");
     }
 
     private async Task<IIdentityProvider.IIdentity> RunHandlerAsync(params (string Name, string Value)[] cookies)
@@ -108,6 +124,29 @@ public sealed class ShopIdentityAuthenticationHandlerTest
     {
         _accounts.Register(userId);
         return (SessionCookie, _tokenService.GenerateRegisteredToken(userId, Email, new HashSet<string> { "CUSTOMER" }));
+    }
+
+    /// <summary>
+    /// A registered session token whose expiry lies an hour in the past — well beyond the 30 s clock skew the token
+    /// service tolerates. Signed with the same secret and issuer, so only its age can make it fall.
+    /// </summary>
+    private string ExpiredSessionTokenFor(UserId userId)
+    {
+        var issuedAt = DateTime.UtcNow.AddHours(-2);
+        var token = new JwtSecurityToken(
+            issuer: _options.Issuer,
+            claims:
+            [
+                new Claim("type", "registered"),
+                new Claim("email", Email),
+                new Claim("roles", "CUSTOMER"),
+                new Claim(JwtRegisteredClaimNames.Sub, userId.Value),
+            ],
+            notBefore: issuedAt,
+            expires: issuedAt.AddHours(1),
+            signingCredentials: new SigningCredentials(
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Secret)), SecurityAlgorithms.HmacSha256));
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
     /// <summary>Test double for the account-registered query, so no repository is pulled into a handler test.</summary>
