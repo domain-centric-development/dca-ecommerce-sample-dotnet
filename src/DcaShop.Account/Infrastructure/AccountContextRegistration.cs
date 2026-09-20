@@ -14,6 +14,7 @@ using DcaShop.SharedKernel.Application.Shared;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace DcaShop.Account.Infrastructure;
 
@@ -25,10 +26,18 @@ public static class AccountContextRegistration
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        // ValidateOnStart, not on first use: a shop that refuses its configuration must refuse it while someone is
+        // watching the deployment, not on the first request a visitor makes.
+        services
+            .AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .ValidateOnStart();
 
         // Fail at startup, not silently in the browser: SameSite=None without Secure is dropped.
         services.PostConfigure<JwtOptions>(options => options.Validate());
+
+        // And the values this repository ships are refused outside Development.
+        services.AddSingleton<IValidateOptions<JwtOptions>, JwtDevelopmentDefaultsValidator>();
         services.AddHttpContextAccessor();
 
         // Domain

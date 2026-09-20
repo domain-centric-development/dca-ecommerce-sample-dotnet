@@ -13,6 +13,16 @@ public sealed class JwtOptions
 
     public const string DefaultSessionCookieName = "shop-session";
 
+    /// <summary>
+    /// The signing secret the sample ships with, so it starts without configuration.
+    /// </summary>
+    /// <remarks>
+    /// It is committed, therefore public, therefore not a secret: anyone can mint a token this shop accepts.
+    /// <c>JwtDevelopmentDefaultsValidator</c> refuses it outside the Development environment, and
+    /// <c>appsettings.json</c> carries the same string — <c>DevelopmentDefaultsTest</c> pins the two together.
+    /// </remarks>
+    public const string DevelopmentSecret = "dca-shop-sample-development-secret-key-32+";
+
     public const string DefaultIssuer = "dca-ecommerce-sample";
 
     /// <summary>Explicit on every cookie the subsystem sets, as defence in depth beside the antiforgery token.</summary>
