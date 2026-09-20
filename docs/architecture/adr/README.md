@@ -20,3 +20,5 @@
 | [ADR-012](adr-012-checkout-snapshots-and-reconciliation.md) | Checkout snapshots and reconciliation | Accepted |
 
 | [ADR-013](adr-013-local-preconditions-before-a-remote-effect.md) | Local preconditions come before a remote effect, and an unusable effect is released | Accepted |
+
+| [ADR-014](adr-014-uniqueness-is-claimed-in-the-store.md) | Uniqueness that spans aggregates is claimed in the store, not checked before it | Accepted |

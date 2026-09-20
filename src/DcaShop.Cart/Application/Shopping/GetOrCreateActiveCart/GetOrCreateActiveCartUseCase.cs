@@ -31,8 +31,24 @@ public sealed class GetOrCreateActiveCartUseCase : IGetOrCreateActiveCartInputPo
                     return new GetOrCreateActiveCartResult(existing.Id.Value, Created: false);
                 }
 
+                // The store refuses a second active cart for the same customer, so a request that lost the race
+                // takes the cart that won rather than adding one of its own.
                 var cart = new ShoppingCart(CartId.Generate(), customerId);
-                await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
+                try
+                {
+                    await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
+                }
+                catch (InvalidOperationException)
+                {
+                    var winner = await _carts.FindActiveByCustomerAsync(customerId, ct).ConfigureAwait(false);
+                    if (winner is null)
+                    {
+                        throw;
+                    }
+
+                    return new GetOrCreateActiveCartResult(winner.Id.Value, Created: false);
+                }
+
                 await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);
                 return new GetOrCreateActiveCartResult(cart.Id.Value, Created: true);
             },
