@@ -13,18 +13,38 @@ public sealed class InMemoryProductRepository : IProductRepository
 {
     private readonly ConcurrentDictionary<ProductId, Domain.Model.Product> _products = new();
 
+    /// <summary>The product a SKU names, claimed on save the way a unique column claims it.</summary>
+    private readonly ConcurrentDictionary<Sku, ProductId> _bySku = new();
+
     public Task<Domain.Model.Product?> FindByIdAsync(ProductId id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_products.TryGetValue(id, out var product) ? product : null);
 
+    /// <exception cref="InvalidOperationException">Another product already carries this SKU.</exception>
     public Task<Domain.Model.Product> SaveAsync(Domain.Model.Product aggregate, CancellationToken cancellationToken = default)
     {
+        var claimed = _bySku.GetOrAdd(aggregate.Sku, aggregate.Id);
+        if (claimed != aggregate.Id)
+        {
+            throw new InvalidOperationException($"SKU {aggregate.Sku} is already taken");
+        }
+
+        // A product that changed its SKU must stop resolving under the old one
+        foreach (var stale in _bySku.Where(e => e.Value == aggregate.Id && e.Key != aggregate.Sku).ToList())
+        {
+            _bySku.TryRemove(stale);
+        }
+
         _products[aggregate.Id] = aggregate;
         return Task.FromResult(aggregate);
     }
 
     public Task DeleteByIdAsync(ProductId id, CancellationToken cancellationToken = default)
     {
-        _products.TryRemove(id, out _);
+        if (_products.TryRemove(id, out var removed))
+        {
+            _bySku.TryRemove(new KeyValuePair<Sku, ProductId>(removed.Sku, id));
+        }
+
         return Task.CompletedTask;
     }
 
@@ -32,5 +52,5 @@ public sealed class InMemoryProductRepository : IProductRepository
         Task.FromResult<IReadOnlyList<Domain.Model.Product>>(_products.Values.OrderBy(p => p.Name.Value, StringComparer.Ordinal).ToList());
 
     public Task<Domain.Model.Product?> FindBySkuAsync(Sku sku, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_products.Values.FirstOrDefault(p => p.Sku == sku));
+        Task.FromResult(_bySku.TryGetValue(sku, out var id) && _products.TryGetValue(id, out var product) ? product : null);
 }

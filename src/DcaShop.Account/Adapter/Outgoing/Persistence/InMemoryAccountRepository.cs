@@ -40,10 +40,23 @@ public sealed class InMemoryAccountRepository : IAccountRepository
             _byEmail.TryRemove(stored.Email.Value, out _);
         }
 
+        Claim(_byEmail, aggregate.Email.Value, aggregate.Id, "Email address");
+        Claim(_byLinkedUserId, aggregate.LinkedUserId, aggregate.Id, "Linked user id");
+
         _accounts[aggregate.Id] = aggregate;
-        _byEmail[aggregate.Email.Value] = aggregate.Id;
-        _byLinkedUserId[aggregate.LinkedUserId] = aggregate.Id;
         return Task.FromResult(aggregate);
+    }
+
+    /// <summary>Claims a unique value for one account, or refuses when somebody else holds it.</summary>
+    /// <exception cref="InvalidOperationException">Another account already holds the value.</exception>
+    private static void Claim<TKey>(ConcurrentDictionary<TKey, AccountId> index, TKey value, AccountId accountId, string what)
+        where TKey : notnull
+    {
+        var holder = index.GetOrAdd(value, accountId);
+        if (holder != accountId)
+        {
+            throw new InvalidOperationException($"{what} {value} already belongs to another account");
+        }
     }
 
     public Task DeleteByIdAsync(AccountId id, CancellationToken cancellationToken = default)
