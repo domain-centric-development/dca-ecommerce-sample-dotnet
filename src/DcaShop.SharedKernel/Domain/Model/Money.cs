@@ -26,6 +26,9 @@ public sealed record Money : IValue
 
     public decimal Amount { get; }
 
+    /// <summary>Whether there is an amount at all. An amount is never negative, so this is "not zero".</summary>
+    public bool IsPositive => Amount != 0m;
+
     public string Currency { get; }
 
     public static Money Of(decimal amount, string currency) => new(amount, currency);
