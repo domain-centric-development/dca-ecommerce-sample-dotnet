@@ -219,7 +219,9 @@ domain event with a completion status), so it carries `[BoundedContext]` and app
 what others have published and negotiates no contract, hence Separate Ways. In transaction-script style it has no
 domain model of its own. It signs operators in under its own cookie scheme with its own credentials
 (`admin`/`admin` by default, `Backoffice` section in `appsettings.json`) — a staff session and a shopper session
-must never be the same cookie.
+must never be the same cookie. Those credentials are committed, so the shop refuses to start on them outside
+`ASPNETCORE_ENVIRONMENT=Development` (ADR-015), as it does for the committed signing secret and for cookies that
+are not marked `Secure`.
 
 > **What the event log actually shows.** The Java sample reads Spring Modulith's `EVENT_PUBLICATION` table: one
 > row per *domain* event per listener, completed when that listener returned. This shop has no such registry — its

@@ -18,9 +18,20 @@ public sealed class BackofficeOptions
 
     public const string CookieName = "backoffice-session";
 
-    public string Username { get; set; } = "admin";
+    /// <summary>The operator name the sample ships with.</summary>
+    public const string DevelopmentUsername = "admin";
 
-    public string Password { get; set; } = "admin";
+    /// <summary>The operator password the sample ships with.</summary>
+    /// <remarks>
+    /// Committed, therefore known to everybody. The backoffice replays failed event publications, so this is the
+    /// most privileged door in the shop; <c>BackofficeDevelopmentDefaultsValidator</c> refuses it outside the
+    /// Development environment.
+    /// </remarks>
+    public const string DevelopmentPassword = "admin";
+
+    public string Username { get; set; } = DevelopmentUsername;
+
+    public string Password { get; set; } = DevelopmentPassword;
 
     /// <summary>
     /// Whether the session cookie is marked <c>Secure</c>. From configuration, never hardcoded — the same rule

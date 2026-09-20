@@ -19,6 +19,9 @@ RUN --mount=type=cache,target=/root/.nuget/packages \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /app .
+# The image carries no environment, so it is a production run: the shop refuses the committed signing secret, the
+# committed operator credentials and non-Secure cookies, and says which variable fixes each (ADR-015).
+# ASPNETCORE_ENVIRONMENT=Development runs it as the demo compose does.
 ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
 USER $APP_UID

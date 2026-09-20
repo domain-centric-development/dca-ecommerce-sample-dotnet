@@ -19,7 +19,13 @@ public static class BackofficeContextRegistration
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        services.Configure<BackofficeOptions>(configuration.GetSection(BackofficeOptions.SectionName));
+        services
+            .AddOptions<BackofficeOptions>()
+            .Bind(configuration.GetSection(BackofficeOptions.SectionName))
+            .ValidateOnStart();
+
+        // The operator credentials and the cookie policy this repository ships are refused outside Development.
+        services.AddSingleton<IValidateOptions<BackofficeOptions>, BackofficeDevelopmentDefaultsValidator>();
 
         // Use cases (input ports)
         services.AddScoped<IGetEventPublicationsInputPort, GetEventPublicationsUseCase>();
