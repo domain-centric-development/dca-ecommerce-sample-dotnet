@@ -65,6 +65,27 @@ public sealed class SubmitPaymentUseCaseTest
     }
 
     [Fact]
+    public async Task AnIntentIsReleasedEvenWhenTheRequestWasCancelled()
+    {
+        var session = await ReadySessionAsync();
+        using var caller = new CancellationTokenSource();
+
+        // The caller goes away while the provider is being called: the transaction is aborted by that same
+        // token, and the clean-up must not be.
+        _provider.DuringInitiation = () =>
+        {
+            caller.Cancel();
+            return Task.CompletedTask;
+        };
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => UseCase().ExecuteAsync(
+            new SubmitPaymentCommand(session.Id.Value, Customer, "mock"), caller.Token));
+
+        Assert.Single(_provider.Initiations);
+        Assert.Equal(_provider.Initiations, _provider.Cancellations);
+    }
+
+    [Fact]
     public async Task AReadySessionKeepsItsIntent()
     {
         var session = await ReadySessionAsync();
@@ -126,6 +147,8 @@ public sealed class SubmitPaymentUseCaseTest
 
         public Task<IPaymentProvider.PaymentResult> CancelPaymentAsync(string providerReference, CancellationToken cancellationToken = default)
         {
+            // An HTTP client would do the same: a cancelled token means the call never leaves.
+            cancellationToken.ThrowIfCancellationRequested();
             Cancellations.Add(providerReference);
             return Task.FromResult(IPaymentProvider.PaymentResult.Succeeded(providerReference));
         }
@@ -149,6 +172,9 @@ public sealed class SubmitPaymentUseCaseTest
 
         public Task PublishAndClearEventsAsync(IAggregateRoot aggregate, CancellationToken cancellationToken = default)
         {
+            // Real infrastructure honours the token; the in-memory doubles are where a test would otherwise
+            // never see a cancelled write.
+            cancellationToken.ThrowIfCancellationRequested();
             aggregate.ClearDomainEvents();
             return Task.CompletedTask;
         }

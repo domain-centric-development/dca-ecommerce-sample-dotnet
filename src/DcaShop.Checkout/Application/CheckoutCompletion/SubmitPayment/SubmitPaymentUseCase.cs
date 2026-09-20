@@ -14,6 +14,9 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
     private readonly ITransactionBoundary _transactionBoundary;
     private readonly ILogger<SubmitPaymentUseCase> _logger;
 
+    /// <summary>How long releasing an unusable payment intent may take.</summary>
+    private static readonly TimeSpan CancellationDeadline = TimeSpan.FromSeconds(10);
+
     public SubmitPaymentUseCase(ICheckoutSessionRepository sessions, IPaymentProviderRegistry providers, IDomainEventPublisher events, ITransactionBoundary transactionBoundary, ILogger<SubmitPaymentUseCase> logger)
     {
         _transactionBoundary = transactionBoundary;
@@ -72,7 +75,7 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
         }
         catch (Exception)
         {
-            await CancelQuietlyAsync(provider, providerReference, cancellationToken).ConfigureAwait(false);
+            await CancelQuietlyAsync(provider, providerReference).ConfigureAwait(false);
             throw;
         }
     }
@@ -82,11 +85,16 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
     /// original failure standing: the caller is told why their payment was rejected, not that the clean-up of it
     /// failed as well.
     /// </summary>
-    private async Task CancelQuietlyAsync(IPaymentProvider provider, string providerReference, CancellationToken cancellationToken)
+    private async Task CancelQuietlyAsync(IPaymentProvider provider, string providerReference)
     {
+        // Not the caller's token: a cancelled request is one of the reasons the transaction failed, and passing
+        // that same token on would abort the clean-up before it reaches the provider — leaving behind exactly the
+        // intent this exists to release. Its own deadline bounds it instead.
+        using var deadline = new CancellationTokenSource(CancellationDeadline);
+
         try
         {
-            var cancellation = await provider.CancelPaymentAsync(providerReference, cancellationToken).ConfigureAwait(false);
+            var cancellation = await provider.CancelPaymentAsync(providerReference, deadline.Token).ConfigureAwait(false);
             if (!cancellation.Success)
             {
                 _logger.LogWarning("Payment intent {Reference} could not be released: {Reason}", providerReference, cancellation.ErrorMessage);

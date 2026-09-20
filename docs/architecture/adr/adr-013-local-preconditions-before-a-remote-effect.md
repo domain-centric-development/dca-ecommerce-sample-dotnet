@@ -27,5 +27,9 @@ the identical ordering and is changed alike.
 
 - Positive: no payment intent exists for a checkout that cannot accept it; `SubmitPaymentUseCaseTest` proves the
   order and the compensation and fails when either half is removed.
-- Negative: the session is loaded twice, and compensation is best effort — a process that dies between
-  initiation and cancellation orphans the intent. A real system needs reconciliation.
+- Negative: the session is loaded twice, and compensation is best effort. Three things decide how much of it
+  survives: it catches every way out of the transaction (`catch (Exception)`, matching the Java twin's
+  `Throwable`); it runs the release under its own deadline rather than the caller's `CancellationToken`, because
+  an aborted request is one of the reasons the write failed and that same token would cancel the clean-up before
+  it reaches the provider; and a process that dies between initiation and release orphans the intent, which only
+  reconciliation finds.

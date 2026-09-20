@@ -117,7 +117,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         EnsureStepCompleted(CheckoutStep.Delivery);
         EnsureAtOrBeforeStep(CheckoutStep.Payment);
 
-        if (Totals.Total.Amount <= 0m)
+        if (!Totals.Total.IsPositive)
         {
             throw new InvalidOperationException($"Nothing to pay: the total is {Totals.Total}");
         }
