@@ -41,7 +41,7 @@ public sealed class CheckoutSpecificationTest
             case "checkout.superseded.confirm-rejected":
                 {
                     var next = await f.Start(); Assert.NotEqual(session.Id, next.Id); Assert.Equal(CheckoutSessionStatus.Superseded, session.Status);
-                    await Assert.ThrowsAsync<InvalidOperationException>(() => f.Confirm(session)); Assert.Empty(session.DomainEvents); break;
+                    await Assert.ThrowsAsync<CheckoutNotModifiableException>(() => f.Confirm(session)); Assert.Empty(session.DomainEvents); break;
                 }
             case "checkout.abandon.preserves-cart":
                 {
@@ -81,7 +81,7 @@ public sealed class CheckoutSpecificationTest
         // Both have fetched facts; the second cannot finish while the first holds the repository operation.
         Assert.False(second.IsCompleted); f.Events.Release.TrySetResult(); await first;
         if (confirmationWins) { await second; Assert.Equal(CheckoutSessionStatus.Confirmed, session.Status); }
-        else { await Assert.ThrowsAsync<InvalidOperationException>(() => second); Assert.Equal(CheckoutSessionStatus.Superseded, session.Status); }
+        else { await Assert.ThrowsAsync<CheckoutNotModifiableException>(() => second); Assert.Equal(CheckoutSessionStatus.Superseded, session.Status); }
     }
     private static void Ready(CheckoutSession s)
     {
