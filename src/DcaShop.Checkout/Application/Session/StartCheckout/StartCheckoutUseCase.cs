@@ -35,15 +35,15 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
         // Cart and article data come from other contexts (remote-capable) — outside the transaction
         // Scoped to the caller: a cart that is not theirs is indistinguishable from one that does not exist.
         var cart = await _cartData.FindByIdAsync(cartId, CustomerId.Of(command.CustomerId), cancellationToken).ConfigureAwait(false)
-                   ?? throw new ArgumentException($"Cart not found: {cartId}", nameof(command));
+                   ?? throw new CartNotAvailableException(cartId);
         if (!cart.Active)
         {
-            throw new InvalidOperationException($"Cart is not active: {cartId}");
+            throw new CartNotActiveException(cartId);
         }
 
         if (cart.Items.Count == 0)
         {
-            throw new InvalidOperationException($"Cannot checkout empty cart: {cartId}");
+            throw new EmptyCartException(cartId);
         }
 
         var articles = await _articleData.GetArticleDataAsync(cart.Items.Select(i => i.ProductId).ToArray(), cancellationToken).ConfigureAwait(false);
@@ -52,7 +52,7 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
         {
             if (!articles.TryGetValue(cartItem.ProductId, out var article))
             {
-                throw new ArgumentException($"Product not found: {cartItem.ProductId}", nameof(command));
+                throw new ArticleNotAvailableException(cartItem.ProductId);
             }
 
             lineItems.Add(new CheckoutLineItem(CheckoutLineItemId.Generate(), cartItem.ProductId, article.Name, article.CurrentPrice, cartItem.Quantity, article.ImageUrl, cartItem.PositionSnapshot));

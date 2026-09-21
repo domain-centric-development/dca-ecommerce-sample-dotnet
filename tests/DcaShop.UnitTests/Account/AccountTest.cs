@@ -98,7 +98,7 @@ public sealed class AccountTest
         account.Suspend();
 
         Assert.False(account.Status.CanLogin());
-        Assert.Throws<InvalidOperationException>(account.RecordLogin);
+        Assert.Throws<AccountNotAccessibleException>(account.RecordLogin);
     }
 
     [Fact]
@@ -120,10 +120,10 @@ public sealed class AccountTest
         account.Close();
 
         Assert.True(account.Status.IsTerminal());
-        Assert.Throws<InvalidOperationException>(() => account.ChangePassword("Another123", Hasher));
-        Assert.Throws<InvalidOperationException>(() => account.ChangeEmail(Email.Of("new@example.com")));
-        Assert.Throws<InvalidOperationException>(() => account.ChangeOwnerDateOfBirth(new DateOnly(1991, 1, 1)));
-        Assert.Throws<InvalidOperationException>(account.Close);
+        Assert.Throws<AccountClosedException>(() => account.ChangePassword("Another123", Hasher));
+        Assert.Throws<AccountClosedException>(() => account.ChangeEmail(Email.Of("new@example.com")));
+        Assert.Throws<AccountClosedException>(() => account.ChangeOwnerDateOfBirth(new DateOnly(1991, 1, 1)));
+        Assert.Throws<AccountClosedException>(account.Close);
     }
 
     [Fact]

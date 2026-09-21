@@ -115,7 +115,7 @@ public sealed class Account : AggregateRootBase<Account, AccountId>
     {
         if (!Status.CanLogin())
         {
-            throw new InvalidOperationException($"Cannot login with account status: {Status}");
+            throw new AccountNotAccessibleException(Id, Status);
         }
 
         LastLoginAt = DateTimeOffset.UtcNow;
@@ -127,7 +127,7 @@ public sealed class Account : AggregateRootBase<Account, AccountId>
     {
         if (Status.IsTerminal())
         {
-            throw new InvalidOperationException("Cannot change password on closed account");
+            throw new AccountClosedException(Id);
         }
 
         Password = HashedPassword.FromPlaintext(newPlainPassword, passwordHasher);
@@ -143,7 +143,7 @@ public sealed class Account : AggregateRootBase<Account, AccountId>
     {
         if (Status.IsTerminal())
         {
-            throw new InvalidOperationException("Cannot change email on closed account");
+            throw new AccountClosedException(Id);
         }
 
         if (Email == newEmail)
@@ -164,7 +164,7 @@ public sealed class Account : AggregateRootBase<Account, AccountId>
     {
         if (Status.IsTerminal())
         {
-            throw new InvalidOperationException("Cannot change the date of birth on closed account");
+            throw new AccountClosedException(Id);
         }
 
         if (Owner.DateOfBirth == newDateOfBirth)
@@ -182,7 +182,7 @@ public sealed class Account : AggregateRootBase<Account, AccountId>
     {
         if (Status.IsTerminal())
         {
-            throw new InvalidOperationException("Cannot suspend closed account");
+            throw new AccountClosedException(Id);
         }
 
         Status = AccountStatus.Suspended;
@@ -194,7 +194,7 @@ public sealed class Account : AggregateRootBase<Account, AccountId>
     {
         if (Status != AccountStatus.Suspended)
         {
-            throw new InvalidOperationException("Can only reactivate suspended accounts");
+            throw new AccountNotSuspendedException(Id, Status);
         }
 
         Status = AccountStatus.Active;
@@ -206,7 +206,7 @@ public sealed class Account : AggregateRootBase<Account, AccountId>
     {
         if (Status.IsTerminal())
         {
-            throw new InvalidOperationException("Account is already closed");
+            throw new AccountClosedException(Id);
         }
 
         Status = AccountStatus.Closed;

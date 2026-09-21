@@ -1,3 +1,5 @@
+using DomainCentric.BuildingBlocks.Application;
+using DomainCentric.BuildingBlocks.Ddd.Tactical;
 using System.Net;
 using DcaShop.Account.Application.AuthenticateAccount;
 using DcaShop.Account.Adapter.Incoming.Security;
@@ -55,8 +57,10 @@ public sealed class LoginPageController : Controller
             result = await _authenticateAccount.ExecuteAsync(
                 new AuthenticateAccountCommand(email, password), cancellationToken);
         }
-        catch (ArgumentException e)
+        catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
         {
+            // The context's own refusals, plus the argument exception a form field still reaches a value object
+            // with.
             return Rejected(email, returnUrl, e.Message);
         }
 

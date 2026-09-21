@@ -1,3 +1,4 @@
+using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Adapter.Outgoing.Persistence;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Cart.Domain.Model;
@@ -27,7 +28,7 @@ public sealed class ActiveCartUniquenessTest
         var customer = CustomerId.Of($"customer-{Guid.NewGuid()}");
         await carts.SaveAsync(new ShoppingCart(CartId.Generate(), customer));
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<ActiveCartAlreadyExistsException>(() =>
             carts.SaveAsync(new ShoppingCart(CartId.Generate(), customer)));
     }
 

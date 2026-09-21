@@ -56,16 +56,10 @@ public sealed class ProductResource : ControllerBase
             request.Category,
             request.Stock);
 
-        try
-        {
-            var result = await _createProduct.ExecuteAsync(command, cancellationToken);
-            return StatusCode(StatusCodes.Status201Created, _converter.ToDto(result, command));
-        }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
-        {
-            // A malformed SKU or a duplicate one is the caller's mistake, not the server's.
-            return BadRequest(e.Message);
-        }
+        // A refused creation travels as the failure's own type; ProductApiExceptionHandler turns it into a
+        // problem document with the status that failure deserves.
+        var result = await _createProduct.ExecuteAsync(command, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, _converter.ToDto(result, command));
     }
 
     [HttpGet]

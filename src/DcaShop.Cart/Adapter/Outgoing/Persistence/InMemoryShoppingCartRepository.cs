@@ -19,18 +19,24 @@ public sealed class InMemoryShoppingCartRepository : IShoppingCartRepository
     public Task<ShoppingCart?> FindByIdAsync(CartId id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_carts.TryGetValue(id, out var cart) ? cart : null);
 
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="ActiveCartAlreadyExistsException">
     /// The cart is active and the customer already has a different active cart — the answer a unique index gives,
     /// so a caller written against this adapter works unchanged against a relational one.
     /// </exception>
     public Task<ShoppingCart> SaveAsync(ShoppingCart aggregate, CancellationToken cancellationToken = default)
     {
+        // The cart is stored before the claim is published, and withdrawn again when the claim fails. A relational
+        // store makes both visible at one commit; here the two writes are separate, so publishing the claim first
+        // would let the request that lost the race read the winner's id out of the index and find nothing behind it.
+        _carts[aggregate.Id] = aggregate;
+
         if (aggregate.IsActive)
         {
             var claimed = _activeCartByCustomer.GetOrAdd(aggregate.CustomerId, aggregate.Id);
             if (claimed != aggregate.Id)
             {
-                throw new InvalidOperationException($"Customer {aggregate.CustomerId} already has an active cart");
+                _carts.TryRemove(new KeyValuePair<CartId, ShoppingCart>(aggregate.Id, aggregate));
+                throw new ActiveCartAlreadyExistsException(aggregate.CustomerId);
             }
         }
         else
@@ -38,7 +44,6 @@ public sealed class InMemoryShoppingCartRepository : IShoppingCartRepository
             _activeCartByCustomer.TryRemove(new KeyValuePair<CustomerId, CartId>(aggregate.CustomerId, aggregate.Id));
         }
 
-        _carts[aggregate.Id] = aggregate;
         return Task.FromResult(aggregate);
     }
 

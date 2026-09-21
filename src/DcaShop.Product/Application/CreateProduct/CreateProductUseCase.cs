@@ -30,7 +30,7 @@ public sealed class CreateProductUseCase : ICreateProductInputPort
                 var sku = Sku.Of(command.Sku);
                 if (await _products.FindBySkuAsync(sku, ct).ConfigureAwait(false) is not null)
                 {
-                    throw new InvalidOperationException($"A product with SKU {sku} already exists");
+                    throw new DuplicateSkuException(sku);
                 }
 
                 var product = _factory.Create(

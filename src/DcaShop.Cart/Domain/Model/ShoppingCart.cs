@@ -98,7 +98,7 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
         EnsureCartIsActive();
         if (_items.RemoveAll(i => i.ProductId == productId) == 0)
         {
-            throw new ArgumentException($"Product not found in cart: {productId}", nameof(productId));
+            throw CartItemNotFoundException.ForProduct(productId);
         }
 
         RegisterEvent(ProductRemovedFromCart.Now(Id, productId));
@@ -149,12 +149,12 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
     {
         if (Status == CartStatus.Completed)
         {
-            throw new InvalidOperationException("Cart is already completed");
+            throw new CartAlreadyCompletedException(Id);
         }
 
         if (Status == CartStatus.Abandoned)
         {
-            throw new InvalidOperationException("Cannot complete an abandoned cart");
+            throw new AbandonedCartCannotBeCompletedException(Id);
         }
 
         Status = CartStatus.Completed;
@@ -216,13 +216,13 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
 
     private CartItem FindItem(CartItemId itemId) =>
         _items.FirstOrDefault(i => i.Id == itemId)
-        ?? throw new ArgumentException($"Cart item not found: {itemId}", nameof(itemId));
+        ?? throw CartItemNotFoundException.ForItem(itemId);
 
     private void EnsureCartIsActive()
     {
         if (Status != CartStatus.Active)
         {
-            throw new InvalidOperationException($"Cannot modify cart with status: {Status}");
+            throw new CartNotModifiableException(Id, Status);
         }
     }
 }

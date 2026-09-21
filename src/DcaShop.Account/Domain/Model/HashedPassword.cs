@@ -58,28 +58,28 @@ public sealed record HashedPassword : IValue
     {
         if (plaintext is null || plaintext.Length < MinLength)
         {
-            throw new ArgumentException($"Password must be at least {MinLength} characters long");
+            throw new PasswordTooWeakException($"Password must be at least {MinLength} characters long");
         }
 
         if (Encoding.UTF8.GetByteCount(plaintext) > MaxByteLength)
         {
-            throw new ArgumentException(
+            throw new PasswordTooWeakException(
                 $"Password must not be longer than {MaxByteLength} bytes (UTF-8 encoded)");
         }
 
         if (!plaintext.Any(char.IsUpper))
         {
-            throw new ArgumentException("Password must contain at least one uppercase letter");
+            throw new PasswordTooWeakException("Password must contain at least one uppercase letter");
         }
 
         if (!plaintext.Any(char.IsLower))
         {
-            throw new ArgumentException("Password must contain at least one lowercase letter");
+            throw new PasswordTooWeakException("Password must contain at least one lowercase letter");
         }
 
         if (!plaintext.Any(char.IsDigit))
         {
-            throw new ArgumentException("Password must contain at least one digit");
+            throw new PasswordTooWeakException("Password must contain at least one digit");
         }
     }
 

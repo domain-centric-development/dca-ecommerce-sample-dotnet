@@ -1,3 +1,4 @@
+using DcaShop.Account.Adapter.Incoming.Api;
 using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.Account.Adapter.Outgoing.Persistence;
 using DcaShop.Account.Adapter.Outgoing.Security;
@@ -83,6 +84,9 @@ public static class AccountContextRegistration
             .AddScheme<ShopIdentityAuthenticationOptions, ShopIdentityAuthenticationHandler>(
                 ShopPrincipal.BearerScheme, options => options.BearerOnly = true);
         services.AddAuthorization();
+
+        // The one place in this context that turns a failure into an HTTP answer
+        services.AddExceptionHandler<AccountApiExceptionHandler>();
 
         return services;
     }

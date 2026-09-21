@@ -1,3 +1,4 @@
+using DcaShop.Inventory.Domain.Model;
 using DcaShop.Inventory.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 using DomainCentric.BuildingBlocks.Application.Transactions;
@@ -49,9 +50,11 @@ public sealed class ReduceStockUseCase : IReduceStockInputPort
             {
                 stockLevel.DecreaseStock(input.Quantity);
             }
-            catch (Exception e) when (e is ArgumentException or InvalidOperationException)
+            catch (InsufficientStockException e)
             {
-                _logger.LogWarning(e, "Cannot reduce stock for product {ProductId} by {Quantity}", input.ProductId, input.Quantity);
+                // Only the stock rule becomes a failure result. An argument guard from the aggregate would be a
+                // malformed call — a defect here, not an answer for the caller — and keeps travelling.
+                _logger.LogWarning("Stock too low for product {ProductId}: {Reason}", input.ProductId, e.Message);
                 return ReduceStockResult.Failure(input.ProductId, e.Message);
             }
 

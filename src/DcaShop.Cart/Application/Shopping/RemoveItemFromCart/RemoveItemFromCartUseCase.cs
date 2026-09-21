@@ -26,7 +26,7 @@ public sealed class RemoveItemFromCartUseCase : IRemoveItemFromCartInputPort
             {
                 var cartId = new CartId(command.CartId);
                 var cart = await _carts.FindByIdForCustomerAsync(cartId, CustomerId.Of(command.CustomerId), ct).ConfigureAwait(false)
-                           ?? throw new ArgumentException($"Cart not found: {cartId}", nameof(command));
+                           ?? throw new CartNotFoundException(cartId);
 
                 cart.RemoveItem(new CartItemId(command.ItemId));
 

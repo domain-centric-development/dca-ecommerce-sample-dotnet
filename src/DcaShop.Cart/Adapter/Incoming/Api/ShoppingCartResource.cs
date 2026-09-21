@@ -110,15 +110,9 @@ public sealed class ShoppingCartResource : ControllerBase
             return NotFound();
         }
 
-        try
-        {
-            await _addItemToCart.ExecuteAsync(
-                new AddItemToCartCommand(cartId, CurrentCustomerId, request.ProductId, request.Quantity), cancellationToken);
-        }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
-        {
-            return BadRequest(e.Message);
-        }
+        // Each refusal travels as its own type; CartApiExceptionHandler decides what the caller is told.
+        await _addItemToCart.ExecuteAsync(
+            new AddItemToCartCommand(cartId, CurrentCustomerId, request.ProductId, request.Quantity), cancellationToken);
 
         return Ok(_converter.ToDto((await ReadAsync(cartId, cancellationToken))!));
     }
@@ -136,14 +130,7 @@ public sealed class ShoppingCartResource : ControllerBase
             return NotFound();
         }
 
-        try
-        {
-            await _removeItemFromCart.ExecuteAsync(new RemoveItemFromCartCommand(cartId, CurrentCustomerId, itemId), cancellationToken);
-        }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
-        {
-            return BadRequest(e.Message);
-        }
+        await _removeItemFromCart.ExecuteAsync(new RemoveItemFromCartCommand(cartId, CurrentCustomerId, itemId), cancellationToken);
 
         return Ok(_converter.ToDto((await ReadAsync(cartId, cancellationToken))!));
     }

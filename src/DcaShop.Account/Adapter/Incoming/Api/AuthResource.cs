@@ -63,26 +63,21 @@ public sealed class AuthResource : ControllerBase
         ArgumentNullException.ThrowIfNull(request);
         var currentUserId = _identityProvider.GetCurrentIdentity().UserId.Value;
 
-        try
-        {
-            var result = await _registerAccount.ExecuteAsync(
-                new RegisterAccountCommand(
-                    request.Email,
-                    request.Password,
-                    currentUserId,
-                    request.FirstName,
-                    request.LastName,
-                    request.DateOfBirth),
-                cancellationToken);
+        // A refused registration travels as the failure's own type; AccountApiExceptionHandler turns it into a
+        // problem document, so the success body describes the success case only.
+        var result = await _registerAccount.ExecuteAsync(
+            new RegisterAccountCommand(
+                request.Email,
+                request.Password,
+                currentUserId,
+                request.FirstName,
+                request.LastName,
+                request.DateOfBirth),
+            cancellationToken);
 
-            var token = _tokenService.GenerateRegisteredToken(
-                UserId.Of(result.UserId), result.Email, result.Roles);
-            return StatusCode(StatusCodes.Status201Created, RegisterResponse.Succeeded(token, result.Email));
-        }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
-        {
-            return BadRequest(RegisterResponse.Failed(e.Message));
-        }
+        var token = _tokenService.GenerateRegisteredToken(
+            UserId.Of(result.UserId), result.Email, result.Roles);
+        return StatusCode(StatusCodes.Status201Created, RegisterResponse.Succeeded(token, result.Email));
     }
 
     /// <summary>

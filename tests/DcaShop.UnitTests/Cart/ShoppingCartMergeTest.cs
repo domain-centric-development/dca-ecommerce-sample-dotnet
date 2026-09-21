@@ -112,7 +112,7 @@ public sealed class ShoppingCartMergeTest
         _target.Abandon();
         _source.AddItem(productId, Quantity.Of(1), Ten);
 
-        Assert.Throws<InvalidOperationException>(() => _target.Merge(_source));
+        Assert.Throws<CartNotModifiableException>(() => _target.Merge(_source));
     }
 
     [Fact]
