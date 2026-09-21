@@ -42,12 +42,12 @@ public sealed class RegisterAccountUseCase : IRegisterAccountInputPort
             {
                 if (await _accounts.ExistsByEmailAsync(email, ct).ConfigureAwait(false))
                 {
-                    throw new ArgumentException($"Email is already registered: {email.Value}", nameof(command));
+                    throw new EmailAlreadyRegisteredException(email);
                 }
 
                 if (await _accounts.FindByLinkedUserIdAsync(currentUserId, ct).ConfigureAwait(false) is not null)
                 {
-                    throw new InvalidOperationException("User already has an account");
+                    throw new AccountAlreadyExistsException(currentUserId);
                 }
 
                 var account = Domain.Model.Account.Register(

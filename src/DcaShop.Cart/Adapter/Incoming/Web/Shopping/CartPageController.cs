@@ -1,3 +1,5 @@
+using DomainCentric.BuildingBlocks.Application;
+using DomainCentric.BuildingBlocks.Ddd.Tactical;
 using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
@@ -45,8 +47,10 @@ public sealed class CartPageController : Controller
             await _addItemToCart.ExecuteAsync(new AddItemToCartCommand(cartId, CurrentCustomerId, productId, quantity), cancellationToken);
             TempData["Message"] = "Product added to cart!";
         }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
+        catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
         {
+            // The context's own refusals, plus the argument exception a form field still reaches a value object
+            // with.
             TempData["Error"] = e.Message;
         }
 

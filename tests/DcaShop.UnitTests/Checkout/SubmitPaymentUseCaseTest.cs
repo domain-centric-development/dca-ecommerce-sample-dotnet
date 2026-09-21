@@ -38,7 +38,7 @@ public sealed class SubmitPaymentUseCaseTest
     {
         var session = await SessionWithBuyerInfoOnlyAsync();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => UseCase().ExecuteAsync(
+        await Assert.ThrowsAsync<CheckoutStepNotCompletedException>(() => UseCase().ExecuteAsync(
             new SubmitPaymentCommand(session.Id.Value, Customer, "mock")));
 
         Assert.Empty(_provider.Initiations);
@@ -57,7 +57,7 @@ public sealed class SubmitPaymentUseCaseTest
             await _sessions.SaveAsync(session);
         };
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => UseCase().ExecuteAsync(
+        await Assert.ThrowsAsync<CheckoutNotModifiableException>(() => UseCase().ExecuteAsync(
             new SubmitPaymentCommand(session.Id.Value, Customer, "mock")));
 
         Assert.Single(_provider.Initiations);

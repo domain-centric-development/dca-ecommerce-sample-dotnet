@@ -49,6 +49,9 @@ public static class CartContextRegistration
         // Incoming adapters
         services.AddSingleton<ShoppingCartDtoConverter>();
 
+        // The one place in this context that turns a failure into an HTTP answer
+        services.AddExceptionHandler<CartApiExceptionHandler>();
+
         // Outgoing adapters (output ports)
         services.AddSingleton<IShoppingCartRepository, InMemoryShoppingCartRepository>();
         services.AddScoped<IArticleDataPort, CompositeArticleDataAdapter>();

@@ -20,38 +20,42 @@ public sealed class GetOrCreateActiveCartUseCase : IGetOrCreateActiveCartInputPo
 
     public async Task<GetOrCreateActiveCartResult> ExecuteAsync(GetOrCreateActiveCartCommand command, CancellationToken cancellationToken = default)
     {
-        // Whole use case is local: one short transaction
-        return await _transactionBoundary.InTransactionAsync(
-            async ct =>
-            {
-                var customerId = CustomerId.Of(command.CustomerId);
-                var existing = await _carts.FindActiveByCustomerAsync(customerId, ct).ConfigureAwait(false);
-                if (existing is not null)
-                {
-                    return new GetOrCreateActiveCartResult(existing.Id.Value, Created: false);
-                }
+        var customerId = CustomerId.Of(command.CustomerId);
 
-                // The store refuses a second active cart for the same customer, so a request that lost the race
-                // takes the cart that won rather than adding one of its own.
-                var cart = new ShoppingCart(CartId.Generate(), customerId);
-                try
+        var existing = await _carts.FindActiveByCustomerAsync(customerId, cancellationToken).ConfigureAwait(false);
+        if (existing is not null)
+        {
+            return new GetOrCreateActiveCartResult(existing.Id.Value, Created: false);
+        }
+
+        // The store refuses a second active cart for the same customer, so a request that lost the race takes the
+        // cart that won rather than adding one of its own.
+        //
+        // The claim is attempted in a transaction of its own, and the recovery happens outside it. A store that
+        // refuses a write mid-transaction leaves that transaction unusable — a relational one has to roll it back
+        // before anything else can be read — so a catch that carried on inside it would read fine and then fail at
+        // commit. The boundary is drawn here for that reason.
+        try
+        {
+            return await _transactionBoundary.InTransactionAsync(
+                async ct =>
                 {
+                    var cart = new ShoppingCart(CartId.Generate(), customerId);
                     await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
-                }
-                catch (InvalidOperationException)
-                {
-                    var winner = await _carts.FindActiveByCustomerAsync(customerId, ct).ConfigureAwait(false);
-                    if (winner is null)
-                    {
-                        throw;
-                    }
+                    await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);
+                    return new GetOrCreateActiveCartResult(cart.Id.Value, Created: true);
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (ActiveCartAlreadyExistsException)
+        {
+            var winner = await _carts.FindActiveByCustomerAsync(customerId, cancellationToken).ConfigureAwait(false);
+            if (winner is null)
+            {
+                throw;
+            }
 
-                    return new GetOrCreateActiveCartResult(winner.Id.Value, Created: false);
-                }
-
-                await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);
-                return new GetOrCreateActiveCartResult(cart.Id.Value, Created: true);
-            },
-            cancellationToken).ConfigureAwait(false);
+            return new GetOrCreateActiveCartResult(winner.Id.Value, Created: false);
+        }
     }
 }

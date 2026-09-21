@@ -67,7 +67,7 @@ public sealed class ShoppingCartTest
 
         var abandoned = NewCart();
         abandoned.Abandon();
-        Assert.Throws<InvalidOperationException>(abandoned.Complete);
+        Assert.Throws<AbandonedCartCannotBeCompletedException>(abandoned.Complete);
     }
 
     [Fact]

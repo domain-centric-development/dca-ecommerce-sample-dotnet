@@ -46,5 +46,5 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
     /// <summary>Loads the session as the caller's own: one that is not theirs is not found.</summary>
     private async Task<CheckoutSession> LoadAsync(CheckoutSessionId sessionId, CustomerId customerId, CancellationToken cancellationToken) =>
         await _sessions.FindByIdForCustomerAsync(sessionId, customerId, cancellationToken).ConfigureAwait(false)
-        ?? throw new ArgumentException($"Session not found: {sessionId}", nameof(sessionId));
+        ?? throw new CheckoutSessionNotFoundException(sessionId);
 }

@@ -336,3 +336,32 @@ business before the model is consolidated:
 
 6. **Whose threshold?** One threshold is supplied per request. Whether a stock
    level should instead carry its own reorder level is unanswered.
+
+---
+
+## Failures
+
+Named refusals of the model. Each carries the figures the rule compared; an incoming adapter maps the type to its
+own answer. A negative quantity is not among them — that is a malformed call and stays an argument guard.
+
+### InsufficientStock
+
+**Definition:** More stock would be taken out than the stock keeping unit holds.
+
+**Type:** Domain failure (`DomainException`) · **Related terms:** Available quantity, `StockLevel.DecreaseStock`
+
+---
+
+### InsufficientUnreservedStock
+
+**Definition:** More stock would be reserved than is still promisable.
+
+**Type:** Domain failure (`DomainException`) · **Related terms:** Unreserved quantity (available-to-promise), `StockLevel.Reserve`
+
+---
+
+### InsufficientReservedStock
+
+**Definition:** More stock would be released than was ever reserved.
+
+**Type:** Domain failure (`DomainException`) · **Related terms:** Reserved quantity, `StockLevel.Release`

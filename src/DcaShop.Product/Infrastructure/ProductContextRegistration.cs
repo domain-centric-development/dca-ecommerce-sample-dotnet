@@ -38,6 +38,9 @@ public static class ProductContextRegistration
         // Incoming adapters
         services.AddSingleton<ProductDtoConverter>();
 
+        // The one place in this context that turns a failure into an HTTP answer
+        services.AddExceptionHandler<ProductApiExceptionHandler>();
+
         // The catalog as MCP tools. The transport is HTTP; the host maps it at /mcp.
         services
             .AddMcpServer()

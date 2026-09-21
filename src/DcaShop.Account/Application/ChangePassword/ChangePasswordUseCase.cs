@@ -54,15 +54,15 @@ public sealed class ChangePasswordUseCase : IChangePasswordInputPort
                     return ChangePasswordResult.CurrentPasswordInvalid(CurrentPasswordInvalidMessage);
                 }
 
-                // Only the strength decision may become NewPasswordRejected. Wrapping the whole of ChangePassword
-                // would also catch an ArgumentException from the hasher (BCrypt rejects input over 72 bytes) or
-                // from the HashedPassword factory (blank hash), and the controller renders that message to the
-                // user verbatim — mislabelling an adapter fault as a password rule.
+                // Only the strength decision may become NewPasswordRejected. The rule has its own type, so a
+                // malformed call inside the hasher or the HashedPassword factory — which would arrive as the
+                // platform's argument exception — is no longer caught here and rendered to the user as if it were
+                // a password rule.
                 try
                 {
                     HashedPassword.ValidatePasswordStrength(command.NewPassword);
                 }
-                catch (ArgumentException e)
+                catch (PasswordTooWeakException e)
                 {
                     _logger.LogDebug("Password change rejected: {Reason}", e.Message);
                     return ChangePasswordResult.NewPasswordRejected(e.Message);

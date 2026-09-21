@@ -13,7 +13,7 @@ public sealed class HashedPasswordTest
     [InlineData("ALLUPPER123")]     // no lowercase
     [InlineData("NoDigitsHere")]    // no digit
     public void ThePolicyRefusesAWeakPassword(string plaintext) =>
-        Assert.Throws<ArgumentException>(() => HashedPassword.ValidatePasswordStrength(plaintext));
+        Assert.Throws<PasswordTooWeakException>(() => HashedPassword.ValidatePasswordStrength(plaintext));
 
     [Fact]
     public void ThePolicyRefusesMoreThanSeventyTwoBytes()
@@ -23,13 +23,13 @@ public sealed class HashedPasswordTest
         var multiByte = string.Concat(Enumerable.Repeat("€", 24)) + "Aa1";
         Assert.True(Encoding.UTF8.GetByteCount(multiByte) > HashedPassword.MaxByteLength);
 
-        Assert.Throws<ArgumentException>(() => HashedPassword.ValidatePasswordStrength(multiByte));
+        Assert.Throws<PasswordTooWeakException>(() => HashedPassword.ValidatePasswordStrength(multiByte));
     }
 
     [Fact]
     public void AViolationReadsAsASentenceForTheUser()
     {
-        var e = Assert.Throws<ArgumentException>(() => HashedPassword.ValidatePasswordStrength("alllower123"));
+        var e = Assert.Throws<PasswordTooWeakException>(() => HashedPassword.ValidatePasswordStrength("alllower123"));
 
         Assert.Equal("Password must contain at least one uppercase letter", e.Message);
     }

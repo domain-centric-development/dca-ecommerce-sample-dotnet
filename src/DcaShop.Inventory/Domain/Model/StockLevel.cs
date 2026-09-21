@@ -48,7 +48,7 @@ public sealed class StockLevel : AggregateRootBase<StockLevel, StockLevelId>
         RequireNotNegative(amount);
         if (amount > AvailableQuantity.Value)
         {
-            throw new InvalidOperationException($"Cannot decrease stock by {amount}, only {AvailableQuantity.Value} available");
+            throw new InsufficientStockException(ProductId, amount, AvailableQuantity.Value);
         }
 
         AvailableQuantity = StockQuantity.Of(AvailableQuantity.Value - amount);
@@ -66,7 +66,7 @@ public sealed class StockLevel : AggregateRootBase<StockLevel, StockLevelId>
         var unreserved = AvailableQuantity.Value - ReservedQuantity.Value;
         if (amount > unreserved)
         {
-            throw new InvalidOperationException($"Cannot reserve {amount}, only {unreserved} unreserved stock available");
+            throw new InsufficientUnreservedStockException(ProductId, amount, unreserved);
         }
 
         ReservedQuantity = StockQuantity.Of(ReservedQuantity.Value + amount);
@@ -78,7 +78,7 @@ public sealed class StockLevel : AggregateRootBase<StockLevel, StockLevelId>
         RequireNotNegative(amount);
         if (amount > ReservedQuantity.Value)
         {
-            throw new InvalidOperationException($"Cannot release {amount}, only {ReservedQuantity.Value} reserved");
+            throw new InsufficientReservedStockException(ProductId, amount, ReservedQuantity.Value);
         }
 
         ReservedQuantity = StockQuantity.Of(ReservedQuantity.Value - amount);

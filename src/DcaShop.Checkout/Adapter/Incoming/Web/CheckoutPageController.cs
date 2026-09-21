@@ -1,3 +1,5 @@
+using DomainCentric.BuildingBlocks.Application;
+using DomainCentric.BuildingBlocks.Ddd.Tactical;
 using DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
 using DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
 using DcaShop.Checkout.Application.Session.GetConfirmedCheckoutSession;
@@ -72,8 +74,11 @@ public sealed class CheckoutPageController : Controller
             await _start.ExecuteAsync(new StartCheckoutCommand(cartId, CurrentCustomerId()), cancellationToken);
             return Redirect("/checkout/buyer");
         }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
+        catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
         {
+            // The two base types are the checkout's own refusals. ArgumentException is still here because a form
+            // field the customer typed reaches a value object unvalidated; each field moved into request
+            // validation is one reason less to catch it.
             TempData["Error"] = e.Message;
             return Redirect(CheckoutRoutes.Cart);
         }
@@ -152,8 +157,10 @@ public sealed class CheckoutPageController : Controller
             await action(session.SessionId.Value);
             return Redirect(next);
         }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
+        catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
         {
+            // The two base types are the checkout's own refusals; the argument exception is the form field that
+            // reaches a value object unvalidated.
             return await Page(step, cancellationToken, e.Message);
         }
     }

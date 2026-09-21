@@ -24,3 +24,5 @@
 | [ADR-014](adr-014-uniqueness-is-claimed-in-the-store.md) | Uniqueness that spans aggregates is claimed in the store, not checked before it | Accepted |
 
 | [ADR-015](adr-015-development-defaults-fail-closed.md) | A committed default must not start a real deployment | Accepted |
+
+| [ADR-016](adr-016-exception-layers-and-problem-details.md) | A failure carries its own type, and only the adapter turns it into an answer | Accepted |

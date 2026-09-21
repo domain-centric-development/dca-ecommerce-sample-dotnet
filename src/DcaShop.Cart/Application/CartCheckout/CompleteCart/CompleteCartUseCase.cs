@@ -26,7 +26,7 @@ public sealed class CompleteCartUseCase : ICompleteCartInputPort
             {
                 var cartId = new CartId(command.CartId);
                 var cart = await _carts.FindByIdAsync(cartId, ct).ConfigureAwait(false)
-                           ?? throw new ArgumentException($"Cart not found: {cartId}", nameof(command));
+                           ?? throw new CartNotFoundException(cartId);
 
                 cart.ReconcileCheckout(command.SessionId, command.PurchasedPositions);
 

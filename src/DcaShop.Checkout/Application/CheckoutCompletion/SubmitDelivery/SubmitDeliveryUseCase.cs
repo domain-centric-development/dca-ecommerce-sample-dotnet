@@ -23,13 +23,15 @@ public sealed class SubmitDeliveryUseCase : ISubmitDeliveryInputPort
 
     public async Task<SubmitDeliveryResult> ExecuteAsync(SubmitDeliveryCommand command, CancellationToken cancellationToken = default)
     {
+        var sessionId = new CheckoutSessionId(command.SessionId);
+
         // Whole use case is local: one short transaction
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
                 // The caller's own session: one that is not theirs is not found
-                var session = await _sessions.FindByIdForCustomerAsync(new CheckoutSessionId(command.SessionId), CustomerId.Of(command.CustomerId), ct).ConfigureAwait(false)
-                              ?? throw new ArgumentException($"Session not found: {command.SessionId}", nameof(command));
+                var session = await _sessions.FindByIdForCustomerAsync(sessionId, CustomerId.Of(command.CustomerId), ct).ConfigureAwait(false)
+                              ?? throw new CheckoutSessionNotFoundException(sessionId);
 
                 var shippingOption = ShippingOptions.Find(command.ShippingOptionId)
                                      ?? throw new ArgumentException($"Unknown shipping option: {command.ShippingOptionId}", nameof(command));

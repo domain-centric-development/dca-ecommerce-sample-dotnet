@@ -41,8 +41,8 @@ public sealed class CheckoutSessionTest
     {
         var session = Started();
 
-        Assert.Throws<InvalidOperationException>(() => session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard, new TaxCalculator()));
-        Assert.Throws<InvalidOperationException>(() => session.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice"))));
+        Assert.Throws<CheckoutStepNotCompletedException>(() => session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard, new TaxCalculator()));
+        Assert.Throws<CheckoutStepNotCompletedException>(() => session.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice"))));
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public sealed class CheckoutSessionTest
         session.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice")));
         session.Confirm(session.LineItems.ToDictionary(i => i.ProductId, i => new FixedResolver(available: true, stock: 5).Resolve(i.ProductId)));
 
-        Assert.Throws<InvalidOperationException>(() => session.SubmitBuyerInfo(new BuyerInfo("x@y.de", "B", "C", "1")));
+        Assert.Throws<CheckoutNotModifiableException>(() => session.SubmitBuyerInfo(new BuyerInfo("x@y.de", "B", "C", "1")));
     }
 
     [Fact]
@@ -99,5 +99,5 @@ public sealed class CheckoutSessionTest
 
     [Fact]
     public void CannotStartWithoutLineItems() =>
-        Assert.Throws<ArgumentException>(() => CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("g"), Array.Empty<CheckoutLineItem>(), Money.Euro(0m), new TaxCalculator()));
+        Assert.Throws<EmptyCheckoutException>(() => CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("g"), Array.Empty<CheckoutLineItem>(), Money.Euro(0m), new TaxCalculator()));
 }

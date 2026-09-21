@@ -1,3 +1,4 @@
+using DcaShop.Checkout.Application.Shared;
 using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
@@ -50,7 +51,7 @@ public sealed class CheckoutOwnershipTest : IClassFixture<WebApplicationFactory<
         using var scope = _factory.Services.CreateScope();
         var submitBuyerInfo = scope.ServiceProvider.GetRequiredService<ISubmitBuyerInfoInputPort>();
 
-        var refused = await Assert.ThrowsAsync<ArgumentException>(() => submitBuyerInfo.ExecuteAsync(
+        var refused = await Assert.ThrowsAsync<CheckoutSessionNotFoundException>(() => submitBuyerInfo.ExecuteAsync(
             new SubmitBuyerInfoCommand(sessionId, stranger, "eve@example.com", "Eve", "Adams", "+1-555-0199")));
         Assert.Contains("Session not found", refused.Message, StringComparison.Ordinal);
 
@@ -71,11 +72,11 @@ public sealed class CheckoutOwnershipTest : IClassFixture<WebApplicationFactory<
         var submitPayment = scope.ServiceProvider.GetRequiredService<ISubmitPaymentInputPort>();
         var confirm = scope.ServiceProvider.GetRequiredService<IConfirmCheckoutInputPort>();
 
-        var payment = await Assert.ThrowsAsync<ArgumentException>(() => submitPayment.ExecuteAsync(
+        var payment = await Assert.ThrowsAsync<CheckoutSessionNotFoundException>(() => submitPayment.ExecuteAsync(
             new SubmitPaymentCommand(sessionId, stranger, "mock")));
         Assert.Contains("Session not found", payment.Message, StringComparison.Ordinal);
 
-        var confirmation = await Assert.ThrowsAsync<ArgumentException>(() => confirm.ExecuteAsync(
+        var confirmation = await Assert.ThrowsAsync<CheckoutSessionNotFoundException>(() => confirm.ExecuteAsync(
             new ConfirmCheckoutCommand(sessionId, stranger)));
         Assert.Contains("Session not found", confirmation.Message, StringComparison.Ordinal);
     }

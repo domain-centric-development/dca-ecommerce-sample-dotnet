@@ -1,3 +1,4 @@
+using DcaShop.Account.Adapter.Outgoing.Security;
 using DcaShop.Infrastructure;
 using DcaShop.Web;
 using Microsoft.AspNetCore.Http;
@@ -18,6 +19,10 @@ builder.Services
     .AddApplicationPart(typeof(DcaShop.Cart.CartContext).Assembly)
     .AddApplicationPart(typeof(DcaShop.Checkout.CheckoutContext).Assembly);
 builder.Services.AddDcaShop(builder.Configuration);
+
+// RFC 9457 problem documents are the answer format of /api/** and /mcp. Each context registers one
+// IExceptionHandler for its own routes; this is the service they write through.
+builder.Services.AddProblemDetails();
 
 // The antiforgery cookie follows the identity cookie's policy: a form inside a foreign frame sends its token
 // only if the cookie carrying it may travel there too. Its default is SameSite=Strict, which the browser withholds
@@ -56,6 +61,13 @@ else
     app.UseHsts();
     app.UseHttpsRedirection();
 }
+
+// The contexts' own exception handlers, for the token-only paths alone: /api/** and /mcp answer with a problem
+// document, the pages keep the HTML error endpoint above. Registered after it so it is the inner handler and
+// sees the failure first; a path that is not token-only never enters this branch.
+app.UseWhen(
+    context => TokenOnlyPaths.IsTokenOnlyEndpoint(context.Request.Path),
+    api => api.UseExceptionHandler());
 
 // Framing is refused unless the shop is configured as embeddable (Jwt:AllowFraming). Its own switch, because
 // framing is about the origin -- where the port counts -- while the cookie policy is about the site, where it does

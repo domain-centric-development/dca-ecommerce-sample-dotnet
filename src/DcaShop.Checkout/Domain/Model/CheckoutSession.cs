@@ -28,7 +28,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
     {
         if (lineItems is null || lineItems.Count == 0)
         {
-            throw new ArgumentException("Cannot start checkout with empty line items", nameof(lineItems));
+            throw new EmptyCheckoutException(cartId);
         }
 
         var session = new CheckoutSession(CheckoutSessionId.Generate(), cartId, customerId, lineItems, subtotal, taxCalculator);
@@ -68,7 +68,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
 
     public void SyncLineItems(IReadOnlyList<CheckoutLineItem> newLineItems, Money newSubtotal, TaxCalculator taxCalculator)
     {
-        throw new InvalidOperationException("Checkout snapshots are immutable; start a new session");
+        throw new NotSupportedException("Checkout snapshots are immutable; start a new session");
     }
 
     public void SubmitBuyerInfo(BuyerInfo buyerInfo)
@@ -119,7 +119,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
 
         if (!Totals.Total.IsPositive)
         {
-            throw new InvalidOperationException($"Nothing to pay: the total is {Totals.Total}");
+            throw new NothingToPayException(Id, Totals.Total);
         }
     }
 
@@ -154,7 +154,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         EnsureAllStepsCompleted();
         if (CurrentStep != CheckoutStep.Review)
         {
-            throw new InvalidOperationException("Can only confirm from review step");
+            throw new CheckoutStepOutOfOrderException(Id, CheckoutStep.Review, CurrentStep);
         }
 
         var validation = ValidateItems(facts);
@@ -174,7 +174,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
     {
         if (!Status.CanComplete())
         {
-            throw new InvalidOperationException($"Cannot complete checkout with status: {Status}");
+            throw new CheckoutNotConfirmedException(Id, Status);
         }
 
         OrderReference = orderReference;
@@ -186,7 +186,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
     {
         if (!Status.IsModifiable())
         {
-            throw new InvalidOperationException($"Cannot abandon checkout with status: {Status}");
+            throw new CheckoutNotModifiableException(Id, Status);
         }
 
         var abandonedAt = CurrentStep;
@@ -198,7 +198,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
     {
         if (!Status.IsModifiable())
         {
-            throw new InvalidOperationException($"Cannot expire checkout with status: {Status}");
+            throw new CheckoutNotModifiableException(Id, Status);
         }
 
         var expiredAt = CurrentStep;
@@ -211,12 +211,12 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         EnsureModifiable();
         if (step == CheckoutStep.Confirmation)
         {
-            throw new ArgumentException("Cannot navigate directly to confirmation step", nameof(step));
+            throw new CheckoutStepNotNavigableException(Id, step);
         }
 
         if (step.IsAfter(CurrentStep))
         {
-            throw new ArgumentException($"Cannot skip forward to step {step} from {CurrentStep}", nameof(step));
+            throw new CheckoutStepOutOfOrderException(Id, step, CurrentStep);
         }
 
         CurrentStep = step;
@@ -236,7 +236,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
     {
         if (!Status.IsModifiable())
         {
-            throw new InvalidOperationException($"Cannot modify checkout with status: {Status}");
+            throw new CheckoutNotModifiableException(Id, Status);
         }
     }
 
@@ -244,7 +244,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
     {
         if (!IsStepCompleted(step))
         {
-            throw new InvalidOperationException($"Step {step} must be completed first");
+            throw new CheckoutStepNotCompletedException(Id, step);
         }
     }
 
@@ -252,25 +252,14 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
     {
         if (CurrentStep.IsBefore(step))
         {
-            throw new InvalidOperationException($"Cannot skip to step {step} - currently at {CurrentStep}");
+            throw new CheckoutStepOutOfOrderException(Id, step, CurrentStep);
         }
     }
 
     private void EnsureAllStepsCompleted()
     {
-        if (!IsStepCompleted(CheckoutStep.BuyerInfo))
-        {
-            throw new InvalidOperationException("Buyer info not submitted");
-        }
-
-        if (!IsStepCompleted(CheckoutStep.Delivery))
-        {
-            throw new InvalidOperationException("Delivery not submitted");
-        }
-
-        if (!IsStepCompleted(CheckoutStep.Payment))
-        {
-            throw new InvalidOperationException("Payment not submitted");
-        }
+        EnsureStepCompleted(CheckoutStep.BuyerInfo);
+        EnsureStepCompleted(CheckoutStep.Delivery);
+        EnsureStepCompleted(CheckoutStep.Payment);
     }
 }

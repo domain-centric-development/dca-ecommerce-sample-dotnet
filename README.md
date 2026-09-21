@@ -209,6 +209,30 @@ gate is the one check that stays at the edge — it reads only the token's claim
 legitimate for a console with no HTTP identity at all.
 | `POST /api/auth/{login,register,logout}` | anyone; the token comes back in the body, no cookie is set |
 
+### How a refusal reads
+
+Every refused request answers with an RFC 9457 problem document (`application/problem+json`), built by the
+context's own `*ApiExceptionHandler`. The status follows what went wrong, not which layer noticed it:
+
+| Status | When |
+|---|---|
+| `404` | the addressed thing is not there, or not the caller's — a cart, a session, an article, a position in a cart |
+| `409` | a conflict with existing state — a stock keeping unit already in use, a second active cart, a cart that no longer takes changes |
+| `422` | the request was understood and a rule refused it — a password below the strength rules, a checkout step that has no data yet |
+| `400` | a value the model does not accept at all — a malformed stock keeping unit, a blank name |
+
+```json
+{ "type": "about:blank", "title": "Stock keeping unit already in use", "status": 409,
+  "detail": "Product with SKU already exists: API-42" }
+```
+
+The failures themselves are types, not status codes: the use cases and the model raise `DuplicateSkuException`,
+`CartNotFoundException`, `InsufficientStockException` and their kin — subtypes of `DomainException` and
+`UseCaseException` from `DomainCentric.BuildingBlocks` — and only the adapter decides what a caller is told
+(ADR-016). An argument guard stays `ArgumentException`: "must not be null" is a caller contract, not a business
+rule. `ApiProblemDetailTest` holds that mapping; the pages keep the HTML error endpoint and map the same two base
+types into form errors.
+
 **MCP** (`/mcp`, `ModelContextProtocol.AspNetCore`) exposes the catalog as the two tools `all-products` and
 `product-by-id`, over the same input ports and the same DTO converter as the REST resources — one representation
 of a product, not two that can drift. Bearer-only, like `/api/**`.

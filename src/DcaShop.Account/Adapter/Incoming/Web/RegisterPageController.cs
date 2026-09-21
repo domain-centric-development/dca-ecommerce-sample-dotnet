@@ -1,3 +1,5 @@
+using DomainCentric.BuildingBlocks.Application;
+using DomainCentric.BuildingBlocks.Ddd.Tactical;
 using DcaShop.Account.Application.RegisterAccount;
 using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.SharedKernel.Application.Shared;
@@ -80,8 +82,10 @@ public sealed class RegisterPageController : Controller
             TempData["Message"] = "Account created successfully! Welcome!";
             return Redirect(string.IsNullOrWhiteSpace(returnUrl) ? "/" : returnUrl);
         }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
+        catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
         {
+            // The context's own refusals, plus the argument exception a form field still reaches a value object
+            // with.
             return Rejected(submission, e.Message);
         }
     }

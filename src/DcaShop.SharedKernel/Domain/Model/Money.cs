@@ -37,9 +37,9 @@ public sealed record Money : IValue
 
     public static Money Zero(string currency) => new(0m, currency);
 
-    public Money Add(Money other) => new(Amount + SameCurrency(other).Amount, Currency);
+    public Money Add(Money other) => new(Amount + SameCurrency(other, "add").Amount, Currency);
 
-    public Money Subtract(Money other) => new(Amount - SameCurrency(other).Amount, Currency);
+    public Money Subtract(Money other) => new(Amount - SameCurrency(other, "subtract").Amount, Currency);
 
     public Money Multiply(int factor) => new(Amount * factor, Currency);
 
@@ -47,15 +47,15 @@ public sealed record Money : IValue
 
     public bool IsZero => Amount == 0m;
 
-    public bool IsGreaterThan(Money other) => Amount > SameCurrency(other).Amount;
+    public bool IsGreaterThan(Money other) => Amount > SameCurrency(other, "compare").Amount;
 
     public override string ToString() => Amount.ToString("0.00", CultureInfo.InvariantCulture) + " " + Currency;
 
-    private Money SameCurrency(Money other)
+    private Money SameCurrency(Money other, string operation)
     {
         if (other.Currency != Currency)
         {
-            throw new ArgumentException($"Cannot combine {Currency} with {other.Currency}", nameof(other));
+            throw new CurrencyMismatchException(operation, Currency, other.Currency);
         }
 
         return other;

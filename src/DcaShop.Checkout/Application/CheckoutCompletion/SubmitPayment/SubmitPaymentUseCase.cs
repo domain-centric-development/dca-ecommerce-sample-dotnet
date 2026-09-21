@@ -35,25 +35,27 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
         // Provider lookup and payment initiation are remote-capable (payment service provider) —
         // both stay outside the transaction
         var provider = await _providers.FindAsync(providerId, cancellationToken).ConfigureAwait(false)
-                       ?? throw new ArgumentException($"Unknown payment provider: {providerId}", nameof(command));
+                       ?? throw new PaymentProviderNotFoundException(providerId);
 
         if (!await provider.IsAvailableAsync(cancellationToken).ConfigureAwait(false))
         {
-            throw new InvalidOperationException($"Payment provider is currently unavailable: {providerId}");
+            throw new PaymentProviderUnavailableException(providerId);
         }
 
         // Everything the session itself can refuse is refused here, before the provider is reached: a payment
         // intent must not exist for a checkout that cannot accept it. The amount to charge is the session total
         // as it stands at this moment.
         var snapshot = await _sessions.FindByIdForCustomerAsync(sessionId, customerId, cancellationToken).ConfigureAwait(false)
-                       ?? throw new ArgumentException($"Session not found: {command.SessionId}", nameof(command));
+                       ?? throw new CheckoutSessionNotFoundException(sessionId);
         snapshot.AssertReadyForPayment();
         var amount = snapshot.Totals.Total;
 
         var initiation = await provider.InitiatePaymentAsync(sessionId, amount, cancellationToken).ConfigureAwait(false);
         if (!initiation.Success || initiation.ProviderReference is not { } providerReference)
         {
-            throw new InvalidOperationException(initiation.ErrorMessage);
+            throw new PaymentInitiationFailedException(
+                providerId,
+                initiation.ErrorMessage ?? $"Payment provider {providerId} did not open a payment");
         }
 
         // Short transaction: load, submit, save, publish. The session can still have moved on between the check
@@ -65,7 +67,7 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
                 async ct =>
                 {
                     var session = await _sessions.FindByIdForCustomerAsync(sessionId, customerId, ct).ConfigureAwait(false)
-                                  ?? throw new ArgumentException($"Session not found: {command.SessionId}", nameof(command));
+                                  ?? throw new CheckoutSessionNotFoundException(sessionId);
                     session.SubmitPayment(new PaymentSelection(providerId, providerReference));
                     await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                     await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
