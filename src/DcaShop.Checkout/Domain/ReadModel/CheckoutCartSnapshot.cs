@@ -76,4 +76,50 @@ public sealed record CheckoutCartSnapshot(
         CheckoutStep.Confirmation => IsCompleted,
         _ => throw new ArgumentOutOfRangeException(nameof(step)),
     };
+
+
+    /// <summary>
+    /// Whether this snapshot may be shown at the requested step, and where to send the customer instead.
+    /// Business logic, not presentation: it holds whether the interface shows one page or five. It decides on
+    /// the snapshot alone, so a read does not have to load the session aggregate.
+    /// </summary>
+    public StepAccess AccessTo(CheckoutStep targetStep)
+    {
+        if (Status.IsTerminal())
+        {
+            return TerminalStateAccess(targetStep);
+        }
+
+        if (Status.CanComplete())
+        {
+            return targetStep == CheckoutStep.Confirmation ? StepAccess.Grant() : StepAccess.RedirectTo(CheckoutStep.Confirmation);
+        }
+
+        if (targetStep == CheckoutStep.Confirmation)
+        {
+            return IsCompleted ? StepAccess.Grant() : StepAccess.RedirectTo(Step);
+        }
+
+        return IsSkippingAhead(targetStep) ? StepAccess.RedirectTo(Step) : StepAccess.Grant();
+    }
+
+    private StepAccess TerminalStateAccess(CheckoutStep targetStep) => Status switch
+    {
+        CheckoutSessionStatus.Completed => targetStep == CheckoutStep.Confirmation ? StepAccess.Grant() : StepAccess.RedirectTo(CheckoutStep.Confirmation),
+        CheckoutSessionStatus.Superseded or CheckoutSessionStatus.Abandoned or CheckoutSessionStatus.Expired => StepAccess.BackToCart(),
+        _ => StepAccess.Grant(),
+    };
+
+    private bool IsSkippingAhead(CheckoutStep targetStep) =>
+        targetStep.IsAfter(Step) || !ArePrerequisitesMet(targetStep);
+
+    private bool ArePrerequisitesMet(CheckoutStep targetStep) => targetStep switch
+    {
+        CheckoutStep.BuyerInfo => true,
+        CheckoutStep.Delivery => IsStepCompleted(CheckoutStep.BuyerInfo),
+        CheckoutStep.Payment => IsStepCompleted(CheckoutStep.BuyerInfo) && IsStepCompleted(CheckoutStep.Delivery),
+        CheckoutStep.Review => IsStepCompleted(CheckoutStep.BuyerInfo) && IsStepCompleted(CheckoutStep.Delivery) && IsStepCompleted(CheckoutStep.Payment),
+        CheckoutStep.Confirmation => IsCompleted,
+        _ => throw new ArgumentOutOfRangeException(nameof(targetStep)),
+    };
 }

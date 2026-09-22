@@ -108,8 +108,7 @@ public sealed class SubmitPaymentUseCaseTest
         var session = await SessionWithBuyerInfoOnlyAsync();
         session.SubmitDelivery(
             new DeliveryAddress("123 Main Street", "Springfield", "12345", "United States"),
-            new ShippingOption("STANDARD", "Standard Shipping", "5-7 days", Money.Euro(5)),
-            new TaxCalculator());
+            new ShippingOption("STANDARD", "Standard Shipping", "5-7 days", Money.Euro(5)));
         return await _sessions.SaveAsync(session);
     }
 
@@ -117,8 +116,7 @@ public sealed class SubmitPaymentUseCaseTest
         new CartId(Guid.NewGuid()),
         CustomerId.Of(Customer),
         new[] { new CheckoutLineItem(CheckoutLineItemId.Generate(), ProductId.Generate(), "Thing", Money.Euro(10), 1, null) },
-        Money.Euro(10),
-        new TaxCalculator());
+        Money.Euro(10));
 
     /// <summary>A provider that remembers what it was asked to do.</summary>
     private sealed class RecordingPaymentProvider : IPaymentProvider

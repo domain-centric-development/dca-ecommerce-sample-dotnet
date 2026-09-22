@@ -1,3 +1,4 @@
+using System;
 using DcaShop.SharedKernel.Domain.Model;
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
@@ -11,6 +12,29 @@ public sealed record EnrichedCart(CartId CartId, CustomerId CustomerId, CartStat
     public int TotalQuantity => Items.Sum(i => i.Quantity.Value);
 
     public bool IsEmpty => Items.Count == 0;
+
+    /// <summary>VAT contained in the gross prices this context works with.</summary>
+    private const decimal Rate = 0.19m;
+
+    /// <summary>
+    /// The tax contained in the cart's current subtotal, at the cart's rate. Prices are gross, so the tax is
+    /// <em>contained</em> in the amount rather than added to it. The rule is the cart's own: it taxes goods,
+    /// while the checkout taxes goods and shipping, so the two contexts state it separately.
+    /// </summary>
+    public Money ContainedTax() => ContainedTax(Rate);
+
+    /// <summary>The tax contained in the current subtotal at the given rate.</summary>
+    public Money ContainedTax(decimal taxRate)
+    {
+        if (taxRate < 0m)
+        {
+            throw new ArgumentOutOfRangeException(nameof(taxRate), "Tax rate cannot be negative");
+        }
+
+        var gross = CurrentSubtotal;
+        var net = gross.Amount / (1m + taxRate);
+        return Money.Of(gross.Amount - net, gross.Currency);
+    }
 
     public Money CurrentSubtotal => Items.Aggregate(Money.Euro(0m), (sum, i) => sum.Add(i.CurrentLineTotal));
 

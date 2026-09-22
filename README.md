@@ -163,7 +163,7 @@ what tells them apart.
 | Entity created only through its root | `CartItem` (internal constructor) |
 | Value objects as records / `readonly record struct` ids | `Money`, `Quantity`, `CartId`, `BuyerInfo` |
 | Factory | `ProductFactory`, `EnrichedCartFactory`, `CheckoutCartFactory` |
-| Domain service passed into the aggregate | `TaxCalculator` (contained VAT), `ICheckoutArticlePriceResolver` |
+| Facts passed into the aggregate | `ICheckoutArticlePriceResolver` — the application fetches, the model decides |
 | Enriched read model | `EnrichedProduct`, `EnrichedCart`, `CheckoutCart` / `EnrichedCheckoutLineItem` (persisted line item + fresh article data) |
 | Use case = input port + command/query + result | every `Application/<UseCase>/` folder — or `Application/<Feature>/<UseCase>/` where a context groups them (Cart: `Shopping`, `CartRecovery`, `CartCheckout`, `Operations`; Checkout: `Session`, `CheckoutCompletion`, `CartSync`) |
 | Output ports in `Application/Shared`, adapters outside | `IArticleDataPort` ↔ `CompositeArticleDataAdapter` |
@@ -172,7 +172,7 @@ what tells them apart.
 | Open Host Service | `ProductCatalogService`, `CartService` |
 | Domain event → integration event relay | `CheckoutConfirmedEventPublisher` → `CheckoutConfirmedEvent` |
 | Interface inversion between contexts | `CheckoutConfirmedEvent : ICartCompletionTrigger` (owned by Cart), `ProductCreatedEvent : IPriceInitializationTrigger, IStockInitializationTrigger` |
-| Domain service | `CheckoutStepValidator` — decides which checkout step a session may open |
+| Domain service | `CheckoutPricing`, `CartPricing` — take the aggregate, called by the use case |
 | Read model detached from the aggregate | `CheckoutCartSnapshot`, `LineItemSnapshot` |
 | Eventual consistency between contexts | explicit checkout → immutable snapshot; checkout confirmed → snapshot reconciliation and `ReduceStock` |
 | Domain gateway called by the aggregate | `IPasswordHasher` — the contract in `Account/Domain/Gateway`, BCrypt in the adapter |

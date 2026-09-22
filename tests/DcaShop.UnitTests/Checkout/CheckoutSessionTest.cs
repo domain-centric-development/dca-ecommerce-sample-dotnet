@@ -13,7 +13,7 @@ public sealed class CheckoutSessionTest
     private static CheckoutSession Started()
     {
         var line = new CheckoutLineItem(CheckoutLineItemId.Generate(), Product, "Thing", Money.Euro(10m), 2, null);
-        return CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("guest"), new[] { line }, line.LineTotal, new TaxCalculator());
+        return CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("guest"), new[] { line }, line.LineTotal);
     }
 
     private sealed class FixedResolver : ICheckoutArticlePriceResolver
@@ -41,7 +41,7 @@ public sealed class CheckoutSessionTest
     {
         var session = Started();
 
-        Assert.Throws<CheckoutStepNotCompletedException>(() => session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard, new TaxCalculator()));
+        Assert.Throws<CheckoutStepNotCompletedException>(() => session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard));
         Assert.Throws<CheckoutStepNotCompletedException>(() => session.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice"))));
     }
 
@@ -53,7 +53,7 @@ public sealed class CheckoutSessionTest
         session.SubmitBuyerInfo(new BuyerInfo("a@b.de", "Ada", "Lovelace", "123"));
         Assert.Equal(CheckoutStep.Delivery, session.CurrentStep);
 
-        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard, new TaxCalculator());
+        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard);
         Assert.Equal(CheckoutStep.Payment, session.CurrentStep);
         Assert.Equal(Money.Euro(24.99m), session.Totals.Total);
 
@@ -61,7 +61,7 @@ public sealed class CheckoutSessionTest
         Assert.Equal(CheckoutStep.Review, session.CurrentStep);
 
         session.ClearDomainEvents();
-        session.Confirm(session.LineItems.ToDictionary(i => i.ProductId, i => new FixedResolver(available: true, stock: 5).Resolve(i.ProductId)));
+        ConfirmWith(session, session.LineItems.ToDictionary(i => i.ProductId, i => new FixedResolver(available: true, stock: 5).Resolve(i.ProductId)));
 
         Assert.Equal(CheckoutSessionStatus.Confirmed, session.Status);
         Assert.Equal(CheckoutStep.Confirmation, session.CurrentStep);
@@ -74,10 +74,10 @@ public sealed class CheckoutSessionTest
     {
         var session = Started();
         session.SubmitBuyerInfo(new BuyerInfo("a@b.de", "Ada", "Lovelace", "123"));
-        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard, new TaxCalculator());
+        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard);
         session.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice")));
 
-        Assert.Throws<CheckoutValidationException>(() => session.Confirm(session.LineItems.ToDictionary(i => i.ProductId, i => new FixedResolver(available: true, stock: 1).Resolve(i.ProductId))));
+        Assert.Throws<CheckoutValidationException>(() => ConfirmWith(session, session.LineItems.ToDictionary(i => i.ProductId, i => new FixedResolver(available: true, stock: 1).Resolve(i.ProductId))));
         Assert.Equal(CheckoutSessionStatus.Active, session.Status);
     }
 
@@ -86,9 +86,9 @@ public sealed class CheckoutSessionTest
     {
         var session = Started();
         session.SubmitBuyerInfo(new BuyerInfo("a@b.de", "Ada", "Lovelace", "123"));
-        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard, new TaxCalculator());
+        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard);
         session.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice")));
-        session.Confirm(session.LineItems.ToDictionary(i => i.ProductId, i => new FixedResolver(available: true, stock: 5).Resolve(i.ProductId)));
+        ConfirmWith(session, session.LineItems.ToDictionary(i => i.ProductId, i => new FixedResolver(available: true, stock: 5).Resolve(i.ProductId)));
 
         Assert.Throws<CheckoutNotModifiableException>(() => session.SubmitBuyerInfo(new BuyerInfo("x@y.de", "B", "C", "1")));
     }
@@ -99,5 +99,11 @@ public sealed class CheckoutSessionTest
 
     [Fact]
     public void CannotStartWithoutLineItems() =>
-        Assert.Throws<EmptyCheckoutException>(() => CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("g"), Array.Empty<CheckoutLineItem>(), Money.Euro(0m), new TaxCalculator()));
+        Assert.Throws<EmptyCheckoutException>(() => CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("g"), Array.Empty<CheckoutLineItem>(), Money.Euro(0m)));
+    /// <summary>What the use case does: the pricing judges, the session confirms.</summary>
+    private static void ConfirmWith(CheckoutSession session, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
+    {
+        var pricing = new CheckoutPricing();
+        session.Confirm(pricing.ValidateItems(session, facts), pricing.CalculateOrderTotal(session, facts));
+    }
 }

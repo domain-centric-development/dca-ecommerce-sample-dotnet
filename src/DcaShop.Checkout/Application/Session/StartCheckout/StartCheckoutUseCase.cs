@@ -12,18 +12,16 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
 {
     private readonly ICartDataPort _cartData;
     private readonly CheckoutCartFactory _checkoutCartFactory;
-    private readonly TaxCalculator _taxCalculator;
     private readonly ICheckoutArticleDataPort _articleData;
     private readonly ICheckoutSessionRepository _sessions;
     private readonly IDomainEventPublisher _events;
     private readonly ITransactionBoundary _transactionBoundary;
 
-    public StartCheckoutUseCase(ICartDataPort cartData, CheckoutCartFactory checkoutCartFactory, TaxCalculator taxCalculator, ICheckoutArticleDataPort articleData, ICheckoutSessionRepository sessions, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
+    public StartCheckoutUseCase(ICartDataPort cartData, CheckoutCartFactory checkoutCartFactory, ICheckoutArticleDataPort articleData, ICheckoutSessionRepository sessions, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
         _transactionBoundary = transactionBoundary;
         _cartData = cartData;
         _checkoutCartFactory = checkoutCartFactory;
-        _taxCalculator = taxCalculator;
         _articleData = articleData;
         _sessions = sessions;
         _events = events;
@@ -74,7 +72,7 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
             {
                 var previous = await _sessions.FindActiveByCartIdAsync(cartId, ct).ConfigureAwait(false);
                 if (previous is not null) { previous.Supersede(); await _sessions.SaveAsync(previous, ct).ConfigureAwait(false); }
-                var session = CheckoutSession.Start(cart.CartId, cart.CustomerId, lineItems, subtotal, _taxCalculator);
+                var session = CheckoutSession.Start(cart.CartId, cart.CustomerId, lineItems, subtotal);
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
                 return StartCheckoutResult.From(session);

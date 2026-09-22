@@ -1,5 +1,4 @@
 using DcaShop.Cart.Domain.Model;
-using DcaShop.Cart.Domain.Service;
 using DcaShop.SharedKernel.Domain.Model;
 
 namespace DcaShop.Cart.Application.Shopping.GetCartById;
@@ -11,9 +10,9 @@ namespace DcaShop.Cart.Application.Shopping.GetCartById;
 /// </summary>
 public sealed record CartTotals(Money CurrentSubtotal, Money OriginalSubtotal, Money Difference, Money ContainedTax)
 {
-    public static CartTotals From(EnrichedCart cart, CartTotalCalculator calculator)
+    public static CartTotals From(EnrichedCart cart)
     {
         var current = cart.CurrentSubtotal;
-        return new CartTotals(current, cart.OriginalSubtotal, cart.TotalPriceDifference, calculator.ContainedTax(current));
+        return new CartTotals(current, cart.OriginalSubtotal, cart.TotalPriceDifference, cart.ContainedTax());
     }
 }

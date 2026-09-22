@@ -9,15 +9,13 @@ namespace DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
 public sealed class SubmitDeliveryUseCase : ISubmitDeliveryInputPort
 {
     private readonly ICheckoutSessionRepository _sessions;
-    private readonly TaxCalculator _taxCalculator;
     private readonly IDomainEventPublisher _events;
     private readonly ITransactionBoundary _transactionBoundary;
 
-    public SubmitDeliveryUseCase(ICheckoutSessionRepository sessions, TaxCalculator taxCalculator, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
+    public SubmitDeliveryUseCase(ICheckoutSessionRepository sessions, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
         _transactionBoundary = transactionBoundary;
         _sessions = sessions;
-        _taxCalculator = taxCalculator;
         _events = events;
     }
 
@@ -36,7 +34,7 @@ public sealed class SubmitDeliveryUseCase : ISubmitDeliveryInputPort
                 var shippingOption = ShippingOptions.Find(command.ShippingOptionId)
                                      ?? throw new ArgumentException($"Unknown shipping option: {command.ShippingOptionId}", nameof(command));
                 var address = new DeliveryAddress(command.Street, command.StreetLine2, command.City, command.PostalCode, command.Country, command.State);
-                session.SubmitDelivery(address, shippingOption, _taxCalculator);
+                session.SubmitDelivery(address, shippingOption);
 
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);

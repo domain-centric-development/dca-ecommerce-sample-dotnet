@@ -1,6 +1,5 @@
 using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Domain.Event;
-using DcaShop.Cart.Domain.Service;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
 
@@ -118,7 +117,7 @@ public sealed class ShoppingCartTest
         };
         var enriched = new EnrichedCartFactory().Create(cart, articles);
 
-        var totals = CartTotals.From(enriched, new CartTotalCalculator());
+        var totals = CartTotals.From(enriched);
 
         Assert.Equal(Money.Euro(8m), totals.CurrentSubtotal);
         Assert.Equal(Money.Euro(10m), totals.OriginalSubtotal);

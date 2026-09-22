@@ -5,9 +5,9 @@ namespace DcaShop.Cart.Domain.Service;
 
 public sealed class CartPricing : IDomainService
 {
-    public sealed record Line(ProductId ProductId, Quantity Quantity) : IValue;
-    public Money CalculateTotal(IReadOnlyList<Line> lines, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
+    public Money CalculateTotal(ShoppingCart cart, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
+        var lines = cart.Items;
         ArgumentNullException.ThrowIfNull(facts);
 
         var total = Money.Euro(0m);
@@ -20,8 +20,9 @@ public sealed class CartPricing : IDomainService
 
     }
 
-    public CartValidationResult ValidateForCheckout(IReadOnlyList<Line> lines, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
+    public CartValidationResult ValidateForCheckout(ShoppingCart cart, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
+        var lines = cart.Items;
         ArgumentNullException.ThrowIfNull(facts);
 
         var errors = new List<CartValidationResult.ValidationError>();

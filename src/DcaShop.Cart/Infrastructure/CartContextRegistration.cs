@@ -30,7 +30,6 @@ public static class CartContextRegistration
     {
         // Domain
         services.AddSingleton<EnrichedCartFactory>();
-        services.AddSingleton<CartTotalCalculator>();
 
         // Use cases (input ports)
         services.AddScoped<ICreateCartInputPort, CreateCartUseCase>();

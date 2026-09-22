@@ -13,25 +13,25 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
 {
     private readonly List<CheckoutLineItem> _lineItems;
 
-    private CheckoutSession(CheckoutSessionId id, CartId cartId, CustomerId customerId, IReadOnlyList<CheckoutLineItem> lineItems, Money subtotal, TaxCalculator taxCalculator)
+    private CheckoutSession(CheckoutSessionId id, CartId cartId, CustomerId customerId, IReadOnlyList<CheckoutLineItem> lineItems, Money subtotal)
     {
         Id = id;
         CartId = cartId;
         CustomerId = customerId;
         _lineItems = new List<CheckoutLineItem>(lineItems);
-        Totals = CheckoutTotals.Calculate(subtotal, Money.Zero(subtotal.Currency), taxCalculator.ContainedTax(subtotal));
+        Totals = CheckoutTotals.Calculate(subtotal, Money.Zero(subtotal.Currency));
         CurrentStep = CheckoutStep.BuyerInfo;
         Status = CheckoutSessionStatus.Active;
     }
 
-    public static CheckoutSession Start(CartId cartId, CustomerId customerId, IReadOnlyList<CheckoutLineItem> lineItems, Money subtotal, TaxCalculator taxCalculator)
+    public static CheckoutSession Start(CartId cartId, CustomerId customerId, IReadOnlyList<CheckoutLineItem> lineItems, Money subtotal)
     {
         if (lineItems is null || lineItems.Count == 0)
         {
             throw new EmptyCheckoutException(cartId);
         }
 
-        var session = new CheckoutSession(CheckoutSessionId.Generate(), cartId, customerId, lineItems, subtotal, taxCalculator);
+        var session = new CheckoutSession(CheckoutSessionId.Generate(), cartId, customerId, lineItems, subtotal);
         session.RegisterEvent(CheckoutSessionStarted.Now(session.Id, cartId, customerId, subtotal, lineItems.Count));
         return session;
     }
@@ -66,7 +66,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
 
     public bool IsCompleted => Status == CheckoutSessionStatus.Completed;
 
-    public void SyncLineItems(IReadOnlyList<CheckoutLineItem> newLineItems, Money newSubtotal, TaxCalculator taxCalculator)
+    public void SyncLineItems(IReadOnlyList<CheckoutLineItem> newLineItems, Money newSubtotal)
     {
         throw new NotSupportedException("Checkout snapshots are immutable; start a new session");
     }
@@ -84,7 +84,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         RegisterEvent(BuyerInfoSubmitted.Now(Id, buyerInfo));
     }
 
-    public void SubmitDelivery(DeliveryAddress address, ShippingOption shippingOption, TaxCalculator taxCalculator)
+    public void SubmitDelivery(DeliveryAddress address, ShippingOption shippingOption)
     {
         EnsureModifiable();
         EnsureStepCompleted(CheckoutStep.BuyerInfo);
@@ -92,8 +92,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         DeliveryAddress = address ?? throw new ArgumentNullException(nameof(address));
         ShippingOption = shippingOption ?? throw new ArgumentNullException(nameof(shippingOption));
         // The tax contained in the totals moves with the shipping cost
-        var withShipping = Totals.WithShipping(shippingOption.Cost);
-        Totals = withShipping.WithTax(taxCalculator.ContainedTax(withShipping.Subtotal.Add(withShipping.Shipping)));
+        Totals = Totals.WithShipping(shippingOption.Cost);
         if (CurrentStep == CheckoutStep.Delivery)
         {
             CurrentStep = CheckoutStep.Payment;
@@ -138,17 +137,12 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         RegisterEvent(PaymentSubmitted.Now(Id, payment));
     }
 
-    public Money CalculateOrderTotal(IReadOnlyDictionary<ProductId, ArticlePrice> facts)
-    {
-        return new DcaShop.Checkout.Domain.Service.CheckoutPricing().CalculateOrderTotal(LineItems, facts, Totals.Subtotal.Currency);
-    }
-
-    public CheckoutValidationResult ValidateItems(IReadOnlyDictionary<ProductId, ArticlePrice> facts)
-    {
-        return new DcaShop.Checkout.Domain.Service.CheckoutPricing().ValidateItems(LineItems, facts, Totals.Subtotal.Currency);
-    }
-
-    public void Confirm(IReadOnlyDictionary<ProductId, ArticlePrice> facts)
+    /// <summary>
+    /// Confirms the checkout once the checkout pricing has judged the current line items. The verdict and the
+    /// recomputed subtotal are handed in by the use case: deciding them needs article facts the session does
+    /// not own, so the domain service works them out and the session refuses to confirm an invalid one.
+    /// </summary>
+    public void Confirm(CheckoutValidationResult validation, Money recomputedSubtotal)
     {
         EnsureModifiable();
         EnsureAllStepsCompleted();
@@ -157,14 +151,12 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
             throw new CheckoutStepOutOfOrderException(Id, CheckoutStep.Review, CurrentStep);
         }
 
-        var validation = ValidateItems(facts);
         if (!validation.IsValid)
         {
             throw new CheckoutValidationException(validation);
         }
 
-        var recomputed = CalculateOrderTotal(facts);
-        Totals = CheckoutTotals.Calculate(recomputed, Totals.Shipping, new TaxCalculator().ContainedTax(recomputed.Add(Totals.Shipping)));
+        Totals = CheckoutTotals.Calculate(recomputedSubtotal, Totals.Shipping);
         Status = CheckoutSessionStatus.Confirmed;
         CurrentStep = CheckoutStep.Confirmation;
         RegisterEvent(CheckoutConfirmed.Now(Id, CartId, CustomerId, Totals.Total, _lineItems));

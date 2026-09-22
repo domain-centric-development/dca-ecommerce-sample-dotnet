@@ -33,7 +33,7 @@ public sealed class CheckoutSpecificationTest
             case "checkout.cart-edit.does-not-create-session":
                 {
                     var snapshot = session.LineItems.ToArray(); f.Cart.AddItem(f.Product, CartModel.Quantity.Of(3), Price.Of(Money.Euro(10)));
-                    var sync = new SyncCheckoutWithCartUseCase(f.Repository, f, new TaxCalculator(), f, f.Events, new InMemoryTransactionBoundary(), NullLogger<SyncCheckoutWithCartUseCase>.Instance);
+                    var sync = new SyncCheckoutWithCartUseCase(f.Repository, f, f, f.Events, new InMemoryTransactionBoundary(), NullLogger<SyncCheckoutWithCartUseCase>.Instance);
                     Assert.False((await sync.ExecuteAsync(new SyncCheckoutWithCartCommand(f.Cart.Id.Value))).WasSynced);
                     Assert.Equal(snapshot, session.LineItems); Assert.Equal(session.Id, (await f.Repository.FindActiveByCartIdAsync(session.CartId))!.Id); break;
                 }
@@ -86,7 +86,7 @@ public sealed class CheckoutSpecificationTest
     private static void Ready(CheckoutSession s)
     {
         s.SubmitBuyerInfo(new BuyerInfo("a@b.de", "Ada", "Lovelace", "123"));
-        s.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), new ShippingOption("free", "Free", "Tomorrow", Money.Euro(0)), new TaxCalculator());
+        s.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), new ShippingOption("free", "Free", "Tomorrow", Money.Euro(0)));
         s.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice")));
     }
     private sealed class Fixture : ICartDataPort, ICheckoutArticleDataPort
@@ -99,11 +99,11 @@ public sealed class CheckoutSpecificationTest
         public Fixture() { Cart.AddItem(Product, CartModel.Quantity.Of(2), DcaShop.SharedKernel.Domain.Model.Price.Of(Price)); }
         public async Task<CheckoutSession> Start()
         {
-            var result = await new StartCheckoutUseCase(this, new CheckoutCartFactory(), new TaxCalculator(), this, Repository, Events, new InMemoryTransactionBoundary())
+            var result = await new StartCheckoutUseCase(this, new CheckoutCartFactory(), this, Repository, Events, new InMemoryTransactionBoundary())
                 .ExecuteAsync(new StartCheckoutCommand(Cart.Id.Value, Cart.CustomerId.Value));
             return (await Repository.FindByIdAsync(new CheckoutSessionId(result.SessionId)))!;
         }
-        public Task<ConfirmCheckoutResult> Confirm(CheckoutSession session) => new ConfirmCheckoutUseCase(Repository, this, Events, new InMemoryTransactionBoundary()).ExecuteAsync(new ConfirmCheckoutCommand(session.Id.Value, session.CustomerId.Value));
+        public Task<ConfirmCheckoutResult> Confirm(CheckoutSession session) => new ConfirmCheckoutUseCase(Repository, this, new CheckoutPricing(), Events, new InMemoryTransactionBoundary()).ExecuteAsync(new ConfirmCheckoutCommand(session.Id.Value, session.CustomerId.Value));
         public Task<CartData?> FindByIdAsync(CartId cartId, CustomerId customerId, CancellationToken cancellationToken = default) => Task.FromResult<CartData?>(new CartData(cartId, customerId, Cart.Items.Select(i => new CartData.CartItemData(i.ProductId, i.PriceAtAddition.Value, i.Quantity.Value, i.PositionSnapshot)).ToArray(), Cart.IsActive));
         public Task<IReadOnlyDictionary<ProductId, CheckoutArticle>> GetArticleDataAsync(IReadOnlyCollection<ProductId> ids, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyDictionary<ProductId, CheckoutArticle>>(ids.ToDictionary(i => i, i => new CheckoutArticle(i, "Thing", Price, true, Stock, null)));
     }

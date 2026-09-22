@@ -1,4 +1,5 @@
 using DcaShop.Cart.Domain.Model;
+using DcaShop.Cart.Domain.Service;
 using DcaShop.SharedKernel.Domain.Model;
 
 namespace DcaShop.UnitTests.Cart;
@@ -6,6 +7,8 @@ namespace DcaShop.UnitTests.Cart;
 /// <summary>What the cart owes and whether it may be settled is decided against current figures, not stored ones.</summary>
 public sealed class ShoppingCartResolverTest
 {
+    private static readonly CartPricing Pricing = new();
+
     private static readonly Price Ten = Price.Of(Money.Euro(10m));
 
     private readonly ShoppingCart _cart = new(CartId.Generate(), CustomerId.Of("test-customer"));
@@ -14,7 +17,7 @@ public sealed class ShoppingCartResolverTest
     private IReadOnlyDictionary<ProductId, ArticlePrice> Facts() => _cart.Items.ToDictionary(i => i.ProductId, i => _resolver.Resolve(i.ProductId));
 
     [Fact]
-    public void AnEmptyCartOwesNothing() => Assert.Equal(Money.Euro(0m), _cart.CalculateTotal(Facts()));
+    public void AnEmptyCartOwesNothing() => Assert.Equal(Money.Euro(0m), Pricing.CalculateTotal(_cart, Facts()));
 
     [Fact]
     public void TheTotalFollowsTheResolvedPricesNotThePricesAtAddition()
@@ -26,17 +29,17 @@ public sealed class ShoppingCartResolverTest
         _resolver.Set(product1, Money.Euro(15m), true, 100);
         _resolver.Set(product2, Money.Euro(25m), true, 100);
 
-        Assert.Equal(Money.Euro(105m), _cart.CalculateTotal(Facts()));
+        Assert.Equal(Money.Euro(105m), Pricing.CalculateTotal(_cart, Facts()));
     }
 
     [Fact]
     public void WithoutAResolverNoTotalCanBeStated() =>
-        Assert.Throws<ArgumentNullException>(() => _cart.CalculateTotal(null!));
+        Assert.Throws<ArgumentNullException>(() => Pricing.CalculateTotal(_cart, null!));
 
     [Fact]
     public void AnEmptyCartHasNothingToObjectTo()
     {
-        var outcome = _cart.ValidateForCheckout(Facts());
+        var outcome = Pricing.ValidateForCheckout(_cart, Facts());
 
         Assert.True(outcome.IsValid);
         Assert.Empty(outcome.Errors);
@@ -52,7 +55,7 @@ public sealed class ShoppingCartResolverTest
         _resolver.Set(product1, Money.Euro(10m), true, 10);
         _resolver.Set(product2, Money.Euro(10m), true, 10);
 
-        Assert.True(_cart.ValidateForCheckout(Facts()).IsValid);
+        Assert.True(Pricing.ValidateForCheckout(_cart, Facts()).IsValid);
     }
 
     [Fact]
@@ -62,7 +65,7 @@ public sealed class ShoppingCartResolverTest
         _cart.AddItem(productId, Quantity.Of(1), Ten);
         _resolver.Set(productId, Money.Euro(10m), false, 0);
 
-        var outcome = _cart.ValidateForCheckout(Facts());
+        var outcome = Pricing.ValidateForCheckout(_cart, Facts());
 
         Assert.False(outcome.IsValid);
         var error = Assert.Single(outcome.Errors);
@@ -77,7 +80,7 @@ public sealed class ShoppingCartResolverTest
         _cart.AddItem(productId, Quantity.Of(5), Ten);
         _resolver.Set(productId, Money.Euro(10m), true, 3);
 
-        var outcome = _cart.ValidateForCheckout(Facts());
+        var outcome = Pricing.ValidateForCheckout(_cart, Facts());
 
         Assert.False(outcome.IsValid);
         var error = Assert.Single(outcome.Errors);
@@ -95,7 +98,7 @@ public sealed class ShoppingCartResolverTest
         _resolver.Set(unavailable, Money.Euro(10m), false, 0);
         _resolver.Set(lowStock, Money.Euro(10m), true, 5);
 
-        Assert.Equal(2, _cart.ValidateForCheckout(Facts()).Errors.Count);
+        Assert.Equal(2, Pricing.ValidateForCheckout(_cart, Facts()).Errors.Count);
     }
 
     [Fact]
@@ -105,12 +108,12 @@ public sealed class ShoppingCartResolverTest
         _cart.AddItem(productId, Quantity.Of(5), Ten);
         _resolver.Set(productId, Money.Euro(10m), true, 5);
 
-        Assert.True(_cart.ValidateForCheckout(Facts()).IsValid);
+        Assert.True(Pricing.ValidateForCheckout(_cart, Facts()).IsValid);
     }
 
     [Fact]
     public void WithoutAResolverNothingCanBeValidated() =>
-        Assert.Throws<ArgumentNullException>(() => _cart.ValidateForCheckout(null!));
+        Assert.Throws<ArgumentNullException>(() => Pricing.ValidateForCheckout(_cart, null!));
 
     private sealed class StubPriceResolver : IArticlePriceResolver
     {

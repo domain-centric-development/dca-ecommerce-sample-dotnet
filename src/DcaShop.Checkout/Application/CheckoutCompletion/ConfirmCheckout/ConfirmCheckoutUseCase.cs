@@ -1,6 +1,7 @@
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
+using DcaShop.Checkout.Domain.Service;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
 namespace DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
@@ -9,14 +10,16 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
 {
     private readonly ICheckoutSessionRepository _sessions;
     private readonly ICheckoutArticleDataPort _articleData;
+    private readonly CheckoutPricing _pricing;
     private readonly IDomainEventPublisher _events;
     private readonly ITransactionBoundary _transactionBoundary;
 
-    public ConfirmCheckoutUseCase(ICheckoutSessionRepository sessions, ICheckoutArticleDataPort articleData, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
+    public ConfirmCheckoutUseCase(ICheckoutSessionRepository sessions, ICheckoutArticleDataPort articleData, CheckoutPricing pricing, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
         _transactionBoundary = transactionBoundary;
         _sessions = sessions;
         _articleData = articleData;
+        _pricing = pricing;
         _events = events;
     }
 
@@ -35,7 +38,7 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
             async ct =>
             {
                 var session = await LoadAsync(sessionId, customerId, ct).ConfigureAwait(false);
-                session.Confirm(facts);
+                session.Confirm(_pricing.ValidateItems(session, facts), _pricing.CalculateOrderTotal(session, facts));
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
                 return ConfirmCheckoutResult.From(session);

@@ -15,7 +15,6 @@ public sealed class SyncCheckoutWithCartUseCase : ISyncCheckoutWithCartInputPort
 {
     private readonly ICheckoutSessionRepository _sessions;
     private readonly ICartDataPort _cartData;
-    private readonly TaxCalculator _taxCalculator;
     private readonly ICheckoutArticleDataPort _articleData;
     private readonly IDomainEventPublisher _events;
     private readonly ITransactionBoundary _transactionBoundary;
@@ -24,7 +23,6 @@ public sealed class SyncCheckoutWithCartUseCase : ISyncCheckoutWithCartInputPort
     public SyncCheckoutWithCartUseCase(
         ICheckoutSessionRepository sessions,
         ICartDataPort cartData,
-        TaxCalculator taxCalculator,
         ICheckoutArticleDataPort articleData,
         IDomainEventPublisher events,
         ITransactionBoundary transactionBoundary,
@@ -32,7 +30,6 @@ public sealed class SyncCheckoutWithCartUseCase : ISyncCheckoutWithCartInputPort
     {
         _sessions = sessions;
         _cartData = cartData;
-        _taxCalculator = taxCalculator;
         _articleData = articleData;
         _events = events;
         _transactionBoundary = transactionBoundary;

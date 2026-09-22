@@ -5,8 +5,10 @@ namespace DcaShop.Checkout.Domain.Service;
 
 public sealed class CheckoutPricing : IDomainService
 {
-    public Money CalculateOrderTotal(IReadOnlyList<CheckoutLineItem> lines, IReadOnlyDictionary<ProductId, ArticlePrice> facts, string currency)
+    public Money CalculateOrderTotal(CheckoutSession session, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
+        var lines = session.LineItems;
+        var currency = session.Totals.Subtotal.Currency;
         ArgumentNullException.ThrowIfNull(facts);
         var total = Money.Zero(currency);
         foreach (var item in lines)
@@ -18,8 +20,9 @@ public sealed class CheckoutPricing : IDomainService
 
     }
 
-    public CheckoutValidationResult ValidateItems(IReadOnlyList<CheckoutLineItem> lines, IReadOnlyDictionary<ProductId, ArticlePrice> facts, string currency)
+    public CheckoutValidationResult ValidateItems(CheckoutSession session, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
+        var lines = session.LineItems;
         ArgumentNullException.ThrowIfNull(facts);
         var errors = new List<ValidationError>();
         foreach (var item in lines)

@@ -1,7 +1,6 @@
 using DcaShop.Checkout.Domain.ReadModel;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
-using DcaShop.Checkout.Domain.Service;
 
 namespace DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
 
@@ -13,19 +12,19 @@ namespace DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
 public sealed class GetActiveCheckoutSessionUseCase : IGetActiveCheckoutSessionInputPort
 {
     private readonly ICheckoutSessionRepository _sessions;
-    private readonly CheckoutStepValidator _stepValidator;
 
-    public GetActiveCheckoutSessionUseCase(ICheckoutSessionRepository sessions, CheckoutStepValidator stepValidator)
+    public GetActiveCheckoutSessionUseCase(ICheckoutSessionRepository sessions)
     {
         _sessions = sessions;
-        _stepValidator = stepValidator;
     }
 
     public async Task<GetActiveCheckoutSessionResult> ExecuteAsync(GetActiveCheckoutSessionQuery query, CancellationToken cancellationToken = default)
     {
         var session = await _sessions.FindActiveByCustomerAsync(CustomerId.Of(query.CustomerId), cancellationToken).ConfigureAwait(false);
         var snapshot = session is null ? null : CheckoutCartSnapshot.From(session);
-        var access = query.RequestedStep is { } step ? _stepValidator.AccessTo(snapshot, step) : null;
+        var access = query.RequestedStep is { } step
+            ? snapshot?.AccessTo(step) ?? StepAccess.BackToCart()
+            : null;
         return new GetActiveCheckoutSessionResult(snapshot, access);
     }
 }

@@ -173,23 +173,7 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
         return total;
     }
 
-    /// <summary>
-    /// Total from the prices the resolver answers now, not the ones captured at addition — what the customer
-    /// actually owes at settlement time.
-    /// </summary>
-    public Money CalculateTotal(IReadOnlyDictionary<ProductId, ArticlePrice> facts)
-    {
-        return new DcaShop.Cart.Domain.Service.CartPricing().CalculateTotal(PricingLines(), facts);
-    }
 
-    /// <summary>
-    /// Checks every line against current availability and stock. An empty cart is valid — the aggregate
-    /// refuses it elsewhere, not as a line error.
-    /// </summary>
-    public CartValidationResult ValidateForCheckout(IReadOnlyDictionary<ProductId, ArticlePrice> facts)
-    {
-        return new DcaShop.Cart.Domain.Service.CartPricing().ValidateForCheckout(PricingLines(), facts);
-    }
 
     /// <summary>
     /// Takes over every line of another cart, keeping the price each was added at, and answers how many lines
@@ -211,8 +195,6 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
     }
 
     public bool ContainsProduct(ProductId productId) => _items.Any(i => i.ProductId == productId);
-
-    private IReadOnlyList<DcaShop.Cart.Domain.Service.CartPricing.Line> PricingLines() => _items.Select(i => new DcaShop.Cart.Domain.Service.CartPricing.Line(i.ProductId, i.Quantity)).ToArray();
 
     private CartItem FindItem(CartItemId itemId) =>
         _items.FirstOrDefault(i => i.Id == itemId)
