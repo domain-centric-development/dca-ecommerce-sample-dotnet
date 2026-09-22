@@ -1,4 +1,4 @@
-contract: 1
+contract: 3
 # Stack profile — the only place in the pipeline that knows how this project builds and tests.
 # The gate and the pre-commit hook read it; a command that is not declared is skipped and named.
 # Architecture tests need a Debug build: ArchUnitNET drops Release async state machines.
@@ -26,3 +26,6 @@ review.boundaries: review-boundaries
 review.craft: review-craft
 
 contextMap: docs/architecture/context-map.md
+# What must hold for any change (story-gate.py --change, the commit hook, CI). The end-user suite
+# needs a running shop, so it stays out of it.
+required: compile test test.integration architecture
