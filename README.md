@@ -331,5 +331,5 @@ The specification's `scenarios.md` names the end-user scenarios both samples' br
 under the scenario title; `SharedScenariosTest` checks that binding against the sources of `tests/DcaShop.E2eTests`.
 
 ```bash
-dotnet test -c Debug -p:SpecificationPath=$PWD/../dca-sample-specification
+dotnet test -c Debug -p:SpecificationPath=../dca-sample-specification
 ```

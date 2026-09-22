@@ -2,10 +2,16 @@
   <!-- The shared sample specification (../dca-sample-specification) is an optional, local-only check: nothing is
        downloaded and the build does not depend on it. Pass -p:SpecificationPath=<checkout> to copy its vectors next to
        the test assemblies; without the property the specification tests are skipped and every other test runs. -->
+  <!-- A relative path is resolved against the repository root, not against each test project: -p:SpecificationPath=
+       ../dca-sample-specification is what a reader types, and MSBuild would otherwise look for it beside the .csproj
+       and report the vectors as missing. -->
+  <PropertyGroup Condition="'$(SpecificationPath)' != ''">
+    <SpecificationPathFull>$([System.IO.Path]::GetFullPath('$(SpecificationPath)', '$(MSBuildThisFileDirectory)'))</SpecificationPathFull>
+  </PropertyGroup>
   <Target Name="MaterializeSpecification" BeforeTargets="Build" Condition="'$(SpecificationPath)' != '' and ('$(MSBuildProjectName)' == 'DcaShop.UnitTests' or '$(MSBuildProjectName)' == 'DcaShop.IntegrationTests')">
-    <Error Condition="!Exists('$(SpecificationPath)/vectors')" Text="Specification vectors are missing under $(SpecificationPath)" />
+    <Error Condition="!Exists('$(SpecificationPathFull)/vectors')" Text="Specification vectors are missing under $(SpecificationPathFull) (from -p:SpecificationPath=$(SpecificationPath))" />
     <RemoveDir Directories="$(SpecificationRoot);$(OutDir)specification" />
-    <ItemGroup><SpecificationFiles Include="$(SpecificationPath)/**/*.json;$(SpecificationPath)/**/*.md" /></ItemGroup>
+    <ItemGroup><SpecificationFiles Include="$(SpecificationPathFull)/**/*.json;$(SpecificationPathFull)/**/*.md" /></ItemGroup>
     <Copy SourceFiles="@(SpecificationFiles)" DestinationFiles="@(SpecificationFiles->'$(SpecificationRoot)%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(SpecificationFiles)" DestinationFiles="@(SpecificationFiles->'$(OutDir)specification/%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
