@@ -1,8 +1,9 @@
 # Context Map
 
 Strategic view of the bounded contexts in this reference implementation and how
-they relate: relationship patterns in DDD terms (Partnership, Anti-Corruption
-Layer, Conformist, Separate Ways) and the subdomain type of each context.
+they relate: the organisational relationship pattern in DDD terms (Partnership,
+Customer/Supplier, Separate Ways) beside the translation each context declares,
+and the subdomain type of each context.
 **Hand-maintained** by the `/context-map` skill.
 
 The structural truth is [`architecture/context-map.md`](architecture/context-map.md):
@@ -39,41 +40,53 @@ small; its one port is the identity port
 
 ## Relationships
 
-| Upstream | Downstream | Pattern | Realised via |
-|---|---|---|---|
-| `Pricing` | `Product` | Anti-Corruption Layer (`Api`) | `Pricing.Api.PricingService` → `Product/Adapter/Outgoing/Pricing/PricingDataAdapter` |
-| `Inventory` | `Product` | Anti-Corruption Layer (`Api`) | `Inventory.Api.InventoryService` → `Product/Adapter/Outgoing/Inventory/InventoryStockDataAdapter` |
-| `Product` | `Cart` | Anti-Corruption Layer (`Api`) | `Product.Api.ProductCatalogService` → `Cart/Adapter/Outgoing/Product/CompositeArticleDataAdapter` |
-| `Pricing` | `Cart` | Anti-Corruption Layer (`Api`) | `Pricing.Api.PricingService` (via `CompositeArticleDataAdapter`) |
-| `Inventory` | `Cart` | Anti-Corruption Layer (`Api`) | `Inventory.Api.InventoryService` (via `CompositeArticleDataAdapter`) |
-| `Product` | `Checkout` | Anti-Corruption Layer (`Api`) | `Product.Api.ProductCatalogService` → `Checkout/Adapter/Outgoing/Product/CompositeCheckoutArticleDataAdapter` |
-| `Pricing` | `Checkout` | Anti-Corruption Layer (`Api`) | `Pricing.Api.PricingService` |
-| `Inventory` | `Checkout` | Anti-Corruption Layer (`Api`) | `Inventory.Api.InventoryService` |
-| `Cart` | `Checkout` | Anti-Corruption Layer (`Api`) | `Cart.Api.CartService` → `Checkout/Adapter/Outgoing/Cart/CartDataAdapter` |
-| `Cart` | `Checkout` | Conformist (`Events`) | `Cart.Events.CartContentsChangedEvent` → `Checkout/Adapter/Incoming/Event/CartSync/CartChangeEventConsumer` |
-| `Checkout` | `Cart` | Conformist — consumer-defined contract | `Checkout.Events.CheckoutConfirmedEvent` implements `Cart.Events.ICartCompletionTrigger`; consumer in `Cart/Adapter/Incoming/Event/CartCheckout/CartCompletionEventConsumer` |
-| `Checkout` | `Inventory` | Conformist — consumer-defined contract | `Checkout.Events.CheckoutConfirmedEvent` implements `Inventory.Events.IStockReductionTrigger`; consumer in `Inventory/Adapter/Incoming/Event/StockReductionEventConsumer` |
-| `Product` | `Pricing` | Conformist — consumer-defined contract | `Product.Events.ProductCreatedEvent` implements `Pricing.Events.IPriceInitializationTrigger`; consumer in `Pricing/Adapter/Incoming/Event/PriceInitializationEventConsumer` |
-| `Product` | `Inventory` | Conformist — consumer-defined contract | `Product.Events.ProductCreatedEvent` implements `Inventory.Events.IStockInitializationTrigger`; consumer in `Inventory/Adapter/Incoming/Event/StockInitializationEventConsumer` |
-| Payment Service Provider | `Checkout` | Anti-Corruption Layer (external, REST) | declared as `[ExternalUpstream]` on `CheckoutContext`, behind the caller-owned `IPaymentProviderRegistry` port; the sample ships `Checkout/Adapter/Outgoing/Payment/InMemoryPaymentProviderRegistry` and `MockPaymentProvider` in place of a real gateway |
-| `Account` | `Cart`, `Checkout`, `Product` | Supplier via the shared kernel's identity port | `SharedKernel.Application.Shared.IIdentityProvider` is implemented only in `Account/Adapter/Outgoing/Security/HttpContextIdentityProvider`; the incoming adapters of Cart, Checkout and Product resolve the caller through that port and hand the customer to their use cases as a command or query field. The dependency is invisible to the declared map — it runs through the shared kernel — which is why it is stated here. Account itself depends on no other context |
-| `Portal` | (all) | Separate Ways | Aggregation happens in the UI; no cross-context references |
-| `Backoffice` | (all) | Separate Ways | Reads the event publication log only; negotiates no contract |
+Three axes, and only the first two are in the code. **Declared** is what
+`[Upstream(Translation, Consumes)]` states: how *this* context protects its model —
+`ACL` or `Conformist`. **Published by the upstream** is what `[OpenHostService]` and
+the `Api`/`Events` namespaces state. **Organisational** is the team relationship,
+which no attribute carries and which therefore lives only here. A relationship is
+normally all three at once: the catalog consumes pricing through an open host
+service, translates it with an ACL, and the two teams work as Customer/Supplier —
+those are three answers, not three competing names.
 
-Declared partnerships (`[Partnership]` on both sides, symmetric): `Cart` ↔
-`Checkout`, `Checkout` ↔ `Inventory`, `Inventory` ↔ `Product`, `Pricing` ↔
-`Product`. A partnership records that the two contexts evolve their contract
-together; it grants no dependency permission, so each pair also carries the
-`[Upstream]` declaration that names the actual direction and channel.
+| Upstream | Downstream | Declared (`Translation` / `Consumes`) | Organisational | Realised via |
+|---|---|---|---|---|
+| `Pricing` | `Product` | ACL / Api | Partnership | `Pricing.Api.PricingService` → `Product/Adapter/Outgoing/Pricing/PricingDataAdapter` |
+| `Inventory` | `Product` | ACL / Api | Partnership | `Inventory.Api.InventoryService` → `Product/Adapter/Outgoing/Inventory/InventoryStockDataAdapter` |
+| `Product` | `Cart` | ACL / Api | Customer/Supplier | `Product.Api.ProductCatalogService` → `Cart/Adapter/Outgoing/Product/CompositeArticleDataAdapter` |
+| `Pricing` | `Cart` | ACL / Api | Customer/Supplier | `Pricing.Api.PricingService` (via `CompositeArticleDataAdapter`) |
+| `Inventory` | `Cart` | ACL / Api | Customer/Supplier | `Inventory.Api.InventoryService` (via `CompositeArticleDataAdapter`) |
+| `Product` | `Checkout` | ACL / Api | Customer/Supplier | `Product.Api.ProductCatalogService` → `Checkout/Adapter/Outgoing/Product/CompositeCheckoutArticleDataAdapter` |
+| `Pricing` | `Checkout` | ACL / Api | Customer/Supplier | `Pricing.Api.PricingService` |
+| `Inventory` | `Checkout` | ACL / Api | Partnership | `Inventory.Api.InventoryService` |
+| `Cart` | `Checkout` | ACL / Api | Partnership | `Cart.Api.CartService` → `Checkout/Adapter/Outgoing/Cart/CartDataAdapter` |
+| `Cart` | `Checkout` | Conformist / Events | Partnership | `Cart.Events.CartContentsChangedEvent` → `Checkout/Adapter/Incoming/Event/CartSync/CartChangeEventConsumer` |
+| `Checkout` | `Cart` | Conformist / Events | Partnership | `Checkout.Events.CheckoutConfirmedEvent` implements `Cart.Events.ICartCompletionTrigger`; consumer in `Cart/Adapter/Incoming/Event/CartCheckout/CartCompletionEventConsumer` |
+| `Checkout` | `Inventory` | Conformist / Events | Partnership | `Checkout.Events.CheckoutConfirmedEvent` implements `Inventory.Events.IStockReductionTrigger`; consumer in `Inventory/Adapter/Incoming/Event/StockReductionEventConsumer` |
+| `Product` | `Pricing` | Conformist / Events | Partnership | `Product.Events.ProductCreatedEvent` implements `Pricing.Events.IPriceInitializationTrigger`; consumer in `Pricing/Adapter/Incoming/Event/PriceInitializationEventConsumer` |
+| `Product` | `Inventory` | Conformist / Events | Partnership | `Product.Events.ProductCreatedEvent` implements `Inventory.Events.IStockInitializationTrigger`; consumer in `Inventory/Adapter/Incoming/Event/StockInitializationEventConsumer` |
+| Payment Service Provider | `Checkout` | ACL / REST (outbound) | Conformist to the provider's contract | `[ExternalUpstream]` on `CheckoutContext`, behind the caller-owned `IPaymentProviderRegistry` port; the sample ships `Checkout/Adapter/Outgoing/Payment/InMemoryPaymentProviderRegistry` and `MockPaymentProvider` in place of a real gateway |
+| `Account` | `Cart`, `Checkout`, `Product` | not declared — the dependency runs through the shared kernel | Supplier of identity | `SharedKernel.Application.Shared.IIdentityProvider` is implemented only in `Account/Adapter/Outgoing/Security/HttpContextIdentityProvider`; the incoming adapters of Cart, Checkout and Product resolve the caller through that port and hand the customer to their use cases as a command or query field. Invisible to the declared map, which is why it is stated here. Account itself depends on no other context |
+| `Portal` | (all) | not declared | Separate Ways | Composition happens in the UI; no cross-context references |
+| `Backoffice` | (all) | not declared | Separate Ways | Reads the event publication log only; negotiates no contract |
+
+Every upstream in the first block publishes through `[OpenHostService]` on its `Api`
+type; the event contracts are the published language of their context. Partnerships
+are the pairs that declare `[Partnership]` on both sides: `Cart` ↔ `Checkout`,
+`Checkout` ↔ `Inventory`, `Inventory` ↔ `Product`, `Pricing` ↔ `Product` — each of
+them owns a consumer-defined event contract the other implements, which is why the
+two evolve it together.
 
 ### Pattern notes
 
-- **Anti-Corruption Layer:** The upstream context exposes a narrow `Api`
-  namespace. The downstream context consumes it only in its *outgoing-adapter*
-  layer and translates the API types into its own domain model, so the upstream
-  model never reaches its invariants.
-- **Conformist:** Integration events live in `<Context>/Events/` and are consumed
-  as published, in `Adapter/Incoming/Event/`.
+- **Open Host Service (upstream) + ACL (downstream):** The upstream context
+  exposes a narrow `Api` namespace carrying `[OpenHostService]`. The downstream
+  consumes it only in its *outgoing-adapter* layer and translates the API types
+  into its own domain model, so the upstream model never reaches its invariants —
+  that translation is what `Translation.AntiCorruptionLayer` declares.
+- **Published Language (upstream) + Conformist (downstream):** Integration events
+  live in `<Context>/Events/` and are consumed as published — declared as
+  `Translation.Conformist` — with consumers in `Adapter/Incoming/Event/`.
 - **Consumer-defined contract (a variant of Conformist):** The *consuming*
   context defines the event interface (e.g. `ICartCompletionTrigger`); the
   *publishing* context implements that interface on its integration event
