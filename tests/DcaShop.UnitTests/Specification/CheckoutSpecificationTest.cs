@@ -26,19 +26,18 @@ public sealed class CheckoutSpecificationTest
     [SpecificationTheory, MemberData(nameof(Vectors))]
     public async Task DrivesRealUseCases(string id, string vectorJson)
     {
-        // Every number the vector states is read from it; nothing about the case is repeated here. What
-        // stays in the adapter is how this stack expresses the case, not what the case is.
+        // A vector carries values where the case is a function of values — the repricing and total cases
+        // below. The behaviour cases carry an id only: a transition or a race is not a number, and a flag
+        // standing in for one would say less than it looks like. Their fixture uses the defaults.
         using var vector = JsonDocument.Parse(vectorJson);
-        var given = vector.RootElement.GetProperty("given");
-        var when = vector.RootElement.GetProperty("when");
-        var then = vector.RootElement.GetProperty("then");
-        var f = new Fixture(given); var session = await f.Start(); Ready(session); session.ClearDomainEvents();
+        var v = vector.RootElement;
+        var f = new Fixture(v); var session = await f.Start(); Ready(session); session.ClearDomainEvents();
         switch (id)
         {
             case "checkout.snapshot.unchanged-after-cart-edit":
             case "checkout.cart-edit.does-not-create-session":
                 {
-                    var snapshot = session.LineItems.ToArray(); f.Cart.AddItem(f.Product, CartModel.Quantity.Of(when.GetProperty("cartAdds").GetInt32()), Price.Of(f.Price));
+                    var snapshot = session.LineItems.ToArray(); f.Cart.AddItem(f.Product, CartModel.Quantity.Of(3), Price.Of(f.Price));
                     var sync = new SyncCheckoutWithCartUseCase(f.Repository, f, f, f.Events, new InMemoryTransactionBoundary(), NullLogger<SyncCheckoutWithCartUseCase>.Instance);
                     Assert.False((await sync.ExecuteAsync(new SyncCheckoutWithCartCommand(f.Cart.Id.Value))).WasSynced);
                     Assert.Equal(snapshot, session.LineItems); Assert.Equal(session.Id, (await f.Repository.FindActiveByCartIdAsync(session.CartId))!.Id); break;
@@ -62,19 +61,21 @@ public sealed class CheckoutSpecificationTest
             case "checkout.confirm.out-of-stock":
                 {
                     var totals = session.Totals; var events = f.Events.Published.Count;
-                    if (when.TryGetProperty("unitPrice", out var newPrice)) f.Price = Money.Euro(newPrice.GetDecimal());
-                    if (when.TryGetProperty("stock", out var newStock)) f.Stock = newStock.GetInt32();
+                    if (v.TryGetProperty("newUnitPrice", out var newPrice)) f.Price = Money.Euro(decimal.Parse(newPrice.GetString()!, System.Globalization.CultureInfo.InvariantCulture));
+                    if (v.TryGetProperty("newStock", out var newStock)) f.Stock = newStock.GetInt32();
                     var failure = await Assert.ThrowsAsync<CheckoutValidationException>(() => f.Confirm(session));
                     Assert.Equal(f.Product, Assert.Single(failure.Validation.Errors).ProductId);
-                    Assert.Equal(then.GetProperty("errors").GetInt32(), failure.Validation.Errors.Count);
-                    Assert.Equal(Enum.Parse<CheckoutSessionStatus>(then.GetProperty("status").GetString()!, ignoreCase: true), session.Status);
+                    Assert.False(v.GetProperty("accept").GetBoolean());
+                    Assert.Equal(v.GetProperty("errors").GetInt32(), failure.Validation.Errors.Count);
+                    Assert.Equal(CheckoutSessionStatus.Active, session.Status);
                     Assert.Equal(totals, session.Totals); Assert.Empty(session.DomainEvents); Assert.Equal(events, f.Events.Published.Count); break;
                 }
             case "checkout.confirm.unchanged":
             case "checkout.confirmed-event.total":
                 {
                     await f.Confirm(session); var confirmed = Assert.IsType<CheckoutConfirmed>(f.Events.Published.Last());
-                    Assert.Equal(Money.Euro(then.GetProperty("total").GetDecimal()), session.Totals.Total); Assert.Equal(session.Totals.Total, confirmed.TotalAmount); break;
+                    Assert.True(v.GetProperty("accept").GetBoolean());
+                    Assert.Equal(Money.Euro(decimal.Parse(v.GetProperty("total").GetString()!, System.Globalization.CultureInfo.InvariantCulture)), session.Totals.Total); Assert.Equal(session.Totals.Total, confirmed.TotalAmount); break;
                 }
             case "checkout.replacement.confirmation-wins": await Race(f, session, true); break;
             case "checkout.replacement.replacement-wins": await Race(f, session, false); break;
@@ -105,11 +106,12 @@ public sealed class CheckoutSpecificationTest
         public readonly InMemoryCheckoutSessionRepository Repository = new();
         public readonly Publisher Events = new();
         public Money Price; public int Stock;
-        public Fixture(JsonElement given)
+        public Fixture(JsonElement vector)
         {
-            Price = Money.Euro(given.GetProperty("unitPrice").GetDecimal());
-            Stock = given.TryGetProperty("stock", out var stock) ? stock.GetInt32() : 100;
-            Cart.AddItem(Product, CartModel.Quantity.Of(given.GetProperty("quantity").GetInt32()), DcaShop.SharedKernel.Domain.Model.Price.Of(Price));
+            Price = vector.TryGetProperty("unitPrice", out var price) ? Money.Euro(decimal.Parse(price.GetString()!, System.Globalization.CultureInfo.InvariantCulture)) : Money.Euro(10);
+            Stock = vector.TryGetProperty("stock", out var stock) ? stock.GetInt32() : 100;
+            var quantity = vector.TryGetProperty("quantity", out var q) ? q.GetInt32() : 2;
+            Cart.AddItem(Product, CartModel.Quantity.Of(quantity), DcaShop.SharedKernel.Domain.Model.Price.Of(Price));
         }
         public async Task<CheckoutSession> Start()
         {
