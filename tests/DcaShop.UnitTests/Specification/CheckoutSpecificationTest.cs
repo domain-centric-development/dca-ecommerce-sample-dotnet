@@ -21,18 +21,24 @@ public sealed class CheckoutSpecificationTest
     {
         if (!SpecificationVectors.Present) yield break;
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "specification/vectors/checkout.json")));
-        foreach (var v in document.RootElement.EnumerateArray()) yield return new object[] { v.GetProperty("id").GetString()! };
+        foreach (var v in document.RootElement.EnumerateArray()) yield return new object[] { v.GetProperty("id").GetString()!, v.GetRawText() };
     }
     [SpecificationTheory, MemberData(nameof(Vectors))]
-    public async Task DrivesRealUseCases(string id)
+    public async Task DrivesRealUseCases(string id, string vectorJson)
     {
-        var f = new Fixture(); var session = await f.Start(); Ready(session); session.ClearDomainEvents();
+        // Every number the vector states is read from it; nothing about the case is repeated here. What
+        // stays in the adapter is how this stack expresses the case, not what the case is.
+        using var vector = JsonDocument.Parse(vectorJson);
+        var given = vector.RootElement.GetProperty("given");
+        var when = vector.RootElement.GetProperty("when");
+        var then = vector.RootElement.GetProperty("then");
+        var f = new Fixture(given); var session = await f.Start(); Ready(session); session.ClearDomainEvents();
         switch (id)
         {
             case "checkout.snapshot.unchanged-after-cart-edit":
             case "checkout.cart-edit.does-not-create-session":
                 {
-                    var snapshot = session.LineItems.ToArray(); f.Cart.AddItem(f.Product, CartModel.Quantity.Of(3), Price.Of(Money.Euro(10)));
+                    var snapshot = session.LineItems.ToArray(); f.Cart.AddItem(f.Product, CartModel.Quantity.Of(when.GetProperty("cartAdds").GetInt32()), Price.Of(f.Price));
                     var sync = new SyncCheckoutWithCartUseCase(f.Repository, f, f, f.Events, new InMemoryTransactionBoundary(), NullLogger<SyncCheckoutWithCartUseCase>.Instance);
                     Assert.False((await sync.ExecuteAsync(new SyncCheckoutWithCartCommand(f.Cart.Id.Value))).WasSynced);
                     Assert.Equal(snapshot, session.LineItems); Assert.Equal(session.Id, (await f.Repository.FindActiveByCartIdAsync(session.CartId))!.Id); break;
@@ -56,16 +62,19 @@ public sealed class CheckoutSpecificationTest
             case "checkout.confirm.out-of-stock":
                 {
                     var totals = session.Totals; var events = f.Events.Published.Count;
-                    if (id.EndsWith("price-changed", StringComparison.Ordinal)) f.Price = Money.Euro(11); else f.Stock = 1;
+                    if (when.TryGetProperty("unitPrice", out var newPrice)) f.Price = Money.Euro(newPrice.GetDecimal());
+                    if (when.TryGetProperty("stock", out var newStock)) f.Stock = newStock.GetInt32();
                     var failure = await Assert.ThrowsAsync<CheckoutValidationException>(() => f.Confirm(session));
-                    Assert.Equal(f.Product, Assert.Single(failure.Validation.Errors).ProductId); Assert.Equal(CheckoutSessionStatus.Active, session.Status);
+                    Assert.Equal(f.Product, Assert.Single(failure.Validation.Errors).ProductId);
+                    Assert.Equal(then.GetProperty("errors").GetInt32(), failure.Validation.Errors.Count);
+                    Assert.Equal(Enum.Parse<CheckoutSessionStatus>(then.GetProperty("status").GetString()!, ignoreCase: true), session.Status);
                     Assert.Equal(totals, session.Totals); Assert.Empty(session.DomainEvents); Assert.Equal(events, f.Events.Published.Count); break;
                 }
             case "checkout.confirm.unchanged":
             case "checkout.confirmed-event.total":
                 {
                     await f.Confirm(session); var confirmed = Assert.IsType<CheckoutConfirmed>(f.Events.Published.Last());
-                    Assert.Equal(Money.Euro(20), session.Totals.Total); Assert.Equal(session.Totals.Total, confirmed.TotalAmount); break;
+                    Assert.Equal(Money.Euro(then.GetProperty("total").GetDecimal()), session.Totals.Total); Assert.Equal(session.Totals.Total, confirmed.TotalAmount); break;
                 }
             case "checkout.replacement.confirmation-wins": await Race(f, session, true); break;
             case "checkout.replacement.replacement-wins": await Race(f, session, false); break;
@@ -95,8 +104,13 @@ public sealed class CheckoutSpecificationTest
         public readonly CartModel.ShoppingCart Cart = new(CartModel.CartId.Generate(), CartModel.CustomerId.Of("specification"));
         public readonly InMemoryCheckoutSessionRepository Repository = new();
         public readonly Publisher Events = new();
-        public Money Price = Money.Euro(10); public int Stock = 100;
-        public Fixture() { Cart.AddItem(Product, CartModel.Quantity.Of(2), DcaShop.SharedKernel.Domain.Model.Price.Of(Price)); }
+        public Money Price; public int Stock;
+        public Fixture(JsonElement given)
+        {
+            Price = Money.Euro(given.GetProperty("unitPrice").GetDecimal());
+            Stock = given.TryGetProperty("stock", out var stock) ? stock.GetInt32() : 100;
+            Cart.AddItem(Product, CartModel.Quantity.Of(given.GetProperty("quantity").GetInt32()), DcaShop.SharedKernel.Domain.Model.Price.Of(Price));
+        }
         public async Task<CheckoutSession> Start()
         {
             var result = await new StartCheckoutUseCase(this, new CheckoutCartFactory(), this, Repository, Events, new InMemoryTransactionBoundary())
