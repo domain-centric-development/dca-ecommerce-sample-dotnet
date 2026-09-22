@@ -182,7 +182,7 @@ what tells them apart.
 | Settlement checked against current figures | `ShoppingCart.ValidateForCheckout(facts)` → `CartValidationResult`; Checkout's `StartCheckoutUseCase` refuses a cart whose articles are gone or short in stock |
 | Shared-kernel port with one context's implementation | `IIdentityProvider` (shared kernel) resolved by Account's authentication handler from `HttpContext.User` |
 | Async at the ports, synchronous domain | `Task<TOut> ExecuteAsync(...)` vs. plain domain methods |
-| Executable context map | `docs/context-map.md`, rendered by the architecture tests |
+| Executable context map | `docs/architecture/context-map.md`, rendered by the architecture tests |
 | One protocol per adapter, one set of use cases | `ProductPageController` (Razor), `ProductResource` (REST), `ProductCatalogMcpToolProvider` (MCP) |
 | Operational module beside the contexts | `DcaShop.Backoffice` — no context marker, its own authentication |
 
@@ -256,7 +256,8 @@ are not marked `Secure`.
 
 ## Context map
 
-See [docs/context-map.md](docs/context-map.md) (generated). Cart and Checkout each consume the Product
+See [docs/architecture/context-map.md](docs/architecture/context-map.md) (generated from the context
+attributes) and [docs/context-map.md](docs/context-map.md) (the hand-maintained strategic reading). Cart and Checkout each consume the Product
 Catalog through an ACL; Checkout consumes the Cart's Api (ACL), conforms to its `ICartCompletionTrigger`
 contract; Cart's `CartContentsChangedEvent` leaves the captured session unchanged; the Product Catalog reads price and
 stock from the Pricing and Inventory Open Host Services, which in turn fill themselves from

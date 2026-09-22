@@ -25,4 +25,4 @@ review.domain: review-domain
 review.boundaries: review-boundaries
 review.craft: review-craft
 
-contextMap: docs/context-map.md
+contextMap: docs/architecture/context-map.md

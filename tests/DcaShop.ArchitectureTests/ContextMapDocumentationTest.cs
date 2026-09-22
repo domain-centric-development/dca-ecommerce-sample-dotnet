@@ -3,11 +3,22 @@ using DomainCentric.ArchRules.ContextMap;
 
 namespace DcaShop.ArchitectureTests;
 
-/// <summary>Renders the executable context map to <c>docs/context-map.md</c> so the document can never drift from the code.</summary>
+/// <summary>
+/// Renders <c>docs/architecture/context-map.md</c> from the <c>[BoundedContext]</c>, <c>[Upstream]</c>,
+/// <c>[ExternalUpstream]</c> and <c>[Partnership]</c> attributes — the context map as a fully derived view.
+/// <para>
+/// The test regenerates the file on every run and fails if it was stale, so CI catches a context map that
+/// drifted from the declarations. The fix is always: commit the regenerated file. The strategic reading —
+/// relationship patterns and subdomain types, which no attribute carries — is hand-maintained in
+/// <c>docs/context-map.md</c> and is not touched here.
+/// </para>
+/// </summary>
 public sealed class ContextMapDocumentationTest
 {
+    private static readonly string[] ContextMapPath = ["docs", "architecture", "context-map.md"];
+
     [Fact]
-    public void RendersContextMap()
+    public void ContextMapDocumentMatchesTheDeclaredContextMap()
     {
         var layout = DcaLayout.ForRootNamespace("DcaShop");
         var arch = DcaArchitecture.Load(
@@ -22,14 +33,21 @@ public sealed class ContextMapDocumentationTest
             typeof(Cart.CartContext).Assembly,
             typeof(Checkout.CheckoutContext).Assembly);
 
-        var markdown = ContextMapRenderer.Of(arch).WithTitle("DcaShop Context Map").Render();
-        Assert.Contains("Shopping Cart", markdown, StringComparison.Ordinal);
+        var generated = ContextMapRenderer.Of(arch).WithTitle("DcaShop Context Map").Render();
+        Assert.Contains("Shopping Cart", generated, StringComparison.Ordinal);
 
-        var target = FindRepositoryRoot();
-        if (target is not null)
-        {
-            File.WriteAllText(Path.Combine(target, "docs", "context-map.md"), markdown);
-        }
+        var root = FindRepositoryRoot();
+        Assert.True(root is not null, "the repository root was not found, so the context map was never compared");
+
+        var target = Path.Combine([root!, .. ContextMapPath]);
+        var existing = File.Exists(target) ? File.ReadAllText(target) : null;
+
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        File.WriteAllText(target, generated);
+
+        Assert.True(
+            generated == existing,
+            "docs/architecture/context-map.md was stale and has been regenerated from the context attributes — review and commit it");
     }
 
     private static string? FindRepositoryRoot()

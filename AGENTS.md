@@ -50,7 +50,9 @@ docker compose up --build                                                # same 
 docker compose run --rm test                                             # tests without a local SDK
 ```
 
-The architecture tests also (re)generate `docs/context-map.md` — commit it with the change that caused it.
+The architecture tests also (re)generate `docs/architecture/context-map.md` and fail when it was stale —
+commit it with the change that caused it. `docs/context-map.md` is the hand-maintained strategic map
+(relationship patterns, subdomain types); no test writes it.
 
 ## Tech stack
 

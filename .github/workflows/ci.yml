@@ -35,7 +35,7 @@ jobs:
 
       - name: Context map is up to date
         # The architecture suite regenerates it; a diff means the committed document was stale.
-        run: git diff --exit-code -- docs/context-map.md
+        run: git diff --exit-code -- docs/architecture/context-map.md
 
       - name: No local library switch leaked into the build
         # The published versions must be the default; UseLocalDcaDotnet stays opt-in.
