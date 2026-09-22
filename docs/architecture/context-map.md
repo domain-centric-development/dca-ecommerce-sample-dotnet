@@ -39,19 +39,19 @@ graph LR
   Pricing["Pricing<br/><i>api · events</i>"]
   Product["Product Catalog<br/><i>api · events</i>"]
 
-  Cart -->|"ACL / api"| Product
-  Cart -->|"ACL / api"| Pricing
   Cart -->|"ACL / api"| Inventory
-  Checkout -->|"ACL / api"| Product
-  Checkout -->|"ACL / api"| Pricing
-  Checkout -->|"ACL / api"| Inventory
+  Cart -->|"ACL / api"| Pricing
+  Cart -->|"ACL / api"| Product
   Checkout -->|"ACL / api"| Cart
   Checkout -.->|"Conformist / events"| Cart
+  Checkout -->|"ACL / api"| Inventory
   Checkout -.->|"Conformist / events"| Inventory
-  Product -->|"ACL / api"| Pricing
+  Checkout -->|"ACL / api"| Pricing
+  Checkout -->|"ACL / api"| Product
   Product -->|"ACL / api"| Inventory
-  Product -.->|"Conformist / events"| Pricing
   Product -.->|"Conformist / events"| Inventory
+  Product -->|"ACL / api"| Pricing
+  Product -.->|"Conformist / events"| Pricing
   ext_payment_service_provider[["Payment Service Provider"]]
   Checkout -->|"ACL / REST"| ext_payment_service_provider
   Cart ---|"Partnership"| Checkout
@@ -70,19 +70,19 @@ Edges labeled `planned` are declared intent without a code dependency yet.
 
 | Downstream | Upstream | Channel | Translation | Status | Rationale |
 |---|---|---|---|---|---|
-| Cart | Product | api | ACL | implemented | Cart works with its own article snapshot; the catalog model must not leak into cart invariants |
-| Cart | Pricing | api | ACL | implemented | Price lookups are translated into the cart's own article data |
 | Cart | Inventory | api | ACL | implemented | Stock availability is translated into the cart's own article data |
-| Checkout | Product | api | ACL | implemented | Product data is translated into checkout's own article types |
-| Checkout | Pricing | api | ACL | implemented | Prices are translated into checkout's own line item amounts |
-| Checkout | Inventory | api | ACL | implemented | Stock availability is translated into checkout's own article data |
+| Cart | Pricing | api | ACL | implemented | Price lookups are translated into the cart's own article data |
+| Cart | Product | api | ACL | implemented | Cart works with its own article snapshot; the catalog model must not leak into cart invariants |
 | Checkout | Cart | api | ACL | implemented | Cart snapshots are translated into checkout's own CartData |
 | Checkout | Cart | events | Conformist | implemented | CheckoutConfirmedEvent implements cart's consumer-defined ICartCompletionTrigger contract as-is; cart's CartContentsChangedEvent is consumed as published |
+| Checkout | Inventory | api | ACL | implemented | Stock availability is translated into checkout's own article data |
 | Checkout | Inventory | events | Conformist | implemented | CheckoutConfirmedEvent implements inventory's consumer-defined IStockReductionTrigger contract as-is |
-| Product | Pricing | api | ACL | implemented | The catalog shows a price but does not own it; the pricing model is translated into the catalog's own article view |
+| Checkout | Pricing | api | ACL | implemented | Prices are translated into checkout's own line item amounts |
+| Checkout | Product | api | ACL | implemented | Product data is translated into checkout's own article types |
 | Product | Inventory | api | ACL | implemented | Availability is an inventory statement; the catalog translates it into its own article view |
-| Product | Pricing | events | Conformist | implemented | ProductCreatedEvent implements pricing's consumer-defined IPriceInitializationTrigger contract as-is |
 | Product | Inventory | events | Conformist | implemented | ProductCreatedEvent implements inventory's consumer-defined IStockInitializationTrigger contract as-is |
+| Product | Pricing | api | ACL | implemented | The catalog shows a price but does not own it; the pricing model is translated into the catalog's own article view |
+| Product | Pricing | events | Conformist | implemented | ProductCreatedEvent implements pricing's consumer-defined IPriceInitializationTrigger contract as-is |
 
 ## External systems
 
