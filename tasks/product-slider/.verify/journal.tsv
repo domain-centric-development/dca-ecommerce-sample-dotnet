@@ -1,0 +1,21 @@
+2026-09-25T10:34:07.955Z	stage-start	plan	tool=claude-session
+2026-09-25T10:39:24.213Z	stage-end	plan	exit=0
+2026-09-25T10:39:24.213Z	usage	plan	tool=claude-session	model=claude-opus-5-5	input=74	cache_read=3257068	cache_write=136177	output=26664	window=2026-09-25T10:34:07.955Z/2026-09-25T10:39:24.213Z
+2026-09-25T10:39:24.417Z	stage-start	test	tool=claude-session
+2026-09-25T10:52:35.894Z	stage-end	test	exit=0
+2026-09-25T10:52:35.894Z	usage	test	tool=claude-session	model=claude-opus-5-5	input=78	cache_read=3592675	cache_write=129357	output=40774	window=2026-09-25T10:39:24.417Z/2026-09-25T10:52:35.894Z
+2026-09-25T12:06:22.836Z	stage-start	test	tool=claude-session
+2026-09-25T12:11:24.023Z	stage-end	test	exit=0
+2026-09-25T12:11:24.023Z	usage	test	tool=claude-session	model=claude-opus-5-5	input=36	cache_read=856413	cache_write=64407	output=6954	window=2026-09-25T12:06:22.836Z/2026-09-25T12:11:24.023Z
+2026-09-25T12:11:27.964Z	stage-start	build	tool=claude-session
+2026-09-25T12:17:28.994Z	stage-end	build	exit=0
+2026-09-25T12:17:28.994Z	usage	build	tool=claude-session	model=claude-opus-5-5	input=52	cache_read=2020317	cache_write=97878	output=17512	window=2026-09-25T12:11:27.964Z/2026-09-25T12:17:28.994Z
+2026-09-25T12:17:29.311Z	stage-start	tidy	tool=claude-session
+2026-09-25T12:24:13.934Z	stage-end	tidy	exit=0
+2026-09-25T12:24:13.934Z	usage	tidy	tool=claude-session	model=claude-opus-5-5	input=32	cache_read=790594	cache_write=55038	output=7545	window=2026-09-25T12:17:29.311Z/2026-09-25T12:24:13.934Z
+2026-09-25T12:24:14.278Z	stage-start	judge	tool=claude-session
+2026-09-25T12:26:45.139Z	stage-end	judge	exit=0
+2026-09-25T12:26:45.139Z	usage	judge	tool=claude-session	window=2026-09-25T12:24:14.278Z/2026-09-25T12:26:45.139Z	session=claude:12103ecd-7faf-45ee-b603-614dd5ebe2c1
+2026-09-25T12:26:45.438Z	stage-start	document	tool=claude-session
+2026-09-25T12:29:18.683Z	stage-end	document	exit=0
+2026-09-25T12:29:18.683Z	usage	document	tool=claude-session	window=2026-09-25T12:26:45.438Z/2026-09-25T12:29:18.683Z	session=claude:12103ecd-7faf-45ee-b603-614dd5ebe2c1

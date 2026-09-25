@@ -1,0 +1,3 @@
+modified	README.md
+modified	src/DcaShop.Portal/Domain/glossary.md
+modified	src/DcaShop.Product/Domain/glossary.md

@@ -9,7 +9,7 @@
 </div>
 <div class="product-detail" data-test="product-detail">
 <div class="product-detail__header">
-<h1 class="product-detail__title">@Model.Name</h1>
+<h1 class="product-detail__title" data-test="product-detail-title">@Model.Name</h1>
 @if (Model.CanBePurchased)
 {
 <span class="badge badge--success">In Stock</span>
@@ -31,7 +31,7 @@ else
 }
 </div>
 <div class="product-detail__info">
-<div class="product-detail__price"><span>@Model.Price</span><span class="product-detail__price-label">Retail Price</span></div>
+<div class="product-detail__price"><span data-test="product-detail-price">@Model.Price</span><span class="product-detail__price-label">Retail Price</span></div>
 @if (!string.IsNullOrEmpty(Model.Description))
 {
 <div class="product-detail__description"><p>@Model.Description</p></div>

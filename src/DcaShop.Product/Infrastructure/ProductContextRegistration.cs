@@ -8,6 +8,7 @@ using DcaShop.Product.Api;
 using DcaShop.Product.Application.CreateProduct;
 using DcaShop.Product.Application.GetAllProducts;
 using DcaShop.Product.Application.GetProductById;
+using DcaShop.Product.Application.GetProductSelection;
 using DcaShop.Product.Application.Shared;
 using DcaShop.Product.Domain.Model;
 using DcaShop.SharedKernel.Infrastructure.Events;
@@ -28,6 +29,11 @@ public static class ProductContextRegistration
         services.AddScoped<ICreateProductInputPort, CreateProductUseCase>();
         services.AddScoped<IGetAllProductsInputPort, GetAllProductsUseCase>();
         services.AddScoped<IGetProductByIdInputPort, GetProductByIdUseCase>();
+        services.AddScoped<IGetProductSelectionInputPort>(sp => new GetProductSelectionUseCase(
+            sp.GetRequiredService<IProductRepository>(),
+            sp.GetRequiredService<IPricingDataPort>(),
+            sp.GetRequiredService<ProductArticleAssembler>(),
+            Random.Shared));
         services.AddScoped<ProductArticleAssembler>();
 
         // Outgoing adapters (output ports)

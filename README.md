@@ -153,7 +153,9 @@ customer, not from the URL. The account pages follow the same rule (`/login`, `/
 (`/backoffice/login`, `/backoffice/events`). Two differences in the HTML are intended: the antiforgery hidden
 field in every form, and the corner ribbon that names the running implementation
 (`.stack-ribbon--dotnet` here, `.stack-ribbon--java` there) — with both shops open in two tabs, the ribbon is
-what tells them apart.
+what tells them apart. One difference is temporary: the homepage's "Discover products" slider
+(`data-test="product-slider"`, the `.product-slider__*` rules in `main.css`) and the `product-detail-title` /
+`product-detail-price` attributes on the product page exist here only, until the Java sample adds the same.
 
 ## What it demonstrates
 

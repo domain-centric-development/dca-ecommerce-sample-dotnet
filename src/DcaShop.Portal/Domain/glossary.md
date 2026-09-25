@@ -49,6 +49,7 @@ them. Definitions can be found in the respective context glossaries.
 | Term              | Owning Context        | Usage in Portal                               |
 |-------------------|-----------------------|-----------------------------------------------|
 | Product / Catalog | `Product`             | Navigation to product listing                 |
+| Product slider    | `Product`             | The homepage section "Discover products", directly below the hero: the `ProductSelection` as cards, paged with Previous and Next; composed into the page by name (`Component.InvokeAsync("ProductSlider")`), not referenced in C# |
 | Cart              | `Cart`                | Navigation to shopping cart                   |
 | Checkout / Order  | `Checkout`            | Navigation to checkout flow                   |
 | Account / User    | `Account`             | Login, register and profile entry points      |

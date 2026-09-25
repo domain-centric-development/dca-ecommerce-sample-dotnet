@@ -1,0 +1,1281 @@
+diff --git a/README.md b/README.md
+index 3d1b543..7f3ee90 100644
+--- a/README.md
++++ b/README.md
+@@ -153,7 +153,9 @@ customer, not from the URL. The account pages follow the same rule (`/login`, `/
+ (`/backoffice/login`, `/backoffice/events`). Two differences in the HTML are intended: the antiforgery hidden
+ field in every form, and the corner ribbon that names the running implementation
+ (`.stack-ribbon--dotnet` here, `.stack-ribbon--java` there) — with both shops open in two tabs, the ribbon is
+-what tells them apart.
++what tells them apart. One difference is temporary: the homepage's "Discover products" slider
++(`data-test="product-slider"`, the `.product-slider__*` rules in `main.css`) and the `product-detail-title` /
++`product-detail-price` attributes on the product page exist here only, until the Java sample adds the same.
+ 
+ ## What it demonstrates
+ 
+diff --git a/src/DcaShop.Portal/Domain/glossary.md b/src/DcaShop.Portal/Domain/glossary.md
+index faed8ff..48f97c2 100644
+--- a/src/DcaShop.Portal/Domain/glossary.md
++++ b/src/DcaShop.Portal/Domain/glossary.md
+@@ -49,6 +49,7 @@ them. Definitions can be found in the respective context glossaries.
+ | Term              | Owning Context        | Usage in Portal                               |
+ |-------------------|-----------------------|-----------------------------------------------|
+ | Product / Catalog | `Product`             | Navigation to product listing                 |
++| Product slider    | `Product`             | The homepage section "Discover products", directly below the hero: the `ProductSelection` as cards, paged with Previous and Next; composed into the page by name (`Component.InvokeAsync("ProductSlider")`), not referenced in C# |
+ | Cart              | `Cart`                | Navigation to shopping cart                   |
+ | Checkout / Order  | `Checkout`            | Navigation to checkout flow                   |
+ | Account / User    | `Account`             | Login, register and profile entry points      |
+diff --git a/src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewComponent.cs b/src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewComponent.cs
+new file mode 100644
+index 0000000..1a92c08
+--- /dev/null
++++ b/src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewComponent.cs
+@@ -0,0 +1,34 @@
++using DcaShop.Product.Application.GetProductSelection;
++
++using Microsoft.AspNetCore.Mvc;
++
++namespace DcaShop.Product.Adapter.Incoming.Web;
++
++/// <summary>
++/// The "Discover products" slider as a page fragment: another context's page invokes it by name
++/// (<c>Component.InvokeAsync("ProductSlider")</c>) without referencing this context. Renders nothing when no product
++/// has a price.
++/// </summary>
++public sealed class ProductSliderViewComponent : ViewComponent
++{
++    private readonly IGetProductSelectionInputPort _getProductSelection;
++
++    public ProductSliderViewComponent(IGetProductSelectionInputPort getProductSelection)
++    {
++        _getProductSelection = getProductSelection;
++    }
++
++    public async Task<IViewComponentResult> InvokeAsync()
++    {
++        var result = await _getProductSelection.ExecuteAsync(new GetProductSelectionQuery(), HttpContext.RequestAborted);
++        if (result.Products.Count == 0)
++        {
++            return Content(string.Empty);
++        }
++
++        var cards = result.Products
++            .Select(p => new ProductSliderViewModel.Card(p.ProductId.Value, p.Name.Value, p.ImageUrl.Value, p.CurrentPrice.ToString()))
++            .ToList();
++        return View(new ProductSliderViewModel(cards));
++    }
++}
+\ No newline at end of file
+diff --git a/src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewModel.cs b/src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewModel.cs
+new file mode 100644
+index 0000000..664323a
+--- /dev/null
++++ b/src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewModel.cs
+@@ -0,0 +1,6 @@
++namespace DcaShop.Product.Adapter.Incoming.Web;
++
++public sealed record ProductSliderViewModel(IReadOnlyList<ProductSliderViewModel.Card> Cards)
++{
++    public sealed record Card(Guid ProductId, string Name, string ImageUrl, string Price);
++}
+\ No newline at end of file
+diff --git a/src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionQuery.cs b/src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionQuery.cs
+new file mode 100644
+index 0000000..d6a3e3a
+--- /dev/null
++++ b/src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionQuery.cs
+@@ -0,0 +1,3 @@
++namespace DcaShop.Product.Application.GetProductSelection;
++
++public sealed record GetProductSelectionQuery;
+\ No newline at end of file
+diff --git a/src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionResult.cs b/src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionResult.cs
+new file mode 100644
+index 0000000..5e35ad0
+--- /dev/null
++++ b/src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionResult.cs
+@@ -0,0 +1,5 @@
++using DcaShop.Product.Domain.Model;
++
++namespace DcaShop.Product.Application.GetProductSelection;
++
++public sealed record GetProductSelectionResult(IReadOnlyList<EnrichedProduct> Products);
+\ No newline at end of file
+diff --git a/src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionUseCase.cs b/src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionUseCase.cs
+new file mode 100644
+index 0000000..86f8f8c
+--- /dev/null
++++ b/src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionUseCase.cs
+@@ -0,0 +1,38 @@
++using DcaShop.Product.Application.Shared;
++using DcaShop.Product.Domain.Model;
++
++namespace DcaShop.Product.Application.GetProductSelection;
++
++/// <summary>
++/// Draws the product selection: only products Pricing has a price for are candidates, in catalog order, and the
++/// drawn products are enriched and answered in the order they were drawn.
++/// </summary>
++public sealed class GetProductSelectionUseCase : IGetProductSelectionInputPort
++{
++    private readonly IProductRepository _products;
++    private readonly IPricingDataPort _pricing;
++    private readonly ProductArticleAssembler _assembler;
++    private readonly Random _random;
++
++    public GetProductSelectionUseCase(IProductRepository products, IPricingDataPort pricing, ProductArticleAssembler assembler, Random random)
++    {
++        _products = products;
++        _pricing = pricing;
++        _assembler = assembler;
++        _random = random;
++    }
++
++    public async Task<GetProductSelectionResult> ExecuteAsync(GetProductSelectionQuery query, CancellationToken cancellationToken = default)
++    {
++        var catalog = await _products.FindAllAsync(cancellationToken).ConfigureAwait(false);
++        var prices = await _pricing.GetPricesAsync(catalog.Select(p => p.Id).ToArray(), cancellationToken).ConfigureAwait(false);
++        var priced = catalog.Where(p => prices.ContainsKey(p.Id)).Select(p => p.Id).ToList();
++
++        var selection = ProductSelection.Draw(priced, _random);
++
++        var byId = catalog.ToDictionary(p => p.Id);
++        var drawn = selection.ProductIds.Select(id => byId[id]).ToList();
++        var enriched = await _assembler.EnrichAsync(drawn, cancellationToken).ConfigureAwait(false);
++        return new GetProductSelectionResult(enriched);
++    }
++}
+\ No newline at end of file
+diff --git a/src/DcaShop.Product/Application/GetProductSelection/IGetProductSelectionInputPort.cs b/src/DcaShop.Product/Application/GetProductSelection/IGetProductSelectionInputPort.cs
+new file mode 100644
+index 0000000..f008561
+--- /dev/null
++++ b/src/DcaShop.Product/Application/GetProductSelection/IGetProductSelectionInputPort.cs
+@@ -0,0 +1,7 @@
++using DomainCentric.BuildingBlocks.Hexagonal.Ports.In;
++
++namespace DcaShop.Product.Application.GetProductSelection;
++
++public interface IGetProductSelectionInputPort : IUseCase<GetProductSelectionQuery, GetProductSelectionResult>
++{
++}
+\ No newline at end of file
+diff --git a/src/DcaShop.Product/Domain/Model/ProductSelection.cs b/src/DcaShop.Product/Domain/Model/ProductSelection.cs
+new file mode 100644
+index 0000000..d58ad9a
+--- /dev/null
++++ b/src/DcaShop.Product/Domain/Model/ProductSelection.cs
+@@ -0,0 +1,43 @@
++using DcaShop.SharedKernel.Domain.Model;
++
++using DomainCentric.BuildingBlocks.Ddd.Tactical;
++
++namespace DcaShop.Product.Domain.Model;
++
++/// <summary>Up to <see cref="MaxSize"/> different products drawn at random from the priced candidates.</summary>
++public sealed record ProductSelection : IValue
++{
++    public const int MaxSize = 4;
++
++    private ProductSelection(IReadOnlyList<ProductId> productIds)
++    {
++        ProductIds = productIds;
++    }
++
++    /// <summary>The drawn products, in the order they were drawn.</summary>
++    public IReadOnlyList<ProductId> ProductIds { get; }
++
++    /// <summary>
++    /// Draws up to <see cref="MaxSize"/> different products from <paramref name="pricedProducts"/>; every candidate
++    /// when there are fewer, none when there are none. The draw depends only on the candidates and the random source.
++    /// </summary>
++    public static ProductSelection Draw(IReadOnlyCollection<ProductId> pricedProducts, Random random)
++    {
++        ArgumentNullException.ThrowIfNull(pricedProducts);
++        ArgumentNullException.ThrowIfNull(random);
++
++        var pool = pricedProducts.Distinct().ToArray();
++        var size = Math.Min(MaxSize, pool.Length);
++        for (var i = 0; i < size; i++)
++        {
++            var pick = random.Next(i, pool.Length);
++            (pool[i], pool[pick]) = (pool[pick], pool[i]);
++        }
++
++        return new ProductSelection(pool.Take(size).ToList());
++    }
++
++    public bool Equals(ProductSelection? other) => other is not null && ProductIds.SequenceEqual(other.ProductIds);
++
++    public override int GetHashCode() => ProductIds.Aggregate(0, HashCode.Combine);
++}
+\ No newline at end of file
+diff --git a/src/DcaShop.Product/Domain/glossary.md b/src/DcaShop.Product/Domain/glossary.md
+index f561db6..725da2f 100644
+--- a/src/DcaShop.Product/Domain/glossary.md
++++ b/src/DcaShop.Product/Domain/glossary.md
+@@ -104,6 +104,26 @@ purchased" or "stock is sufficient for quantity x".
+ **Notes:** Risk of synonyms — sometimes referred to as "Product View" or
+ "Product Display Model"; prefer `EnrichedProduct`.
+ 
++### ProductSelection
++
++**Definition:** Up to four different products of the catalogue that have a
++price, drawn at random anew on every request; shown on the homepage as the
++"Discover products" slider. Fewer priced products yield all of them, none
++yield an empty selection.
++
++**Type:** Value Object
++
++**Related terms:**
++- `ProductId` — the selection holds the drawn ids, in draw order
++- `EnrichedProduct` — what the selection is shown as
++- Product slider — the homepage section that presents it (Portal glossary)
++
++**Operations:** `Draw` (from the priced candidates and a random source)
++
++**Notes:** "Has a price" means Pricing's answer contains the product.
++Out-of-stock products are offered as long as they have a price. Not a
++popularity ranking and not personalised.
++
+ ## Domain Events
+ 
+ ### ProductCreated
+diff --git a/src/DcaShop.Product/Infrastructure/ProductContextRegistration.cs b/src/DcaShop.Product/Infrastructure/ProductContextRegistration.cs
+index 5d0e693..a8339ab 100644
+--- a/src/DcaShop.Product/Infrastructure/ProductContextRegistration.cs
++++ b/src/DcaShop.Product/Infrastructure/ProductContextRegistration.cs
+@@ -8,6 +8,7 @@ using DcaShop.Product.Api;
+ using DcaShop.Product.Application.CreateProduct;
+ using DcaShop.Product.Application.GetAllProducts;
+ using DcaShop.Product.Application.GetProductById;
++using DcaShop.Product.Application.GetProductSelection;
+ using DcaShop.Product.Application.Shared;
+ using DcaShop.Product.Domain.Model;
+ using DcaShop.SharedKernel.Infrastructure.Events;
+@@ -28,6 +29,11 @@ public static class ProductContextRegistration
+         services.AddScoped<ICreateProductInputPort, CreateProductUseCase>();
+         services.AddScoped<IGetAllProductsInputPort, GetAllProductsUseCase>();
+         services.AddScoped<IGetProductByIdInputPort, GetProductByIdUseCase>();
++        services.AddScoped<IGetProductSelectionInputPort>(sp => new GetProductSelectionUseCase(
++            sp.GetRequiredService<IProductRepository>(),
++            sp.GetRequiredService<IPricingDataPort>(),
++            sp.GetRequiredService<ProductArticleAssembler>(),
++            Random.Shared));
+         services.AddScoped<ProductArticleAssembler>();
+ 
+         // Outgoing adapters (output ports)
+diff --git a/src/DcaShop.Web/Views/Home/Index.cshtml b/src/DcaShop.Web/Views/Home/Index.cshtml
+index 86d231d..266911a 100644
+--- a/src/DcaShop.Web/Views/Home/Index.cshtml
++++ b/src/DcaShop.Web/Views/Home/Index.cshtml
+@@ -8,6 +8,7 @@
+ <a class="hero__cta hero__cta--secondary" href="/cart" data-test="view-cart-link">View Cart</a>
+ </div>
+ </section>
++@await Component.InvokeAsync("ProductSlider")
+ <section class="section" data-test="features">
+ <h2 class="section__title">Why Shop With Us</h2>
+ <div class="feature-grid">
+diff --git a/src/DcaShop.Web/Views/Product/Detail.cshtml b/src/DcaShop.Web/Views/Product/Detail.cshtml
+index ddc70e1..e2429b3 100644
+--- a/src/DcaShop.Web/Views/Product/Detail.cshtml
++++ b/src/DcaShop.Web/Views/Product/Detail.cshtml
+@@ -9,7 +9,7 @@
+ </div>
+ <div class="product-detail" data-test="product-detail">
+ <div class="product-detail__header">
+-<h1 class="product-detail__title">@Model.Name</h1>
++<h1 class="product-detail__title" data-test="product-detail-title">@Model.Name</h1>
+ @if (Model.CanBePurchased)
+ {
+ <span class="badge badge--success">In Stock</span>
+@@ -31,7 +31,7 @@ else
+ }
+ </div>
+ <div class="product-detail__info">
+-<div class="product-detail__price"><span>@Model.Price</span><span class="product-detail__price-label">Retail Price</span></div>
++<div class="product-detail__price"><span data-test="product-detail-price">@Model.Price</span><span class="product-detail__price-label">Retail Price</span></div>
+ @if (!string.IsNullOrEmpty(Model.Description))
+ {
+ <div class="product-detail__description"><p>@Model.Description</p></div>
+diff --git a/src/DcaShop.Web/Views/Shared/Components/ProductSlider/Default.cshtml b/src/DcaShop.Web/Views/Shared/Components/ProductSlider/Default.cshtml
+new file mode 100644
+index 0000000..3c8d7d0
+--- /dev/null
++++ b/src/DcaShop.Web/Views/Shared/Components/ProductSlider/Default.cshtml
+@@ -0,0 +1,54 @@
++@model DcaShop.Product.Adapter.Incoming.Web.ProductSliderViewModel
++<section class="section product-slider" data-test="product-slider" aria-labelledby="product-slider-title">
++<h2 class="section__title" id="product-slider-title" data-test="product-slider-title">Discover products</h2>
++<div class="product-slider__controls">
++<button class="btn btn--ghost product-slider__button" type="button" data-test="product-slider-previous" data-product-slider-previous>Previous</button>
++<button class="btn btn--ghost product-slider__button" type="button" data-test="product-slider-next" data-product-slider-next>Next</button>
++</div>
++<div class="product-slider__track" data-product-slider-track>
++@foreach (var card in Model.Cards)
++{
++<article class="product-slider__card" data-test="product-slider-card">
++<a class="product-slider__link" href="/products/@card.ProductId" data-test="product-slider-card-link">
++<div class="product-slider__image">
++@if (!string.IsNullOrEmpty(card.ImageUrl))
++{
++<img src="@card.ImageUrl" alt="@card.Name" data-test="product-slider-card-image">
++}
++else
++{
++<div class="product-card__image-placeholder" data-test="product-slider-card-image">@card.Name[0]</div>
++}
++</div>
++<h3 class="product-slider__name" data-test="product-slider-card-name">@card.Name</h3>
++<div class="product-slider__price" data-test="product-slider-card-price">@card.Price</div>
++</a>
++</article>
++}
++</div>
++<script>
++(function () {
++  var slider = document.currentScript.parentElement;
++  var track = slider.querySelector('[data-product-slider-track]');
++  var previous = slider.querySelector('[data-product-slider-previous]');
++  var next = slider.querySelector('[data-product-slider-next]');
++  function step() {
++    var cards = track.children;
++    return cards.length > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : track.clientWidth;
++  }
++  function update() {
++    previous.disabled = track.scrollLeft <= 1;
++    next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
++  }
++  function move(by) {
++    var index = Math.round(track.scrollLeft / step()) + by;
++    track.scrollTo({ left: Math.max(0, index) * step() });
++  }
++  previous.addEventListener('click', function () { move(-1); });
++  next.addEventListener('click', function () { move(1); });
++  track.addEventListener('scroll', update, { passive: true });
++  window.addEventListener('resize', update);
++  update();
++})();
++</script>
++</section>
+diff --git a/src/DcaShop.Web/wwwroot/css/main.css b/src/DcaShop.Web/wwwroot/css/main.css
+index 211db34..7fca283 100644
+--- a/src/DcaShop.Web/wwwroot/css/main.css
++++ b/src/DcaShop.Web/wwwroot/css/main.css
+@@ -2829,6 +2829,95 @@ ul, ol {
+   text-align: center;
+ }
+ 
++/* --------------------------------------------------------------------------
++   28a. Product Slider (Homepage)
++   -------------------------------------------------------------------------- */
++
++.product-slider__track {
++  --product-slider-gap: var(--space-lg);
++  display: flex;
++  gap: var(--product-slider-gap);
++  overflow-x: auto;
++  scroll-snap-type: x mandatory;
++  scrollbar-width: none;
++}
++
++.product-slider__track::-webkit-scrollbar {
++  display: none;
++}
++
++.product-slider__card {
++  flex: 0 0 calc((100% - 3 * var(--product-slider-gap)) / 4);
++  scroll-snap-align: start;
++  background: var(--color-surface);
++  border: 1px solid var(--color-border);
++  border-radius: var(--radius-lg);
++  overflow: hidden;
++  box-shadow: var(--shadow-sm);
++}
++
++.product-slider__link {
++  display: flex;
++  flex-direction: column;
++  height: 100%;
++  color: inherit;
++  text-decoration: none;
++}
++
++.product-slider__link:hover .product-slider__name,
++.product-slider__link:focus-visible .product-slider__name {
++  color: var(--color-primary);
++}
++
++.product-slider__image {
++  width: 100%;
++  aspect-ratio: 4 / 3;
++  background: var(--color-border-light);
++  overflow: hidden;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++}
++
++.product-slider__image img {
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++}
++
++.product-slider__name {
++  font-family: var(--font-display);
++  font-size: var(--font-size-lg);
++  font-weight: 600;
++  color: var(--color-text);
++  margin: var(--space-md) var(--space-md) var(--space-xs);
++}
++
++.product-slider__price {
++  font-size: var(--font-size-lg);
++  font-weight: 700;
++  color: var(--color-accent);
++  margin: 0 var(--space-md) var(--space-md);
++}
++
++.product-slider__controls {
++  display: flex;
++  justify-content: flex-end;
++  gap: var(--space-md);
++  margin-bottom: var(--space-lg);
++}
++
++.product-slider__button:disabled {
++  opacity: 0.4;
++  cursor: default;
++}
++
++@media (max-width: 480px) {
++  .product-slider__card {
++    flex-basis: 100%;
++  }
++}
++
+ /* --------------------------------------------------------------------------
+    29. Doc Links (Homepage)
+    -------------------------------------------------------------------------- */
+diff --git a/tests/DcaShop.E2eTests/HomeSliderE2eTest.cs b/tests/DcaShop.E2eTests/HomeSliderE2eTest.cs
+new file mode 100644
+index 0000000..36ad8b5
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/HomeSliderE2eTest.cs
+@@ -0,0 +1,106 @@
++using DcaShop.E2eTests.Pages;
++
++namespace DcaShop.E2eTests;
++
++/// <summary>
++/// The "Discover products" slider on the homepage, in the suite's default browser window: where it stands, what it
++/// holds, what a card shows and where it leads.
++/// </summary>
++public sealed class HomeSliderE2eTest : BaseE2eTest
++{
++    public HomeSliderE2eTest(BrowserFixture browser) : base(browser)
++    {
++    }
++
++    [E2eFact(DisplayName = "The homepage shows a \"Discover products\" slider directly below the hero")]
++    public async Task ShowsTheDiscoverProductsSliderDirectlyBelowTheHero()
++    {
++        var home = await HomePage.NavigateToAsync(Page);
++        Assert.True(await home.ShowSliderAsync(), "the homepage shows the product slider");
++
++        Assert.Equal("Discover products", await home.SliderTitleAsync());
++        Assert.Equal("product-slider", await home.SectionAfterHeroAsync());
++        Assert.True(await home.SliderStandsBetweenHeroAndAsync("features"), "the slider stands below the hero and before \"Why Shop With Us\"");
++    }
++
++    [E2eFact(DisplayName = "The homepage slider holds four different products of the sample catalog")]
++    public async Task HoldsFourDifferentProductsOfTheSampleCatalog()
++    {
++        var home = await HomePage.NavigateToAsync(Page);
++        Assert.True(await home.ShowSliderAsync(), "the homepage shows the product slider");
++        var names = await home.CardNamesAsync();
++
++        Assert.Equal(4, await home.CardCountAsync());
++        Assert.Equal(4, names.Distinct(StringComparer.Ordinal).Count());
++        var catalog = await (await ProductCatalogPage.NavigateToAsync(Page)).ProductTitlesAsync();
++        Assert.All(names, name => Assert.Contains(name, catalog));
++    }
++
++    [E2eFact(DisplayName = "The homepage slider draws its products anew on every request")]
++    public async Task DrawsItsProductsAnewOnEveryRequest()
++    {
++        var home = await HomePage.NavigateToAsync(Page);
++        Assert.True(await home.ShowSliderAsync(), "the homepage shows the product slider");
++        var noted = (await home.CardNamesAsync()).ToHashSet(StringComparer.Ordinal);
++        Assert.Equal(4, noted.Count);
++
++        var differentSelections = 0;
++        for (var reload = 0; reload < 10; reload++)
++        {
++            await home.ReloadAsync();
++            Assert.True(await home.ShowSliderAsync(), "the homepage shows the product slider");
++            if (!noted.SetEquals(await home.CardNamesAsync()))
++            {
++                differentSelections++;
++            }
++        }
++
++        Assert.True(differentSelections >= 1, "ten reloads all showed the same four products");
++    }
++
++    [E2eFact(DisplayName = "A slider card shows the product's image, name and price")]
++    public async Task ACardShowsTheProductsImageNameAndPrice()
++    {
++        var home = await HomePage.NavigateToAsync(Page);
++        Assert.True(await home.ShowSliderAsync(), "the homepage shows the product slider");
++        var name = await home.CardNameAsync(0);
++        var price = await home.CardPriceAsync(0);
++        var image = await home.CardImageSourceAsync(0);
++        Assert.True(await home.CardImageIsLoadedAsync(0), "the card shows the product's image");
++
++        var product = await ProductDetailPage.NavigateToAsync(Page, await home.CardLinkPathAsync(0));
++
++        Assert.Equal(await product.TitleAsync(), name);
++        Assert.Equal(await product.PriceAsync(), price);
++        Assert.Equal(await product.ImageSourceAsync(), image);
++    }
++
++    [E2eFact(DisplayName = "A slider card leads to its product page")]
++    public async Task ACardLeadsToItsProductPage()
++    {
++        var home = await HomePage.NavigateToAsync(Page);
++        Assert.True(await home.ShowSliderAsync(), "the homepage shows the product slider");
++        var name = await home.CardNameAsync(1);
++        var link = await home.CardLinkPathAsync(1);
++        Assert.Matches("^/products/[0-9a-f-]{36}$", link);
++
++        var product = await home.FollowCardAsync(1);
++
++        Assert.Equal(link, product.ShownPath);
++        Assert.Equal(name, await product.TitleAsync());
++    }
++
++    [E2eFact(DisplayName = "On the desktop the slider shows its four cards side by side")]
++    public async Task OnTheDesktopTheFourCardsStandSideBySide()
++    {
++        var home = await HomePage.NavigateToAsync(Page);
++        Assert.True(await home.ShowSliderAsync(), "the homepage shows the product slider");
++
++        Assert.Equal(new[] { 0, 1, 2, 3 }, await home.CardsInViewAsync(0, 1, 2, 3));
++        var positions = await home.CardPositionsAsync();
++        Assert.All(positions, p => Assert.InRange(p.Top, positions[0].Top - 1, positions[0].Top + 1));
++        Assert.Equal(positions.OrderBy(p => p.Left).ToList(), positions);
++        Assert.True(await home.IsPreviousDisabledAsync(), "\"Previous\" is disabled");
++        Assert.True(await home.IsNextDisabledAsync(), "\"Next\" is disabled");
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.E2eTests/HomeSliderPhoneE2eTest.cs b/tests/DcaShop.E2eTests/HomeSliderPhoneE2eTest.cs
+new file mode 100644
+index 0000000..98e3b6a
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/HomeSliderPhoneE2eTest.cs
+@@ -0,0 +1,97 @@
++using DcaShop.E2eTests.Pages;
++
++using Microsoft.Playwright;
++
++namespace DcaShop.E2eTests;
++
++/// <summary>
++/// The "Discover products" slider on a phone (393 px, as the shop's other phone checks): one card in view, paged by
++/// "Previous" and "Next" — by mouse or keyboard — and still unless the shopper pages it.
++/// </summary>
++public sealed class HomeSliderPhoneE2eTest : BaseE2eTest
++{
++    public HomeSliderPhoneE2eTest(BrowserFixture browser) : base(browser)
++    {
++    }
++
++    protected override BrowserNewContextOptions ContextOptions => new() { ViewportSize = new ViewportSize { Width = 393, Height = 852 } };
++
++    [E2eFact(DisplayName = "On a phone the slider shows one card at a time")]
++    public async Task OnAPhoneOnlyTheFirstCardIsInView()
++    {
++        var home = await OpenSliderAsync();
++
++        Assert.Equal(new[] { 0 }, await home.CardsInViewAsync(0));
++        Assert.True(await home.IsPreviousDisabledAsync(), "\"Previous\" is disabled at the first card");
++    }
++
++    [E2eFact(DisplayName = "On a phone Next brings the following slider card into view")]
++    public async Task OnAPhoneNextBringsTheSecondCardIntoView()
++    {
++        var home = await OpenSliderAsync();
++        Assert.Equal(new[] { 0 }, await home.CardsInViewAsync(0));
++
++        await home.PressNextAsync();
++
++        Assert.Equal(new[] { 1 }, await home.CardsInViewAsync(1));
++    }
++
++    [E2eFact(DisplayName = "On a phone Previous brings the preceding slider card back into view")]
++    public async Task OnAPhonePreviousBringsTheFirstCardBackIntoView()
++    {
++        var home = await OpenSliderAsync();
++        await home.PressNextAsync();
++        Assert.Equal(new[] { 1 }, await home.CardsInViewAsync(1));
++
++        await home.PressPreviousAsync();
++
++        Assert.Equal(new[] { 0 }, await home.CardsInViewAsync(0));
++    }
++
++    [E2eFact(DisplayName = "On a phone the slider's Next button works from the keyboard")]
++    public async Task OnAPhoneNextWorksFromTheKeyboard()
++    {
++        var home = await OpenSliderAsync();
++        Assert.Equal(new[] { 0 }, await home.CardsInViewAsync(0));
++        Assert.True(await home.TabToNextAsync(), "the Tab key reaches \"Next\"");
++
++        await home.PressEnterAsync();
++
++        Assert.Equal(new[] { 1 }, await home.CardsInViewAsync(1));
++    }
++
++    [E2eFact(DisplayName = "On a phone the slider stops at its last card")]
++    public async Task OnAPhoneTheSliderStopsAtItsLastCard()
++    {
++        var home = await OpenSliderAsync();
++
++        for (var press = 1; press <= 3; press++)
++        {
++            await home.PressNextAsync();
++            Assert.Equal(new[] { press }, await home.CardsInViewAsync(press));
++        }
++
++        Assert.Equal(new[] { 3 }, await home.CardsInViewAsync(3));
++        Assert.True(await home.IsNextDisabledAsync(), "\"Next\" is disabled at the last card");
++    }
++
++    [E2eFact(DisplayName = "The homepage slider does not move by itself")]
++    public async Task TheSliderDoesNotMoveByItself()
++    {
++        var home = await OpenSliderAsync();
++        Assert.Equal(new[] { 0 }, await home.CardsInViewAsync(0));
++
++        // The waiting is the observation here, not a synchronisation: ten seconds of nobody touching the slider.
++        await Page.WaitForTimeoutAsync(10_000);
++
++        Assert.True(await home.IsCardInViewAsync(0), "the first card is still in view");
++        Assert.False(await home.IsCardInViewAsync(1), "the slider moved on to the second card by itself");
++    }
++
++    private async Task<HomePage> OpenSliderAsync()
++    {
++        var home = await HomePage.NavigateToAsync(Page);
++        Assert.True(await home.ShowSliderAsync(), "the homepage shows the product slider");
++        return home;
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.E2eTests/Pages/HomePage.cs b/tests/DcaShop.E2eTests/Pages/HomePage.cs
+new file mode 100644
+index 0000000..e964412
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/Pages/HomePage.cs
+@@ -0,0 +1,215 @@
++using Microsoft.Playwright;
++
++namespace DcaShop.E2eTests.Pages;
++
++/// <summary>
++/// The homepage and its "Discover products" slider. A card is <em>in view</em> when the whole card lies inside the
++/// slider as the browser lays it out and inside the window's width — judged from the rendered boxes, never from class
++/// names or markup.
++/// </summary>
++public sealed class HomePage : BasePage
++{
++    private const string Hero = "hero";
++    private const string Slider = "product-slider";
++    private const string SliderTitle = "product-slider-title";
++    private const string Card = "product-slider-card";
++    private const string CardImage = "product-slider-card-image";
++    private const string CardName = "product-slider-card-name";
++    private const string CardPrice = "product-slider-card-price";
++    private const string CardLink = "product-slider-card-link";
++    private const string Previous = "product-slider-previous";
++    private const string Next = "product-slider-next";
++
++    /// <summary>How long a paging step may take to settle (smooth scrolling) before a check gives up.</summary>
++    private const float SettleTimeoutMs = 5_000;
++
++    private const string CardInView = """
++        ([slider, card, index]) => {
++            const s = document.querySelector(`[data-test='${slider}']`);
++            const c = s && s.querySelectorAll(`[data-test='${card}']`)[index];
++            if (!c) return false;
++            const sb = s.getBoundingClientRect();
++            const cb = c.getBoundingClientRect();
++            const left = Math.max(sb.left, 0) - 1;
++            const right = Math.min(sb.right, document.documentElement.clientWidth) + 1;
++            return cb.width > 0 && cb.left >= left && cb.right <= right;
++        }
++        """;
++
++    private HomePage(IPage page) : base(page)
++    {
++    }
++
++    public static async Task<HomePage> NavigateToAsync(IPage page)
++    {
++        await page.GotoAsync(BaseUrl + "/");
++        var home = new HomePage(page);
++        await home.WaitForAsync(Hero);
++        return home;
++    }
++
++    public async Task ReloadAsync()
++    {
++        await Page.ReloadAsync();
++        await WaitForAsync(Hero);
++    }
++
++    /// <summary>
++    /// Waits for the slider and scrolls it into the window, as a shopper would before looking at it; false when the
++    /// page shows no slider.
++    /// </summary>
++    public async Task<bool> ShowSliderAsync()
++    {
++        var slider = Locator(Slider);
++        try
++        {
++            await slider.WaitForAsync(new LocatorWaitForOptions { Timeout = SettleTimeoutMs });
++        }
++        catch (TimeoutException)
++        {
++            return false;
++        }
++
++        await slider.ScrollIntoViewIfNeededAsync();
++        return true;
++    }
++
++    public async Task<string> SliderTitleAsync() => (await Locator(SliderTitle).InnerTextAsync()).Trim();
++
++    /// <summary>The <c>data-test</c> of the section that follows the hero on the page.</summary>
++    public Task<string?> SectionAfterHeroAsync() =>
++        Page.EvaluateAsync<string?>(
++            "hero => document.querySelector(`[data-test='${hero}']`)?.nextElementSibling?.getAttribute('data-test') ?? null",
++            Hero);
++
++    /// <summary>True when the slider is laid out below the hero and above the section of the given <c>data-test</c>.</summary>
++    public async Task<bool> SliderStandsBetweenHeroAndAsync(string followingSection)
++    {
++        var hero = await Locator(Hero).BoundingBoxAsync();
++        var slider = await Locator(Slider).BoundingBoxAsync();
++        var following = await Locator(followingSection).BoundingBoxAsync();
++        return hero is not null && slider is not null && following is not null
++               && slider.Y >= hero.Y + hero.Height - 1
++               && slider.Y + slider.Height <= following.Y + 1;
++    }
++
++    public Task<int> CardCountAsync() => Cards.CountAsync();
++
++    /// <summary>The product names on the cards, in slider order.</summary>
++    public async Task<IReadOnlyList<string>> CardNamesAsync() =>
++        (await Page.Locator($"[data-test='{Slider}'] [data-test='{CardName}']").AllInnerTextsAsync()).Select(n => n.Trim()).ToList();
++
++    public async Task<string> CardNameAsync(int index) => (await Cards.Nth(index).Locator($"[data-test='{CardName}']").InnerTextAsync()).Trim();
++
++    public async Task<string> CardPriceAsync(int index) => (await Cards.Nth(index).Locator($"[data-test='{CardPrice}']").InnerTextAsync()).Trim();
++
++    /// <summary>The image the card shows: the address the browser loaded, empty when it shows no picture.</summary>
++    public async Task<string> CardImageSourceAsync(int index)
++    {
++        var image = Cards.Nth(index).Locator($"[data-test='{CardImage}']");
++        return await image.EvaluateAsync<string>("e => e.currentSrc || e.getAttribute('src') || ''");
++    }
++
++    public async Task<bool> CardImageIsLoadedAsync(int index) =>
++        await Cards.Nth(index).Locator($"[data-test='{CardImage}']")
++            .EvaluateAsync<bool>("async e => { if (!e.complete) await e.decode().catch(() => {}); return e.complete && e.naturalWidth > 0; }");
++
++    /// <summary>The path the card's link leads to.</summary>
++    public async Task<string> CardLinkPathAsync(int index) =>
++        await Cards.Nth(index).Locator($"[data-test='{CardLink}']").GetAttributeAsync("href") ?? string.Empty;
++
++    public async Task<ProductDetailPage> FollowCardAsync(int index)
++    {
++        await Cards.Nth(index).Locator($"[data-test='{CardLink}']").ClickAsync();
++        return await ProductDetailPage.OpenAsync(Page);
++    }
++
++    /// <summary>The top and left edge of every card, in slider order.</summary>
++    public async Task<IReadOnlyList<(float Left, float Top)>> CardPositionsAsync()
++    {
++        var positions = new List<(float, float)>();
++        for (var i = 0; i < await CardCountAsync(); i++)
++        {
++            var box = await Cards.Nth(i).BoundingBoxAsync();
++            positions.Add(box is null ? (float.NaN, float.NaN) : (box.X, box.Y));
++        }
++        return positions;
++    }
++
++    /// <summary>Whether the card is in view right now.</summary>
++    public Task<bool> IsCardInViewAsync(int index) => Page.EvaluateAsync<bool>(CardInView, new object[] { Slider, Card, index });
++
++    /// <summary>The indexes of the cards in view once paging has settled: waits until exactly <paramref name="expected"/> is in view.</summary>
++    public async Task<IReadOnlyList<int>> CardsInViewAsync(params int[] expected)
++    {
++        try
++        {
++            await Page.WaitForFunctionAsync(
++                $"args => {{ const inView = {CardInView}; const n = document.querySelectorAll(`[data-test='${{args[0]}}'] [data-test='${{args[1]}}']`).length; "
++                + "const shown = []; for (let i = 0; i < n; i++) if (inView([args[0], args[1], i])) shown.push(i); "
++                + "return JSON.stringify(shown) === JSON.stringify(args[2]); }",
++                new object[] { Slider, Card, expected },
++                new PageWaitForFunctionOptions { Timeout = SettleTimeoutMs });
++        }
++        catch (TimeoutException)
++        {
++            // Settled elsewhere: report what is in view now, so the assertion names it.
++        }
++
++        var shown = new List<int>();
++        for (var i = 0; i < await CardCountAsync(); i++)
++        {
++            if (await IsCardInViewAsync(i))
++            {
++                shown.Add(i);
++            }
++        }
++        return shown;
++    }
++
++    public Task PressNextAsync() => Locator(Next).ClickAsync();
++
++    public Task PressPreviousAsync() => Locator(Previous).ClickAsync();
++
++    public Task<bool> IsNextDisabledAsync() => SettlesDisabledAsync(Next);
++
++    public Task<bool> IsPreviousDisabledAsync() => SettlesDisabledAsync(Previous);
++
++    /// <summary>Presses Tab until the keyboard focus is on "Next"; false when it never gets there.</summary>
++    public async Task<bool> TabToNextAsync()
++    {
++        for (var press = 0; press < 200; press++)
++        {
++            await Page.Keyboard.PressAsync("Tab");
++            var focused = await Page.EvaluateAsync<string?>("() => document.activeElement?.getAttribute('data-test') ?? null");
++            if (focused == Next)
++            {
++                return true;
++            }
++        }
++        return false;
++    }
++
++    public Task PressEnterAsync() => Page.Keyboard.PressAsync("Enter");
++
++    private ILocator Cards => Page.Locator($"[data-test='{Slider}'] [data-test='{Card}']");
++
++    private ILocator Locator(string dataTest) => Page.Locator($"[data-test='{dataTest}']");
++
++    /// <summary>The button's state once paging has settled: waits for it to be disabled, answers false if it stays enabled.</summary>
++    private async Task<bool> SettlesDisabledAsync(string dataTest)
++    {
++        try
++        {
++            await Page.WaitForFunctionAsync(
++                "dt => document.querySelector(`[data-test='${dt}']`)?.disabled === true",
++                dataTest,
++                new PageWaitForFunctionOptions { Timeout = SettleTimeoutMs });
++            return true;
++        }
++        catch (TimeoutException)
++        {
++            return false;
++        }
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.E2eTests/Pages/ProductDetailPage.cs b/tests/DcaShop.E2eTests/Pages/ProductDetailPage.cs
+index f4a3fa1..5e709b6 100644
+--- a/tests/DcaShop.E2eTests/Pages/ProductDetailPage.cs
++++ b/tests/DcaShop.E2eTests/Pages/ProductDetailPage.cs
+@@ -8,6 +8,8 @@ public sealed class ProductDetailPage : BasePage
+     private const string ProductDetail = "product-detail";
+     private const string AddToCartButton = "product-add-to-cart-button";
+     private const string BackLink = "product-back-link";
++    private const string Title = "product-detail-title";
++    private const string PriceValue = "product-detail-price";
+ 
+     private ProductDetailPage(IPage page) : base(page)
+     {
+@@ -35,4 +37,20 @@ public sealed class ProductDetailPage : BasePage
+     }
+ 
+     public Task<bool> IsDisplayedAsync() => ExistsAsync(ProductDetail);
++
++    public static async Task<ProductDetailPage> NavigateToAsync(IPage page, string path)
++    {
++        await page.GotoAsync(BaseUrl + path);
++        return await OpenAsync(page);
++    }
++
++    public string ShownPath => CurrentPath;
++
++    public async Task<string> TitleAsync() => (await Page.Locator($"[data-test='{Title}']").InnerTextAsync()).Trim();
++
++    public async Task<string> PriceAsync() => (await Page.Locator($"[data-test='{PriceValue}']").InnerTextAsync()).Trim();
++
++    /// <summary>The address of the product image the page shows.</summary>
++    public Task<string> ImageSourceAsync() =>
++        Page.Locator($"[data-test='{ProductDetail}'] img").First.EvaluateAsync<string>("e => e.currentSrc || e.getAttribute('src') || ''");
+ }
+\ No newline at end of file
+diff --git a/tests/DcaShop.IntegrationTests/ProductSliderTest.cs b/tests/DcaShop.IntegrationTests/ProductSliderTest.cs
+new file mode 100644
+index 0000000..a85e170
+--- /dev/null
++++ b/tests/DcaShop.IntegrationTests/ProductSliderTest.cs
+@@ -0,0 +1,108 @@
++using System.Text.RegularExpressions;
++
++using DcaShop.Product.Application.Shared;
++using DcaShop.SharedKernel.Domain.Model;
++
++using Microsoft.AspNetCore.Mvc.Testing;
++using Microsoft.AspNetCore.TestHost;
++using Microsoft.Extensions.DependencyInjection;
++
++namespace DcaShop.IntegrationTests;
++
++/// <summary>
++/// The homepage's "Discover products" slider over a catalogue whose prices the test decides: the seeded products,
++/// with Pricing's answer replaced by one that prices only the products a test names — the state of a product nobody
++/// has priced yet. What the browser suite cannot arrange, because it runs against the seeded shop.
++/// </summary>
++public sealed class ProductSliderTest : IClassFixture<WebApplicationFactory<Program>>
++{
++    private static readonly Regex CardLink = new(@"<a\b[^>]*\bdata-test=""product-slider-card-link""[^>]*>", RegexOptions.Compiled);
++    private static readonly Regex Href = new(@"\bhref=""/products/([0-9a-f-]{36})""", RegexOptions.Compiled);
++
++    private readonly WebApplicationFactory<Program> _factory;
++
++    public ProductSliderTest(WebApplicationFactory<Program> factory)
++    {
++        _factory = factory;
++    }
++
++    [Fact]
++    public async Task AProductWithoutAPriceIsNotAmongTheSlidersCards()
++    {
++        var pricing = new ChosenPricing();
++        var client = ShopWith(pricing, out var services).CreateClient();
++        var catalogue = await CatalogueAsync(services);
++        var priced = catalogue.Take(5).ToHashSet();
++        pricing.PriceOnly(priced);
++
++        for (var request = 0; request < 10; request++)
++        {
++            var cards = CardProductIds(await client.GetStringAsync("/"));
++
++            Assert.Equal(4, cards.Count);
++            Assert.All(cards, id => Assert.Contains(id, priced));
++        }
++    }
++
++    [Fact]
++    public async Task WithTwoPricedProductsTheSliderHoldsACardForEachOfThem()
++    {
++        var pricing = new ChosenPricing();
++        var client = ShopWith(pricing, out var services).CreateClient();
++        var catalogue = await CatalogueAsync(services);
++        var priced = new[] { catalogue[3], catalogue[17] }.ToHashSet();
++        pricing.PriceOnly(priced);
++
++        var cards = CardProductIds(await client.GetStringAsync("/"));
++
++        Assert.Equal(2, cards.Count);
++        Assert.Equal(priced, cards.ToHashSet());
++    }
++
++    [Fact]
++    public async Task WithoutAnyPricedProductTheHomepageShowsNoSlider()
++    {
++        var pricing = new ChosenPricing();
++        var client = ShopWith(pricing, out _).CreateClient();
++
++        var home = await client.GetStringAsync("/");
++
++        Assert.Contains("data-test=\"hero\"", home, StringComparison.Ordinal);
++        Assert.DoesNotContain("data-test=\"product-slider\"", home, StringComparison.Ordinal);
++    }
++
++    private WebApplicationFactory<Program> ShopWith(ChosenPricing pricing, out IServiceProvider services)
++    {
++        var shop = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(s => s.AddSingleton<IPricingDataPort>(pricing)));
++        services = shop.Services;
++        return shop;
++    }
++
++    private static async Task<IReadOnlyList<Guid>> CatalogueAsync(IServiceProvider services)
++    {
++        using var scope = services.CreateScope();
++        var products = await scope.ServiceProvider.GetRequiredService<IProductRepository>().FindAllAsync();
++        Assert.Equal(21, products.Count);
++        return products.Select(p => p.Id.Value).ToList();
++    }
++
++    /// <summary>The product of every slider card, read from the card's link to its product page.</summary>
++    private static IReadOnlyList<Guid> CardProductIds(string html) =>
++        CardLink.Matches(html)
++            .Select(tag => Href.Match(tag.Value))
++            .Where(href => href.Success)
++            .Select(href => Guid.Parse(href.Groups[1].Value))
++            .ToList();
++
++    /// <summary>Pricing's answer holds only the products priced here; every other product has no price.</summary>
++    private sealed class ChosenPricing : IPricingDataPort
++    {
++        private volatile IReadOnlySet<Guid> _priced = new HashSet<Guid>();
++
++        public void PriceOnly(IReadOnlySet<Guid> products) => _priced = products;
++
++        public Task<IReadOnlyDictionary<ProductId, PriceData>> GetPricesAsync(IReadOnlyCollection<ProductId> productIds, CancellationToken cancellationToken = default) =>
++            Task.FromResult<IReadOnlyDictionary<ProductId, PriceData>>(
++                productIds.Where(id => _priced.Contains(id.Value)).ToDictionary(id => id, id => new PriceData(id, Money.Euro(10m))));
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.UnitTests/Product/GetProductSelectionUseCaseTest.cs b/tests/DcaShop.UnitTests/Product/GetProductSelectionUseCaseTest.cs
+new file mode 100644
+index 0000000..e09e55c
+--- /dev/null
++++ b/tests/DcaShop.UnitTests/Product/GetProductSelectionUseCaseTest.cs
+@@ -0,0 +1,125 @@
++using DcaShop.Product.Adapter.Outgoing.Persistence;
++using DcaShop.Product.Application.GetProductSelection;
++using DcaShop.Product.Application.Shared;
++using DcaShop.Product.Domain.Model;
++using DcaShop.SharedKernel.Domain.Model;
++
++namespace DcaShop.UnitTests.Product;
++
++public sealed class GetProductSelectionUseCaseTest
++{
++    private static readonly ProductFactory Factory = new();
++
++    private readonly InMemoryProductRepository _repository = new();
++    private readonly FixedPricing _pricing = new();
++    private readonly FixedStock _stock = new();
++
++    [Fact]
++    public async Task OffersOnlyProductsThatHaveAPrice()
++    {
++        var products = await SaveProductsAsync(6);
++        _pricing.Price(products[1], Money.Euro(12.50m));
++        _pricing.Price(products[4], Money.Euro(7m));
++
++        var result = await UseCase(new Random(3)).ExecuteAsync(new GetProductSelectionQuery());
++
++        Assert.Equal(new[] { products[1].Id, products[4].Id }.ToHashSet(), result.Products.Select(p => p.ProductId).ToHashSet());
++        Assert.Equal(2, result.Products.Count);
++        Assert.Equal(Money.Euro(12.50m), result.Products.Single(p => p.ProductId == products[1].Id).CurrentPrice);
++    }
++
++    [Fact]
++    public async Task OffersAtMostFourPricedProducts()
++    {
++        var products = await SaveProductsAsync(10);
++        foreach (var product in products)
++        {
++            _pricing.Price(product, Money.Euro(5m));
++        }
++
++        var result = await UseCase(new Random(3)).ExecuteAsync(new GetProductSelectionQuery());
++
++        Assert.Equal(4, result.Products.Count);
++        Assert.Equal(4, result.Products.Select(p => p.ProductId).Distinct().Count());
++    }
++
++    [Fact]
++    public async Task OffersAPricedProductThatIsOutOfStock()
++    {
++        var products = await SaveProductsAsync(1);
++        _pricing.Price(products[0], Money.Euro(9m));
++        _stock.Stock(products[0], 0);
++
++        var result = await UseCase(new Random(3)).ExecuteAsync(new GetProductSelectionQuery());
++
++        var offered = Assert.Single(result.Products);
++        Assert.Equal(products[0].Id, offered.ProductId);
++        Assert.False(offered.CanBePurchased);
++    }
++
++    [Fact]
++    public async Task KeepsTheOrderTheProductsWereDrawnIn()
++    {
++        var products = await SaveProductsAsync(8);
++        foreach (var product in products)
++        {
++            _pricing.Price(product, Money.Euro(5m));
++        }
++
++        var catalogOrder = (await _repository.FindAllAsync()).Select(p => p.Id).ToList();
++        var drawn = ProductSelection.Draw(catalogOrder, new Random(11)).ProductIds;
++
++        var result = await UseCase(new Random(11)).ExecuteAsync(new GetProductSelectionQuery());
++
++        Assert.Equal(drawn, result.Products.Select(p => p.ProductId).ToList());
++    }
++
++    [Fact]
++    public async Task OffersNothingWhenNoProductHasAPrice()
++    {
++        await SaveProductsAsync(5);
++
++        var result = await UseCase(new Random(3)).ExecuteAsync(new GetProductSelectionQuery());
++
++        Assert.Empty(result.Products);
++    }
++
++    private GetProductSelectionUseCase UseCase(Random random) =>
++        new(_repository, _pricing, new ProductArticleAssembler(_pricing, _stock), random);
++
++    private async Task<IReadOnlyList<DcaShop.Product.Domain.Model.Product>> SaveProductsAsync(int count)
++    {
++        var products = new List<DcaShop.Product.Domain.Model.Product>();
++        for (var i = 0; i < count; i++)
++        {
++            var product = Factory.Create(Sku.Of($"SKU-{i}"), ProductName.Of($"Product {i:D2}"), ProductDescription.Empty(), Category.Books(), ImageUrl.None(), Price.Of(Money.Euro(1m)), 1);
++            await _repository.SaveAsync(product);
++            products.Add(product);
++        }
++        return products;
++    }
++
++    /// <summary>Pricing's answer: only the products priced here are in it, as with a product nobody has priced yet.</summary>
++    private sealed class FixedPricing : IPricingDataPort
++    {
++        private readonly Dictionary<ProductId, PriceData> _prices = new();
++
++        public void Price(DcaShop.Product.Domain.Model.Product product, Money price) => _prices[product.Id] = new PriceData(product.Id, price);
++
++        public Task<IReadOnlyDictionary<ProductId, PriceData>> GetPricesAsync(IReadOnlyCollection<ProductId> productIds, CancellationToken cancellationToken = default) =>
++            Task.FromResult<IReadOnlyDictionary<ProductId, PriceData>>(
++                productIds.Where(_prices.ContainsKey).ToDictionary(id => id, id => _prices[id]));
++    }
++
++    private sealed class FixedStock : IProductStockDataPort
++    {
++        private readonly Dictionary<ProductId, StockData> _stock = new();
++
++        public void Stock(DcaShop.Product.Domain.Model.Product product, int available) =>
++            _stock[product.Id] = new StockData(product.Id, available, available > 0);
++
++        public Task<IReadOnlyDictionary<ProductId, StockData>> GetStockDataAsync(IReadOnlyCollection<ProductId> productIds, CancellationToken cancellationToken = default) =>
++            Task.FromResult<IReadOnlyDictionary<ProductId, StockData>>(
++                productIds.Where(_stock.ContainsKey).ToDictionary(id => id, id => _stock[id]));
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.UnitTests/Product/ProductSelectionTest.cs b/tests/DcaShop.UnitTests/Product/ProductSelectionTest.cs
+new file mode 100644
+index 0000000..0006132
+--- /dev/null
++++ b/tests/DcaShop.UnitTests/Product/ProductSelectionTest.cs
+@@ -0,0 +1,64 @@
++using DcaShop.Product.Domain.Model;
++using DcaShop.SharedKernel.Domain.Model;
++
++namespace DcaShop.UnitTests.Product;
++
++public sealed class ProductSelectionTest
++{
++    [Fact]
++    public void DrawsFourDifferentProductsFromTheCandidates()
++    {
++        var candidates = Candidates(21);
++
++        var selection = ProductSelection.Draw(candidates, new Random(1));
++
++        Assert.Equal(4, selection.ProductIds.Count);
++        Assert.Equal(4, selection.ProductIds.Distinct().Count());
++        Assert.All(selection.ProductIds, id => Assert.Contains(id, candidates));
++    }
++
++    [Fact]
++    public void DrawsEveryCandidateWhenThereAreFewerThanFour()
++    {
++        var candidates = Candidates(2);
++
++        var selection = ProductSelection.Draw(candidates, new Random(1));
++
++        Assert.Equal(candidates.ToHashSet(), selection.ProductIds.ToHashSet());
++        Assert.Equal(2, selection.ProductIds.Count);
++    }
++
++    [Fact]
++    public void DrawsNothingWithoutCandidates()
++    {
++        var selection = ProductSelection.Draw(Array.Empty<ProductId>(), new Random(1));
++
++        Assert.Empty(selection.ProductIds);
++    }
++
++    [Fact]
++    public void DifferentRandomSourcesDrawDifferentSelections()
++    {
++        var candidates = Candidates(21);
++
++        var selections = Enumerable.Range(1, 20)
++            .Select(seed => string.Join(",", ProductSelection.Draw(candidates, new Random(seed)).ProductIds.Select(id => id.Value).Order()))
++            .ToHashSet();
++
++        Assert.True(selections.Count > 1, "twenty different random sources all drew the same four products");
++    }
++
++    [Fact]
++    public void TheSameRandomSourceDrawsTheSameSelection()
++    {
++        var candidates = Candidates(21);
++
++        var first = ProductSelection.Draw(candidates, new Random(42));
++        var second = ProductSelection.Draw(candidates, new Random(42));
++
++        Assert.Equal(first.ProductIds, second.ProductIds);
++    }
++
++    private static IReadOnlyList<ProductId> Candidates(int count) =>
++        Enumerable.Range(0, count).Select(_ => ProductId.Generate()).ToList();
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.UnitTests/Specification/SharedScenariosTest.cs b/tests/DcaShop.UnitTests/Specification/SharedScenariosTest.cs
+index 864ef12..04972ae 100644
+--- a/tests/DcaShop.UnitTests/Specification/SharedScenariosTest.cs
++++ b/tests/DcaShop.UnitTests/Specification/SharedScenariosTest.cs
+@@ -26,7 +26,7 @@ public sealed class SharedScenariosTest
+         {
+             var text = File.ReadAllText(source);
+             tests += TestAttribute.Matches(text).Count;
+-            bound.AddRange(DisplayName.Matches(text).Select(m => m.Groups[1].Value));
++            bound.AddRange(DisplayName.Matches(text).Select(m => Unescape(m.Groups[1].Value)));
+         }
+         Assert.True(tests == bound.Count, "every browser test names its scenario with DisplayName");
+ 
+@@ -52,6 +52,13 @@ public sealed class SharedScenariosTest
+         return titles;
+     }
+ 
++    /// <summary>
++    /// The display name as the test runner sees it: the C# literal read from source with <c>\"</c> turned into
++    /// <c>"</c> and <c>\\</c> into <c>\</c>, so a scenario title with quotes matches its test.
++    /// </summary>
++    private static string Unescape(string literal) =>
++        Regex.Replace(literal, @"\\([""\\])", "$1");
++
+     private static string E2eSources([CallerFilePath] string thisFile = "") =>
+         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisFile)!, "..", "..", "DcaShop.E2eTests"));
+ }
+\ No newline at end of file

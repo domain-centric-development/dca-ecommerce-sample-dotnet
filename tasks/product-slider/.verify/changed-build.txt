@@ -1,0 +1,9 @@
+added	src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewComponent.cs
+added	src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewModel.cs
+modified	src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionUseCase.cs
+modified	src/DcaShop.Product/Domain/Model/ProductSelection.cs
+modified	src/DcaShop.Product/Infrastructure/ProductContextRegistration.cs
+modified	src/DcaShop.Web/Views/Home/Index.cshtml
+modified	src/DcaShop.Web/Views/Product/Detail.cshtml
+added	src/DcaShop.Web/Views/Shared/Components/ProductSlider/Default.cshtml
+modified	src/DcaShop.Web/wwwroot/css/main.css

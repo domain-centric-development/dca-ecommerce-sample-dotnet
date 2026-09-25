@@ -26,7 +26,7 @@ public sealed class SharedScenariosTest
         {
             var text = File.ReadAllText(source);
             tests += TestAttribute.Matches(text).Count;
-            bound.AddRange(DisplayName.Matches(text).Select(m => m.Groups[1].Value));
+            bound.AddRange(DisplayName.Matches(text).Select(m => Unescape(m.Groups[1].Value)));
         }
         Assert.True(tests == bound.Count, "every browser test names its scenario with DisplayName");
 
@@ -51,6 +51,13 @@ public sealed class SharedScenariosTest
         }
         return titles;
     }
+
+    /// <summary>
+    /// The display name as the test runner sees it: the C# literal read from source with <c>\"</c> turned into
+    /// <c>"</c> and <c>\\</c> into <c>\</c>, so a scenario title with quotes matches its test.
+    /// </summary>
+    private static string Unescape(string literal) =>
+        Regex.Replace(literal, @"\\([""\\])", "$1");
 
     private static string E2eSources([CallerFilePath] string thisFile = "") =>
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisFile)!, "..", "..", "DcaShop.E2eTests"));
