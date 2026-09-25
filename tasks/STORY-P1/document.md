@@ -30,7 +30,7 @@ All rows in `src/DcaShop.Inventory/Domain/glossary.md`.
 |---|---|---|
 | `src/DcaShop.Inventory/Domain/glossary.md` | *Specifications* section filled with the two new domain types; two concepts and two open issues added | every named type read in `src/DcaShop.Inventory/Domain/Specification/` and `Application/GetLowStockProducts/`; `IStockLevelRepository.FindByAsync` read at `src/DcaShop.Inventory/Application/Shared/IStockLevelRepository.cs:26-35` |
 | `README.md:149` | the "composable specifications" row named only Cart's leaves and visitor; it now also names `AvailableQuantityBelow` / `IStockLevelSpecificationVisitor`, so the shape does not read as Cart-only | both identifiers exist (`AvailableQuantityBelow.cs:7`, `IStockLevelSpecificationVisitor.cs:14`) |
-| `docs/context-map.md` | **unchanged** — no new context, no new relationship; the story reads Inventory's own aggregate | `dotnet test tests/DcaShop.ArchitectureTests` — 118 passed, 0 failed; the suite regenerates the file and `git status --porcelain docs/` is empty afterwards |
+| `project/domain.md` | **unchanged** — no new context, no new relationship; the story reads Inventory's own aggregate | `dotnet test tests/DcaShop.ArchitectureTests` — 118 passed, 0 failed; the suite regenerates the file and `git status --porcelain docs/` is empty afterwards |
 
 ## Not documented
 
