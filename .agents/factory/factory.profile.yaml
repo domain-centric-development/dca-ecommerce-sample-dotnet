@@ -34,4 +34,6 @@ review.dca: dca-review
 contextMap: docs/architecture/context-map.md
 # What must hold for any change (story-gate.py --change, the commit hook, CI). The end-user suite
 # needs a running shop, so it stays out of it.
-required: compile test test.integration architecture
+required: compile test test.integration architecture format
+format: dotnet format --verify-no-changes
+formatFix: dotnet format
