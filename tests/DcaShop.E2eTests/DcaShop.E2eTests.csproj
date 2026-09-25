@@ -2,5 +2,6 @@
   <ItemGroup>
     <!-- Same Playwright release as the Java sample's suite, so both drive the same browser builds. -->
     <PackageReference Include="Microsoft.Playwright" Version="1.62.0" />
+    <PackageReference Include="WireMock.Net" Version="2.18.0" />
   </ItemGroup>
 </Project>
