@@ -1,5 +1,5 @@
-using DcaShop.Checkout.Domain.ReadModel;
 using DcaShop.Checkout.Application.Shared;
+using DcaShop.Checkout.Domain.ReadModel;
 
 namespace DcaShop.Checkout.Application.Session.GetCheckoutSession;
 

@@ -1,6 +1,8 @@
 using System.Text.Json.Serialization;
+
 using DcaShop.Inventory.Events;
 using DcaShop.Pricing.Events;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Product.Events;

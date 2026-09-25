@@ -1,6 +1,7 @@
 using DcaShop.Pricing.Application.GetPricesForProducts;
 using DcaShop.Pricing.Application.SetProductPrice;
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Ddd.Strategic.Relationships;
 
 namespace DcaShop.Pricing.Api;

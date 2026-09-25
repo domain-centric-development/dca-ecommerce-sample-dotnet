@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+
 using DcaShop.Product.Application.Shared;
 using DcaShop.Product.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;

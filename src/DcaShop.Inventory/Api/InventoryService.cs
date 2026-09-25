@@ -2,6 +2,7 @@ using DcaShop.Inventory.Application.GetStockForProducts;
 using DcaShop.Inventory.Application.ReduceStock;
 using DcaShop.Inventory.Application.SetStockLevel;
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Ddd.Strategic.Relationships;
 
 namespace DcaShop.Inventory.Api;

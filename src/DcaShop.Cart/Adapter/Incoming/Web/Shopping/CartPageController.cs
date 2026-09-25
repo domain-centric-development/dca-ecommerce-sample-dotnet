@@ -1,10 +1,12 @@
-using DomainCentric.BuildingBlocks.Application;
-using DomainCentric.BuildingBlocks.Ddd.Tactical;
 using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Application.Shared;
+
+using DomainCentric.BuildingBlocks.Application;
+using DomainCentric.BuildingBlocks.Ddd.Tactical;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Cart.Adapter.Incoming.Web.Shopping;

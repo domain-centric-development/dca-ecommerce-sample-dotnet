@@ -1,7 +1,8 @@
+using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.Account.Application.ChangeProfile;
 using DcaShop.Account.Application.GetProfile;
-using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.SharedKernel.Application.Shared;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

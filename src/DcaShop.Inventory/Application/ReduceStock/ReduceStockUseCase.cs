@@ -1,8 +1,10 @@
-using DcaShop.Inventory.Domain.Model;
 using DcaShop.Inventory.Application.Shared;
+using DcaShop.Inventory.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
+
 using Microsoft.Extensions.Logging;
 
 namespace DcaShop.Inventory.Application.ReduceStock;

@@ -1,7 +1,9 @@
 using System.ComponentModel;
+
 using DcaShop.Product.Adapter.Incoming.Api;
 using DcaShop.Product.Application.GetAllProducts;
 using DcaShop.Product.Application.GetProductById;
+
 using ModelContextProtocol.Server;
 
 namespace DcaShop.Product.Adapter.Incoming.Mcp;

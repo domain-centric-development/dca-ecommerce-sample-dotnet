@@ -3,7 +3,9 @@ using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Channels;
+
 using DcaShop.SharedKernel.Infrastructure.Transactions;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.SharedKernel.Infrastructure.Events;

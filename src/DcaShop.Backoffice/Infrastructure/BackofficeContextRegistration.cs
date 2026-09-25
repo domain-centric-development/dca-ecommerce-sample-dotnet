@@ -1,8 +1,9 @@
 using DcaShop.Backoffice.Adapter.Incoming.Web;
 using DcaShop.Backoffice.Adapter.Outgoing.Persistence;
 using DcaShop.Backoffice.Application.GetEventPublications;
-using DcaShop.Backoffice.Application.Shared;
 using DcaShop.Backoffice.Application.ReplayFailedPublication;
+using DcaShop.Backoffice.Application.Shared;
+
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,5 +1,6 @@
 using DcaShop.SharedKernel.Infrastructure.Events;
 using DcaShop.SharedKernel.Infrastructure.Transactions;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 

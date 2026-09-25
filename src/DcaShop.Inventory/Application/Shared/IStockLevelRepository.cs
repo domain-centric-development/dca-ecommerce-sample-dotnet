@@ -1,6 +1,7 @@
 using DcaShop.Inventory.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
 using DcaShop.SharedKernel.Domain.Specification;
+
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
 namespace DcaShop.Inventory.Application.Shared;

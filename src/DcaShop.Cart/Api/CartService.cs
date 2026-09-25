@@ -3,6 +3,7 @@ using DcaShop.Cart.Application.Shopping.GetActiveCart;
 using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Ddd.Strategic.Relationships;
 
 namespace DcaShop.Cart.Api;

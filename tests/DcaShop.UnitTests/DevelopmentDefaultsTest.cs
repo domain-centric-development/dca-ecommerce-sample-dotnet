@@ -2,6 +2,7 @@ using DcaShop.Account.Adapter.Outgoing.Security;
 using DcaShop.Account.Infrastructure;
 using DcaShop.Backoffice.Adapter.Incoming.Web;
 using DcaShop.Backoffice.Infrastructure;
+
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 
@@ -68,7 +69,9 @@ public sealed class DevelopmentDefaultsTest
     {
         var operatorOptions = new BackofficeOptions
         {
-            Username = "operator", Password = "not-the-committed-one", SecureCookies = true,
+            Username = "operator",
+            Password = "not-the-committed-one",
+            SecureCookies = true,
         };
 
         Assert.True(JwtValidator("Production").Validate(null, Jwt(OwnSecret, secureCookies: true)).Succeeded);

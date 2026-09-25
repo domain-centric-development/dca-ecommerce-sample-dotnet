@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+
 using DcaShop.Backoffice.Application.GetEventPublications;
 
 namespace DcaShop.Backoffice.Adapter.Incoming.Web;

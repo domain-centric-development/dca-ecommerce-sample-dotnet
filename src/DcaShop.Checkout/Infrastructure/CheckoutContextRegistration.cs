@@ -4,21 +4,22 @@ using DcaShop.Checkout.Adapter.Outgoing.Event;
 using DcaShop.Checkout.Adapter.Outgoing.Payment;
 using DcaShop.Checkout.Adapter.Outgoing.Persistence;
 using DcaShop.Checkout.Adapter.Outgoing.Product;
+using DcaShop.Checkout.Application.CartSync.SyncCheckoutWithCart;
 using DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
-using DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
-using DcaShop.Checkout.Application.Session.GetCheckoutSession;
-using DcaShop.Checkout.Application.Session.GetConfirmedCheckoutSession;
 using DcaShop.Checkout.Application.CheckoutCompletion.GetPaymentProviders;
 using DcaShop.Checkout.Application.CheckoutCompletion.GetShippingOptions;
-using DcaShop.Checkout.Application.Shared;
-using DcaShop.Checkout.Application.Session.StartCheckout;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitBuyerInfo;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
-using DcaShop.Checkout.Application.CartSync.SyncCheckoutWithCart;
+using DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
+using DcaShop.Checkout.Application.Session.GetCheckoutSession;
+using DcaShop.Checkout.Application.Session.GetConfirmedCheckoutSession;
+using DcaShop.Checkout.Application.Session.StartCheckout;
+using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.Service;
 using DcaShop.SharedKernel.Infrastructure.Events;
+
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DcaShop.Checkout.Infrastructure;

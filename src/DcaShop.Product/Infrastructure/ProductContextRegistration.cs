@@ -11,6 +11,7 @@ using DcaShop.Product.Application.GetProductById;
 using DcaShop.Product.Application.Shared;
 using DcaShop.Product.Domain.Model;
 using DcaShop.SharedKernel.Infrastructure.Events;
+
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DcaShop.Product.Infrastructure;

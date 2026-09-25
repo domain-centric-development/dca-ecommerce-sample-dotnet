@@ -1,5 +1,7 @@
 using System.Text;
+
 using DcaShop.Account.Domain.Gateway;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Account.Domain.Model;

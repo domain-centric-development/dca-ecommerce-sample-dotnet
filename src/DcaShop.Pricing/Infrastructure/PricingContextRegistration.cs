@@ -5,6 +5,7 @@ using DcaShop.Pricing.Application.GetPricesForProducts;
 using DcaShop.Pricing.Application.SetProductPrice;
 using DcaShop.Pricing.Application.Shared;
 using DcaShop.SharedKernel.Infrastructure.Events;
+
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DcaShop.Pricing.Infrastructure;

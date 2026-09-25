@@ -1,4 +1,5 @@
 using System.Globalization;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.SharedKernel.Domain.Model;

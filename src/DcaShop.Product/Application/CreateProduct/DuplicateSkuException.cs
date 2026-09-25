@@ -1,4 +1,5 @@
 using DcaShop.Product.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Application;
 
 namespace DcaShop.Product.Application.CreateProduct;

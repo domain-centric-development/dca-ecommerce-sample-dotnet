@@ -1,5 +1,6 @@
 using DcaShop.Pricing.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Pricing.Domain.Event;

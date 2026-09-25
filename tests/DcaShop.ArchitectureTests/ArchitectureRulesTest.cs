@@ -1,4 +1,5 @@
 using System.Reflection;
+
 using DomainCentric.ArchRules;
 using DomainCentric.ArchRules.Xunit;
 

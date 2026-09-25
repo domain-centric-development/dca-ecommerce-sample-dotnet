@@ -2,6 +2,7 @@ using DcaShop.Product.Application.GetAllProducts;
 using DcaShop.Product.Application.GetProductById;
 using DcaShop.Product.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Ddd.Strategic.Relationships;
 
 namespace DcaShop.Product.Api;

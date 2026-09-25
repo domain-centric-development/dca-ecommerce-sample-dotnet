@@ -1,5 +1,7 @@
 using System;
+
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Checkout.Domain.Model;

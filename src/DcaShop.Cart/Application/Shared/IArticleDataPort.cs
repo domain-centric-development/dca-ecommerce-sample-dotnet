@@ -1,5 +1,6 @@
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
 namespace DcaShop.Cart.Application.Shared;

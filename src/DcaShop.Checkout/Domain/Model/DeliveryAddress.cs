@@ -1,4 +1,5 @@
 using System.Text;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Checkout.Domain.Model;

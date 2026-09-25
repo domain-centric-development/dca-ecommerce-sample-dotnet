@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 

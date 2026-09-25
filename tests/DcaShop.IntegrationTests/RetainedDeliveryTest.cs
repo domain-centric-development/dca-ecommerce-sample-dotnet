@@ -2,7 +2,9 @@ using DcaShop.Infrastructure.Events;
 using DcaShop.SharedKernel.Adapter.Outgoing.Event;
 using DcaShop.SharedKernel.Infrastructure.Events;
 using DcaShop.SharedKernel.Infrastructure.Transactions;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 

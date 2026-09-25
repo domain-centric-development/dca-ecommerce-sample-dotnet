@@ -1,6 +1,7 @@
 using DcaShop.Pricing.Application.SetProductPrice;
 using DcaShop.Pricing.Events;
 using DcaShop.SharedKernel.Infrastructure.Events;
+
 using Microsoft.Extensions.Logging;
 
 namespace DcaShop.Pricing.Adapter.Incoming.Event;

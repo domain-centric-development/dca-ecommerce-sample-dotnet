@@ -1,4 +1,5 @@
 using DcaShop.SharedKernel.Infrastructure.Events;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.UnitTests.SharedKernel;

@@ -1,4 +1,5 @@
 using DcaShop.E2eTests.Pages;
+
 using Microsoft.Playwright;
 
 namespace DcaShop.E2eTests;

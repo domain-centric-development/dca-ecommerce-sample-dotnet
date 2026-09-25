@@ -1,6 +1,7 @@
 using DcaShop.Product.Domain.Event;
 using DcaShop.Product.Events;
 using DcaShop.SharedKernel.Infrastructure.Events;
+
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
 namespace DcaShop.Product.Adapter.Outgoing.Event;

@@ -2,6 +2,7 @@ using DcaShop.Product.Application.CreateProduct;
 using DcaShop.Product.Application.GetAllProducts;
 using DcaShop.Product.Application.GetProductById;
 using DcaShop.SharedKernel.Application.Shared;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

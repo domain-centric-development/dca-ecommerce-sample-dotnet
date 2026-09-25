@@ -1,8 +1,10 @@
 using DcaShop.Infrastructure.Events;
 using DcaShop.SharedKernel.Infrastructure.Events;
+
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
+
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;

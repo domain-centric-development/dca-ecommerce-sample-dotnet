@@ -1,5 +1,6 @@
-using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.SharedKernel.Infrastructure.Transactions;
+
+using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
 namespace DcaShop.UnitTests.SharedKernel;

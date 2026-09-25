@@ -1,9 +1,11 @@
 using System.Net;
 using System.Text.RegularExpressions;
+
 using DcaShop.Inventory.Api;
 using DcaShop.Pricing.Api;
 using DcaShop.Product.Application.CreateProduct;
 using DcaShop.SharedKernel.Domain.Model;
+
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 

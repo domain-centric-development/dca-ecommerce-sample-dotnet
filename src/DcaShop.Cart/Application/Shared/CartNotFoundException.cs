@@ -1,4 +1,5 @@
 using DcaShop.Cart.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Application;
 
 namespace DcaShop.Cart.Application.Shared;

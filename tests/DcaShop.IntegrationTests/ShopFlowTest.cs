@@ -1,7 +1,9 @@
 using System.Net;
 using System.Text.RegularExpressions;
+
 using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Domain.Model;
+
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 

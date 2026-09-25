@@ -1,5 +1,6 @@
 using DcaShop.Product.Application.CreateProduct;
 using DcaShop.SharedKernel.Infrastructure.Events;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 

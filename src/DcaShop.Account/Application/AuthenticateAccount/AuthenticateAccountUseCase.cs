@@ -1,8 +1,10 @@
 using DcaShop.Account.Application.Shared;
 using DcaShop.Account.Domain.Gateway;
 using DcaShop.Account.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
+
 using Microsoft.Extensions.Logging;
 
 namespace DcaShop.Account.Application.AuthenticateAccount;

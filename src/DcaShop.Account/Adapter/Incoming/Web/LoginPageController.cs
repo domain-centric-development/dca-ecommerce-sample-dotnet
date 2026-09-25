@@ -1,10 +1,13 @@
-using DomainCentric.BuildingBlocks.Application;
-using DomainCentric.BuildingBlocks.Ddd.Tactical;
 using System.Net;
-using DcaShop.Account.Application.AuthenticateAccount;
+
 using DcaShop.Account.Adapter.Incoming.Security;
+using DcaShop.Account.Application.AuthenticateAccount;
 using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
+
+using DomainCentric.BuildingBlocks.Application;
+using DomainCentric.BuildingBlocks.Ddd.Tactical;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Account.Adapter.Incoming.Web;

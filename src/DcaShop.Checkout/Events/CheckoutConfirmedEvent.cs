@@ -1,6 +1,7 @@
 using DcaShop.Cart.Events;
 using DcaShop.Inventory.Events;
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Checkout.Events;

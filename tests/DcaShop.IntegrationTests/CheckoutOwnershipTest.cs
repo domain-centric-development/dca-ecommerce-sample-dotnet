@@ -1,4 +1,3 @@
-using DcaShop.Checkout.Application.Shared;
 using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
@@ -6,8 +5,10 @@ using DcaShop.Checkout.Application.CheckoutCompletion.SubmitBuyerInfo;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
 using DcaShop.Checkout.Application.Session.GetCheckoutSession;
 using DcaShop.Checkout.Application.Session.StartCheckout;
+using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 using DcaShop.Product.Application.GetAllProducts;
+
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 

@@ -1,9 +1,11 @@
-using DomainCentric.BuildingBlocks.Application;
-using DomainCentric.BuildingBlocks.Ddd.Tactical;
-using DcaShop.Account.Application.RegisterAccount;
 using DcaShop.Account.Adapter.Incoming.Security;
+using DcaShop.Account.Application.RegisterAccount;
 using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
+
+using DomainCentric.BuildingBlocks.Application;
+using DomainCentric.BuildingBlocks.Ddd.Tactical;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Account.Adapter.Incoming.Web;

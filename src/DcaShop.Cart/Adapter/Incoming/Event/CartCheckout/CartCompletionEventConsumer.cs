@@ -1,6 +1,7 @@
 using DcaShop.Cart.Application.CartCheckout.CompleteCart;
 using DcaShop.Cart.Events;
 using DcaShop.SharedKernel.Infrastructure.Events;
+
 using Microsoft.Extensions.Logging;
 
 namespace DcaShop.Cart.Adapter.Incoming.Event.CartCheckout;

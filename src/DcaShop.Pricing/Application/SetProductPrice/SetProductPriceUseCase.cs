@@ -1,6 +1,7 @@
 using DcaShop.Pricing.Application.Shared;
 using DcaShop.Pricing.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 

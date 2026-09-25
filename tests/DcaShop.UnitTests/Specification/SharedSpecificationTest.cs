@@ -1,5 +1,6 @@
-using System.Text.Json;
 using System.Globalization;
+using System.Text.Json;
+
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
 namespace DcaShop.UnitTests.Specification;

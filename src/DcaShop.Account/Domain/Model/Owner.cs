@@ -1,4 +1,5 @@
 using DcaShop.Account.Domain.Specification;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Account.Domain.Model;

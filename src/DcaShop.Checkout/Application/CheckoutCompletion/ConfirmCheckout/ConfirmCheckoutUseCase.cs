@@ -1,7 +1,8 @@
-using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.Service;
+
+using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
 namespace DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;

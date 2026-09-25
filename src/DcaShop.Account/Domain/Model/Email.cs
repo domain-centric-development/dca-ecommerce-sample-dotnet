@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Account.Domain.Model;

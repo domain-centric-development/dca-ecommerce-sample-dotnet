@@ -12,6 +12,7 @@ using DcaShop.Account.Application.RegisterAccount;
 using DcaShop.Account.Application.Shared;
 using DcaShop.Account.Domain.Gateway;
 using DcaShop.SharedKernel.Application.Shared;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

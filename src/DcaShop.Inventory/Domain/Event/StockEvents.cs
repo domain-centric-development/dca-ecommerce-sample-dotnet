@@ -1,5 +1,6 @@
 using DcaShop.Inventory.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Inventory.Domain.Event;

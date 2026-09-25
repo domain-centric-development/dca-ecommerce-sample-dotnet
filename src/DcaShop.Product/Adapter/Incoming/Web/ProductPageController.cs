@@ -1,6 +1,7 @@
 using DcaShop.Product.Application.GetAllProducts;
 using DcaShop.Product.Application.GetProductById;
 using DcaShop.Product.Domain.Model;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace DcaShop.Product.Adapter.Incoming.Web;

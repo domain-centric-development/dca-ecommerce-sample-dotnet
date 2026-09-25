@@ -1,4 +1,5 @@
 using System.Text;
+
 using DcaShop.Account.Domain.Model;
 
 namespace DcaShop.UnitTests.Account;

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Text.Json;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.SharedKernel.Infrastructure.Events;

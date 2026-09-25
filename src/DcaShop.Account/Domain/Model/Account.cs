@@ -1,7 +1,9 @@
 using System.Collections.Frozen;
+
 using DcaShop.Account.Domain.Event;
 using DcaShop.Account.Domain.Gateway;
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Account.Domain.Model;

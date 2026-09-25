@@ -1,7 +1,8 @@
-using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Product.Application.Shared;
 using DcaShop.Product.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
+
+using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
 namespace DcaShop.Product.Application.CreateProduct;

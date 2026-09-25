@@ -1,6 +1,7 @@
 using DcaShop.Inventory.Application.GetLowStockProducts;
 using DcaShop.Inventory.Application.SetStockLevel;
 using DcaShop.SharedKernel.Domain.Model;
+
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 

@@ -2,8 +2,10 @@ using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.Service;
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
+
 using Microsoft.Extensions.Logging;
 
 namespace DcaShop.Checkout.Application.CartSync.SyncCheckoutWithCart;

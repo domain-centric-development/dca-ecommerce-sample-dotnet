@@ -1,4 +1,3 @@
-using DomainCentric.BuildingBlocks.Application.Transactions;
 using DcaShop.Account.Infrastructure;
 using DcaShop.Backoffice.Infrastructure;
 using DcaShop.Cart.Infrastructure;
@@ -10,9 +9,12 @@ using DcaShop.Pricing.Infrastructure;
 using DcaShop.Product.Adapter.Incoming.Bootstrap;
 using DcaShop.Product.Infrastructure;
 using DcaShop.SharedKernel.Adapter.Outgoing.Event;
-using DcaShop.SharedKernel.Infrastructure.Transactions;
 using DcaShop.SharedKernel.Infrastructure.Events;
+using DcaShop.SharedKernel.Infrastructure.Transactions;
+
+using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;

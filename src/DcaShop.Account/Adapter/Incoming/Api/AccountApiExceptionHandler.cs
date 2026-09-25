@@ -1,7 +1,9 @@
 using DcaShop.Account.Application.RegisterAccount;
 using DcaShop.Account.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Application;
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
+
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

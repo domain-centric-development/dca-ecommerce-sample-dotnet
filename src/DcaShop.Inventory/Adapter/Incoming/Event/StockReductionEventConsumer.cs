@@ -1,6 +1,7 @@
 using DcaShop.Inventory.Application.ReduceStock;
 using DcaShop.Inventory.Events;
 using DcaShop.SharedKernel.Infrastructure.Events;
+
 using Microsoft.Extensions.Logging;
 
 namespace DcaShop.Inventory.Adapter.Incoming.Event;

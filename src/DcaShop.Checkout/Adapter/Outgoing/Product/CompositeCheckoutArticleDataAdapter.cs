@@ -4,6 +4,7 @@ using DcaShop.Inventory.Api;
 using DcaShop.Pricing.Api;
 using DcaShop.Product.Api;
 using DcaShop.SharedKernel.Domain.Model;
+
 using Microsoft.Extensions.Logging;
 
 namespace DcaShop.Checkout.Adapter.Outgoing.Product;

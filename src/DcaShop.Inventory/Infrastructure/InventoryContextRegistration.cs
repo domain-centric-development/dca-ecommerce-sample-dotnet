@@ -7,6 +7,7 @@ using DcaShop.Inventory.Application.ReduceStock;
 using DcaShop.Inventory.Application.SetStockLevel;
 using DcaShop.Inventory.Application.Shared;
 using DcaShop.SharedKernel.Infrastructure.Events;
+
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DcaShop.Inventory.Infrastructure;

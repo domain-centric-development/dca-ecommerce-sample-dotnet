@@ -1,4 +1,5 @@
 using DcaShop.Checkout.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Application;
 
 namespace DcaShop.Checkout.Application.Shared;

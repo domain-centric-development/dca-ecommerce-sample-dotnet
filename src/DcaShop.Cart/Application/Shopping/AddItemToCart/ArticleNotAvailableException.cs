@@ -1,4 +1,5 @@
 using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Application;
 
 namespace DcaShop.Cart.Application.Shopping.AddItemToCart;

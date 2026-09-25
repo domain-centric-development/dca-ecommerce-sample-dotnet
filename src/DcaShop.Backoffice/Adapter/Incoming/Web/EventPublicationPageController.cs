@@ -1,6 +1,8 @@
 using System.Security.Claims;
-using DcaShop.Backoffice.Application.ReplayFailedPublication;
+
 using DcaShop.Backoffice.Application.GetEventPublications;
+using DcaShop.Backoffice.Application.ReplayFailedPublication;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;

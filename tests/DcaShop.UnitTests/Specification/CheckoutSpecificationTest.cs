@@ -1,17 +1,21 @@
 using System.Text.Json;
-using DcaShop.Checkout.Application.Shared;
-using DcaShop.Checkout.Application.Session.StartCheckout;
-using DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
-using DcaShop.Checkout.Application.CartSync.SyncCheckoutWithCart;
+
 using DcaShop.Checkout.Adapter.Outgoing.Persistence;
+using DcaShop.Checkout.Application.CartSync.SyncCheckoutWithCart;
+using DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
+using DcaShop.Checkout.Application.Session.StartCheckout;
+using DcaShop.Checkout.Application.Shared;
+using DcaShop.Checkout.Domain.Event;
 using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.Service;
-using DcaShop.Checkout.Domain.Event;
 using DcaShop.SharedKernel.Domain.Model;
 using DcaShop.SharedKernel.Infrastructure.Transactions;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
+
 using Microsoft.Extensions.Logging.Abstractions;
+
 using CartModel = DcaShop.Cart.Domain.Model;
 namespace DcaShop.UnitTests.Specification;
 
