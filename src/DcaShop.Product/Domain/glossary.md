@@ -106,7 +106,7 @@ purchased" or "stock is sufficient for quantity x".
 
 ### ProductSelection
 
-**Definition:** Up to four different products of the catalogue that have a
+**Definition:** Up to eight different products of the catalogue that have a
 price, drawn at random anew on every request; shown on the homepage as the
 "Discover products" slider. Fewer priced products yield all of them, none
 yield an empty selection.

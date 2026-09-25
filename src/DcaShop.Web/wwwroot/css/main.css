@@ -2912,6 +2912,12 @@ ul, ol {
   cursor: default;
 }
 
+@media (max-width: 768px) {
+  .product-slider__card {
+    flex-basis: calc((100% - var(--product-slider-gap)) / 2);
+  }
+}
+
 @media (max-width: 480px) {
   .product-slider__card {
     flex-basis: 100%;

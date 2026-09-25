@@ -1,4 +1,6 @@
 modified	README.md
+modified	project/backlog/homepage-discovery/product-slider.md
+modified	project/product.md
 modified	src/DcaShop.Portal/Domain/glossary.md
 added	src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewComponent.cs
 added	src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewModel.cs
@@ -15,6 +17,8 @@ added	src/DcaShop.Web/Views/Shared/Components/ProductSlider/Default.cshtml
 modified	src/DcaShop.Web/wwwroot/css/main.css
 added	tests/DcaShop.E2eTests/HomeSliderE2eTest.cs
 added	tests/DcaShop.E2eTests/HomeSliderPhoneE2eTest.cs
+added	tests/DcaShop.E2eTests/HomeSliderSmallTabletE2eTest.cs
+added	tests/DcaShop.E2eTests/HomeSliderTabletE2eTest.cs
 added	tests/DcaShop.E2eTests/Pages/HomePage.cs
 modified	tests/DcaShop.E2eTests/Pages/ProductDetailPage.cs
 added	tests/DcaShop.IntegrationTests/ProductSliderTest.cs

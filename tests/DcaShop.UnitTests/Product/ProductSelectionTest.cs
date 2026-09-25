@@ -6,19 +6,19 @@ namespace DcaShop.UnitTests.Product;
 public sealed class ProductSelectionTest
 {
     [Fact]
-    public void DrawsFourDifferentProductsFromTheCandidates()
+    public void DrawsEightDifferentProductsFromTheCandidates()
     {
         var candidates = Candidates(21);
 
         var selection = ProductSelection.Draw(candidates, new Random(1));
 
-        Assert.Equal(4, selection.ProductIds.Count);
-        Assert.Equal(4, selection.ProductIds.Distinct().Count());
+        Assert.Equal(8, selection.ProductIds.Count);
+        Assert.Equal(8, selection.ProductIds.Distinct().Count());
         Assert.All(selection.ProductIds, id => Assert.Contains(id, candidates));
     }
 
     [Fact]
-    public void DrawsEveryCandidateWhenThereAreFewerThanFour()
+    public void DrawsEveryCandidateWhenThereAreFewerThanEight()
     {
         var candidates = Candidates(2);
 
@@ -45,7 +45,7 @@ public sealed class ProductSelectionTest
             .Select(seed => string.Join(",", ProductSelection.Draw(candidates, new Random(seed)).ProductIds.Select(id => id.Value).Order()))
             .ToHashSet();
 
-        Assert.True(selections.Count > 1, "twenty different random sources all drew the same four products");
+        Assert.True(selections.Count > 1, "twenty different random sources all drew the same eight products");
     }
 
     [Fact]

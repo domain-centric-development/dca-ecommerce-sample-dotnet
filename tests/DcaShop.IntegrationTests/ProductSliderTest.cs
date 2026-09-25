@@ -32,14 +32,14 @@ public sealed class ProductSliderTest : IClassFixture<WebApplicationFactory<Prog
         var pricing = new ChosenPricing();
         var client = ShopWith(pricing, out var services).CreateClient();
         var catalogue = await CatalogueAsync(services);
-        var priced = catalogue.Take(5).ToHashSet();
+        var priced = catalogue.Take(10).ToHashSet();
         pricing.PriceOnly(priced);
 
         for (var request = 0; request < 10; request++)
         {
             var cards = CardProductIds(await client.GetStringAsync("/"));
 
-            Assert.Equal(4, cards.Count);
+            Assert.Equal(8, cards.Count);
             Assert.All(cards, id => Assert.Contains(id, priced));
         }
     }

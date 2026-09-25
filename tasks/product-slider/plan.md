@@ -1,248 +1,195 @@
-# Plan — product-slider: Product slider on the homepage
+# Plan — product-slider: Product slider on the homepage (correction product-slider-accept-1)
 
 Carrier: in-session; the profile names no `carrier.plan`. Knowledge source: `dca-knowledge` (named in
-`.agents/factory/factory.profile.yaml`), bundle `dca-knowledge-catalog/bundle/`, `bundle_sha256`
-`851654624570dd8d75bb00cb604b6a560698d6a54ae53e4edce39be956cc956c`.
+`.agents/factory/factory.profile.yaml`), bundle `../dca-knowledge-catalog/bundle/`. This run takes no new
+architecture decision: the correction changes a domain constant, the stylesheet, the fragment's layout and the
+tests; the shape of the delivered slider (read use case, fragment adapter, value object) stays. The nodes the
+first delivery rested on still hold for it and are not re-decided here: `/decision/read-model-vs-domain-query.md`,
+`/recipe/add-a-read-model.md`, `/rule/hexagonal/dca-hex-011.md`, `/rule/hexagonal/dca-hex-007.md`.
+
+This plan plans the **change from the existing implementation** (delivered in commit `50730b9`), not the slider
+from scratch. Decision product-slider-accept-1 answered a correction: "8 random products with a price (was 4),
+paged by Previous/Next one card at a time; visible at once 4 on `xl` and `l`, 2 on `m`, 1 on `s`; Previous is
+disabled at the start, Next at the end; no auto-play; everything else as the story says" — it lands in the
+constant, the stylesheet and the criteria below. Decision product-slider-01 (answer a, applied) still holds: the
+readers unescape the DisplayName literal, so `shows-discover-products-slider-below-hero` keeps its quoted title.
 
 ## Context
 
-`Product` (Product Catalog, Core subdomain — `project/domain.md`, "Bounded Contexts"). The story's
-`context: Product`, and the domain contact's answer (story `## Assumptions`, first line; brief "Answer 1"):
-the slider lives in `Product`; the homepage shows it the way it shows the mini basket, and Portal references
-no other context.
+`Product` (Product Catalog, Core — `project/domain.md:21`). Story `context: Product`; story Assumptions line 1:
+the slider lives in `Product`, composed into the homepage by name like the mini basket. Designed map
+(`project/domain.md:55-70`) and generated map (`docs/architecture/context-map.md:27,40-59`) agree on everything
+this story touches; the correction adds no context and no relationship. The actor (shopper) reaches the surface
+already: the homepage `GET /` with the delivered fragment (`src/DcaShop.Web/Views/Home/Index.cshtml`,
+`Component.InvokeAsync("ProductSlider")`). No new page, endpoint, REST resource or MCP tool.
 
-- On the designed map (`project/domain.md`) and on the generated one (`docs/architecture/context-map.md`)
-  `Product` exists with the same relationships: it consumes `Pricing` and `Inventory` through their Api (ACL)
-  and is in a Partnership with both. The two maps agree on everything this story touches. The only
-  difference is the one `project/domain.md` states itself (the Account → Product identity dependency runs
-  through the shared kernel and is invisible to the generated map); it is not touched here.
-- No new context and no new relationship. `Portal` stays Separate Ways: it composes in the UI
-  (`project/domain.md`, "Notable design choices" 5), and `src/DcaShop.Portal/DcaShop.Portal.csproj`
-  references only `DcaShop.SharedKernel`. The homepage view invokes the slider fragment by name, exactly as
-  `_Layout.cshtml:35` invokes `Component.InvokeAsync("MiniBasket")` — no C# reference from Portal to Product.
-- The actor (shopper) already reaches the surface: the homepage `GET /`
-  (`src/DcaShop.Portal/Adapter/Incoming/Web/HomePageController.cs:8-9`, view
-  `src/DcaShop.Web/Views/Home/Index.cshtml`). The criteria name that surface themselves ("the shopper opens
-  the homepage"), and the fragment is specified by the domain contact (brief "Answer 2": "Composed like the
-  mini basket (a view component the page invokes)"). No new page, endpoint, REST resource or MCP tool —
-  the REST API and the MCP server are out of scope.
-- Project description: `project/product.md` `## Surfaces` lists the home page on desktop and phone;
-  `## Look and feel` asks for one shared stylesheet, keyboard use and `data-test` on every element a test
-  addresses. `project/tech.md` `## Frontend approach`: server-rendered Razor, no client framework — so the
-  paging is a few lines of plain inline script, as the layout's theme switch already is
-  (`src/DcaShop.Web/Views/Shared/_Layout.cshtml:81-98`). `## Persistence`: in memory, nothing new is stored.
+Project description: `project/product.md:37-44` names the four sizes — `s` up to 480 px, `m` up to 768 px, `l` up to
+1180 px, `xl` above. The criteria name sizes only; the size boundaries become the stylesheet's breakpoints.
+`project/tech.md` `## Frontend approach`: server-rendered, one stylesheet, no client framework — the delivered
+inline paging script stays plain script.
 
-### Where each decision comes from
+## What already holds, and what changes
 
-- Where the slider lives, how it is composed — story Assumptions line 1; brief Answers 1 and 2.
-- What "has a price" means — Pricing's answer through the catalog's own `IPricingDataPort`
-  (`src/DcaShop.Product/Application/Shared/IPricingDataPort.cs:8-13`); `PricingDataAdapter` states "A product
-  without a price record is simply absent from the answer" (`Adapter/Outgoing/Pricing/PricingDataAdapter.cs:9`).
-  Today `ProductArticleAssembler.ArticleOf` turns an absent price into `Money.Zero`
-  (`Application/Shared/ProductArticleAssembler.cs:35`), so an `EnrichedProduct` can no longer tell "no price"
-  apart; the new use case therefore selects on the pricing answer *before* it enriches (see Changes).
-- Out-of-stock products are offered as long as they have a price — story Assumptions line 3.
-- Not shown at all when no product has a price — story Assumptions line 2 (guarded, not a criterion).
-- Random draw, anew per request, no popularity, no personalisation — story Rule 2 and `## Out of scope`.
-- Knowledge: a plain query use case over the repository, not a dedicated read model —
-  `/decision/read-model-vs-domain-query.md` (review: reviewed; "the plain query use case is the default").
-  Read shape: `/recipe/add-a-read-model.md` (reviewed) — Query/Result in the application package, the
-  enriched model as the cross-context value, a primitives-only ViewModel in `adapter/incoming/web`.
-  Incoming adapter depends on the input-port interface, not the use case — `/rule/hexagonal/dca-hex-011.md`;
-  incoming adapter depends on no other module — `/rule/hexagonal/dca-hex-007.md`; ViewModel in the web
-  adapter package — `/rule/naming/dca-nam-011.md`; Result carries values only — `DCA-USE-015` (AGENTS.md).
-  The catalog has **no** node on UI composition / view components across contexts (searched for
-  "UI composition", "view component", "fragment", "mini basket": no hit); the placement below follows the
-  project's own precedent (`MiniBasketViewComponent`) and the domain contact's answer, not a catalog node.
+The delivered paging script (`src/DcaShop.Web/Views/Shared/Components/ProductSlider/Default.cshtml:29-53`) is
+already size-independent: `step()` is the distance between two cards, `move(±1)` scrolls by one step, `update()`
+disables Previous at `scrollLeft <= 1` and Next when the track's end is reached. With 8 cards and 4 in view
+the track overflows, so Next becomes enabled and four presses reach the end (max scroll = 4 steps). What makes
+the desktop show "all cards, both buttons disabled" today is only that there were 4 cards for 4 slots
+(build.md, criterion desktop-shows-four-cards-side-by-side). So the correction is:
+
+1. `ProductSelection.MaxSize` 4 → 8 (`src/DcaShop.Product/Domain/Model/ProductSelection.cs:10`). The use case
+   (`GetProductSelectionUseCase.cs:31`) and the view component take the size from the draw; nothing else counts.
+   The seeded catalogue has 21 products, all priced at creation (`SampleDataSeeder.cs:22-66`, `CreateProductCommand`
+   with a price), so 8 of 21 are drawn and a reload still differs.
+2. Stylesheet: cards per view by size. Today `.product-slider__card { flex: 0 0 calc((100% - 3 * gap) / 4) }`
+   (`main.css:2849-2850`) and one card at `max-width: 480px` (`main.css:2915-2919`). Add a rule for size `m`
+   — `@media (max-width: 768px)`: two cards per view, `calc((100% - var(--product-slider-gap)) / 2)` — placed
+   before the 480 px rule so `s` still wins. `l` keeps the default four; the file's existing size breakpoints
+   are the same (`main.css:3514`, `4263`, `4291` use 768 / 769–1180).
+3. Nothing in the script, the view component, the view model, the use case's flow or the homepage view changes.
+   Should the build stage find the script's end detection off by a sub-pixel at a size (rounding of the
+   `calc` widths), the fix belongs in `update()` of the same view, not in a new mechanism.
 
 ## Changes
 
 | Element | Kind | Location | New or changed |
 | --- | --- | --- | --- |
-| `ProductSelection` | Value object (`sealed record … : IValue`) — up to 4 distinct product ids drawn at random from the priced candidates; `Draw(IReadOnlyCollection<ProductId> pricedProducts, Random random)`; `MaxSize = 4`; fewer candidates → all of them; no candidates → empty | `src/DcaShop.Product/Domain/Model/ProductSelection.cs` (namespace `DcaShop.Product.Domain.Model`) | new |
-| `GetProductSelectionQuery` | Query (empty record) | `src/DcaShop.Product/Application/GetProductSelection/` | new |
-| `GetProductSelectionResult` | Result — `IReadOnlyList<EnrichedProduct> Products`, in draw order (values only, like `GetAllProductsResult`) | same folder | new |
-| `IGetProductSelectionInputPort` | Input port `: IUseCase<GetProductSelectionQuery, GetProductSelectionResult>` | same folder | new |
-| `GetProductSelectionUseCase` | Read use case, no transaction: `IProductRepository.FindAllAsync` → `IPricingDataPort.GetPricesAsync(all ids)` → candidates = ids present in the answer → `ProductSelection.Draw` → `ProductArticleAssembler.EnrichAsync(drawn products)` → result in draw order. `Random` is a constructor dependency so unit tests can seed it | same folder | new |
-| `ProductSliderViewComponent` | Incoming web adapter (ASP.NET Core `ViewComponent`, invoked by name `"ProductSlider"`) — depends only on `IGetProductSelectionInputPort`; maps to the view model; renders nothing when the selection is empty | `src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewComponent.cs` | new |
-| `ProductSliderViewModel` | ViewModel, primitives only: list of `Card(Guid ProductId, string Name, string ImageUrl, string Price)`; `Price` formatted exactly as `ProductPageController` formats the detail price (`p.CurrentPrice.ToString()`, `ProductPageController.cs:44`) | `src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewModel.cs` | new |
-| Product context registration | register `IGetProductSelectionInputPort` → `GetProductSelectionUseCase` (scoped) with `Random.Shared` | `src/DcaShop.Product/Infrastructure/ProductContextRegistration.cs` | changed |
-| Slider fragment view | Razor view of the component: `<section data-test="product-slider">`, heading "Discover products", a track of cards (image — or the catalog's letter placeholder when `ImageUrl` is empty, as `Catalog.cshtml:22` does —, name, price, link to `/products/{id}`), `<button>` "Previous" and "Next" (native buttons: focusable, Enter/Space activate them, `disabled` attribute at the ends), inline plain script that moves by one card and sets `disabled` from the scroll position; no timer, no auto-play | `src/DcaShop.Web/Views/Shared/Components/ProductSlider/Default.cshtml` (views live in the host, as `Views/Shared/Components/MiniBasket/Default.cshtml`) | new |
-| Homepage view | `@await Component.InvokeAsync("ProductSlider")` directly after the hero section (`Index.cshtml:10`) and before `data-test="features"` ("Why Shop With Us", `Index.cshtml:11-12`) | `src/DcaShop.Web/Views/Home/Index.cshtml` | changed |
-| Product detail view | add `data-test="product-detail-title"` to the `<h1>` (`Detail.cshtml:12`) and `data-test="product-detail-price"` to the price value span (`Detail.cshtml:34`) so a test can compare the card with the product page; markup otherwise unchanged | `src/DcaShop.Web/Views/Product/Detail.cshtml` | changed |
-| Slider styles | `.product-slider` block: 4 cards side by side at the default desktop width, one card per view at ≤ 480 px wide (393 px phone), horizontal track with overflow hidden / scroll-snap, button states; no animation that moves by itself | `src/DcaShop.Web/wwwroot/css/main.css` (the one shared stylesheet, `product.md` `## Look and feel`) | changed |
+| `ProductSelection` | Value object — `MaxSize` 4 → 8; XML doc unchanged in shape ("Up to `MaxSize` …") | `src/DcaShop.Product/Domain/Model/ProductSelection.cs` | changed |
+| Slider styles | `.product-slider__card` two per view at size `m` (`@media (max-width: 768px)`), one at `s` (existing 480 px rule, kept after it), four at `l` and `xl` (default) | `src/DcaShop.Web/wwwroot/css/main.css` (section 28, `.product-slider__*`) | changed |
+| `GetProductSelectionUseCase` | unchanged — draws `ProductSelection.MaxSize` | `src/DcaShop.Product/Application/GetProductSelection/` | unchanged |
+| Slider fragment view + paging script | unchanged — already one card per step and disabled at both ends | `src/DcaShop.Web/Views/Shared/Components/ProductSlider/Default.cshtml` | unchanged (see point 3 above) |
 
-Selectors (`data-test`), for the page object and the markup alike: `product-slider`, `product-slider-title`,
-`product-slider-card`, `product-slider-card-image`, `product-slider-card-name`, `product-slider-card-price`,
-`product-slider-card-link`, `product-slider-previous`, `product-slider-next`.
-
-Not changed: `EnrichedProduct`, `ProductArticle`, `ProductArticleAssembler`, `ProductCatalogService` (Api),
-`HomePageController`, Portal's project references, any REST resource or MCP tool.
+Selectors stay as delivered: `product-slider`, `product-slider-title`, `product-slider-card`,
+`product-slider-card-image`, `-name`, `-price`, `-link`, `product-slider-previous`, `product-slider-next`.
 
 ## Acceptance criteria
 
-Browser tests run in `tests/DcaShop.E2eTests` (Playwright, `browser: playwright` in the profile) and carry
-the **scenario title** of `../dca-sample-specification/scenarios.md` as `DisplayName` — `SharedScenariosTest`
-(`tests/DcaShop.UnitTests/Specification/SharedScenariosTest.cs:17-36`) fails on a browser test without a
-scenario. The two criteria that need a catalogue other than the seeded one have no shared scenario (story
-Assumptions, last line) and therefore are **not** browser tests: they run at HTTP level against the wired
-application (`WebApplicationFactory<Program>` with `ConfigureTestServices`, as
-`tests/DcaShop.IntegrationTests/IntegrationEventDeliveryTest.cs:21-27` does), in `tests/DcaShop.IntegrationTests`.
-Phone = 393 × 852 viewport, as `tests/DcaShop.E2eTests/MobileLayoutE2eTest.cs:18`.
+Browser tests run in `tests/DcaShop.E2eTests` (Playwright, `browser: playwright`) against `E2E_BASE_URL` and carry the
+scenario title of `../dca-sample-specification/scenarios.md` (`scenario.home.slider-*`, lines 186-303, sixteen
+scenarios) **verbatim** as `DisplayName` — `SharedScenariosTest` fails on a title without a test or a test without a
+title. "On the desktop" = size xl = the suite's default browser window (`BaseE2eTest.cs:55`, `ContextOptions => null`,
+Playwright's default 1280 px). Phone = size s = 393 × 852 (`HomeSliderPhoneE2eTest.cs:17`). Size l and size m get a
+test class each with a viewport inside the size: l = 1024 × 768 (spec: 769 to 1180 px); m = 768 × 1024, the upper
+edge of m, which is the width the human's correction names ("from about 760px"). The two criteria that need a
+catalogue other than the seeded one have no shared scenario and stay HTTP-level tests in
+`tests/DcaShop.IntegrationTests` (story Assumptions, "Does the browser test need …").
 
 ### Rule: Directly below the hero the homepage shows a slider headed "Discover products"
 
-- shows-discover-products-slider-below-hero: With the seeded sample catalog, opening the homepage shows a
-  slider headed exactly "Discover products" directly below the hero (the next section after
-  `data-test="hero"`), and it comes before the section "Why Shop With Us" (`data-test="features"`).
-  →  test shape: browser test, Playwright in `tests/DcaShop.E2eTests`, DisplayName
-  "The homepage shows a "Discover products" slider directly below the hero" (`scenario.home.slider-below-hero`)
+- shows-discover-products-slider-below-hero: With the seeded catalogue, the homepage shows a slider headed exactly
+  "Discover products" directly below the hero, before "Why Shop With Us" (`data-test="features"`).
+  →  browser test, Playwright, default window; DisplayName `The homepage shows a "Discover products" slider directly below the hero` — unchanged test
 
-### Rule: The slider holds up to four random products that have a price, drawn anew on every request
+### Rule: The slider holds up to eight random products that have a price, drawn anew on every request
 
-- slider-holds-four-different-products: With the seeded catalog, the slider holds 4 product cards, and each
-  card shows a different product of the sample catalog.
-  →  test shape: browser test, Playwright, DisplayName
-  "The homepage slider holds four different products of the sample catalog" (`scenario.home.slider-four-different-products`);
-  invariant also unit-tested on `ProductSelection` (≤ 4, distinct, only candidates) in `tests/DcaShop.UnitTests`
-- products-are-drawn-anew-per-request: After noting the 4 products, reloading the homepage 10 times shows a
-  different selection at least once.
-  →  test shape: browser test, Playwright, DisplayName
-  "The homepage slider draws its products anew on every request" (`scenario.home.slider-drawn-anew`);
-  unit test on `ProductSelection` with two different seeds
-- product-without-price-is-not-offered: A product of the catalogue that has no price is not among the
-  slider's cards.
-  →  test shape: HTTP-level test in `tests/DcaShop.IntegrationTests` — `GET /` against the application with a
-  test `IPricingDataPort` that leaves chosen seeded products unpriced, repeated over several requests,
-  asserting none of their ids appears in a `product-slider-card-link`; plus a `GetProductSelectionUseCase` unit
-  test with stub ports. What it cannot show: the rendering in a browser (not needed — the rule is about which
-  cards are in the HTML)
-- shows-the-priced-products-there-are: With exactly 2 products priced, the slider holds 2 product cards, one
-  for each of them.
-  →  test shape: HTTP-level test in `tests/DcaShop.IntegrationTests` (same stubbed pricing port, pricing 2
-  products), asserting exactly 2 cards with exactly those 2 product ids
+- slider-holds-eight-different-products: With the seeded catalogue the slider holds 8 product cards, each a
+  different product of the sample catalogue.
+  →  browser test, Playwright, default window; DisplayName `The homepage slider holds eight different products of the sample catalog`
+  (`scenario.home.slider-eight-different-products`); invariant unit-tested on `ProductSelection` (≤ 8, distinct, only candidates)
+- products-are-drawn-anew-per-request: After noting the 8 products, 10 reloads show a different selection at least once.
+  →  browser test, Playwright; DisplayName `The homepage slider draws its products anew on every request`; unit test with different seeds
+- product-without-price-is-not-offered: A product without a price is not among the cards.
+  →  HTTP-level test in `tests/DcaShop.IntegrationTests` (`ProductSliderTest`, stubbed `IPricingDataPort`) — with
+  more than 8 priced products so the draw is a strict choice, asserting 8 cards, all priced
+- shows-the-priced-products-there-are: With exactly 2 priced products the slider holds 2 cards, one for each.
+  →  HTTP-level test, `ProductSliderTest` — unchanged test
 
 ### Rule: A card shows the product's image, name and price and leads to its product page
 
-- card-shows-image-name-and-price: A card shows the product's image, its name and the price the product
-  page shows for that product (same string, as the detail page renders it).
-  →  test shape: browser test, Playwright, DisplayName
-  "A slider card shows the product's image, name and price" (`scenario.home.slider-card-content`) — reads a
-  card's image, name and price, opens its product page and compares with `product-detail-title` /
-  `product-detail-price`
-- card-links-to-product-page: Following a card's link shows the product page of that card's product.
-  →  test shape: browser test, Playwright, DisplayName
-  "A slider card leads to its product page" (`scenario.home.slider-card-link`) — URL `/products/{id}` of the
-  card, `product-detail-title` equals the card name
+- card-shows-image-name-and-price: A card shows the product's image, name and the price its product page shows.
+  →  browser test, Playwright; DisplayName `A slider card shows the product's image, name and price` — unchanged test
+- card-links-to-product-page: Following a card's link shows that product's page.
+  →  browser test, Playwright; DisplayName `A slider card leads to its product page` — unchanged test
 
-### Rule: On the desktop the four cards stand side by side
+### Rule: Four cards are in view side by side on sizes xl and l, two on size m, one on size s
 
-- desktop-shows-four-cards-side-by-side: In the suite's default browser window all 4 cards are in view,
-  side by side (same top, increasing left), and "Previous" and "Next" are both disabled.
-  →  test shape: browser test, Playwright (default context, no viewport override), DisplayName
-  "On the desktop the slider shows its four cards side by side" (`scenario.home.slider-desktop`)
+- desktop-shows-four-cards-side-by-side: On the desktop (xl) the first 4 cards are in view side by side (same top,
+  increasing left) and the other 4 are not; "Previous" is disabled and "Next" is enabled.
+  →  browser test, Playwright, default window; DisplayName `On the desktop the slider shows four of its cards side by side` (`scenario.home.slider-desktop`)
+- size-l-shows-four-cards-side-by-side: On size l the first 4 cards are in view side by side and the other 4 are not.
+  →  browser test, Playwright, 1024 × 768; DisplayName `On a large tablet the slider shows four of its cards side by side` (`scenario.home.slider-tablet-four-cards`)
+- size-m-shows-two-cards-side-by-side: On size m the first 2 cards are in view side by side and the other 6 are not.
+  →  browser test, Playwright, 768 × 1024; DisplayName `On a small tablet the slider shows two of its cards side by side` (`scenario.home.slider-small-tablet-two-cards`)
+- phone-shows-one-card-at-a-time: On a phone (s) only the first card is in view and "Previous" is disabled.
+  →  browser test, Playwright, 393 px; DisplayName `On a phone the slider shows one card at a time` — unchanged test
 
-### Rule: On a phone one card is in view; Previous and Next move by one card, by mouse or keyboard, and are disabled at the start and at the end
+### Rule: Previous and Next move by one card, by mouse or keyboard, and are disabled at the start and at the end
 
-- phone-shows-one-card-at-a-time: On a phone only the first card is in view and "Previous" is disabled.
-  →  test shape: browser test, Playwright, 393 px viewport, DisplayName
-  "On a phone the slider shows one card at a time" (`scenario.home.slider-phone-one-card`)
-- next-brings-the-following-card-into-view: On a phone, with the first card in view, pressing "Next" brings
-  the second card into view instead of the first.
-  →  test shape: browser test, Playwright, 393 px, DisplayName
-  "On a phone Next brings the following slider card into view" (`scenario.home.slider-next`)
-- previous-brings-the-preceding-card-into-view: On a phone, after "Next" once, pressing "Previous" brings
-  the first card into view again.
-  →  test shape: browser test, Playwright, 393 px, DisplayName
-  "On a phone Previous brings the preceding slider card back into view" (`scenario.home.slider-previous`)
-- next-is-operable-by-keyboard: On a phone, with the keyboard focus moved to "Next" with the Tab key,
-  pressing Enter brings the second card into view instead of the first.
-  →  test shape: browser test, Playwright, 393 px, keyboard only (`Tab` until `product-slider-next` is
-  focused, then `Enter`), DisplayName
-  "On a phone the slider's Next button works from the keyboard" (`scenario.home.slider-keyboard`)
-- next-is-disabled-at-the-last-card: On a phone, pressing "Next" three times brings the fourth card into view
-  and "Next" is disabled.
-  →  test shape: browser test, Playwright, 393 px, DisplayName
-  "On a phone the slider stops at its last card" (`scenario.home.slider-stops-at-the-end`)
-- slider-does-not-move-by-itself: On a phone, with the first card in view, after 10 seconds without touching
-  the slider the first card is still in view.
-  →  test shape: browser test, Playwright, 393 px, DisplayName
-  "The homepage slider does not move by itself" (`scenario.home.slider-no-auto-play`) — the one place a
-  timed wait is the observation itself, not a synchronisation
+- desktop-next-moves-by-one-card: On the desktop with the first 4 cards in view, pressing "Next" brings the second
+  to the fifth card into view and the first out of it; "Previous" is enabled.
+  →  browser test, Playwright, default window; DisplayName `On the desktop Next moves the slider on by one card` (`scenario.home.slider-desktop-next`)
+- desktop-next-is-disabled-at-the-last-card: On the desktop, after "Next" four times, the fifth to the eighth card
+  are in view and "Next" is disabled.
+  →  browser test, Playwright, default window; DisplayName `On the desktop the slider stops at its last card` (`scenario.home.slider-desktop-stops-at-the-end`)
+- next-brings-the-following-card-into-view: On a phone, "Next" brings the second card into view instead of the first.
+  →  browser test, 393 px; DisplayName `On a phone Next brings the following slider card into view` — unchanged test
+- previous-brings-the-preceding-card-into-view: On a phone, after "Next" once, "Previous" brings the first card back.
+  →  browser test, 393 px; DisplayName `On a phone Previous brings the preceding slider card back into view` — unchanged test
+- next-is-operable-by-keyboard: On a phone, focus moved to "Next" with Tab, Enter brings the second card into view.
+  →  browser test, 393 px; DisplayName `On a phone the slider's Next button works from the keyboard` — unchanged test
+- next-is-disabled-at-the-last-card: On a phone, after "Next" seven times, the eighth card is in view and "Next" is disabled.
+  →  browser test, 393 px; DisplayName `On a phone the slider stops at its last card` (`scenario.home.slider-stops-at-the-end`)
+- slider-does-not-move-by-itself: On a phone, after 10 s untouched, the first card is still in view.
+  →  browser test, 393 px; DisplayName `The homepage slider does not move by itself` — unchanged test
 
-Details the story specifies, held by the criteria above: the heading text "Discover products"; placement
-directly below the hero and before "Why Shop With Us"; 4 cards; the button labels "Previous" and "Next";
-"disabled" as the state at the ends (native `disabled` attribute); move by exactly one card; no auto-play;
-no add-to-cart button on the card (card leads to the product page only).
+Details the story specifies, held by the criteria: 8 cards; 4 / 4 / 2 / 1 in view on xl / l / m / s; a step of exactly
+one card; Previous disabled at the first card, Next at the last, both enabled in between (desktop-next: "Previous"
+enabled); no auto-play. Guard without a key (story Assumptions line 2): no priced product → no slider section —
+`ProductSliderTest#WithoutAnyPricedProductTheHomepageShowsNoSlider`, unchanged.
 
-Guard without a criterion key (story Assumptions line 2 — "the plan guards it"): when no product has a price,
-the homepage renders no `product-slider` section at all. Test shape: HTTP-level test in
-`tests/DcaShop.IntegrationTests` with the stubbed pricing port answering nothing; plus the use-case unit test
-for the empty selection.
+## Changed tests
+
+| Test file | Backed by |
+| --- | --- |
+| `tests/DcaShop.E2eTests/HomeSliderE2eTest.cs` — `HoldsFourDifferentProductsOfTheSampleCatalog` (expects 4 cards, DisplayName "…four different products…") becomes the eight-card test with the new title; `DrawsItsProductsAnewOnEveryRequest` (`Assert.Equal(4, noted.Count)`) expects 8; `OnTheDesktopTheFourCardsStandSideBySide` (all 4 in view, both buttons disabled) expects cards 0–3 in view and 4–7 not, Previous disabled, Next enabled, new title; the two new desktop tests are added to this class | "The slider holds up to 8 products; before, it held up to 4." and "On the desktop the slider shows 4 of its 8 cards, "Next" is enabled and moves by one card; before, all its cards were in view side by side and "Previous" and "Next" were both disabled." |
+| `tests/DcaShop.E2eTests/HomeSliderPhoneE2eTest.cs` — `OnAPhoneTheSliderStopsAtItsLastCard` (three presses, fourth card, Next disabled) expects seven presses, the eighth card | "On a phone "Next" is disabled after seven presses, at the eighth card; before, after three, at the fourth." |
+| `tests/DcaShop.E2eTests/Pages/HomePage.cs` — the page object gains a settled "enabled" check for a button (today `SettlesDisabledAsync` only waits for `disabled`; asserting "Next is enabled" through it would wait out its 5 s timeout) and, if the tests want it, a helper for "cards i..j in view" | "On the desktop the slider shows 4 of its 8 cards, "Next" is enabled and moves by one card; …" |
+| `tests/DcaShop.UnitTests/Product/ProductSelectionTest.cs` — `DrawsFourDifferentProductsFromTheCandidates` (4 of 21) expects 8 of 21; `DrawsEveryCandidateWhenThereAreFewerThanFour` renamed to fewer than eight (expectation with 2 candidates unchanged); the "same four products" message of `DifferentRandomSourcesDrawDifferentSelections` | "The slider holds up to 8 products; before, it held up to 4." |
+| `tests/DcaShop.UnitTests/Product/GetProductSelectionUseCaseTest.cs` — `OffersAtMostFourPricedProducts` (10 priced → 4) expects 8, renamed | "The slider holds up to 8 products; before, it held up to 4." |
+| `tests/DcaShop.IntegrationTests/ProductSliderTest.cs` — `AProductWithoutAPriceIsNotAmongTheSlidersCards` prices 5 products and expects 4 cards (`:35,42`); with up to 8 it would get 5 — prices more than 8 (e.g. 10 of the 21) and expects 8 cards, all priced | "The slider holds up to 8 products; before, it held up to 4." |
+
+Not contradicted and not listed: `GetProductSelectionUseCaseTest#KeepsTheOrderTheProductsWereDrawnIn` (8 products →
+all drawn, still in draw order; holds), `#OffersOnlyProductsThatHaveAPrice`, `#OffersAPricedProductThatIsOutOfStock`,
+`#OffersNothingWhenNoProductHasAPrice`, `ProductSliderTest#WithTwoPricedProducts…`, `#WithoutAnyPricedProduct…`,
+`tests/DcaShop.UnitTests/Specification/SharedScenariosTest.cs` (reads titles from the specification; no change).
 
 ## Files
 
-- `src/DcaShop.Product/Domain/Model/ProductSelection.cs` — changes: new value object, the random draw.
-- `src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionQuery.cs` — changes: new.
-- `src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionResult.cs` — changes: new.
-- `src/DcaShop.Product/Application/GetProductSelection/IGetProductSelectionInputPort.cs` — changes: new.
-- `src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionUseCase.cs` — changes: new.
-- `src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewComponent.cs` — changes: new fragment adapter.
-- `src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewModel.cs` — changes: new.
-- `src/DcaShop.Product/Infrastructure/ProductContextRegistration.cs` — changes: register the use case.
-- `src/DcaShop.Web/Views/Shared/Components/ProductSlider/Default.cshtml` — changes: new slider markup and inline paging script.
-- `src/DcaShop.Web/Views/Home/Index.cshtml` — changes: invoke the component between hero and features.
-- `src/DcaShop.Web/Views/Product/Detail.cshtml` — changes: `data-test` on title and price.
-- `src/DcaShop.Web/wwwroot/css/main.css` — changes: `.product-slider` block, desktop and ≤ 480 px rules.
-- `tests/DcaShop.E2eTests/Pages/HomePage.cs` — changes: new page object (slider cards, in-view checks, Previous/Next, keyboard).
-- `tests/DcaShop.E2eTests/Pages/ProductDetailPage.cs` — changes: read title and price (new members; existing members unchanged).
-- `tests/DcaShop.E2eTests/HomeSliderE2eTest.cs` — changes: new, the desktop scenarios (below-hero, four-different, drawn-anew, card-content, card-link, desktop).
-- `tests/DcaShop.E2eTests/HomeSliderPhoneE2eTest.cs` — changes: new, the 393 px scenarios (phone-one-card, next, previous, keyboard, stops-at-the-end, no-auto-play).
-- `tests/DcaShop.IntegrationTests/ProductSliderTest.cs` — changes: new, the two non-shared criteria and the no-price guard.
-- `tests/DcaShop.UnitTests/Product/ProductSelectionTest.cs` — changes: new, draw invariants.
-- `tests/DcaShop.UnitTests/Product/GetProductSelectionUseCaseTest.cs` — changes: new, priced-only selection, draw order kept, empty when nothing is priced.
-- `src/DcaShop.Web/ViewComponents/MiniBasketViewComponent.cs`, `src/DcaShop.Web/Views/Shared/Components/MiniBasket/Default.cshtml`, `src/DcaShop.Web/Views/Shared/_Layout.cshtml:35` — read: the composition pattern to mirror (invoked by name, view in the host).
-- `src/DcaShop.Web/Program.cs:16-21` — read: `DcaShop.Product` is an MVC application part, so a view component there is discovered without further wiring.
-- `src/DcaShop.Product/Application/GetAllProducts/*`, `Application/Shared/ProductArticleAssembler.cs`, `Application/Shared/IPricingDataPort.cs` — read: the read use-case shape and the enrichment to reuse.
-- `src/DcaShop.Product/Adapter/Incoming/Web/ProductPageController.cs`, `src/DcaShop.Web/Views/Product/Catalog.cshtml` — read: price formatting and the card markup / image placeholder to mirror.
-- `tests/DcaShop.E2eTests/MobileLayoutE2eTest.cs`, `BaseE2eTest.cs`, `Pages/BasePage.cs`, `SeededCatalogE2eTest.cs` — read: viewport override, page-object base, `data-test` helpers.
-- `tests/DcaShop.IntegrationTests/IntegrationEventDeliveryTest.cs:21-27`, `ShopFlowTest.cs` — read: `ConfigureTestServices` override and HTML assertions over `GET /`.
-- `tests/DcaShop.UnitTests/Specification/SharedScenariosTest.cs` — read: why the browser tests must carry the scenario titles verbatim and why the two non-shared criteria are not browser tests.
-- `../dca-sample-specification/scenarios.md` (`scenario.home.slider-*`, lines 186-273), `../dca-sample-specification/exceptions.md` — read: the shared scenario titles and the approved Java exception.
+- `src/DcaShop.Product/Domain/Model/ProductSelection.cs` — changes: `MaxSize = 8`.
+- `src/DcaShop.Web/wwwroot/css/main.css` — changes: `.product-slider__card` two per view at `max-width: 768px`, before the existing 480 px rule.
+- `tests/DcaShop.E2eTests/HomeSliderE2eTest.cs` — changes: eight-card and desktop expectations and titles; two new tests (desktop-next, desktop-stops-at-the-end).
+- `tests/DcaShop.E2eTests/HomeSliderPhoneE2eTest.cs` — changes: stops-at-the-end with seven presses / eighth card.
+- `tests/DcaShop.E2eTests/HomeSliderTabletE2eTest.cs` — changes: new, size l (1024 × 768), `size-l-shows-four-cards-side-by-side`.
+- `tests/DcaShop.E2eTests/HomeSliderSmallTabletE2eTest.cs` — changes: new, size m (768 × 1024), `size-m-shows-two-cards-side-by-side`.
+- `tests/DcaShop.E2eTests/Pages/HomePage.cs` — changes: settled "enabled" check (and optional range helper).
+- `tests/DcaShop.UnitTests/Product/ProductSelectionTest.cs` — changes: 8 instead of 4.
+- `tests/DcaShop.UnitTests/Product/GetProductSelectionUseCaseTest.cs` — changes: at most 8.
+- `tests/DcaShop.IntegrationTests/ProductSliderTest.cs` — changes: more than 8 priced, 8 cards expected.
+- `src/DcaShop.Web/Views/Shared/Components/ProductSlider/Default.cshtml` — read: the paging script that already moves one card and disables at both ends (change only if the end detection proves off at a size).
+- `src/DcaShop.Product/Application/GetProductSelection/GetProductSelectionUseCase.cs`, `src/DcaShop.Product/Adapter/Incoming/Web/ProductSliderViewComponent.cs` — read: take the size from the draw; no change.
+- `src/DcaShop.Product/Adapter/Incoming/Bootstrap/SampleDataSeeder.cs:22-66` — read: 21 seeded, priced products (8 drawn of 21).
+- `tests/DcaShop.E2eTests/BaseE2eTest.cs:55`, `HomeSliderPhoneE2eTest.cs:17`, `MobileLayoutE2eTest.cs:18` — read: default window and the viewport override to mirror for l and m.
+- `project/product.md:37-44` — read: the size table (the breakpoints).
+- `../dca-sample-specification/scenarios.md:186-303`, `../dca-sample-specification/exceptions.md` — read: the sixteen titles, the .NET-first exception.
+- `src/DcaShop.Product/Domain/glossary.md:108-112` — document stage: "Up to four different products" → eight.
 
 ## Glossary proposals
 
-- Product selection (`ProductSelection`, Product context): up to four different products of the catalogue
-  that have a price, drawn at random anew on every request; shown on the homepage as the "Discover products"
-  slider. Not a popularity ranking and not personalised.
-- Product slider (Portal glossary, referenced term owned by `Product`): the homepage section "Discover
-  products" that presents the product selection as cards, paged with Previous and Next.
+None new. The existing `ProductSelection` entry (`src/DcaShop.Product/Domain/glossary.md:108-112`) says "Up to four
+different products"; the document stage changes it to eight. The Portal entry "Product slider" names no count.
 
 ## Open assumptions
 
-- "Has a price" = Pricing's answer contains the product (`IPricingDataPort`), not "price ≠ 0". A priced
-  product always has a positive price (Product glossary, "Shared contract revision": Price wraps strictly
-  positive Money), so the two agree today; the plan uses the port answer because it is what Pricing states.
-- The use case asks the pricing port once for all products (to select) and the assembler asks again for the
-  ≤ 4 drawn ones (to enrich). Two in-process calls; accepted rather than changing `ProductArticle`'s shape,
-  which would also change `tests/DcaShop.UnitTests/Product/ProductTest.cs:48-49`.
-- The random source is `System.Random` (BCL, no framework type), injected into the use case and passed to
-  the domain's `ProductSelection.Draw`; production uses `Random.Shared`.
-- "In view" is judged against the slider's own visible track and the browser viewport (Playwright's
-  in-viewport check plus the track's bounding box), not by CSS class names.
-- The paging script is plain inline JavaScript inside the fragment view (no client framework,
-  `project/tech.md`); without script the desktop view is unaffected (all four cards are already in view).
-- Views and `main.css` are otherwise one-to-one copies of the Java sample's (AGENTS.md "Views mirror the Java
-  sample's Pug templates one to one"). This story adds .NET-first markup and CSS under the approved exception
-  `scenario.home.slider-*` in `../dca-sample-specification/exceptions.md` (review 2026-10-31); the two new
-  `data-test` attributes on the product page and the `.product-slider` CSS are to be carried over by the Java
-  twin's story. `planning/porting-status.md` and the Portal/Product glossaries are the document stage's.
-- The architecture suite (`tests/DcaShop.ArchitectureTests`) does not scan `DcaShop.Web`, but does scan
-  `DcaShop.Product`; the new view component sits in `Adapter/Incoming/Web` and depends only on the input
-  port, which `DCA-HEX-011` and `DCA-HEX-007` require. No rule selects view components by name (checked
-  `DCA-NAM-005`/`-006`, which select controller stereotypes); the architecture run confirms it.
-- Knowledge-catalog gap for the harness (AGENTS.md principle 1): the catalog has no node on UI composition
-  of one context's fragment into another context's page. Candidates: a recipe "compose a fragment into
-  another context's page", and possibly a rule that a fragment adapter (view component) in
-  `adapter/incoming/web` depends only on its own context's input ports (today covered generically by
-  `DCA-HEX-007`/`-011`). Marker: none proposed. To be recorded by the document stage, not built here.
+- Default Playwright window (1280 px, no override in `BaseE2eTest`) is size xl, as the story's size note says.
+- Viewports for l (1024) and m (768, the upper edge of m) are the test stage's choice inside the specification's
+  ranges; the criteria name sizes only. A test at the lower edges (769, 481) is not asked for.
+- "In view" stays as the page object judges it today: whole card inside the slider's box and the window's width
+  (`HomePage.cs:26-37`); a card scrolled out of the track lies outside the section's box, so "the other 4 are not
+  in view" is observable with the existing check.
+- The keyboard path on a phone is unchanged: the controls stand before the track (build.md "Deviations"), so Tab
+  reaches "Next" without passing card links.
+- `README.md:156-158` and `planning/porting-status.md` name the slider without a count; the Java twin follows with its
+  own story (story `## Out of scope`, `exceptions.md`). Nothing to plan there.
+- Harness answer (AGENTS.md principle 1): catalog node — none new (the UI-composition gap was already recorded by the
+  first delivery); rule — none (responsive card counts are a presentation property, not a dependency rule); marker —
+  none.

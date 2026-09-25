@@ -1,39 +1,35 @@
 # Tidy — product-slider
 
-Carrier: in-session; the profile names no `carrier.tidy`. Guard `dca-discipline` (`carrier.guard`) kept as the
-stage describes it: nothing was edited, so no invariant was put at risk.
+Round: acceptance correction product-slider-accept-1. Carrier: in-session; the profile names no `carrier.tidy`.
+Guard `dca-discipline` (`carrier.guard`) kept as the stage describes it: nothing was edited, so no invariant was put
+at risk.
 
 ## Moves
 | File | Move | Why it reads better |
 | --- | --- | --- |
 
-No move. The build left the story's code small and already in the project's own shape: `ProductSelection` is a
-single-purpose value with one factory (`Draw`) and a named `MaxSize`; `GetProductSelectionUseCase` reads top to
-bottom at one level of abstraction (catalog → priced ids → draw → enrich); `ProductSliderViewComponent` maps to its
-view model inline exactly like its sibling `ProductPageController`; the view model carries primitives only. There is
-no helper the story made redundant and no duplicate it introduced. A move made only to have made one would add
-noise to the judge's diff.
+No move. This round changed two things, both already in their plainest form: `ProductSelection.MaxSize` 4 → 8 (one
+named constant, which the summary and `Draw`'s doc reference through `<see cref="MaxSize"/>` rather than a number, so
+no comment went stale) and one `@media (max-width: 768px)` rule for `.product-slider__card`, placed before the
+existing 480 px rule, using the same `--product-slider-gap` variable and the same `calc` shape as the default
+four-per-view rule. No helper was made redundant and no duplicate introduced. The rest of the footprint (use case,
+view component, view model, registration, views) is unchanged since the first delivery, whose tidy stage found it
+clean; nothing in this round changes that reading.
 
 ## Left alone
-- `ProductSliderViewComponent` / `ProductPageController` both map `EnrichedProduct` to primitives with
-  `p.CurrentPrice.ToString()` inline: the same one-line projection per view model, each with a different shape; lifting
-  a shared mapper would touch `ProductPageController`, which is outside the footprint and not a real duplicate.
-- `ProductContextRegistration` registers the use case through a factory lambda to pass `Random.Shared`: registering
-  `Random` as a service instead would change the container graph for every consumer — a design question, not tidying.
-- `GetProductSelectionUseCase` builds `byId` from the catalog after the draw: at the catalog's size a second pass is
-  immaterial, and folding it into the candidate filter would trade clarity for nothing.
-- Inline paging script in `Views/Shared/Components/ProductSlider/Default.cshtml`: the project has no bundled
-  script pipeline for components; moving it to `wwwroot/js/` would be a structural choice for the plan, and the
-  deviation recorded in `build.md` (controls before the track) is behaviour the keyboard test depends on.
-- `DcaShop.UnitTests.Cart.ActiveCartUniquenessTest.ConcurrentRequestsShareOneCart` failed once during the second
-  gate run (while the shop was running beside it for the E2E suite) and passed in six isolated reruns and in the
-  stage's own run: a timing-sensitive concurrency test in the Cart context, outside this story's footprint and
-  untouched by it. A finding for whoever owns that test, not an edit here.
+- `src/DcaShop.Product/Domain/glossary.md` still defines the product selection as "Up to four different products":
+  a glossary entry is the document stage's item (build.md names it), and tidy renames nothing a glossary names.
+- `main.css` now diverges from the Java sample's copy by the size-m rule: a sync note for the document stage and the
+  Java twin's own story (story `## Out of scope`), not a tidy edit.
+- The findings of the first delivery's tidy stage still hold and remain untouched: the inline `EnrichedProduct`
+  projection in `ProductSliderViewComponent` beside `ProductPageController`, the `Random.Shared` factory lambda in
+  `ProductContextRegistration`, the second pass building `byId` in `GetProductSelectionUseCase`, and the inline
+  paging script in `Views/Shared/Components/ProductSlider/Default.cshtml`.
 
 ## Checks
 - dotnet build: 0 errors
-- dotnet test tests/DcaShop.UnitTests --logger trx: 176 passed, 4 skipped (specification tests without `SpecificationPath`)
-- dotnet test tests/DcaShop.IntegrationTests --logger trx: 58 passed, 1 skipped (pre-existing)
-- E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests --logger trx: 33 passed, 1 skipped (pre-existing)
-- dotnet test tests/DcaShop.ArchitectureTests: 129 passed
 - dotnet format --verify-no-changes: clean (formatFix not run — nothing was edited)
+- `E2E_BASE_URL=http://localhost:5080 python3 .agents/factory/story-gate.py --story product-slider --stage tidy`
+  (shop started with `dotnet run --project src/DcaShop.Web`, stopped afterwards): `gate:pass story product-slider
+  stage tidy` — compiles, all 18 criterion tests green, red-proof held, unit suite 156 cases and integration suite
+  55 cases with none failed, architecture suite and format passed, files-listed 0 of 0

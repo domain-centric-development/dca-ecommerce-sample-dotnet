@@ -1,7 +1,6 @@
-27cfb762523668b8bf99d890e838fa7185ca6f918c679e33a16daddba42093c3  tasks/product-slider/.story-digest
-44792341538e169463bd906644752a9520473420b000f229a91c5a451c97e7b9  tasks/product-slider/.tests-baseline
-59b852489a49e8fdbbd38a20fcb71643e277b424520edb9a2f06ed3250d1c8b5  tasks/product-slider/.verify/base-tree
-3e01f559245b292293cd213cacdb240ea979d4af382e4c04025838f400dceb08  tasks/product-slider/.verify/journal.tsv
+32cab20e3246822b026b63a4268dd782823e2accbc6208d87f3fce3827812757  tasks/product-slider/.story-digest
+772b074535e4b8669a0d67884688a9057c10331ae6ad3cfe39930c5ebb314969  tasks/product-slider/.story-planned
+b882c9376749e7b70f8518a8402577e2f51b4d487141f162fae3309515bce1ce  tasks/product-slider/.verify/journal.tsv
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  tasks/product-slider/.verify/tree-after-plan.txt
-9820eb60383ce8176c9e723a0c2bed9798b4ea4a4be6c0fb76fe5036306816f1  tasks/product-slider/.verify/tree-before-plan.txt
-d141012b78fc556dc8b6dd1a8802dff1ee0e415f6762859916ee01564b00ebd4  tasks/product-slider/plan.md
+ca7802950e7b5d5ec5501570779866b64f893226e2494d265e3ad3e456dc9ff6  tasks/product-slider/.verify/tree-before-plan.txt
+83360ab13d68ad1c0960b6ff5f918cbc5c3564fa31d9838478f142e30c89651b  tasks/product-slider/plan.md

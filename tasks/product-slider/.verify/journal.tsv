@@ -15,7 +15,25 @@
 2026-09-25T12:24:13.934Z	usage	tidy	tool=claude-session	model=claude-opus-5-5	input=32	cache_read=790594	cache_write=55038	output=7545	window=2026-09-25T12:17:29.311Z/2026-09-25T12:24:13.934Z
 2026-09-25T12:24:14.278Z	stage-start	judge	tool=claude-session
 2026-09-25T12:26:45.139Z	stage-end	judge	exit=0
-2026-09-25T12:26:45.139Z	usage	judge	tool=claude-session	window=2026-09-25T12:24:14.278Z/2026-09-25T12:26:45.139Z	session=claude:12103ecd-7faf-45ee-b603-614dd5ebe2c1
+2026-09-25T12:26:45.139Z	usage	judge	tool=claude-session	model=claude-opus-5-5	input=34	cache_read=1234485	cache_write=106084	output=10925	window=2026-09-25T12:24:14.278Z/2026-09-25T12:26:45.139Z
 2026-09-25T12:26:45.438Z	stage-start	document	tool=claude-session
 2026-09-25T12:29:18.683Z	stage-end	document	exit=0
-2026-09-25T12:29:18.683Z	usage	document	tool=claude-session	window=2026-09-25T12:26:45.438Z/2026-09-25T12:29:18.683Z	session=claude:12103ecd-7faf-45ee-b603-614dd5ebe2c1
+2026-09-25T12:29:18.683Z	usage	document	tool=claude-session	model=claude-opus-5-5	input=42	cache_read=1286828	cache_write=73125	output=9639	window=2026-09-25T12:26:45.438Z/2026-09-25T12:29:18.683Z
+2026-09-25T14:02:06.622Z	stage-start	plan	tool=claude-session
+2026-09-25T14:05:15.405Z	stage-end	plan	exit=0
+2026-09-25T14:05:15.405Z	usage	plan	tool=claude-session	model=claude-opus-5-5	input=40	cache_read=1400590	cache_write=104802	output=16673	window=2026-09-25T14:02:06.622Z/2026-09-25T14:05:15.405Z
+2026-09-25T14:05:15.639Z	stage-start	test	tool=claude-session
+2026-09-25T14:13:49.087Z	stage-end	test	exit=0
+2026-09-25T14:13:49.087Z	usage	test	tool=claude-session	model=claude-opus-5-5	input=48	cache_read=1785948	cache_write=91166	output=18051	window=2026-09-25T14:05:15.639Z/2026-09-25T14:13:49.087Z
+2026-09-25T14:13:49.404Z	stage-start	build	tool=claude-session
+2026-09-25T14:20:33.909Z	stage-end	build	exit=0
+2026-09-25T14:20:33.909Z	usage	build	tool=claude-session	model=claude-opus-5-5	input=38	cache_read=1111105	cache_write=63723	output=7409	window=2026-09-25T14:13:49.404Z/2026-09-25T14:20:33.909Z
+2026-09-25T14:20:34.207Z	stage-start	tidy	tool=claude-session
+2026-09-25T14:25:08.479Z	stage-end	tidy	exit=0
+2026-09-25T14:25:08.479Z	usage	tidy	tool=claude-session	window=2026-09-25T14:20:34.207Z/2026-09-25T14:25:08.479Z	session=claude:02a362bc-0459-4100-9cea-68f614bbe607
+2026-09-25T14:25:08.733Z	stage-start	judge	tool=claude-session
+2026-09-25T14:26:54.903Z	stage-end	judge	exit=0
+2026-09-25T14:26:54.903Z	usage	judge	tool=claude-session	window=2026-09-25T14:25:08.733Z/2026-09-25T14:26:54.903Z	session=claude:02a362bc-0459-4100-9cea-68f614bbe607
+2026-09-25T14:26:55.165Z	stage-start	document	tool=claude-session
+2026-09-25T14:28:02.756Z	stage-end	document	exit=0
+2026-09-25T14:28:02.756Z	usage	document	tool=claude-session	window=2026-09-25T14:26:55.165Z/2026-09-25T14:28:02.756Z	session=claude:02a362bc-0459-4100-9cea-68f614bbe607

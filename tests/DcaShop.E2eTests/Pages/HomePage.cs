@@ -175,6 +175,10 @@ public sealed class HomePage : BasePage
 
     public Task<bool> IsPreviousDisabledAsync() => SettlesDisabledAsync(Previous);
 
+    public Task<bool> IsNextEnabledAsync() => SettlesEnabledAsync(Next);
+
+    public Task<bool> IsPreviousEnabledAsync() => SettlesEnabledAsync(Previous);
+
     /// <summary>Presses Tab until the keyboard focus is on "Next"; false when it never gets there.</summary>
     public async Task<bool> TabToNextAsync()
     {
@@ -203,6 +207,23 @@ public sealed class HomePage : BasePage
         {
             await Page.WaitForFunctionAsync(
                 "dt => document.querySelector(`[data-test='${dt}']`)?.disabled === true",
+                dataTest,
+                new PageWaitForFunctionOptions { Timeout = SettleTimeoutMs });
+            return true;
+        }
+        catch (TimeoutException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>The button's state once paging has settled: waits for it to be enabled, answers false if it stays disabled.</summary>
+    private async Task<bool> SettlesEnabledAsync(string dataTest)
+    {
+        try
+        {
+            await Page.WaitForFunctionAsync(
+                "dt => document.querySelector(`[data-test='${dt}']`)?.disabled === false",
                 dataTest,
                 new PageWaitForFunctionOptions { Timeout = SettleTimeoutMs });
             return true;

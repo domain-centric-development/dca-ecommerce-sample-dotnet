@@ -1,1 +1,8 @@
-modified	tests/DcaShop.UnitTests/Specification/SharedScenariosTest.cs
+modified	tests/DcaShop.E2eTests/HomeSliderE2eTest.cs
+modified	tests/DcaShop.E2eTests/HomeSliderPhoneE2eTest.cs
+added	tests/DcaShop.E2eTests/HomeSliderSmallTabletE2eTest.cs
+added	tests/DcaShop.E2eTests/HomeSliderTabletE2eTest.cs
+modified	tests/DcaShop.E2eTests/Pages/HomePage.cs
+modified	tests/DcaShop.IntegrationTests/ProductSliderTest.cs
+modified	tests/DcaShop.UnitTests/Product/GetProductSelectionUseCaseTest.cs
+modified	tests/DcaShop.UnitTests/Product/ProductSelectionTest.cs

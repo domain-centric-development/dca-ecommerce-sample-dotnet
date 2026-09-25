@@ -29,7 +29,7 @@ public sealed class GetProductSelectionUseCaseTest
     }
 
     [Fact]
-    public async Task OffersAtMostFourPricedProducts()
+    public async Task OffersAtMostEightPricedProducts()
     {
         var products = await SaveProductsAsync(10);
         foreach (var product in products)
@@ -39,8 +39,8 @@ public sealed class GetProductSelectionUseCaseTest
 
         var result = await UseCase(new Random(3)).ExecuteAsync(new GetProductSelectionQuery());
 
-        Assert.Equal(4, result.Products.Count);
-        Assert.Equal(4, result.Products.Select(p => p.ProductId).Distinct().Count());
+        Assert.Equal(8, result.Products.Count);
+        Assert.Equal(8, result.Products.Select(p => p.ProductId).Distinct().Count());
     }
 
     [Fact]

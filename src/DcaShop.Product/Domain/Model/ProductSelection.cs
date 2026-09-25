@@ -7,7 +7,7 @@ namespace DcaShop.Product.Domain.Model;
 /// <summary>Up to <see cref="MaxSize"/> different products drawn at random from the priced candidates.</summary>
 public sealed record ProductSelection : IValue
 {
-    public const int MaxSize = 4;
+    public const int MaxSize = 8;
 
     private ProductSelection(IReadOnlyList<ProductId> productIds)
     {

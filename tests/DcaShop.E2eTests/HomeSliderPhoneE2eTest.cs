@@ -65,13 +65,14 @@ public sealed class HomeSliderPhoneE2eTest : BaseE2eTest
     {
         var home = await OpenSliderAsync();
 
-        for (var press = 1; press <= 3; press++)
+        for (var press = 1; press <= 7; press++)
         {
+            Assert.True(await home.IsNextEnabledAsync(), $"\"Next\" can be pressed a {press}. time");
             await home.PressNextAsync();
             Assert.Equal(new[] { press }, await home.CardsInViewAsync(press));
         }
 
-        Assert.Equal(new[] { 3 }, await home.CardsInViewAsync(3));
+        Assert.Equal(new[] { 7 }, await home.CardsInViewAsync(7));
         Assert.True(await home.IsNextDisabledAsync(), "\"Next\" is disabled at the last card");
     }
 

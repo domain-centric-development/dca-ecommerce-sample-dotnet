@@ -1,5 +1,4 @@
-27cfb762523668b8bf99d890e838fa7185ca6f918c679e33a16daddba42093c3  tasks/product-slider/.story-digest
-44792341538e169463bd906644752a9520473420b000f229a91c5a451c97e7b9  tasks/product-slider/.tests-baseline
-59b852489a49e8fdbbd38a20fcb71643e277b424520edb9a2f06ed3250d1c8b5  tasks/product-slider/.verify/base-tree
-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  tasks/product-slider/.verify/journal.tsv
+32cab20e3246822b026b63a4268dd782823e2accbc6208d87f3fce3827812757  tasks/product-slider/.story-digest
+772b074535e4b8669a0d67884688a9057c10331ae6ad3cfe39930c5ebb314969  tasks/product-slider/.story-planned
+3ad5fbb7ab260ba5bd7684cca25d3c96fa3a0de0e961d882da2c298d3390e319  tasks/product-slider/.verify/journal.tsv
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  tasks/product-slider/.verify/tree-before-plan.txt
