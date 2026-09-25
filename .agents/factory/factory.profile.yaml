@@ -1,4 +1,4 @@
-contract: 7
+contract: 8
 # Stack profile — the only place in the pipeline that knows how this project builds and tests.
 # The gate and the pre-commit hook read it; a command that is not declared is skipped and named.
 # Architecture tests need a Debug build: ArchUnitNET drops Release async state machines.
@@ -37,3 +37,5 @@ contextMap: docs/architecture/context-map.md
 required: compile test test.integration architecture format
 format: dotnet format --verify-no-changes
 formatFix: dotnet format
+acceptance: pages
+run: dotnet run --project src/DcaShop.Web
