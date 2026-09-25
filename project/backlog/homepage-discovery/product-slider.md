@@ -16,8 +16,8 @@ can reach a product without going to the catalogue first.
 
 ## Acceptance criteria
 
-"On the desktop" is the end-user suite's default browser window; "on a phone" is a 393 px wide
-viewport, as in the shop's other phone checks.
+The sizes are those of the product description: "on the desktop" is size xl, the end-user suite's default browser
+window; "on a phone" is size s, as in the shop's other phone checks; m and l are the sizes between.
 
 ### Rule: Directly below the hero the homepage shows a slider headed "Discover products"
 
@@ -27,16 +27,16 @@ viewport, as in the shop's other phone checks.
 - Then a slider headed "Discover products" is shown directly below the hero
 - And it comes before the section "Why Shop With Us"
 
-### Rule: The slider holds up to four random products that have a price, drawn anew on every request
+### Rule: The slider holds up to eight random products that have a price, drawn anew on every request
 
-#### slider-holds-four-different-products
+#### slider-holds-eight-different-products
 - Given the shop has started and seeded its sample catalog
 - When the shopper opens the homepage
-- Then the slider holds 4 product cards
+- Then the slider holds 8 product cards
 - And each card shows a different product of the sample catalog
 
 #### products-are-drawn-anew-per-request
-- Given the shopper has opened the homepage and noted the 4 products in the slider
+- Given the shopper has opened the homepage and noted the 8 products in the slider
 - When they reload the homepage 10 times
 - Then at least one reload shows a different selection of products
 
@@ -62,21 +62,43 @@ viewport, as in the shop's other phone checks.
 - When they follow the link of a card
 - Then the product page of that card's product is shown
 
-### Rule: On the desktop the four cards stand side by side
+### Rule: Four cards are in view side by side on sizes xl and l, two on size m, one on size s
 
 #### desktop-shows-four-cards-side-by-side
 - Given the shop has started and seeded its sample catalog
 - When the shopper opens the homepage on the desktop
-- Then all 4 cards are in view side by side
-- And "Previous" and "Next" are both disabled
+- Then the first 4 cards are in view side by side and the other 4 are not
+- And "Previous" is disabled and "Next" is enabled
 
-### Rule: On a phone one card is in view; Previous and Next move by one card, by mouse or keyboard, and are disabled at the start and at the end
+#### size-l-shows-four-cards-side-by-side
+- Given the shop has started and seeded its sample catalog
+- When the shopper opens the homepage on size l
+- Then the first 4 cards are in view side by side and the other 4 are not
+
+#### size-m-shows-two-cards-side-by-side
+- Given the shop has started and seeded its sample catalog
+- When the shopper opens the homepage on size m
+- Then the first 2 cards are in view side by side and the other 6 are not
 
 #### phone-shows-one-card-at-a-time
 - Given the shop has started and seeded its sample catalog
 - When the shopper opens the homepage on a phone
 - Then only the first card is in view
 - And "Previous" is disabled
+
+### Rule: Previous and Next move by one card, by mouse or keyboard, and are disabled at the start and at the end
+
+#### desktop-next-moves-by-one-card
+- Given the shopper has opened the homepage on the desktop and the first 4 cards are in view
+- When they press "Next"
+- Then the second to the fifth card are in view and the first is not
+- And "Previous" is enabled
+
+#### desktop-next-is-disabled-at-the-last-card
+- Given the shopper has opened the homepage on the desktop
+- When they press "Next" four times
+- Then the fifth to the eighth card are in view
+- And "Next" is disabled
 
 #### next-brings-the-following-card-into-view
 - Given the shopper has opened the homepage on a phone and the first card is in view
@@ -95,8 +117,8 @@ viewport, as in the shop's other phone checks.
 
 #### next-is-disabled-at-the-last-card
 - Given the shopper has opened the homepage on a phone
-- When they press "Next" three times
-- Then the fourth card is in view
+- When they press "Next" seven times
+- Then the eighth card is in view
 - And "Next" is disabled
 
 #### slider-does-not-move-by-itself
@@ -113,13 +135,22 @@ viewport, as in the shop's other phone checks.
 - The slider in the REST API or the MCP server — page only.
 - The Java sample — it follows with its own story later.
 
+## Changed expectations
+
+- The slider holds up to 8 products; before, it held up to 4.
+- On the desktop the slider shows 4 of its 8 cards, "Next" is enabled and moves by one card; before, all its cards
+  were in view side by side and "Previous" and "Next" were both disabled.
+- On a small tablet (size m) the slider shows 2 cards side by side; before, it showed 4.
+- On a phone "Next" is disabled after seven presses, at the eighth card; before, after three, at the fourth.
+
 ## Assumptions
 
 - answered: Where does the slider live? — In `Product`; the homepage shows it the way it shows the mini basket, and Portal references no other context.
 - answered: Is the slider shown when no product has a price? — No, it is not shown. (Today's homepage has no slider, so this holds already and is not a criterion; the plan guards it.)
 - answered: Are out-of-stock products offered? — Yes, as long as they have a price.
-- answered: How many cards are in view at once? — 4 side by side on the desktop, 1 on a phone; Previous and Next move by one card.
+- answered: How many cards are in view at once? — First answered as 4 side by side on the desktop and 1 on a phone; corrected by product-slider-accept-1 (below).
 - answered: What happens at the ends? — "Next" is disabled at the last card, "Previous" at the first; paging stops at the start as it stops at the end.
-- answered: Fewer than 4 products with a price? — The slider shows those there are.
+- answered: Fewer than 8 products with a price? — The slider shows those there are.
 - answered: Where exactly? — Directly below the hero, before "Why Shop With Us".
 - answered: Does the browser test need the shared specification? — Yes: the browser-observable scenarios are in the specification's `scenarios.md` under `scenario.home.slider-*`, with an exception for the Java side (owner shop-owner, "the Java twin follows as its own story", review 2026-10-31). The two scenarios that need a catalogue other than the seeded one (a product without a price, only 2 priced products) are not shared scenarios.
+- answered: product-slider-accept-1 — the human, looking at the delivered slider: "Previous and Next make no sense when four are shown: make it eight and pageable. From about 760px four tiles do not look good any more — rather two." Confirmed as: 8 random products with a price (was 4), paged by Previous/Next one card at a time; visible at once 4 on xl and l, 2 on m, 1 on s (the sizes in the product description); Previous disabled at the start, Next at the end; no auto-play; everything else as the story says.
