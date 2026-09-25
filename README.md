@@ -266,6 +266,15 @@ stock from the Pricing and Inventory Open Host Services, which in turn fill them
 `ProductCreatedEvent`; confirming a checkout reduces stock. Cart and Checkout, and Checkout and Inventory, are
 partners over the trigger contracts they share.
 
+## What is built, and how it is delivered
+
+What the shop is and how it is built is decided in [`project/`](project/): the product
+([product.md](project/product.md) — surfaces, how it works, look and feel with the page sizes s, m, l
+and xl), the technical decisions ([tech.md](project/tech.md)), the designed domain
+([domain.md](project/domain.md)) and the backlog under `project/backlog/`. Stories are delivered by a
+gated pipeline under `.agents/factory/` — plan, test, build, tidy, judge, document — and a story with
+a page waits for a human's acceptance before it counts as delivered.
+
 ## Known limitations (by design)
 
 This is an architecture sample, not a production template. Three pieces are intentionally minimal:
