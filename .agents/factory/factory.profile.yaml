@@ -1,4 +1,4 @@
-contract: 5
+contract: 7
 # Stack profile — the only place in the pipeline that knows how this project builds and tests.
 # The gate and the pre-commit hook read it; a command that is not declared is skipped and named.
 # Architecture tests need a Debug build: ArchUnitNET drops Release async state machines.
@@ -9,6 +9,7 @@ compile: dotnet build
 test: dotnet test tests/DcaShop.UnitTests --logger trx
 test.integration: dotnet test tests/DcaShop.IntegrationTests --logger trx
 e2eTest: dotnet test tests/DcaShop.E2eTests --logger trx
+browser: playwright
 # The gate reads which tests actually ran from the runner's report; the .NET test
 # platform writes one only when asked (`--logger trx`), so it is asked above.
 filterFlag: --filter
@@ -19,11 +20,16 @@ architecture: dotnet test tests/DcaShop.ArchitectureTests
 # building blocks and the rule catalog this project consumes.
 knowledge: dca-knowledge
 
-carrier.build: ddd-modelling
+carrier.build: dca-modelling
+carrier.guard: dca-discipline
+carrier.glossary: ubiquitous-language
+carrier.domain: context-map
 carrier.test: e2e-testing
-review.domain: review-domain
-review.boundaries: review-boundaries
-review.craft: review-craft
+review.ddd: review-ddd
+review.hexagonal: review-hexagonal
+review.clean-code: review-clean-code
+reviews: dca
+review.dca: dca-review
 
 contextMap: docs/architecture/context-map.md
 # What must hold for any change (story-gate.py --change, the commit hook, CI). The end-user suite

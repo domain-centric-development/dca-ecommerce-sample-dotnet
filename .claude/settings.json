@@ -2,7 +2,24 @@
   "permissions": {
     "allow": [
       "Bash(python3 .agents/factory/story-gate.py:*)",
-      "Bash(dotnet:*)"
+      "Bash(dotnet:*)",
+      "Bash(bash .agents/factory/factory.sh status:*)",
+      "Bash(bash .agents/factory/factory.sh decisions:*)",
+      "Bash(bash .agents/factory/factory.sh backlog:*)",
+      "Bash(bash .agents/factory/factory.sh setup --check:*)",
+      "Bash(bash .agents/factory/factory.sh verify:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .agents/factory/story-gate.py --status --brief --session-start"
+          }
+        ]
+      }
     ]
   }
 }

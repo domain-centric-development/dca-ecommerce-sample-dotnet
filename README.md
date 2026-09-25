@@ -257,7 +257,7 @@ are not marked `Secure`.
 ## Context map
 
 See [docs/architecture/context-map.md](docs/architecture/context-map.md) (generated from the context
-attributes) and [docs/context-map.md](docs/context-map.md) (the hand-maintained strategic reading). Cart and Checkout each consume the Product
+attributes) and [project/domain.md](project/domain.md) (the designed, hand-maintained strategic reading). Cart and Checkout each consume the Product
 Catalog through an ACL; Checkout consumes the Cart's Api (ACL), conforms to its `ICartCompletionTrigger`
 contract; Cart's `CartContentsChangedEvent` leaves the captured session unchanged; the Product Catalog reads price and
 stock from the Pricing and Inventory Open Host Services, which in turn fill themselves from

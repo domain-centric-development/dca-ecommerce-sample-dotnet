@@ -10,7 +10,7 @@ namespace DcaShop.ArchitectureTests;
 /// The test regenerates the file on every run and fails if it was stale, so CI catches a context map that
 /// drifted from the declarations. The fix is always: commit the regenerated file. The strategic reading —
 /// relationship patterns and subdomain types, which no attribute carries — is hand-maintained in
-/// <c>docs/context-map.md</c> and is not touched here.
+/// <c>project/domain.md</c> and is not touched here.
 /// </para>
 /// </summary>
 public sealed class ContextMapDocumentationTest
