@@ -1,0 +1,186 @@
+diff --git a/src/DcaShop.Web/Views/Product/Catalog.cshtml b/src/DcaShop.Web/Views/Product/Catalog.cshtml
+index 36eb802..8ccc213 100644
+--- a/src/DcaShop.Web/Views/Product/Catalog.cshtml
++++ b/src/DcaShop.Web/Views/Product/Catalog.cshtml
+@@ -1,5 +1,5 @@
+ @model DcaShop.Product.Adapter.Incoming.Web.ProductCatalogPageViewModel
+-@{ ViewData["Title"] = "Products"; }
++@{ ViewData["Title"] = "Product Catalog"; }
+ <div class="breadcrumb" data-test="breadcrumb">
+ <a class="breadcrumb__link" href="/">Home</a>
+ <span class="breadcrumb__separator">/</span>
+diff --git a/tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs b/tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs
+new file mode 100644
+index 0000000..71e9787
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs
+@@ -0,0 +1,23 @@
++using DcaShop.E2eTests.Pages;
++
++namespace DcaShop.E2eTests;
++
++/// <summary>
++/// The catalogue page names itself in the browser tab the same way in both samples; the breadcrumb keeps its
++/// wording.
++/// </summary>
++public sealed class CatalogTitleE2eTest : BaseE2eTest
++{
++    public CatalogTitleE2eTest(BrowserFixture browser) : base(browser)
++    {
++    }
++
++    [E2eFact(DisplayName = "The catalogue page is titled \"Product Catalog\"")]
++    public async Task CatalogPageIsTitledProductCatalog()
++    {
++        var catalog = await ProductCatalogPage.NavigateToAsync(Page);
++
++        Assert.Equal("Product Catalog", await catalog.DocumentTitleAsync());
++        Assert.Equal("Home / Products", await catalog.BreadcrumbAsync());
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.E2eTests/Pages/ProductCatalogPage.cs b/tests/DcaShop.E2eTests/Pages/ProductCatalogPage.cs
+index 2e0342d..ceb17ce 100644
+--- a/tests/DcaShop.E2eTests/Pages/ProductCatalogPage.cs
++++ b/tests/DcaShop.E2eTests/Pages/ProductCatalogPage.cs
+@@ -10,6 +10,7 @@ public sealed class ProductCatalogPage : BasePage
+     private const string ProductCard = "product-card";
+     private const string ViewDetailsLink = "view-product";
+     private const string ProductTitle = "product-card-title";
++    private const string Breadcrumb = "breadcrumb";
+ 
+     private ProductCatalogPage(IPage page) : base(page)
+     {
+@@ -53,6 +54,14 @@ public sealed class ProductCatalogPage : BasePage
+ 
+     public Task<bool> HasProductsAsync() => ExistsAsync(ProductCard);
+ 
++    /// <summary>The document title, as the browser tab shows it.</summary>
++    public Task<string> DocumentTitleAsync() => Page.TitleAsync();
++
++    /// <summary>The breadcrumb trail as one line, segments separated by single spaces ("Home / Products").</summary>
++    public async Task<string> BreadcrumbAsync() =>
++        string.Join(' ', ((await Page.Locator($"[data-test='{Breadcrumb}']").TextContentAsync()) ?? string.Empty)
++            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
++
+     /// <summary>The product names as the catalog shows them, in page order.</summary>
+     public async Task<IReadOnlyList<string>> ProductTitlesAsync() =>
+         (await Page.Locator($"[data-test='{ProductTitle}']").AllTextContentsAsync()).Select(t => t.Trim()).ToList();
+diff --git a/tests/DcaShop.IntegrationTests/CatalogueTest.cs b/tests/DcaShop.IntegrationTests/CatalogueTest.cs
+new file mode 100644
+index 0000000..a655a42
+--- /dev/null
++++ b/tests/DcaShop.IntegrationTests/CatalogueTest.cs
+@@ -0,0 +1,111 @@
++using System.Net;
++using System.Text.RegularExpressions;
++
++using Microsoft.AspNetCore.Mvc.Testing;
++
++namespace DcaShop.IntegrationTests;
++
++/// <summary>
++/// The catalogue page with the seeded sample catalogue, through the real HTTP pipeline: the order of its cards, what a
++/// card shows, where a card leads and how the page names itself.
++/// </summary>
++public sealed class CatalogueTest : IClassFixture<WebApplicationFactory<Program>>
++{
++    private static readonly Regex CardTitle = new(@"data-test=""product-card-title"">([^<]*)<", RegexOptions.Compiled);
++    private static readonly Regex CardAction = new(@"<a\b[^>]*href=""([^""]+)""[^>]*data-test=""view-product"">([^<]*)</a>", RegexOptions.Compiled);
++
++    private readonly WebApplicationFactory<Program> _factory;
++
++    public CatalogueTest(WebApplicationFactory<Program> factory)
++    {
++        _factory = factory;
++    }
++
++    [Fact]
++    public async Task TheCardsAreInOrdinalOrderOfTheProductNameStartingWithTheEnamelPin()
++    {
++        var client = _factory.CreateClient();
++
++        var catalogue = await client.GetStringAsync("/products");
++
++        var titles = Cards(catalogue).Select(card => Text(card, CardTitle.ToString())).ToList();
++        Assert.Equal(titles.Order(StringComparer.Ordinal), titles);
++        Assert.Equal("\"Bounded Context\" Enamel Pin", titles[0]);
++    }
++
++    [Fact]
++    public async Task TheCardOfDomainDrivenDesignShowsItsNameDescriptionAndImage()
++    {
++        var client = _factory.CreateClient();
++
++        var catalogue = await client.GetStringAsync("/products");
++
++        var card = Cards(catalogue).Single(c => Text(c, CardTitle.ToString()) == "Domain-Driven Design");
++        Assert.Equal(
++            "The seminal work by Eric Evans that introduced the software industry to Domain-Driven Design. This essential "
++            + "guide teaches you how to tackle complexity in the heart of software by connecting implementation to an "
++            + "evolving model of the business domain.",
++            Text(card, @"class=""product-card__description"">([^<]*)</p>"));
++        var image = Regex.Match(card, @"<img\s+src=""([^""]+)""\s+alt=""([^""]*)""");
++        Assert.True(image.Success, "the card shows an image");
++        Assert.Equal("/images/products/ddd-book.webp", image.Groups[1].Value);
++        Assert.Equal("Domain-Driven Design", WebUtility.HtmlDecode(image.Groups[2].Value));
++        var served = await client.GetAsync(image.Groups[1].Value);
++        Assert.Equal(HttpStatusCode.OK, served.StatusCode);
++        Assert.StartsWith("image/", served.Content.Headers.ContentType?.MediaType, StringComparison.Ordinal);
++    }
++
++    [Fact]
++    public async Task EveryCardOffersViewDetailsLeadingToItsOwnProduct()
++    {
++        var client = _factory.CreateClient();
++
++        var catalogue = await client.GetStringAsync("/products");
++
++        var cards = Cards(catalogue);
++        Assert.NotEmpty(cards);
++        foreach (var card in cards)
++        {
++            var name = Text(card, CardTitle.ToString());
++            var action = CardAction.Match(card);
++            Assert.True(action.Success, $"the card of {name} offers a link");
++            Assert.Equal("View Details", WebUtility.HtmlDecode(action.Groups[2].Value).Trim());
++            var productPage = await client.GetStringAsync(action.Groups[1].Value);
++            Assert.Equal(name, Text(productPage, @"data-test=""product-detail-title"">([^<]*)</h1>"));
++        }
++    }
++
++    [Fact]
++    public async Task TheCatalogueIsTitledProductCatalogWithHeadingOurProductsBelowHomeProducts()
++    {
++        var client = _factory.CreateClient();
++
++        var catalogue = await client.GetStringAsync("/products");
++
++        Assert.Equal("Product Catalog", Text(catalogue, @"<title>([^<]*)</title>"));
++        Assert.Equal("Our Products", Text(catalogue, @"<h1>([^<]*)</h1>"));
++        var breadcrumb = Section(catalogue, "breadcrumb").Split("</div>")[0];
++        var parts = Regex.Matches(breadcrumb, @"<(a|span)\b[^>]*>([^<]*)</\1>")
++            .Select(m => WebUtility.HtmlDecode(m.Groups[2].Value).Trim());
++        Assert.Equal("Home / Products", string.Join(" ", parts));
++    }
++
++    /// <summary>The markup of each catalogue card, in page order.</summary>
++    private static List<string> Cards(string catalogue) =>
++        catalogue.Split("data-test=\"product-card\"").Skip(1).ToList();
++
++    /// <summary>The markup from the element carrying <paramref name="dataTest"/> to the end of the page.</summary>
++    private static string Section(string page, string dataTest)
++    {
++        var start = page.IndexOf($"data-test=\"{dataTest}\"", StringComparison.Ordinal);
++        Assert.True(start >= 0, $"the page has a {dataTest}");
++        return page[start..];
++    }
++
++    private static string Text(string markup, string pattern)
++    {
++        var match = Regex.Match(markup, pattern);
++        Assert.True(match.Success, $"the markup matches {pattern}");
++        return WebUtility.HtmlDecode(match.Groups[1].Value).Trim();
++    }
++}
+\ No newline at end of file

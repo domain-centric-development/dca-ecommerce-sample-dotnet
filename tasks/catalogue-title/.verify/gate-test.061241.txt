@@ -1,0 +1,13 @@
+gate:pass story — catalogue-title in context product with 1 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.0)
+gate:pass approved — story is approved
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:note decisions — no decision record for this story
+gate:pass tests-mapped — 1 test(s) mapped to 1 criterion(s)
+gate:pass tests-exist — DcaShop.E2eTests.CatalogTitleE2eTest#CatalogPageIsTitledProductCatalog found in tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs (catalogue-tab-reads-product-catalog, by a file named after the class)
+gate:pass compiles — `dotnet build` succeeded
+gate:pass tests-red — DcaShop.E2eTests.CatalogTitleE2eTest#CatalogPageIsTitledProductCatalog is red (catalogue-tab-reads-product-catalog, via `e2eTest:`, report by the display name declared in the code ('The catalogue page is titled "Product Catalog"'))
+gate:pass levels — every end-user test belongs to the happy path or a browser-only scenario
+gate:pass files-listed — tests.md lists the 2 file(s) the stage changed
+gate:pass tests-kept — no test that existed before this story changed what it expects
+gate:pass story catalogue-title stage test

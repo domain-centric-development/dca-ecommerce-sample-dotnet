@@ -1,0 +1,8 @@
+gate:pass story — catalogue-title in context product with 1 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.5)
+gate:pass approved — story is approved
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:pass decisions — catalogue-title-01 applied ('2 — drop the heading assertion from the browser test; the integration tests already assert "Our Products". No markup changes, the views stay as the Java templates are.' by Christoph Bloemer)
+gate:fail documented — tasks/catalogue-title/document.md: names things that do not exist: ../dca-sample-specification/scenarios.md, .verify/changed.txt — a documented path that does not resolve sends the next reader nowhere. Write every path as it resolves from the project root, not as a package- or namespace-relative shorthand.
+gate:pass architecture — `dotnet test tests/DcaShop.ArchitectureTests` succeeded
+gate:fail story catalogue-title stage document

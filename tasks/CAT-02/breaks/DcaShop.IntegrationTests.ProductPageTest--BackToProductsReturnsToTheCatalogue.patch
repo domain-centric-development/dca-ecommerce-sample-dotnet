@@ -1,0 +1,11 @@
+diff --git a/src/DcaShop.Web/Views/Product/Detail.cshtml b/src/DcaShop.Web/Views/Product/Detail.cshtml
+--- a/src/DcaShop.Web/Views/Product/Detail.cshtml
++++ b/src/DcaShop.Web/Views/Product/Detail.cshtml
+@@ -61,6 +61,6 @@
+ <button class="btn btn--accent btn--lg" type="submit" data-test="product-add-to-cart-button">Add to Cart</button>
+ </form>
+ }
+-<a class="btn btn--ghost" href="/products" data-test="product-back-link">Back to Products</a>
++<a class="btn btn--ghost" href="/" data-test="product-back-link">Back to Products</a>
+ </div>
+ </div>

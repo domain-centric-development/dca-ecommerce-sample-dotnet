@@ -1,0 +1,12 @@
+diff --git a/src/DcaShop.Web/Views/Product/Catalog.cshtml b/src/DcaShop.Web/Views/Product/Catalog.cshtml
+--- a/src/DcaShop.Web/Views/Product/Catalog.cshtml
++++ b/src/DcaShop.Web/Views/Product/Catalog.cshtml
+@@ -26,7 +26,7 @@
+ <h3 class="product-card__title" data-test="product-card-title">@product.Name</h3>
+ @if (!string.IsNullOrEmpty(product.Description))
+ {
+-<p class="product-card__description">@product.Description</p>
++<p class="product-card__description"></p>
+ }
+ <div class="product-card__price">@product.Price</div>
+ <div class="product-card__footer">

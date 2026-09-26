@@ -1,0 +1,10 @@
+gate:pass story — catalogue-title in context product with 1 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.5)
+gate:pass approved — story is approved
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:pass rounds — round 2 of at most 3
+gate:pass decisions — catalogue-title-01 applied ('2 — drop the heading assertion from the browser test; the integration tests already assert "Our Products". No markup changes, the views stay as the Java templates are.' by Christoph Bloemer)
+gate:pass documented — 0 document(s) updated, every claim resolves
+gate:pass architecture — `dotnet test tests/DcaShop.ArchitectureTests` succeeded
+gate:wait acceptance — catalogue-title-accept-1 waits for a human's look — answer it through /factory-decisions; the story holds the checkout until then
+gate:wait story catalogue-title stage document

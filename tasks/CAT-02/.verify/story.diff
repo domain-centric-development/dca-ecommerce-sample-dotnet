@@ -1,0 +1,569 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 82b7e91..a6603f3 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -44,7 +44,8 @@ dotnet test                              # everything
+ dotnet test tests/DcaShop.ArchitectureTests   # DCA rule catalog (Debug build required)
+ dotnet test tests/DcaShop.UnitTests --filter "FullyQualifiedName~ShoppingCart"
+ dotnet run --project src/DcaShop.Web     # http://localhost:5080
+-E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests   # Playwright; skipped without E2E_BASE_URL
++dotnet test tests/DcaShop.E2eTests                                       # Playwright; the suite starts the shop on a free port
++E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests   # the same, against a shop started elsewhere
+ docker compose --profile tools run --rm e2e                              # same suite, browsers from the image
+ docker compose up --build                                                # same shop in a container
+ docker compose run --rm test                                             # tests without a local SDK
+diff --git a/README.md b/README.md
+index efbeedf..5fd998e 100644
+--- a/README.md
++++ b/README.md
+@@ -50,11 +50,12 @@ works against the sibling `../dca-dotnet` checkout as well.
+ ## End-to-end tests
+ 
+ `tests/DcaShop.E2eTests` drives the shop through a real browser (Playwright, page objects, `data-test`
+-selectors). They are skipped unless the shop's address is given:
++selectors). The suite starts the shop itself, once per run, in the test process and on a free port — nothing has to
++run beforehand:
+ 
+ ```bash
+-dotnet run --project src/DcaShop.Web &                      # or any other running instance
+-E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests
++dotnet test tests/DcaShop.E2eTests
++E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests   # against a shop started elsewhere
+ ```
+ 
+ `E2E_BROWSER` (`chromium` | `firefox` | `webkit`) and `E2E_HEADLESS=false` are honoured. Because the markup is the
+diff --git a/project/backlog/browse-catalogue/CAT-01.md b/project/backlog/browse-catalogue/CAT-01.md
+index b81c572..97017e8 100644
+--- a/project/backlog/browse-catalogue/CAT-01.md
++++ b/project/backlog/browse-catalogue/CAT-01.md
+@@ -4,7 +4,7 @@ epic: browse-catalogue
+ status: adopted
+ context: product
+ title: The catalogue lists the range
+-depends_on: []
++depends_on: [catalogue-title]
+ ---
+ 
+ # The catalogue lists the range
+diff --git a/project/backlog/browse-catalogue/catalogue-title.md b/project/backlog/browse-catalogue/catalogue-title.md
+new file mode 100644
+index 0000000..1edbe75
+--- /dev/null
++++ b/project/backlog/browse-catalogue/catalogue-title.md
+@@ -0,0 +1,32 @@
++---
++id: catalogue-title
++epic: browse-catalogue
++status: approved
++context: product
++title: The catalogue page is titled "Product Catalog"
++depends_on: []
++---
++
++# The catalogue page is titled "Product Catalog"
++
++## Story
++
++As a visitor I want the catalogue page's title to read "Product Catalog" so that the tab names the page the
++same way in both shops.
++
++## Acceptance criteria
++
++### Rule: The catalogue page carries the catalogue's name as its title
++
++#### catalogue-tab-reads-product-catalog (happy path)
++- Given the seeded sample catalogue
++- When a visitor opens the catalogue page
++- Then the page title is "Product Catalog"
++
++## Changed expectations
++
++- The catalogue page's title reads "Products" now and "Product Catalog" after.
++
++## Assumptions
++
++- answered: the heading "Our Products" and the breadcrumb "Home / Products" stay as they are — CAT-01-01.
+diff --git a/src/DcaShop.Web/Views/Product/Catalog.cshtml b/src/DcaShop.Web/Views/Product/Catalog.cshtml
+index 36eb802..8ccc213 100644
+--- a/src/DcaShop.Web/Views/Product/Catalog.cshtml
++++ b/src/DcaShop.Web/Views/Product/Catalog.cshtml
+@@ -1,5 +1,5 @@
+ @model DcaShop.Product.Adapter.Incoming.Web.ProductCatalogPageViewModel
+-@{ ViewData["Title"] = "Products"; }
++@{ ViewData["Title"] = "Product Catalog"; }
+ <div class="breadcrumb" data-test="breadcrumb">
+ <a class="breadcrumb__link" href="/">Home</a>
+ <span class="breadcrumb__separator">/</span>
+diff --git a/tests/DcaShop.E2eTests/BaseE2eTest.cs b/tests/DcaShop.E2eTests/BaseE2eTest.cs
+index de5df50..ed2ec07 100644
+--- a/tests/DcaShop.E2eTests/BaseE2eTest.cs
++++ b/tests/DcaShop.E2eTests/BaseE2eTest.cs
+@@ -5,13 +5,13 @@ namespace DcaShop.E2eTests;
+ /// <summary>Browser per test class, fresh context + page per test — the shape of the Java sample's <c>BaseE2ETest</c>.</summary>
+ public sealed class BrowserFixture : IAsyncLifetime
+ {
+-    public static readonly string BaseUrl = Environment.GetEnvironmentVariable("E2E_BASE_URL") ?? "http://localhost:5080";
++    public static string BaseUrl => ShopUnderTest.BaseUrl;
+     private static readonly string BrowserType = Environment.GetEnvironmentVariable("E2E_BROWSER") ?? "chromium";
+     private static readonly bool Headless = !string.Equals(Environment.GetEnvironmentVariable("E2E_HEADLESS"), "false", StringComparison.OrdinalIgnoreCase);
+ 
+     private IPlaywright? _playwright;
+ 
+-    public IBrowser Browser => _browser ?? throw new InvalidOperationException("Browser fixture not initialised — is E2E_BASE_URL set?");
++    public IBrowser Browser => _browser ?? throw new InvalidOperationException("Browser fixture not initialised");
+ 
+     private IBrowser? _browser;
+ 
+diff --git a/tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs b/tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs
+new file mode 100644
+index 0000000..21695ae
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs
+@@ -0,0 +1,24 @@
++using DcaShop.E2eTests.Pages;
++
++namespace DcaShop.E2eTests;
++
++/// <summary>
++/// The catalogue page names itself in the browser tab the same way in both samples; heading and breadcrumb keep
++/// their wording.
++/// </summary>
++public sealed class CatalogTitleE2eTest : BaseE2eTest
++{
++    public CatalogTitleE2eTest(BrowserFixture browser) : base(browser)
++    {
++    }
++
++    [E2eFact(DisplayName = "The catalogue page is titled \"Product Catalog\"")]
++    public async Task CatalogPageIsTitledProductCatalog()
++    {
++        var catalog = await ProductCatalogPage.NavigateToAsync(Page);
++
++        Assert.Equal("Product Catalog", await catalog.DocumentTitleAsync());
++        Assert.Equal("Our Products", await catalog.HeadingAsync());
++        Assert.Equal("Home / Products", await catalog.BreadcrumbAsync());
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.E2eTests/DcaShop.E2eTests.csproj b/tests/DcaShop.E2eTests/DcaShop.E2eTests.csproj
+index ada3084..e25eccc 100644
+--- a/tests/DcaShop.E2eTests/DcaShop.E2eTests.csproj
++++ b/tests/DcaShop.E2eTests/DcaShop.E2eTests.csproj
+@@ -3,5 +3,8 @@
+     <!-- Same Playwright release as the Java sample's suite, so both drive the same browser builds. -->
+     <PackageReference Include="Microsoft.Playwright" Version="1.62.0" />
+     <PackageReference Include="WireMock.Net" Version="2.18.0" />
++    <!-- the suite starts the shop itself, in the test process, on a free port -->
++    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
++    <ProjectReference Include="../../src/DcaShop.Web/DcaShop.Web.csproj" />
+   </ItemGroup>
+ </Project>
+diff --git a/tests/DcaShop.E2eTests/E2eFactAttribute.cs b/tests/DcaShop.E2eTests/E2eFactAttribute.cs
+index f23bcb6..7f78f1e 100644
+--- a/tests/DcaShop.E2eTests/E2eFactAttribute.cs
++++ b/tests/DcaShop.E2eTests/E2eFactAttribute.cs
+@@ -1,18 +1,11 @@
+ namespace DcaShop.E2eTests;
+ 
+ /// <summary>
+-/// E2E tests drive a running shop through a real browser, so they only run when <c>E2E_BASE_URL</c> is set
+-/// (e.g. <c>E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests</c>); otherwise they are skipped.
++/// An E2E test. It runs against the shop the suite starts itself (<see cref="ShopUnderTest"/>), or against the one
++/// <c>E2E_BASE_URL</c> names.
+ /// </summary>
+ public sealed class E2eFactAttribute : FactAttribute
+ {
+-    public E2eFactAttribute()
+-    {
+-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("E2E_BASE_URL")))
+-        {
+-            Skip = "set E2E_BASE_URL to the running shop to run E2E tests";
+-        }
+-    }
+ }
+ 
+ /// <summary>
+@@ -27,15 +20,11 @@ public sealed class EmbeddedModeFactAttribute : FactAttribute
+         var shopRunsEmbedded = string.Equals(
+             Environment.GetEnvironmentVariable("E2E_EMBEDDED"), "true", StringComparison.OrdinalIgnoreCase);
+ 
+-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("E2E_BASE_URL")))
+-        {
+-            Skip = "set E2E_BASE_URL to the running shop to run E2E tests";
+-        }
+-        else if (embedded && !shopRunsEmbedded)
++        if (embedded && !shopRunsEmbedded)
+         {
+             Skip = "needs a shop started with Jwt__SameSite=None Jwt__SecureCookies=true behind TLS (E2E_EMBEDDED=true)";
+         }
+-        else if (embedded && !Environment.GetEnvironmentVariable("E2E_BASE_URL")!.Contains("localhost", StringComparison.Ordinal))
++        else if (embedded && !ShopUnderTest.BaseUrl.Contains("localhost", StringComparison.Ordinal))
+         {
+             Skip = "the cross-site case pairs localhost with 127.0.0.1; point E2E_BASE_URL at localhost to run it";
+         }
+diff --git a/tests/DcaShop.E2eTests/Pages/ProductCatalogPage.cs b/tests/DcaShop.E2eTests/Pages/ProductCatalogPage.cs
+index 6dd1adc..6c6a56a 100644
+--- a/tests/DcaShop.E2eTests/Pages/ProductCatalogPage.cs
++++ b/tests/DcaShop.E2eTests/Pages/ProductCatalogPage.cs
+@@ -1,3 +1,5 @@
++using System.Text.RegularExpressions;
++
+ using Microsoft.Playwright;
+ 
+ namespace DcaShop.E2eTests.Pages;
+@@ -8,6 +10,7 @@ public sealed class ProductCatalogPage : BasePage
+     private const string ProductCard = "product-card";
+     private const string ViewDetailsLink = "view-product";
+     private const string ProductTitle = "product-card-title";
++    private const string Breadcrumb = "breadcrumb";
+ 
+     private ProductCatalogPage(IPage page) : base(page)
+     {
+@@ -39,8 +42,30 @@ public sealed class ProductCatalogPage : BasePage
+         return await ProductDetailPage.OpenAsync(Page);
+     }
+ 
++    /// <summary>Follows "View Details" on the card whose title is <paramref name="name"/>.</summary>
++    public async Task<ProductDetailPage> ViewProductAsync(string name)
++    {
++        await Page.Locator($"[data-test='{ProductCard}']")
++            .Filter(new LocatorFilterOptions { Has = Page.Locator($"[data-test='{ProductTitle}']", new PageLocatorOptions { HasTextRegex = new Regex($"^\\s*{Regex.Escape(name)}\\s*$") }) })
++            .Locator($"[data-test='{ViewDetailsLink}']")
++            .ClickAsync();
++        return await ProductDetailPage.OpenAsync(Page);
++    }
++
+     public Task<bool> HasProductsAsync() => ExistsAsync(ProductCard);
+ 
++    /// <summary>The document title, as the browser tab shows it.</summary>
++    public Task<string> DocumentTitleAsync() => Page.TitleAsync();
++
++    /// <summary>The page's main heading.</summary>
++    public async Task<string> HeadingAsync() =>
++        (await Page.GetByRole(AriaRole.Heading, new PageGetByRoleOptions { Level = 1 }).InnerTextAsync()).Trim();
++
++    /// <summary>The breadcrumb trail as one line, segments separated by single spaces ("Home / Products").</summary>
++    public async Task<string> BreadcrumbAsync() =>
++        string.Join(' ', ((await Page.Locator($"[data-test='{Breadcrumb}']").TextContentAsync()) ?? string.Empty)
++            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
++
+     /// <summary>The product names as the catalog shows them, in page order.</summary>
+     public async Task<IReadOnlyList<string>> ProductTitlesAsync() =>
+         (await Page.Locator($"[data-test='{ProductTitle}']").AllTextContentsAsync()).Select(t => t.Trim()).ToList();
+diff --git a/tests/DcaShop.E2eTests/ProductPageE2eTest.cs b/tests/DcaShop.E2eTests/ProductPageE2eTest.cs
+new file mode 100644
+index 0000000..6aebcf1
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/ProductPageE2eTest.cs
+@@ -0,0 +1,22 @@
++using DcaShop.E2eTests.Pages;
++
++namespace DcaShop.E2eTests;
++
++/// <summary>The product page as a visitor reaches it: from the product's card in the catalogue.</summary>
++public sealed class ProductPageE2eTest : BaseE2eTest
++{
++    public ProductPageE2eTest(BrowserFixture browser) : base(browser)
++    {
++    }
++
++    [E2eFact(DisplayName = "View Details on a catalogue card opens that product's page")]
++    public async Task ViewDetailsOnACatalogueCardOpensThatProductsPage()
++    {
++        var catalog = await ProductCatalogPage.NavigateToAsync(Page);
++
++        var product = await catalog.ViewProductAsync("Domain-Driven Design");
++
++        Assert.Matches("^/products/[0-9a-f-]{36}$", product.ShownPath);
++        Assert.Equal("Domain-Driven Design", await product.TitleAsync());
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.E2eTests/ShopUnderTest.cs b/tests/DcaShop.E2eTests/ShopUnderTest.cs
+new file mode 100644
+index 0000000..737bab2
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/ShopUnderTest.cs
+@@ -0,0 +1,38 @@
++using Microsoft.AspNetCore.Hosting.Server;
++using Microsoft.AspNetCore.Hosting.Server.Features;
++using Microsoft.AspNetCore.Mvc.Testing;
++using Microsoft.Extensions.DependencyInjection;
++
++namespace DcaShop.E2eTests;
++
++/// <summary>
++/// The shop the browser suite drives: started once per test run, in this process, on a free port. With
++/// <c>E2E_BASE_URL</c> the suite drives a shop started elsewhere instead; without it, nothing has to run
++/// beforehand and every dependency the shop needs starts with it.
++/// </summary>
++public static class ShopUnderTest
++{
++    private static readonly Lazy<string> Url = new(Start, LazyThreadSafetyMode.ExecutionAndPublication);
++
++    public static string BaseUrl => Url.Value;
++
++    /// <summary>Whether the suite drives a shop started elsewhere, named by <c>E2E_BASE_URL</c>.</summary>
++    public static bool StartedElsewhere => !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("E2E_BASE_URL"));
++
++    private static string Start()
++    {
++        if (StartedElsewhere)
++        {
++            return Environment.GetEnvironmentVariable("E2E_BASE_URL")!.TrimEnd('/');
++        }
++
++        var factory = new WebApplicationFactory<Program>();
++        factory.UseKestrel(0);
++        factory.StartServer();
++        AppDomain.CurrentDomain.ProcessExit += (_, _) => factory.Dispose();
++
++        var address = factory.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
++        // the port Kestrel chose, on the host name the embedded case pairs with 127.0.0.1
++        return $"http://localhost:{new Uri(address).Port}";
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.IntegrationTests/CatalogueTest.cs b/tests/DcaShop.IntegrationTests/CatalogueTest.cs
+new file mode 100644
+index 0000000..a655a42
+--- /dev/null
++++ b/tests/DcaShop.IntegrationTests/CatalogueTest.cs
+@@ -0,0 +1,111 @@
++using System.Net;
++using System.Text.RegularExpressions;
++
++using Microsoft.AspNetCore.Mvc.Testing;
++
++namespace DcaShop.IntegrationTests;
++
++/// <summary>
++/// The catalogue page with the seeded sample catalogue, through the real HTTP pipeline: the order of its cards, what a
++/// card shows, where a card leads and how the page names itself.
++/// </summary>
++public sealed class CatalogueTest : IClassFixture<WebApplicationFactory<Program>>
++{
++    private static readonly Regex CardTitle = new(@"data-test=""product-card-title"">([^<]*)<", RegexOptions.Compiled);
++    private static readonly Regex CardAction = new(@"<a\b[^>]*href=""([^""]+)""[^>]*data-test=""view-product"">([^<]*)</a>", RegexOptions.Compiled);
++
++    private readonly WebApplicationFactory<Program> _factory;
++
++    public CatalogueTest(WebApplicationFactory<Program> factory)
++    {
++        _factory = factory;
++    }
++
++    [Fact]
++    public async Task TheCardsAreInOrdinalOrderOfTheProductNameStartingWithTheEnamelPin()
++    {
++        var client = _factory.CreateClient();
++
++        var catalogue = await client.GetStringAsync("/products");
++
++        var titles = Cards(catalogue).Select(card => Text(card, CardTitle.ToString())).ToList();
++        Assert.Equal(titles.Order(StringComparer.Ordinal), titles);
++        Assert.Equal("\"Bounded Context\" Enamel Pin", titles[0]);
++    }
++
++    [Fact]
++    public async Task TheCardOfDomainDrivenDesignShowsItsNameDescriptionAndImage()
++    {
++        var client = _factory.CreateClient();
++
++        var catalogue = await client.GetStringAsync("/products");
++
++        var card = Cards(catalogue).Single(c => Text(c, CardTitle.ToString()) == "Domain-Driven Design");
++        Assert.Equal(
++            "The seminal work by Eric Evans that introduced the software industry to Domain-Driven Design. This essential "
++            + "guide teaches you how to tackle complexity in the heart of software by connecting implementation to an "
++            + "evolving model of the business domain.",
++            Text(card, @"class=""product-card__description"">([^<]*)</p>"));
++        var image = Regex.Match(card, @"<img\s+src=""([^""]+)""\s+alt=""([^""]*)""");
++        Assert.True(image.Success, "the card shows an image");
++        Assert.Equal("/images/products/ddd-book.webp", image.Groups[1].Value);
++        Assert.Equal("Domain-Driven Design", WebUtility.HtmlDecode(image.Groups[2].Value));
++        var served = await client.GetAsync(image.Groups[1].Value);
++        Assert.Equal(HttpStatusCode.OK, served.StatusCode);
++        Assert.StartsWith("image/", served.Content.Headers.ContentType?.MediaType, StringComparison.Ordinal);
++    }
++
++    [Fact]
++    public async Task EveryCardOffersViewDetailsLeadingToItsOwnProduct()
++    {
++        var client = _factory.CreateClient();
++
++        var catalogue = await client.GetStringAsync("/products");
++
++        var cards = Cards(catalogue);
++        Assert.NotEmpty(cards);
++        foreach (var card in cards)
++        {
++            var name = Text(card, CardTitle.ToString());
++            var action = CardAction.Match(card);
++            Assert.True(action.Success, $"the card of {name} offers a link");
++            Assert.Equal("View Details", WebUtility.HtmlDecode(action.Groups[2].Value).Trim());
++            var productPage = await client.GetStringAsync(action.Groups[1].Value);
++            Assert.Equal(name, Text(productPage, @"data-test=""product-detail-title"">([^<]*)</h1>"));
++        }
++    }
++
++    [Fact]
++    public async Task TheCatalogueIsTitledProductCatalogWithHeadingOurProductsBelowHomeProducts()
++    {
++        var client = _factory.CreateClient();
++
++        var catalogue = await client.GetStringAsync("/products");
++
++        Assert.Equal("Product Catalog", Text(catalogue, @"<title>([^<]*)</title>"));
++        Assert.Equal("Our Products", Text(catalogue, @"<h1>([^<]*)</h1>"));
++        var breadcrumb = Section(catalogue, "breadcrumb").Split("</div>")[0];
++        var parts = Regex.Matches(breadcrumb, @"<(a|span)\b[^>]*>([^<]*)</\1>")
++            .Select(m => WebUtility.HtmlDecode(m.Groups[2].Value).Trim());
++        Assert.Equal("Home / Products", string.Join(" ", parts));
++    }
++
++    /// <summary>The markup of each catalogue card, in page order.</summary>
++    private static List<string> Cards(string catalogue) =>
++        catalogue.Split("data-test=\"product-card\"").Skip(1).ToList();
++
++    /// <summary>The markup from the element carrying <paramref name="dataTest"/> to the end of the page.</summary>
++    private static string Section(string page, string dataTest)
++    {
++        var start = page.IndexOf($"data-test=\"{dataTest}\"", StringComparison.Ordinal);
++        Assert.True(start >= 0, $"the page has a {dataTest}");
++        return page[start..];
++    }
++
++    private static string Text(string markup, string pattern)
++    {
++        var match = Regex.Match(markup, pattern);
++        Assert.True(match.Success, $"the markup matches {pattern}");
++        return WebUtility.HtmlDecode(match.Groups[1].Value).Trim();
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.IntegrationTests/ProductPageTest.cs b/tests/DcaShop.IntegrationTests/ProductPageTest.cs
+new file mode 100644
+index 0000000..288f397
+--- /dev/null
++++ b/tests/DcaShop.IntegrationTests/ProductPageTest.cs
+@@ -0,0 +1,118 @@
++using System.Net;
++using System.Text.RegularExpressions;
++
++using Microsoft.AspNetCore.Mvc.Testing;
++
++namespace DcaShop.IntegrationTests;
++
++/// <summary>
++/// The product page of a seeded product, through the real HTTP pipeline: what it shows about the product, how it
++/// names itself and where it leads back to. The product is found the way a visitor finds it, on its catalogue card.
++/// </summary>
++public sealed class ProductPageTest : IClassFixture<WebApplicationFactory<Program>>
++{
++    private static readonly Regex CardLink = new(@"href=""(/products/[0-9a-f-]{36})""\s+data-test=""view-product""", RegexOptions.Compiled);
++    private static readonly Regex CardTitle = new(@"data-test=""product-card-title"">([^<]*)<", RegexOptions.Compiled);
++
++    private readonly WebApplicationFactory<Program> _factory;
++
++    public ProductPageTest(WebApplicationFactory<Program> factory)
++    {
++        _factory = factory;
++    }
++
++    [Fact]
++    public async Task TheProductPageShowsTheImageTheDescriptionAndTheCategory()
++    {
++        var client = _factory.CreateClient();
++
++        var page = await client.GetStringAsync(await ProductPathAsync(client, "Domain-Driven Design"));
++
++        var detail = Section(page, "product-detail");
++        var image = Regex.Match(detail, @"<img\s+src=""([^""]+)""\s+alt=""([^""]*)""");
++        Assert.True(image.Success, "the page shows an image");
++        Assert.Equal("/images/products/ddd-book.webp", image.Groups[1].Value);
++        Assert.Equal("Domain-Driven Design", WebUtility.HtmlDecode(image.Groups[2].Value));
++        var served = await client.GetAsync(image.Groups[1].Value);
++        Assert.Equal(HttpStatusCode.OK, served.StatusCode);
++        Assert.StartsWith("image/", served.Content.Headers.ContentType?.MediaType, StringComparison.Ordinal);
++        Assert.Equal(
++            "The seminal work by Eric Evans that introduced the software industry to Domain-Driven Design. This essential "
++            + "guide teaches you how to tackle complexity in the heart of software by connecting implementation to an "
++            + "evolving model of the business domain.",
++            Text(detail, @"class=""product-detail__description""><p>([^<]*)</p>"));
++        Assert.Equal("Books", MetaValue(detail, "Category"));
++    }
++
++    [Fact]
++    public async Task TheBrowserTabTitleIsTheProductName()
++    {
++        var client = _factory.CreateClient();
++
++        var page = await client.GetStringAsync(await ProductPathAsync(client, "Clean Architecture"));
++
++        Assert.Equal("Clean Architecture", Text(page, @"<title>([^<]*)</title>"));
++    }
++
++    [Fact]
++    public async Task TheBreadcrumbLeadsFromHomeOverProductsToTheProduct()
++    {
++        var client = _factory.CreateClient();
++
++        var page = await client.GetStringAsync(await ProductPathAsync(client, "Clean Architecture"));
++
++        var breadcrumb = Section(page, "breadcrumb").Split("</div>")[0];
++        var parts = Regex.Matches(breadcrumb, @"<(a|span)\b[^>]*>([^<]*)</\1>")
++            .Select(m => WebUtility.HtmlDecode(m.Groups[2].Value).Trim());
++        Assert.Equal("Home / Products / Clean Architecture", string.Join(" ", parts));
++        Assert.Equal("/", LinkTarget(breadcrumb, "Home"));
++        Assert.Equal("/products", LinkTarget(breadcrumb, "Products"));
++        Assert.Contains("<h1>Our Products</h1>", await client.GetStringAsync(LinkTarget(breadcrumb, "Products")), StringComparison.Ordinal);
++    }
++
++    [Fact]
++    public async Task BackToProductsReturnsToTheCatalogue()
++    {
++        var client = _factory.CreateClient();
++        var page = await client.GetStringAsync(await ProductPathAsync(client, "Team Topologies"));
++        var back = Regex.Match(page, @"<a\b[^>]*href=""([^""]+)""[^>]*data-test=""product-back-link"">([^<]*)</a>");
++        Assert.True(back.Success, "the page offers a way back");
++        Assert.Equal("Back to Products", back.Groups[2].Value);
++
++        var followed = await client.GetStringAsync(back.Groups[1].Value);
++
++        Assert.Contains("data-test=\"product-grid\"", followed, StringComparison.Ordinal);
++        Assert.Equal("Our Products", Text(followed, @"<h1>([^<]*)</h1>"));
++    }
++
++    /// <summary>The "View Details" target of the catalogue card titled <paramref name="name"/>.</summary>
++    private static async Task<string> ProductPathAsync(HttpClient client, string name)
++    {
++        var catalogue = await client.GetStringAsync("/products");
++        var card = catalogue.Split("data-test=\"product-card\"")
++            .Skip(1)
++            .Single(c => CardTitle.Match(c) is { Success: true } t && WebUtility.HtmlDecode(t.Groups[1].Value).Trim() == name);
++        return CardLink.Match(card).Groups[1].Value;
++    }
++
++    /// <summary>The markup from the element carrying <paramref name="dataTest"/> to the end of the page.</summary>
++    private static string Section(string page, string dataTest)
++    {
++        var start = page.IndexOf($"data-test=\"{dataTest}\"", StringComparison.Ordinal);
++        Assert.True(start >= 0, $"the page has a {dataTest}");
++        return page[start..];
++    }
++
++    private static string Text(string markup, string pattern)
++    {
++        var match = Regex.Match(markup, pattern);
++        Assert.True(match.Success, $"the markup matches {pattern}");
++        return WebUtility.HtmlDecode(match.Groups[1].Value).Trim();
++    }
++
++    private static string MetaValue(string detail, string label) =>
++        Text(detail, $@"class=""product-detail__meta-label"">{Regex.Escape(label)}</span><span class=""product-detail__meta-value"">([^<]*)</span>");
++
++    private static string LinkTarget(string markup, string text) =>
++        Text(markup, $@"<a\b[^>]*href=""([^""]+)""[^>]*>{Regex.Escape(text)}</a>");
++}
+\ No newline at end of file

@@ -1,0 +1,19 @@
+gate:pass story — catalogue-title in context product with 1 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.4)
+gate:pass approved — story is approved
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:pass rounds — round 3 of at most 3
+gate:pass decisions — catalogue-title-01 applied ('2 — drop the heading assertion from the browser test; the integration tests already assert "Our Products". No markup changes, the views stay as the Java templates are.' by Christoph Bloemer)
+gate:pass tests-mapped — 1 test(s) mapped to 1 criterion(s)
+gate:pass tests-exist — DcaShop.E2eTests.CatalogTitleE2eTest#CatalogPageIsTitledProductCatalog found in tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs (catalogue-tab-reads-product-catalog, by a file named after the class)
+gate:pass compiles — `dotnet build` succeeded
+gate:pass tests-green — DcaShop.E2eTests.CatalogTitleE2eTest#CatalogPageIsTitledProductCatalog is green (catalogue-tab-reads-product-catalog, via `e2eTest:`, report by the display name declared in the code ('The catalogue page is titled "Product Catalog"'))
+gate:fail red-proof — DcaShop.E2eTests.CatalogTitleE2eTest#CatalogPageIsTitledProductCatalog (tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs) changed after the test stage saw it fail — the red proof is about the earlier version, so its green now proves nothing. The test stage runs again and records it red as it is; a change of what it expects is a human's decision.
+gate:pass suite — `dotnet test tests/DcaShop.IntegrationTests --logger trx` (test.integration) ran 64 case(s), none failed
+gate:pass suite — `dotnet test tests/DcaShop.UnitTests --logger trx` (test) ran 156 case(s), none failed
+gate:note files-listed — listed but not changed by this stage: src/DcaShop.Web/Views/Product/Catalog.cshtml, tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs, tests/DcaShop.E2eTests/Pages/ProductCatalogPage.cs
+gate:pass files-listed — build.md lists the 0 file(s) the stage changed
+gate:pass tests-kept — no test that existed before this story changed what it expects
+gate:pass architecture — `dotnet test tests/DcaShop.ArchitectureTests` succeeded
+gate:pass format — `dotnet format --verify-no-changes` succeeded
+gate:fail story catalogue-title stage build

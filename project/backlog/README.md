@@ -16,3 +16,10 @@ context is not on the designed map (`project/domain.md`), or which is still `sta
 This shop was built by porting the Java sample stage by stage; that work is recorded in the porting
 log and the work packages, not as stories. Nothing is migrated into this folder — the contract
 applies to **new** stories, the same brownfield rule the pipeline states for any project it enters.
+
+What the shop does today comes in as **adopted** stories (`status: adopted`) from the shared specification's
+replay backlog: the pipeline maps each scenario to a test that exists here and is green, writes a
+characterization test where none does — shown to work by a break that turns it red — and a fresh judge
+reads every test against its scenario. Adoption is incremental, epic by epic as new work needs it.
+`browse-catalogue` is the first — CAT-01 and CAT-02 adopted, and `catalogue-title`, the change that brought
+the catalogue's title in line with the Java shop, which the adoption found.

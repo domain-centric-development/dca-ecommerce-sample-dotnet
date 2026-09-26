@@ -1,0 +1,4 @@
+modified	src/DcaShop.Web/Views/Product/Catalog.cshtml
+added	tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs
+modified	tests/DcaShop.E2eTests/Pages/ProductCatalogPage.cs
+added	tests/DcaShop.IntegrationTests/CatalogueTest.cs

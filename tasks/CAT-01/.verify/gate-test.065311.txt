@@ -1,0 +1,23 @@
+gate:pass story — CAT-01 in context product with 5 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.4)
+gate:pass approved — story is adopted — it describes behaviour the project already has; adopted, never built
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:pass rounds — round 2 of at most 3
+gate:pass decisions — CAT-01-01 applied ('2 — the code is wrong. The Java shop renders the catalogue\'s title "Product Catalog" (ProductCatalogPageViewModel); the .NET shop is brought in line by a change story of its own, catalogue-title, which CAT-01 depends on. CAT-01 stays adopted and is adopted once that story is delivered.' by Christoph Bloemer)
+gate:pass decisions — CAT-01-02 applied ("a — accepted: the change came from a commit outside this story (the browser suite now starts the shop itself); the story's own tests pass on it." by Christoph Bloemer)
+gate:pass tests-mapped — 5 test(s) mapped to 5 criterion(s)
+gate:pass tests-exist — DcaShop.IntegrationTests.CatalogueTest#EveryCardOffersViewDetailsLeadingToItsOwnProduct found in tests/DcaShop.IntegrationTests/CatalogueTest.cs (card-leads-to-the-product, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.CatalogueTest#TheCardOfDomainDrivenDesignShowsItsNameDescriptionAndImage found in tests/DcaShop.IntegrationTests/CatalogueTest.cs (card-shows-name-description-and-image, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.CatalogueTest#TheCardsAreInOrdinalOrderOfTheProductNameStartingWithTheEnamelPin found in tests/DcaShop.IntegrationTests/CatalogueTest.cs (catalogue-is-in-name-order, by a file named after the class)
+gate:pass tests-exist — DcaShop.E2eTests.SeededCatalogE2eTest#CatalogListsTheSeededProductsInNameOrder found in tests/DcaShop.E2eTests/SeededCatalogE2eTest.cs (catalogue-lists-the-seeded-range, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.CatalogueTest#TheCatalogueIsTitledProductCatalogWithHeadingOurProductsBelowHomeProducts found in tests/DcaShop.IntegrationTests/CatalogueTest.cs (catalogue-page-heading, by a file named after the class)
+gate:pass compiles — `dotnet build` succeeded
+gate:pass tests-green — DcaShop.IntegrationTests.CatalogueTest#EveryCardOffersViewDetailsLeadingToItsOwnProduct passes — a journey guards what is delivered (card-leads-to-the-product)
+gate:pass tests-green — DcaShop.IntegrationTests.CatalogueTest#TheCardOfDomainDrivenDesignShowsItsNameDescriptionAndImage passes — a journey guards what is delivered (card-shows-name-description-and-image)
+gate:pass tests-green — DcaShop.IntegrationTests.CatalogueTest#TheCardsAreInOrdinalOrderOfTheProductNameStartingWithTheEnamelPin passes — a journey guards what is delivered (catalogue-is-in-name-order)
+gate:pass tests-green — DcaShop.E2eTests.SeededCatalogE2eTest#CatalogListsTheSeededProductsInNameOrder passes — a journey guards what is delivered (catalogue-lists-the-seeded-range)
+gate:pass tests-green — DcaShop.IntegrationTests.CatalogueTest#TheCatalogueIsTitledProductCatalogWithHeadingOurProductsBelowHomeProducts passes — a journey guards what is delivered (catalogue-page-heading)
+gate:note files-listed — listed but not changed by this stage: tasks/CAT-01/breaks/DcaShop.IntegrationTests.CatalogueTest--EveryCardOffersViewDetailsLeadingToItsOwnProduct.patch, tasks/CAT-01/breaks/DcaShop.IntegrationTests.CatalogueTest--TheCardOfDomainDrivenDesignShowsItsNameDescriptionAndImage.patch, tasks/CAT-01/breaks/DcaShop.IntegrationTests.CatalogueTest--TheCardsAreInOrdinalOrderOfTheProductNameStartingWithTheEnamelPin.patch, tasks/CAT-01/breaks/DcaShop.IntegrationTests.CatalogueTest--TheCatalogueIsTitledProductCatalogWithHeadingOurProductsBelowHomeProducts.patch, tests/DcaShop.IntegrationTests/CatalogueTest.cs
+gate:pass files-listed — tests.md lists the 0 file(s) the stage changed
+gate:pass tests-kept — no test that existed before this story changed what it expects
+gate:pass story CAT-01 stage test

@@ -1,0 +1,12 @@
+diff --git a/src/DcaShop.Web/Views/Product/Detail.cshtml b/src/DcaShop.Web/Views/Product/Detail.cshtml
+--- a/src/DcaShop.Web/Views/Product/Detail.cshtml
++++ b/src/DcaShop.Web/Views/Product/Detail.cshtml
+@@ -37,7 +37,7 @@
+ <div class="product-detail__description"><p>@Model.Description</p></div>
+ }
+ <div class="product-detail__meta">
+-<div class="product-detail__meta-item"><span class="product-detail__meta-label">Category</span><span class="product-detail__meta-value">@Model.Category</span></div>
++<div class="product-detail__meta-item"><span class="product-detail__meta-label">Category</span><span class="product-detail__meta-value">@Model.Name</span></div>
+ <div class="product-detail__meta-item"><span class="product-detail__meta-label">Availability</span>
+ @if (Model.CanBePurchased)
+ {
