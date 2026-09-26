@@ -1,0 +1,14 @@
+gate:pass story — catalogue-title in context product with 1 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.5)
+gate:pass approved — story is approved
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:pass decisions — catalogue-title-01 applied ('2 — drop the heading assertion from the browser test; the integration tests already assert "Our Products". No markup changes, the views stay as the Java templates are.' by Christoph Bloemer)
+gate:pass tests-mapped — 1 test(s) mapped to 1 criterion(s)
+gate:pass tests-exist — DcaShop.E2eTests.CatalogTitleE2eTest#CatalogPageIsTitledProductCatalog found in tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs (catalogue-tab-reads-product-catalog, by a file named after the class)
+gate:pass compiles — `dotnet build` succeeded
+gate:pass tests-red — DcaShop.E2eTests.CatalogTitleE2eTest#CatalogPageIsTitledProductCatalog is green now and was recorded red before; its expectation changed on decision catalogue-title-01 (catalogue-tab-reads-product-catalog)
+gate:pass levels — every end-user test belongs to the happy path or a browser-only scenario
+gate:note files-listed — listed but not changed by this stage: tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs, tests/DcaShop.E2eTests/Pages/ProductCatalogPage.cs
+gate:pass files-listed — tests.md lists the 0 file(s) the stage changed
+gate:pass tests-kept — no test that existed before this story changed what it expects
+gate:pass story catalogue-title stage test

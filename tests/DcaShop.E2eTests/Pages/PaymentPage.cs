@@ -7,6 +7,7 @@ public sealed class PaymentPage : BasePage
     private const string UrlPattern = "/checkout/payment";
     private const string ContinueButton = "payment-continue-button";
     private const string ProviderRadio = "payment-provider-radio";
+    private const string Total = "order-summary-total";
 
     private PaymentPage(IPage page) : base(page)
     {
@@ -28,6 +29,9 @@ public sealed class PaymentPage : BasePage
 
         return this;
     }
+
+    /// <summary>The checkout session's total as the order summary shows it, e.g. <c>9.99 EUR</c>.</summary>
+    public Task<string> TotalAsync() => Page.Locator($"[data-test='{Total}']").InnerTextAsync();
 
     public async Task<ReviewPage> ContinueToReviewAsync()
     {

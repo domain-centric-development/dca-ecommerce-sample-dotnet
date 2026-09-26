@@ -18,6 +18,8 @@ public sealed class ReviewPage : BasePage
         return review;
     }
 
+    public bool IsOnPage => CurrentPath.StartsWith(UrlPattern, StringComparison.Ordinal);
+
     public Task<bool> ShowsEmailAsync(string email) => PageContainsAsync(email);
 
     public Task<bool> ShowsAddressAsync(string address) => PageContainsAsync(address);

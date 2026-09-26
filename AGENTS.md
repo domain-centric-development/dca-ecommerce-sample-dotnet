@@ -44,7 +44,8 @@ dotnet test                              # everything
 dotnet test tests/DcaShop.ArchitectureTests   # DCA rule catalog (Debug build required)
 dotnet test tests/DcaShop.UnitTests --filter "FullyQualifiedName~ShoppingCart"
 dotnet run --project src/DcaShop.Web     # http://localhost:5080
-E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests   # Playwright; skipped without E2E_BASE_URL
+dotnet test tests/DcaShop.E2eTests                                       # Playwright; the suite starts the shop on a free port
+E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests   # the same, against a shop started elsewhere
 docker compose --profile tools run --rm e2e                              # same suite, browsers from the image
 docker compose up --build                                                # same shop in a container
 docker compose run --rm test                                             # tests without a local SDK
@@ -292,7 +293,15 @@ This project delivers stories through the dca-factory pipeline. At the start of 
 person names a task right away, run `python3 .agents/factory/story-gate.py --status --brief`, show
 its lines, and ask what they want to do: write or release a story (`/factory-backlog`), answer a
 waiting question (`/factory-decisions`), work the backlog (`/factory-run`; to keep listening, a tool
-that repeats a prompt runs it again — in Claude Code `/loop /factory-run`), or look closer (`/factory-status`).
+that repeats a prompt runs it again — in Claude Code `/loop /factory-run`), look closer (`/factory-status`), or
+learn how the factory works (`/factory-help`).
+
+An instruction that changes what an actor can see or do is a user story. Before any code, ask once, in
+these words: "As a story through the factory — to an existing epic, a new epic — or directly by hand?"
+For the factory, run `/factory-run` with the person's words: it writes the story through
+`/factory-backlog` and runs it once it is released. A fix, a refactoring, documentation, tooling or a
+question is done directly.
+
 A session never runs `factory.sh run` — it starts a tool process per stage. One worker per checkout: a
 managing session writes backlog and decision files only. Every change — by a stage or by hand in a
 session — passes `bash .agents/factory/factory.sh check` before it is committed; the commit hook runs it

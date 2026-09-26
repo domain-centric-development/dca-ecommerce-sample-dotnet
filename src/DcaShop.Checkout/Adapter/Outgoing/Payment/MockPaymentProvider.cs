@@ -45,9 +45,9 @@ public sealed class MockPaymentProvider : IPaymentProvider
 
         return providerReference.StartsWith(ReferencePrefix, StringComparison.Ordinal)
             ? IPaymentProvider.PaymentResult.Succeeded(providerReference)
-            : IPaymentProvider.PaymentResult.Failed($"Invalid mock payment reference: {providerReference}");
+            : IPaymentProvider.PaymentResult.Refused($"Invalid mock payment reference: {providerReference}");
     }
 
     private static IPaymentProvider.PaymentResult Unavailable() =>
-        IPaymentProvider.PaymentResult.Failed("Mock payment provider is currently unavailable");
+        IPaymentProvider.PaymentResult.Unavailable("Mock payment provider is currently unavailable");
 }

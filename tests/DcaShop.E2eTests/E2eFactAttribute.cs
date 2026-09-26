@@ -1,18 +1,11 @@
 namespace DcaShop.E2eTests;
 
 /// <summary>
-/// E2E tests drive a running shop through a real browser, so they only run when <c>E2E_BASE_URL</c> is set
-/// (e.g. <c>E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests</c>); otherwise they are skipped.
+/// An E2E test. It runs against the shop the suite starts itself (<see cref="ShopUnderTest"/>), or against the one
+/// <c>E2E_BASE_URL</c> names.
 /// </summary>
 public sealed class E2eFactAttribute : FactAttribute
 {
-    public E2eFactAttribute()
-    {
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("E2E_BASE_URL")))
-        {
-            Skip = "set E2E_BASE_URL to the running shop to run E2E tests";
-        }
-    }
 }
 
 /// <summary>
@@ -27,15 +20,11 @@ public sealed class EmbeddedModeFactAttribute : FactAttribute
         var shopRunsEmbedded = string.Equals(
             Environment.GetEnvironmentVariable("E2E_EMBEDDED"), "true", StringComparison.OrdinalIgnoreCase);
 
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("E2E_BASE_URL")))
-        {
-            Skip = "set E2E_BASE_URL to the running shop to run E2E tests";
-        }
-        else if (embedded && !shopRunsEmbedded)
+        if (embedded && !shopRunsEmbedded)
         {
             Skip = "needs a shop started with Jwt__SameSite=None Jwt__SecureCookies=true behind TLS (E2E_EMBEDDED=true)";
         }
-        else if (embedded && !Environment.GetEnvironmentVariable("E2E_BASE_URL")!.Contains("localhost", StringComparison.Ordinal))
+        else if (embedded && !ShopUnderTest.BaseUrl.Contains("localhost", StringComparison.Ordinal))
         {
             Skip = "the cross-site case pairs localhost with 127.0.0.1; point E2E_BASE_URL at localhost to run it";
         }

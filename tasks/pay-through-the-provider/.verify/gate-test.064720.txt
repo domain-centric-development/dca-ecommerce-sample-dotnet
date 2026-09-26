@@ -1,0 +1,19 @@
+gate:pass story — pay-through-the-provider in context checkout with 3 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.38.4)
+gate:pass approved — story is approved
+gate:pass epic — epic 'provider-payment' complete (intent, goal, metric, domain_contact)
+gate:pass decisions — pay-through-the-provider-01 applied ("The end-user suite starts the shop itself, in the test process and on a free port (done in this sample's e2e base since 2026-09-26). The payment provider's stub belongs to the suite: it starts with the shop, the shop's provider address points at it, and each test arranges the stub's answers. The story no longer names 20.00 EUR: the provider receives one payment request for the checkout session's total." by Christoph Bloemer)
+gate:pass decisions — pay-through-the-provider-02 applied ('a — the scenario is in the specification now: scenario.checkout.provider-authorizes-payment, titled "A payment the provider authorizes moves the checkout on to the review step" (the Java suite\'s title, closer to the story\'s rule). Rename the browser test\'s DisplayName to that title; the Java twin carries the same title.' by Christoph Bloemer)
+gate:pass tests-mapped — 3 test(s) mapped to 3 criterion(s)
+gate:pass tests-exist — DcaShop.E2eTests.ProviderPaymentE2eTest#APaymentTheProviderAuthorizesLeadsOnToTheReview found in tests/DcaShop.E2eTests/ProviderPaymentE2eTest.cs (authorized-payment-moves-to-review, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.ProviderPaymentTest#ARefusedPaymentKeepsTheCustomerAtThePaymentStepWithTheRefusalText found in tests/DcaShop.IntegrationTests/ProviderPaymentTest.cs (refused-payment-stays-at-payment, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.ProviderPaymentTest#AProviderThatAnswersOnlyAfterFiveSecondsCountsAsUnavailable found in tests/DcaShop.IntegrationTests/ProviderPaymentTest.cs (slow-provider-counts-as-unavailable, by a file named after the class)
+gate:pass compiles — `dotnet build` succeeded
+gate:pass tests-red — DcaShop.E2eTests.ProviderPaymentE2eTest#APaymentTheProviderAuthorizesLeadsOnToTheReview is green now and was recorded red before; its expectation changed on decision pay-through-the-provider-01, pay-through-the-provider-02 (authorized-payment-moves-to-review)
+gate:pass tests-red — DcaShop.IntegrationTests.ProviderPaymentTest#ARefusedPaymentKeepsTheCustomerAtThePaymentStepWithTheRefusalText is green now and was recorded red before; its expectation changed on decision pay-through-the-provider-01, pay-through-the-provider-02 (refused-payment-stays-at-payment)
+gate:pass tests-red — DcaShop.IntegrationTests.ProviderPaymentTest#AProviderThatAnswersOnlyAfterFiveSecondsCountsAsUnavailable is green now and was recorded red before; its expectation changed on decision pay-through-the-provider-01, pay-through-the-provider-02 (slow-provider-counts-as-unavailable)
+gate:pass levels — every end-user test belongs to the happy path or a browser-only scenario
+gate:note files-listed — listed but not changed by this stage: src/DcaShop.Checkout/Application/Shared/IPaymentProvider.cs, src/DcaShop.Web/Views/Checkout/_OrderSummary.cshtml, tests/DcaShop.E2eTests/Pages/PaymentPage.cs, tests/DcaShop.E2eTests/Pages/ReviewPage.cs, tests/DcaShop.E2eTests/PaymentProviderStub.cs
+gate:pass files-listed — tests.md lists the 1 file(s) the stage changed
+gate:pass tests-kept — no test that existed before this story changed what it expects
+gate:pass story pay-through-the-provider stage test

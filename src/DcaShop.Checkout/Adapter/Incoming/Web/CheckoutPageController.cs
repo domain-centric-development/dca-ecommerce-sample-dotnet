@@ -163,9 +163,17 @@ public sealed class CheckoutPageController : Controller
         {
             // The two base types are the checkout's own refusals; the argument exception is the form field that
             // reaches a value object unvalidated.
-            return await Page(step, cancellationToken, e.Message);
+            return await Page(step, cancellationToken, CustomerMessage(e));
         }
     }
+
+    /// <summary>What the customer is told: the provider's own wording never reaches the page, the shop's does.</summary>
+    private static string CustomerMessage(Exception refusal) => refusal switch
+    {
+        PaymentInitiationFailedException => "The payment was refused. Please choose another way to pay.",
+        PaymentProviderUnavailableException => "The payment provider is not available right now. Please try again later.",
+        _ => refusal.Message,
+    };
 
     private async Task<CheckoutCartSnapshot?> ActiveSessionAsync(CancellationToken cancellationToken)
     {

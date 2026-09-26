@@ -1,0 +1,12 @@
+diff --git a/src/DcaShop.Web/Views/Product/Detail.cshtml b/src/DcaShop.Web/Views/Product/Detail.cshtml
+--- a/src/DcaShop.Web/Views/Product/Detail.cshtml
++++ b/src/DcaShop.Web/Views/Product/Detail.cshtml
+@@ -3,7 +3,7 @@
+ <div class="breadcrumb" data-test="breadcrumb">
+ <a class="breadcrumb__link" href="/">Home</a>
+ <span class="breadcrumb__separator">/</span>
+-<a class="breadcrumb__link" href="/products">Products</a>
++<a class="breadcrumb__link" href="/">Products</a>
+ <span class="breadcrumb__separator">/</span>
+ <span class="breadcrumb__current">@Model.Name</span>
+ </div>

@@ -1,0 +1,10 @@
+diff --git a/src/DcaShop.Web/Views/Product/Detail.cshtml b/src/DcaShop.Web/Views/Product/Detail.cshtml
+--- a/src/DcaShop.Web/Views/Product/Detail.cshtml
++++ b/src/DcaShop.Web/Views/Product/Detail.cshtml
+@@ -1,5 +1,5 @@
+ @model DcaShop.Product.Adapter.Incoming.Web.ProductDetailPageViewModel
+-@{ ViewData["Title"] = Model.Name; }
++@{ ViewData["Title"] = "Product"; }
+ <div class="breadcrumb" data-test="breadcrumb">
+ <a class="breadcrumb__link" href="/">Home</a>
+ <span class="breadcrumb__separator">/</span>

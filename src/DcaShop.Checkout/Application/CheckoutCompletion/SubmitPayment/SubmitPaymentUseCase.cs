@@ -53,6 +53,12 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
         var amount = snapshot.Totals.Total;
 
         var initiation = await provider.InitiatePaymentAsync(sessionId, amount, cancellationToken).ConfigureAwait(false);
+        if (initiation.Outcome == IPaymentProvider.PaymentOutcome.Unavailable)
+        {
+            _logger.LogWarning("Payment provider {ProviderId} is unavailable: {Reason}", providerId, initiation.ErrorMessage);
+            throw new PaymentProviderUnavailableException(providerId);
+        }
+
         if (!initiation.Success || initiation.ProviderReference is not { } providerReference)
         {
             throw new PaymentInitiationFailedException(

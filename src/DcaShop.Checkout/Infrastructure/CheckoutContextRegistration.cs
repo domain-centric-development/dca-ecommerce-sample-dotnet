@@ -20,6 +20,7 @@ using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.Service;
 using DcaShop.SharedKernel.Infrastructure.Events;
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DcaShop.Checkout.Infrastructure;
@@ -27,8 +28,11 @@ namespace DcaShop.Checkout.Infrastructure;
 /// <summary>Wires the Checkout context.</summary>
 public static class CheckoutContextRegistration
 {
-    public static IServiceCollection AddCheckoutContext(this IServiceCollection services)
+    public static IServiceCollection AddCheckoutContext(this IServiceCollection services, IConfiguration configuration)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+
         // Domain
         services.AddSingleton<CheckoutPricing>();
         services.AddSingleton<CheckoutCartFactory>();
@@ -50,7 +54,7 @@ public static class CheckoutContextRegistration
         services.AddSingleton<ICheckoutSessionRepository, InMemoryCheckoutSessionRepository>();
         services.AddScoped<ICartDataPort, CartDataAdapter>();
         services.AddScoped<ICheckoutArticleDataPort, CompositeCheckoutArticleDataAdapter>();
-        services.AddSingleton<IPaymentProvider, MockPaymentProvider>();
+        AddPaymentProvider(services, configuration);
         services.AddSingleton<IPaymentProviderRegistry, InMemoryPaymentProviderRegistry>();
         services.AddScoped<IEventListener, CheckoutConfirmedEventPublisher>();
 
@@ -59,4 +63,28 @@ public static class CheckoutContextRegistration
 
         return services;
     }
+
+    /// <summary>
+    /// The payment service provider when its address is configured, the stand-in otherwise — one provider either way.
+    /// </summary>
+    private static void AddPaymentProvider(IServiceCollection services, IConfiguration configuration)
+    {
+        var options = configuration.GetSection(PaymentProviderOptions.SectionName).Get<PaymentProviderOptions>();
+        if (options?.BaseUrl is not { } baseUrl)
+        {
+            services.AddSingleton<IPaymentProvider, MockPaymentProvider>();
+            return;
+        }
+
+        services.AddHttpClient(RestPaymentProvider.HttpClientName, client =>
+        {
+            client.BaseAddress = WithTrailingSlash(baseUrl);
+            client.Timeout = options.Timeout;
+        });
+        services.AddSingleton<IPaymentProvider, RestPaymentProvider>();
+    }
+
+    /// <summary>So the provider's paths resolve below its address instead of replacing its last segment.</summary>
+    private static Uri WithTrailingSlash(Uri address) =>
+        address.AbsoluteUri.EndsWith('/') ? address : new Uri(address.AbsoluteUri + "/");
 }

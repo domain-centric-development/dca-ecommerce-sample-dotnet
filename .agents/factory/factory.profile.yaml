@@ -1,4 +1,4 @@
-contract: 8
+contract: 9
 # Stack profile — the only place in the pipeline that knows how this project builds and tests.
 # The gate and the pre-commit hook read it; a command that is not declared is skipped and named.
 # Architecture tests need a Debug build: ArchUnitNET drops Release async state machines.
@@ -8,6 +8,7 @@ compile: dotnet build
 # (MSB1008). Each test project is its own entry, so the gate can select a single test in it.
 test: dotnet test tests/DcaShop.UnitTests --logger trx
 test.integration: dotnet test tests/DcaShop.IntegrationTests --logger trx
+http.stub: wiremock-net
 e2eTest: dotnet test tests/DcaShop.E2eTests --logger trx
 browser: playwright
 # The gate reads which tests actually ran from the runner's report; the .NET test

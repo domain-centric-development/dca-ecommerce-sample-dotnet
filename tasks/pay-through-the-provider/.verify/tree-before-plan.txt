@@ -1,0 +1,8 @@
+fb333e7144ac2f55fe62b1c405975f861c3ff62e019d2c823ea438f183b6d0b4  tasks/product-slider/.verify/journal.tsv
+e9951f0ae569bd30ba0052c84b9984b5cf18ae2508767616ab836be771352408  tasks/pay-through-the-provider/.story-digest
+5eae55ca849d3c41a698cb7539230705dee09ed92114c46869291fc5bcd285c6  tasks/pay-through-the-provider/.story-planned
+33424dbda06aefc8793855950de4c989b9ab55435287cef5ad4a60972245e587  tasks/pay-through-the-provider/.tests-baseline
+3d735d8af53608334c93e06e05a6bf30a11e40ec244d1ba45cf9d42e696c00e4  tasks/pay-through-the-provider/.verify/base-tree
+6d1623780b594c50a565f5e4a6c696ac9ba769b311f6ad7547492f00e41f04da  tasks/pay-through-the-provider/.verify/gate-plan.220236.txt
+48ca7582210415c76a3956c9a0920f0c67e980b4c3efb4317f26eb448bc32867  tasks/pay-through-the-provider/.verify/journal.tsv
+6036efce2d49025e6428eea2f727cdcb6e4c96c81a77027cd8055a592cb5853b  tasks/pay-through-the-provider/.verify/tree-before-plan.txt

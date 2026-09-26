@@ -1,0 +1,25 @@
+gate:pass story — CAT-02 in context product with 5 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.0)
+gate:pass approved — story is adopted — it describes behaviour the project already has; adopted, never built
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:pass rounds — round 3 of at most 3
+gate:pass decisions — CAT-02-01 applied ('The end-user suite now starts the shop itself, in the test process and on a free port — nothing has to run beforehand. Run the test stage again; the end-user tests run as they are.' by Christoph Bloemer)
+gate:pass tests-mapped — 5 test(s) mapped to 5 criterion(s)
+gate:pass tests-exist — DcaShop.IntegrationTests.ProductPageTest#BackToProductsReturnsToTheCatalogue found in tests/DcaShop.IntegrationTests/ProductPageTest.cs (back-to-products-returns-to-the-catalogue, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.ProductPageTest#TheBreadcrumbLeadsFromHomeOverProductsToTheProduct found in tests/DcaShop.IntegrationTests/ProductPageTest.cs (product-page-breadcrumb, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.ProductPageTest#TheProductPageShowsTheImageTheDescriptionAndTheCategory found in tests/DcaShop.IntegrationTests/ProductPageTest.cs (product-page-shows-image-description-and-category, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.ProductPageTest#TheBrowserTabTitleIsTheProductName found in tests/DcaShop.IntegrationTests/ProductPageTest.cs (product-page-title-is-the-product-name, by a file named after the class)
+gate:pass tests-exist — DcaShop.E2eTests.ProductPageE2eTest#ViewDetailsOnACatalogueCardOpensThatProductsPage found in tests/DcaShop.E2eTests/ProductPageE2eTest.cs (view-details-opens-the-product-page, by a file named after the class)
+gate:pass compiles — `dotnet build` succeeded
+gate:pass tests-green — DcaShop.IntegrationTests.ProductPageTest#BackToProductsReturnsToTheCatalogue passes — a journey guards what is delivered (back-to-products-returns-to-the-catalogue)
+gate:pass tests-green — DcaShop.IntegrationTests.ProductPageTest#TheBreadcrumbLeadsFromHomeOverProductsToTheProduct passes — a journey guards what is delivered (product-page-breadcrumb)
+gate:pass tests-green — DcaShop.IntegrationTests.ProductPageTest#TheProductPageShowsTheImageTheDescriptionAndTheCategory passes — a journey guards what is delivered (product-page-shows-image-description-and-category)
+gate:pass tests-green — DcaShop.IntegrationTests.ProductPageTest#TheBrowserTabTitleIsTheProductName passes — a journey guards what is delivered (product-page-title-is-the-product-name)
+gate:pass tests-green — DcaShop.E2eTests.ProductPageE2eTest#ViewDetailsOnACatalogueCardOpensThatProductsPage passes — a journey guards what is delivered (view-details-opens-the-product-page)
+gate:pass adopt-judged — the judge confirmed that the tests prove the scenarios
+gate:pass break-proof — DcaShop.E2eTests.ProductPageE2eTest#ViewDetailsOnACatalogueCardOpensThatProductsPage (view-details-opens-the-product-page): red under its break, on a scratch copy
+gate:pass break-proof — DcaShop.IntegrationTests.ProductPageTest#TheProductPageShowsTheImageTheDescriptionAndTheCategory (product-page-shows-image-description-and-category): red under its break, on a scratch copy
+gate:pass break-proof — DcaShop.IntegrationTests.ProductPageTest#TheBrowserTabTitleIsTheProductName (product-page-title-is-the-product-name): red under its break, on a scratch copy
+gate:pass break-proof — DcaShop.IntegrationTests.ProductPageTest#TheBreadcrumbLeadsFromHomeOverProductsToTheProduct (product-page-breadcrumb): red under its break, on a scratch copy
+gate:pass break-proof — DcaShop.IntegrationTests.ProductPageTest#BackToProductsReturnsToTheCatalogue (back-to-products-returns-to-the-catalogue): red under its break, on a scratch copy
+gate:pass story CAT-02 stage adopt

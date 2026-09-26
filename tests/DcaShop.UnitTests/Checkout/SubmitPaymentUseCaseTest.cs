@@ -98,6 +98,41 @@ public sealed class SubmitPaymentUseCaseTest
         Assert.Empty(_provider.Cancellations);
     }
 
+    [Fact]
+    public async Task APaymentTheProviderRefusesIsReportedAsARefusalAndLeavesTheSessionAtPayment()
+    {
+        var session = await ReadySessionAsync();
+        var refusing = new AnsweringPaymentProvider(() => IPaymentProvider.PaymentResult.Refused("card declined"));
+
+        await Assert.ThrowsAsync<PaymentInitiationFailedException>(() => UseCaseWith(refusing).ExecuteAsync(
+            new SubmitPaymentCommand(session.Id.Value, Customer, "mock")));
+
+        var unchanged = await _sessions.FindByIdAsync(session.Id);
+        Assert.Equal(CheckoutStep.Payment, unchanged!.CurrentStep);
+        Assert.Null(unchanged.PaymentSelection);
+    }
+
+    [Fact]
+    public async Task AProviderThatCannotBeReachedIsReportedAsUnavailableAndLeavesTheSessionAtPayment()
+    {
+        var session = await ReadySessionAsync();
+        var unreachable = new AnsweringPaymentProvider(() => IPaymentProvider.PaymentResult.Unavailable("no answer within the timeout"));
+
+        await Assert.ThrowsAsync<PaymentProviderUnavailableException>(() => UseCaseWith(unreachable).ExecuteAsync(
+            new SubmitPaymentCommand(session.Id.Value, Customer, "mock")));
+
+        var unchanged = await _sessions.FindByIdAsync(session.Id);
+        Assert.Equal(CheckoutStep.Payment, unchanged!.CurrentStep);
+        Assert.Null(unchanged.PaymentSelection);
+    }
+
+    private SubmitPaymentUseCase UseCaseWith(IPaymentProvider provider) => new(
+        _sessions,
+        new SingleProviderRegistry(provider),
+        new SilentPublisher(),
+        new InMemoryTransactionBoundary(),
+        NullLogger<SubmitPaymentUseCase>.Instance);
+
     private async Task<CheckoutSession> SessionWithBuyerInfoOnlyAsync()
     {
         var session = StartedSession();
@@ -152,6 +187,25 @@ public sealed class SubmitPaymentUseCaseTest
             Cancellations.Add(providerReference);
             return Task.FromResult(IPaymentProvider.PaymentResult.Succeeded(providerReference));
         }
+
+        public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
+    }
+
+    /// <summary>A provider whose every initiation gets the answer the test arranged.</summary>
+    private sealed class AnsweringPaymentProvider(Func<IPaymentProvider.PaymentResult> answer) : IPaymentProvider
+    {
+        public PaymentProviderId Id => PaymentProviderId.Of("mock");
+
+        public string DisplayName => "Answering provider";
+
+        public Task<IPaymentProvider.PaymentResult> InitiatePaymentAsync(CheckoutSessionId sessionId, Money amount, CancellationToken cancellationToken = default) =>
+            Task.FromResult(answer());
+
+        public Task<IPaymentProvider.PaymentResult> ConfirmPaymentAsync(string providerReference, CancellationToken cancellationToken = default) =>
+            Task.FromResult(IPaymentProvider.PaymentResult.Succeeded(providerReference));
+
+        public Task<IPaymentProvider.PaymentResult> CancelPaymentAsync(string providerReference, CancellationToken cancellationToken = default) =>
+            Task.FromResult(IPaymentProvider.PaymentResult.Succeeded(providerReference));
 
         public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
     }

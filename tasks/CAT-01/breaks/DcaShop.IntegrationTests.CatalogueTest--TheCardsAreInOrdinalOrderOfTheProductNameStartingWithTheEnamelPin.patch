@@ -1,0 +1,12 @@
+diff --git a/src/DcaShop.Product/Adapter/Outgoing/Persistence/InMemoryProductRepository.cs b/src/DcaShop.Product/Adapter/Outgoing/Persistence/InMemoryProductRepository.cs
+--- a/src/DcaShop.Product/Adapter/Outgoing/Persistence/InMemoryProductRepository.cs
++++ b/src/DcaShop.Product/Adapter/Outgoing/Persistence/InMemoryProductRepository.cs
+@@ -50,7 +50,7 @@
+     }
+
+     public Task<IReadOnlyList<Domain.Model.Product>> FindAllAsync(CancellationToken cancellationToken = default) =>
+-        Task.FromResult<IReadOnlyList<Domain.Model.Product>>(_products.Values.OrderBy(p => p.Name.Value, StringComparer.Ordinal).ToList());
++        Task.FromResult<IReadOnlyList<Domain.Model.Product>>(_products.Values.OrderByDescending(p => p.Name.Value, StringComparer.Ordinal).ToList());
+
+     public Task<Domain.Model.Product?> FindBySkuAsync(Sku sku, CancellationToken cancellationToken = default) =>
+         Task.FromResult(_bySku.TryGetValue(sku, out var id) && _products.TryGetValue(id, out var product) ? product : null);

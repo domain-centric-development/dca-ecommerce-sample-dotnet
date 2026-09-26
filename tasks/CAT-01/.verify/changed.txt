@@ -1,0 +1,14 @@
+modified	AGENTS.md
+modified	README.md
+modified	project/backlog/browse-catalogue/CAT-01.md
+added	project/backlog/browse-catalogue/catalogue-title.md
+modified	src/DcaShop.Web/Views/Product/Catalog.cshtml
+modified	tests/DcaShop.E2eTests/BaseE2eTest.cs
+added	tests/DcaShop.E2eTests/CatalogTitleE2eTest.cs
+modified	tests/DcaShop.E2eTests/DcaShop.E2eTests.csproj
+modified	tests/DcaShop.E2eTests/E2eFactAttribute.cs
+modified	tests/DcaShop.E2eTests/Pages/ProductCatalogPage.cs
+added	tests/DcaShop.E2eTests/ProductPageE2eTest.cs
+added	tests/DcaShop.E2eTests/ShopUnderTest.cs
+added	tests/DcaShop.IntegrationTests/CatalogueTest.cs
+added	tests/DcaShop.IntegrationTests/ProductPageTest.cs

@@ -1,0 +1,12 @@
+diff --git a/src/DcaShop.Web/Views/Product/Catalog.cshtml b/src/DcaShop.Web/Views/Product/Catalog.cshtml
+--- a/src/DcaShop.Web/Views/Product/Catalog.cshtml
++++ b/src/DcaShop.Web/Views/Product/Catalog.cshtml
+@@ -38,7 +38,7 @@
+ {
+ <span class="product-card__badge product-card__badge--out-of-stock">Out of Stock</span>
+ }
+-<a class="product-card__action" href="/products/@product.ProductId" data-test="view-product">View Details</a>
++<a class="product-card__action" href="/products/@product.ProductId" data-test="view-product">Details</a>
+ </div>
+ </div>
+ </div>

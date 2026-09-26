@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
+    <PackageReference Include="WireMock.Net" Version="2.18.0" />
     <ProjectReference Include="../../src/DcaShop.Web/DcaShop.Web.csproj" />
   </ItemGroup>
 </Project>

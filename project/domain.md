@@ -66,7 +66,7 @@ those are three answers, not three competing names.
 | `Checkout` | `Inventory` | Conformist / Events | Partnership | `Checkout.Events.CheckoutConfirmedEvent` implements `Inventory.Events.IStockReductionTrigger`; consumer in `Inventory/Adapter/Incoming/Event/StockReductionEventConsumer` |
 | `Product` | `Pricing` | Conformist / Events | Partnership | `Product.Events.ProductCreatedEvent` implements `Pricing.Events.IPriceInitializationTrigger`; consumer in `Pricing/Adapter/Incoming/Event/PriceInitializationEventConsumer` |
 | `Product` | `Inventory` | Conformist / Events | Partnership | `Product.Events.ProductCreatedEvent` implements `Inventory.Events.IStockInitializationTrigger`; consumer in `Inventory/Adapter/Incoming/Event/StockInitializationEventConsumer` |
-| Payment Service Provider | `Checkout` | ACL / REST (outbound) | Conformist to the provider's contract | `[ExternalUpstream]` on `CheckoutContext`, behind the caller-owned `IPaymentProviderRegistry` port; the sample ships `Checkout/Adapter/Outgoing/Payment/InMemoryPaymentProviderRegistry` and `MockPaymentProvider` in place of a real gateway |
+| Payment Service Provider | `Checkout` | ACL / REST (outbound) | Conformist to the provider's contract | `[ExternalUpstream]` on `CheckoutContext`, behind the caller-owned `IPaymentProviderRegistry` port; `src/DcaShop.Checkout/Adapter/Outgoing/Payment/RestPaymentProvider.cs` translates the provider's REST contract (`POST /payments`: `201` authorizes, `402` refuses, no answer in time counts as unavailable) when `Checkout:PaymentProvider:BaseUrl` is configured; without it `src/DcaShop.Checkout/Adapter/Outgoing/Payment/MockPaymentProvider.cs`, the in-sample stand-in, takes payments |
 | `Account` | `Cart`, `Checkout`, `Product` | not declared — the dependency runs through the shared kernel | Supplier of identity | `SharedKernel.Application.Shared.IIdentityProvider` is implemented only in `Account/Adapter/Outgoing/Security/HttpContextIdentityProvider`; the incoming adapters of Cart, Checkout and Product resolve the caller through that port and hand the customer to their use cases as a command or query field. Invisible to the declared map, which is why it is stated here. Account itself depends on no other context |
 | `Portal` | (all) | not declared | Separate Ways | Composition happens in the UI; no cross-context references |
 | `Backoffice` | (all) | not declared | Separate Ways | Reads the event publication log only; negotiates no contract |
@@ -139,8 +139,8 @@ external payment provider are in the generated map.
    foreign API types into its own domain types inside the adapter layer — the
    domain code never sees types from another context's `Api`.
 2. **The one external system is an ACL by declaration.** The payment service
-   provider is the only `[ExternalUpstream]`; its adapter is where a real PSP
-   would be integrated.
+   provider is the only `[ExternalUpstream]`; `RestPaymentProvider` is its
+   adapter, and the provider's request and answer shapes stay inside it.
 3. **Consumer-defined contracts** are preferred whenever the publisher sits
    architecturally *below* the consumer — they prevent a backwards dependency
    without a shared schema module.
