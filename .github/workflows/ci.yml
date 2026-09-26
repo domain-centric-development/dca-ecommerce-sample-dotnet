@@ -35,7 +35,9 @@ jobs:
       - name: Install the browser for the end-user suite
         run: pwsh tests/DcaShop.E2eTests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
 
-      - run: dotnet test -c Debug --no-build --logger "trx"
+      # One test project at a time: the provider tests hold the shop to a 2 s timeout, and a browser
+      # suite starting its own shop beside them makes the runner too slow to keep it.
+      - run: dotnet test -c Debug --no-build --logger "trx" -m:1
 
       - name: Context map is up to date
         # The architecture suite regenerates it; a diff means the committed document was stale.
