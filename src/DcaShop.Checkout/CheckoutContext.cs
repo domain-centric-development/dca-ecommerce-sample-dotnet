@@ -17,7 +17,7 @@ namespace DcaShop.Checkout;
     Rationale = "CheckoutConfirmedEvent implements cart's consumer-defined ICartCompletionTrigger contract as-is; cart's CartContentsChangedEvent is consumed as published")]
 [ExternalUpstream("Payment Service Provider", Translation.AntiCorruptionLayer, Interaction.Outbound,
     Protocol = "REST", Exchanges = "payment operations (initiate, confirm, refund)",
-    Rationale = "Behind the caller-owned IPaymentProviderRegistry port; the sample ships an in-memory registry in place of a real gateway")]
+    Rationale = "Behind the caller-owned IPaymentProviderRegistry port; RestPaymentProvider translates the provider's REST contract, the in-sample stand-in takes payments where no provider address is configured")]
 [Upstream("Inventory", Translation.Conformist, Consumes.Events,
     Rationale = "CheckoutConfirmedEvent implements inventory's consumer-defined IStockReductionTrigger contract as-is")]
 [Partnership("Cart",

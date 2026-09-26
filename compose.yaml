@@ -23,6 +23,18 @@ services:
       Jwt__SameSite: ${Jwt__SameSite:-Lax}
       Jwt__SecureCookies: ${Jwt__SecureCookies:-false}
 
+  # The payment provider as a stub, for a shop started on this machine (`./gradlew bootRun`, `dotnet run`):
+  # WireMock on localhost:8089 with one set of answers per behaviour — PAYMENT_STUB=authorize|refuse|slow
+  # (stubs/payment-provider/README.md). `docker compose --profile provider-stub up payment-provider`.
+  payment-provider:
+    image: wiremock/wiremock:3.13.2
+    profiles: [provider-stub]
+    ports:
+      - "8089:8080"
+    command: ["--global-response-templating"]
+    volumes:
+      - ./stubs/payment-provider/${PAYMENT_STUB:-authorize}:/home/wiremock:ro
+
   # The E2E suite needs a browser, which the SDK image does not have. This image ships the browser builds of the
   # Playwright release the suite references — keep the tag and DcaShop.E2eTests.csproj on one version.
   # `docker compose --profile tools run --rm e2e` runs it against the shop service over the compose network.

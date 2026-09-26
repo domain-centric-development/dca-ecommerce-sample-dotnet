@@ -19,11 +19,11 @@ paid for real, and I learn at once when the provider refuses the payment or cann
 ### Rule: A payment the provider authorizes moves the checkout on
 
 #### authorized-payment-moves-to-review (happy path)
-- Given a checkout session at the payment step with a total of 20.00 EUR
+- Given a checkout session at the payment step
 - And the payment provider authorizes payments
 - When the customer pays through the payment provider
 - Then the checkout shows the review step
-- And the payment provider received one payment request for 20.00 EUR
+- And the payment provider received one payment request for the checkout session's total
 
 ### Rule: A refused payment keeps the customer at the payment step
 

@@ -1,0 +1,11 @@
+gate:pass story — pay-through-the-provider in context checkout with 3 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.38.4)
+gate:pass approved — story is approved
+gate:pass epic — epic 'provider-payment' complete (intent, goal, metric, domain_contact)
+gate:pass decisions — pay-through-the-provider-01 applied ("The end-user suite starts the shop itself, in the test process and on a free port (done in this sample's e2e base since 2026-09-26). The payment provider's stub belongs to the suite: it starts with the shop, the shop's provider address points at it, and each test arranges the stub's answers. The story no longer names 20.00 EUR: the provider receives one payment request for the checkout session's total." by Christoph Bloemer)
+gate:pass decisions — pay-through-the-provider-02 applied ('a — the scenario is in the specification now: scenario.checkout.provider-authorizes-payment, titled "A payment the provider authorizes moves the checkout on to the review step" (the Java suite\'s title, closer to the story\'s rule). Rename the browser test\'s DisplayName to that title; the Java twin carries the same title.' by Christoph Bloemer)
+gate:pass documented — 4 document(s) updated, every claim resolves
+gate:pass glossary — 4 proposed term(s) accounted for
+gate:pass architecture — `dotnet test tests/DcaShop.ArchitectureTests` succeeded
+gate:wait acceptance — pay-through-the-provider-accept-1 waits for a human's look — answer it through /factory-decisions; the story holds the checkout until then
+gate:wait story pay-through-the-provider stage document

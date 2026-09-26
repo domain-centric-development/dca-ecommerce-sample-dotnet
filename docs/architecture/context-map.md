@@ -88,7 +88,7 @@ Edges labeled `planned` are declared intent without a code dependency yet.
 
 | Consumer | External system | Interaction | Protocol | Exchanges | Translation | Status | Rationale |
 |---|---|---|---|---|---|---|---|
-| Checkout | Payment Service Provider | outbound | REST | payment operations (initiate, confirm, refund) | ACL | implemented | Behind the caller-owned IPaymentProviderRegistry port; the sample ships an in-memory registry in place of a real gateway |
+| Checkout | Payment Service Provider | outbound | REST | payment operations (initiate, confirm, refund) | ACL | implemented | Behind the caller-owned IPaymentProviderRegistry port; RestPaymentProvider translates the provider's REST contract, the in-sample stand-in takes payments where no provider address is configured |
 
 ## Partnerships
 

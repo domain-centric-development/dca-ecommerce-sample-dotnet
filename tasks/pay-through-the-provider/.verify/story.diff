@@ -1,0 +1,1025 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 82b7e91..a6603f3 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -44,7 +44,8 @@ dotnet test                              # everything
+ dotnet test tests/DcaShop.ArchitectureTests   # DCA rule catalog (Debug build required)
+ dotnet test tests/DcaShop.UnitTests --filter "FullyQualifiedName~ShoppingCart"
+ dotnet run --project src/DcaShop.Web     # http://localhost:5080
+-E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests   # Playwright; skipped without E2E_BASE_URL
++dotnet test tests/DcaShop.E2eTests                                       # Playwright; the suite starts the shop on a free port
++E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests   # the same, against a shop started elsewhere
+ docker compose --profile tools run --rm e2e                              # same suite, browsers from the image
+ docker compose up --build                                                # same shop in a container
+ docker compose run --rm test                                             # tests without a local SDK
+diff --git a/README.md b/README.md
+index efbeedf..3ed9f71 100644
+--- a/README.md
++++ b/README.md
+@@ -25,6 +25,11 @@ Browse `/products`, add items to the cart, check out in five steps (buyer → de
+ confirmation), register an account and log in. All state is in memory; restarting resets the shop, accounts
+ included.
+ 
++Payment goes to a stand-in inside the sample. To pay through a payment service provider over REST, give its address
++as `Checkout:PaymentProvider:BaseUrl` (environment: `Checkout__PaymentProvider__BaseUrl`); `RestPaymentProvider`
++then sends `POST /payments` and treats no answer within `Checkout:PaymentProvider:Timeout` (default 2 seconds) as
++the provider being unavailable.
++
+ > Architecture tests must run on **Debug** builds — ArchUnitNET drops the async state machines of optimized
+ > builds and would miss dependencies inside `async` method bodies. `dotnet test` defaults to Debug.
+ 
+@@ -50,11 +55,12 @@ works against the sibling `../dca-dotnet` checkout as well.
+ ## End-to-end tests
+ 
+ `tests/DcaShop.E2eTests` drives the shop through a real browser (Playwright, page objects, `data-test`
+-selectors). They are skipped unless the shop's address is given:
++selectors). The suite starts the shop itself, once per run, in the test process and on a free port — nothing has to
++run beforehand:
+ 
+ ```bash
+-dotnet run --project src/DcaShop.Web &                      # or any other running instance
+-E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests
++dotnet test tests/DcaShop.E2eTests
++E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests   # against a shop started elsewhere
+ ```
+ 
+ `E2E_BROWSER` (`chromium` | `firefox` | `webkit`) and `E2E_HEADLESS=false` are honoured. Because the markup is the
+diff --git a/docs/architecture/context-map.md b/docs/architecture/context-map.md
+index 3eb59f2..7a6db8c 100644
+--- a/docs/architecture/context-map.md
++++ b/docs/architecture/context-map.md
+@@ -88,7 +88,7 @@ Edges labeled `planned` are declared intent without a code dependency yet.
+ 
+ | Consumer | External system | Interaction | Protocol | Exchanges | Translation | Status | Rationale |
+ |---|---|---|---|---|---|---|---|
+-| Checkout | Payment Service Provider | outbound | REST | payment operations (initiate, confirm, refund) | ACL | implemented | Behind the caller-owned IPaymentProviderRegistry port; the sample ships an in-memory registry in place of a real gateway |
++| Checkout | Payment Service Provider | outbound | REST | payment operations (initiate, confirm, refund) | ACL | implemented | Behind the caller-owned IPaymentProviderRegistry port; RestPaymentProvider translates the provider's REST contract, the in-sample stand-in takes payments where no provider address is configured |
+ 
+ ## Partnerships
+ 
+diff --git a/project/backlog/provider-payment/pay-through-the-provider.md b/project/backlog/provider-payment/pay-through-the-provider.md
+index 464abc3..9b431b8 100644
+--- a/project/backlog/provider-payment/pay-through-the-provider.md
++++ b/project/backlog/provider-payment/pay-through-the-provider.md
+@@ -19,11 +19,11 @@ paid for real, and I learn at once when the provider refuses the payment or cann
+ ### Rule: A payment the provider authorizes moves the checkout on
+ 
+ #### authorized-payment-moves-to-review (happy path)
+-- Given a checkout session at the payment step with a total of 20.00 EUR
++- Given a checkout session at the payment step
+ - And the payment provider authorizes payments
+ - When the customer pays through the payment provider
+ - Then the checkout shows the review step
+-- And the payment provider received one payment request for 20.00 EUR
++- And the payment provider received one payment request for the checkout session's total
+ 
+ ### Rule: A refused payment keeps the customer at the payment step
+ 
+diff --git a/project/domain.md b/project/domain.md
+index df3c58e..2716866 100644
+--- a/project/domain.md
++++ b/project/domain.md
+@@ -66,7 +66,7 @@ those are three answers, not three competing names.
+ | `Checkout` | `Inventory` | Conformist / Events | Partnership | `Checkout.Events.CheckoutConfirmedEvent` implements `Inventory.Events.IStockReductionTrigger`; consumer in `Inventory/Adapter/Incoming/Event/StockReductionEventConsumer` |
+ | `Product` | `Pricing` | Conformist / Events | Partnership | `Product.Events.ProductCreatedEvent` implements `Pricing.Events.IPriceInitializationTrigger`; consumer in `Pricing/Adapter/Incoming/Event/PriceInitializationEventConsumer` |
+ | `Product` | `Inventory` | Conformist / Events | Partnership | `Product.Events.ProductCreatedEvent` implements `Inventory.Events.IStockInitializationTrigger`; consumer in `Inventory/Adapter/Incoming/Event/StockInitializationEventConsumer` |
+-| Payment Service Provider | `Checkout` | ACL / REST (outbound) | Conformist to the provider's contract | `[ExternalUpstream]` on `CheckoutContext`, behind the caller-owned `IPaymentProviderRegistry` port; the sample ships `Checkout/Adapter/Outgoing/Payment/InMemoryPaymentProviderRegistry` and `MockPaymentProvider` in place of a real gateway |
++| Payment Service Provider | `Checkout` | ACL / REST (outbound) | Conformist to the provider's contract | `[ExternalUpstream]` on `CheckoutContext`, behind the caller-owned `IPaymentProviderRegistry` port; `src/DcaShop.Checkout/Adapter/Outgoing/Payment/RestPaymentProvider.cs` translates the provider's REST contract (`POST /payments`: `201` authorizes, `402` refuses, no answer in time counts as unavailable) when `Checkout:PaymentProvider:BaseUrl` is configured; without it `src/DcaShop.Checkout/Adapter/Outgoing/Payment/MockPaymentProvider.cs`, the in-sample stand-in, takes payments |
+ | `Account` | `Cart`, `Checkout`, `Product` | not declared — the dependency runs through the shared kernel | Supplier of identity | `SharedKernel.Application.Shared.IIdentityProvider` is implemented only in `Account/Adapter/Outgoing/Security/HttpContextIdentityProvider`; the incoming adapters of Cart, Checkout and Product resolve the caller through that port and hand the customer to their use cases as a command or query field. Invisible to the declared map, which is why it is stated here. Account itself depends on no other context |
+ | `Portal` | (all) | not declared | Separate Ways | Composition happens in the UI; no cross-context references |
+ | `Backoffice` | (all) | not declared | Separate Ways | Reads the event publication log only; negotiates no contract |
+@@ -139,8 +139,8 @@ external payment provider are in the generated map.
+    foreign API types into its own domain types inside the adapter layer — the
+    domain code never sees types from another context's `Api`.
+ 2. **The one external system is an ACL by declaration.** The payment service
+-   provider is the only `[ExternalUpstream]`; its adapter is where a real PSP
+-   would be integrated.
++   provider is the only `[ExternalUpstream]`; `RestPaymentProvider` is its
++   adapter, and the provider's request and answer shapes stay inside it.
+ 3. **Consumer-defined contracts** are preferred whenever the publisher sits
+    architecturally *below* the consumer — they prevent a backwards dependency
+    without a shared schema module.
+diff --git a/src/DcaShop.Checkout/Adapter/Incoming/Web/CheckoutPageController.cs b/src/DcaShop.Checkout/Adapter/Incoming/Web/CheckoutPageController.cs
+index 3bbe3dd..25ad64d 100644
+--- a/src/DcaShop.Checkout/Adapter/Incoming/Web/CheckoutPageController.cs
++++ b/src/DcaShop.Checkout/Adapter/Incoming/Web/CheckoutPageController.cs
+@@ -163,10 +163,18 @@ public sealed class CheckoutPageController : Controller
+         {
+             // The two base types are the checkout's own refusals; the argument exception is the form field that
+             // reaches a value object unvalidated.
+-            return await Page(step, cancellationToken, e.Message);
++            return await Page(step, cancellationToken, CustomerMessage(e));
+         }
+     }
+ 
++    /// <summary>What the customer is told: the provider's own wording never reaches the page, the shop's does.</summary>
++    private static string CustomerMessage(Exception refusal) => refusal switch
++    {
++        PaymentInitiationFailedException => "The payment was refused. Please choose another way to pay.",
++        PaymentProviderUnavailableException => "The payment provider is not available right now. Please try again later.",
++        _ => refusal.Message,
++    };
++
+     private async Task<CheckoutCartSnapshot?> ActiveSessionAsync(CancellationToken cancellationToken)
+     {
+         return (await _active.ExecuteAsync(new GetActiveCheckoutSessionQuery(CurrentCustomerId()), cancellationToken))
+diff --git a/src/DcaShop.Checkout/Adapter/Outgoing/Payment/MockPaymentProvider.cs b/src/DcaShop.Checkout/Adapter/Outgoing/Payment/MockPaymentProvider.cs
+index 2afc906..05b67b0 100644
+--- a/src/DcaShop.Checkout/Adapter/Outgoing/Payment/MockPaymentProvider.cs
++++ b/src/DcaShop.Checkout/Adapter/Outgoing/Payment/MockPaymentProvider.cs
+@@ -45,9 +45,9 @@ public sealed class MockPaymentProvider : IPaymentProvider
+ 
+         return providerReference.StartsWith(ReferencePrefix, StringComparison.Ordinal)
+             ? IPaymentProvider.PaymentResult.Succeeded(providerReference)
+-            : IPaymentProvider.PaymentResult.Failed($"Invalid mock payment reference: {providerReference}");
++            : IPaymentProvider.PaymentResult.Refused($"Invalid mock payment reference: {providerReference}");
+     }
+ 
+     private static IPaymentProvider.PaymentResult Unavailable() =>
+-        IPaymentProvider.PaymentResult.Failed("Mock payment provider is currently unavailable");
++        IPaymentProvider.PaymentResult.Unavailable("Mock payment provider is currently unavailable");
+ }
+\ No newline at end of file
+diff --git a/src/DcaShop.Checkout/Adapter/Outgoing/Payment/PaymentProviderOptions.cs b/src/DcaShop.Checkout/Adapter/Outgoing/Payment/PaymentProviderOptions.cs
+new file mode 100644
+index 0000000..b015b9a
+--- /dev/null
++++ b/src/DcaShop.Checkout/Adapter/Outgoing/Payment/PaymentProviderOptions.cs
+@@ -0,0 +1,19 @@
++namespace DcaShop.Checkout.Adapter.Outgoing.Payment;
++
++/// <summary>
++/// Where the payment service provider answers and how long it may take — the REST payment adapter's settings, so the
++/// class lives there; the context registration binds it from configuration.
++/// </summary>
++public sealed class PaymentProviderOptions
++{
++    public const string SectionName = "Checkout:PaymentProvider";
++
++    /// <summary>
++    /// The provider's address. Without one the shop takes payments with the stand-in inside the sample, so running it
++    /// locally needs no provider.
++    /// </summary>
++    public Uri? BaseUrl { get; set; }
++
++    /// <summary>A provider that has not answered within this time counts as unavailable.</summary>
++    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(2);
++}
+\ No newline at end of file
+diff --git a/src/DcaShop.Checkout/Adapter/Outgoing/Payment/RestPaymentProvider.cs b/src/DcaShop.Checkout/Adapter/Outgoing/Payment/RestPaymentProvider.cs
+new file mode 100644
+index 0000000..504e1b0
+--- /dev/null
++++ b/src/DcaShop.Checkout/Adapter/Outgoing/Payment/RestPaymentProvider.cs
+@@ -0,0 +1,97 @@
++using System.Net;
++using System.Net.Http.Json;
++using System.Text.Json;
++
++using DcaShop.Checkout.Application.Shared;
++using DcaShop.Checkout.Domain.Model;
++using DcaShop.SharedKernel.Domain.Model;
++
++using Microsoft.Extensions.Logging;
++
++namespace DcaShop.Checkout.Adapter.Outgoing.Payment;
++
++/// <summary>
++/// The payment service provider over REST — the anti-corruption layer towards it. A payment is one
++/// <c>POST /payments</c> with amount and currency: <c>201</c> with a payment reference authorizes it, <c>402</c>
++/// refuses it, and anything else — no answer in time, no connection, another status, no reference — counts as the
++/// provider being unavailable. The provider's request and answer shapes stay inside this class.
++/// </summary>
++/// <remarks>
++/// The contract has no availability, confirmation or cancellation endpoint: availability is learned from the payment
++/// request itself, a payment is complete once authorized, and a cancellation reaches nobody.
++/// </remarks>
++public sealed class RestPaymentProvider : IPaymentProvider
++{
++    public const string HttpClientName = "payment-provider";
++
++    public static readonly PaymentProviderId ProviderId = PaymentProviderId.Of("provider");
++
++    private readonly IHttpClientFactory _httpClients;
++    private readonly ILogger<RestPaymentProvider> _logger;
++
++    public RestPaymentProvider(IHttpClientFactory httpClients, ILogger<RestPaymentProvider> logger)
++    {
++        _httpClients = httpClients;
++        _logger = logger;
++    }
++
++    public PaymentProviderId Id => ProviderId;
++
++    public string DisplayName => "Payment provider";
++
++    public async Task<IPaymentProvider.PaymentResult> InitiatePaymentAsync(CheckoutSessionId sessionId, Money amount, CancellationToken cancellationToken = default)
++    {
++        try
++        {
++            using var response = await _httpClients.CreateClient(HttpClientName)
++                .PostAsJsonAsync("payments", new PaymentRequest(amount.Amount, amount.Currency), cancellationToken)
++                .ConfigureAwait(false);
++
++            if (response.StatusCode == HttpStatusCode.PaymentRequired)
++            {
++                return IPaymentProvider.PaymentResult.Refused($"The payment provider refused the payment for session {sessionId}");
++            }
++
++            if (response.StatusCode != HttpStatusCode.Created)
++            {
++                return Unavailable($"The payment provider answered {(int)response.StatusCode}", sessionId);
++            }
++
++            var authorization = await response.Content.ReadFromJsonAsync<PaymentAuthorization>(cancellationToken).ConfigureAwait(false);
++            return string.IsNullOrWhiteSpace(authorization?.Reference)
++                ? Unavailable("The payment provider authorized without a payment reference", sessionId)
++                : IPaymentProvider.PaymentResult.Succeeded(authorization.Reference);
++        }
++        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
++        {
++            // The client's own deadline, not the caller giving up: the caller's cancellation travels on unchanged
++            return Unavailable("The payment provider did not answer in time", sessionId);
++        }
++        catch (HttpRequestException e)
++        {
++            return Unavailable($"The payment provider could not be reached: {e.Message}", sessionId);
++        }
++        catch (JsonException e)
++        {
++            return Unavailable($"The payment provider's answer could not be read: {e.Message}", sessionId);
++        }
++    }
++
++    public Task<IPaymentProvider.PaymentResult> ConfirmPaymentAsync(string providerReference, CancellationToken cancellationToken = default) =>
++        Task.FromResult(IPaymentProvider.PaymentResult.Succeeded(providerReference));
++
++    public Task<IPaymentProvider.PaymentResult> CancelPaymentAsync(string providerReference, CancellationToken cancellationToken = default) =>
++        Task.FromResult(IPaymentProvider.PaymentResult.Refused("The payment provider offers no cancellation"));
++
++    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
++
++    private IPaymentProvider.PaymentResult Unavailable(string reason, CheckoutSessionId sessionId)
++    {
++        _logger.LogWarning("Payment for session {SessionId} not taken: {Reason}", sessionId, reason);
++        return IPaymentProvider.PaymentResult.Unavailable(reason);
++    }
++
++    private sealed record PaymentRequest(decimal Amount, string Currency);
++
++    private sealed record PaymentAuthorization(string? Reference);
++}
+\ No newline at end of file
+diff --git a/src/DcaShop.Checkout/Application/CheckoutCompletion/SubmitPayment/SubmitPaymentUseCase.cs b/src/DcaShop.Checkout/Application/CheckoutCompletion/SubmitPayment/SubmitPaymentUseCase.cs
+index ae714aa..8d87399 100644
+--- a/src/DcaShop.Checkout/Application/CheckoutCompletion/SubmitPayment/SubmitPaymentUseCase.cs
++++ b/src/DcaShop.Checkout/Application/CheckoutCompletion/SubmitPayment/SubmitPaymentUseCase.cs
+@@ -53,6 +53,12 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
+         var amount = snapshot.Totals.Total;
+ 
+         var initiation = await provider.InitiatePaymentAsync(sessionId, amount, cancellationToken).ConfigureAwait(false);
++        if (initiation.Outcome == IPaymentProvider.PaymentOutcome.Unavailable)
++        {
++            _logger.LogWarning("Payment provider {ProviderId} is unavailable: {Reason}", providerId, initiation.ErrorMessage);
++            throw new PaymentProviderUnavailableException(providerId);
++        }
++
+         if (!initiation.Success || initiation.ProviderReference is not { } providerReference)
+         {
+             throw new PaymentInitiationFailedException(
+diff --git a/src/DcaShop.Checkout/Application/Shared/IPaymentProvider.cs b/src/DcaShop.Checkout/Application/Shared/IPaymentProvider.cs
+index 2207cf0..0c1d012 100644
+--- a/src/DcaShop.Checkout/Application/Shared/IPaymentProvider.cs
++++ b/src/DcaShop.Checkout/Application/Shared/IPaymentProvider.cs
+@@ -35,11 +35,44 @@ public interface IPaymentProvider : IOutputPort
+     /// <summary>Whether the provider can process payments right now.</summary>
+     Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
+ 
+-    /// <summary>The outcome of a payment operation. Nested in the port because it is part of its contract.</summary>
+-    public sealed record PaymentResult(bool Success, string? ProviderReference, string? ErrorMessage)
++    /// <summary>How a payment operation ended: done, declined by the provider, or no usable answer from it.</summary>
++    public enum PaymentOutcome
+     {
+-        public static PaymentResult Succeeded(string providerReference) => new(true, providerReference, null);
++        Succeeded,
++        Refused,
++        Unavailable,
++    }
++
++    /// <summary>
++    /// The outcome of a payment operation. Nested in the port because it is part of its contract. Only the three
++    /// factories create one, so a success always carries a reference and a failure always carries a reason.
++    /// </summary>
++    public sealed record PaymentResult
++    {
++        private PaymentResult(PaymentOutcome outcome, string? providerReference, string? errorMessage)
++        {
++            Outcome = outcome;
++            ProviderReference = providerReference;
++            ErrorMessage = errorMessage;
++        }
++
++        public PaymentOutcome Outcome { get; }
++
++        public string? ProviderReference { get; }
++
++        public string? ErrorMessage { get; }
++
++        public bool Success => Outcome == PaymentOutcome.Succeeded;
++
++        public static PaymentResult Succeeded(string providerReference) => new(PaymentOutcome.Succeeded, providerReference, null);
++
++        /// <summary>
++        /// The provider declined the operation, or does not offer it at all; asking again with the same means will
++        /// not change that.
++        /// </summary>
++        public static PaymentResult Refused(string reason) => new(PaymentOutcome.Refused, null, reason);
+ 
+-        public static PaymentResult Failed(string errorMessage) => new(false, null, errorMessage);
++        /// <summary>The provider could not be reached, did not answer in time or answered outside its contract.</summary>
++        public static PaymentResult Unavailable(string reason) => new(PaymentOutcome.Unavailable, null, reason);
+     }
+ }
+\ No newline at end of file
+diff --git a/src/DcaShop.Checkout/CheckoutContext.cs b/src/DcaShop.Checkout/CheckoutContext.cs
+index e60a301..d88457d 100644
+--- a/src/DcaShop.Checkout/CheckoutContext.cs
++++ b/src/DcaShop.Checkout/CheckoutContext.cs
+@@ -17,7 +17,7 @@ namespace DcaShop.Checkout;
+     Rationale = "CheckoutConfirmedEvent implements cart's consumer-defined ICartCompletionTrigger contract as-is; cart's CartContentsChangedEvent is consumed as published")]
+ [ExternalUpstream("Payment Service Provider", Translation.AntiCorruptionLayer, Interaction.Outbound,
+     Protocol = "REST", Exchanges = "payment operations (initiate, confirm, refund)",
+-    Rationale = "Behind the caller-owned IPaymentProviderRegistry port; the sample ships an in-memory registry in place of a real gateway")]
++    Rationale = "Behind the caller-owned IPaymentProviderRegistry port; RestPaymentProvider translates the provider's REST contract, the in-sample stand-in takes payments where no provider address is configured")]
+ [Upstream("Inventory", Translation.Conformist, Consumes.Events,
+     Rationale = "CheckoutConfirmedEvent implements inventory's consumer-defined IStockReductionTrigger contract as-is")]
+ [Partnership("Cart",
+diff --git a/src/DcaShop.Checkout/Domain/glossary.md b/src/DcaShop.Checkout/Domain/glossary.md
+index 446d93f..167cd78 100644
+--- a/src/DcaShop.Checkout/Domain/glossary.md
++++ b/src/DcaShop.Checkout/Domain/glossary.md
+@@ -261,8 +261,9 @@ Kernel should be used here.
+ 
+ ### PaymentProviderId
+ 
+-**Definition:** Identifier of an external payment provider. The sample registers a single one,
+-`mock`, standing in for a real provider such as Stripe, PayPal or invoice.
++**Definition:** Identifier of an external payment provider. The shop registers exactly one: `provider`, the
++payment service provider over REST, when its address is configured (`Checkout:PaymentProvider:BaseUrl`), and `mock`,
++the stand-in inside the sample, otherwise.
+ 
+ **Type:** Value Object (ID)
+ 
+@@ -491,7 +492,25 @@ Session and cart lookups are scoped to the caller, so "not yours" reads as "not
+ 
+ ### PaymentProviderNotFound · PaymentProviderUnavailable · PaymentInitiationFailed
+ 
+-**Definition:** The selected provider is unknown to the shop, known but not taking payments right now, or refused
+-to open a payment. The provider's own reason travels through unchanged.
++**Definition:** The selected provider is unknown to the shop; it is unavailable (it says it is not taking payments,
++cannot be reached, does not answer in time or answers outside its contract); or it refused to open a payment. The
++provider's reason travels on the failure and into the log. The customer sees the shop's own text: "The payment was
++refused. Please choose another way to pay." for a refusal, "The payment provider is not available right now. Please
++try again later." when the provider is unavailable.
+ 
+-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IPaymentProviderRegistry`, `IPaymentProvider`
++**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IPaymentProviderRegistry`, `IPaymentProvider`,
++`PaymentOutcome`
++
++---
++
++### PaymentOutcome
++
++**Definition:** How the payment provider answered a payment operation: `Succeeded` (the payment is authorized and
++comes with the provider's payment reference), `Refused` (the provider declined the payment, or does not offer the
++operation, and asking again the same way will not change that) or `Unavailable` (no usable answer). A refusal keeps
++the customer at the payment step to choose another way to pay.
++
++**Type:** Concept (part of the `IPaymentProvider` port contract)
++
++**Related terms:** `PaymentSelection` (keeps the reference of a succeeded payment), `PaymentInitiationFailed`,
++`PaymentProviderUnavailable`
+diff --git a/src/DcaShop.Checkout/Infrastructure/CheckoutContextRegistration.cs b/src/DcaShop.Checkout/Infrastructure/CheckoutContextRegistration.cs
+index 005ff52..52498d7 100644
+--- a/src/DcaShop.Checkout/Infrastructure/CheckoutContextRegistration.cs
++++ b/src/DcaShop.Checkout/Infrastructure/CheckoutContextRegistration.cs
+@@ -20,6 +20,7 @@ using DcaShop.Checkout.Domain.Model;
+ using DcaShop.Checkout.Domain.Service;
+ using DcaShop.SharedKernel.Infrastructure.Events;
+ 
++using Microsoft.Extensions.Configuration;
+ using Microsoft.Extensions.DependencyInjection;
+ 
+ namespace DcaShop.Checkout.Infrastructure;
+@@ -27,8 +28,11 @@ namespace DcaShop.Checkout.Infrastructure;
+ /// <summary>Wires the Checkout context.</summary>
+ public static class CheckoutContextRegistration
+ {
+-    public static IServiceCollection AddCheckoutContext(this IServiceCollection services)
++    public static IServiceCollection AddCheckoutContext(this IServiceCollection services, IConfiguration configuration)
+     {
++        ArgumentNullException.ThrowIfNull(services);
++        ArgumentNullException.ThrowIfNull(configuration);
++
+         // Domain
+         services.AddSingleton<CheckoutPricing>();
+         services.AddSingleton<CheckoutCartFactory>();
+@@ -50,7 +54,7 @@ public static class CheckoutContextRegistration
+         services.AddSingleton<ICheckoutSessionRepository, InMemoryCheckoutSessionRepository>();
+         services.AddScoped<ICartDataPort, CartDataAdapter>();
+         services.AddScoped<ICheckoutArticleDataPort, CompositeCheckoutArticleDataAdapter>();
+-        services.AddSingleton<IPaymentProvider, MockPaymentProvider>();
++        AddPaymentProvider(services, configuration);
+         services.AddSingleton<IPaymentProviderRegistry, InMemoryPaymentProviderRegistry>();
+         services.AddScoped<IEventListener, CheckoutConfirmedEventPublisher>();
+ 
+@@ -59,4 +63,28 @@ public static class CheckoutContextRegistration
+ 
+         return services;
+     }
++
++    /// <summary>
++    /// The payment service provider when its address is configured, the stand-in otherwise — one provider either way.
++    /// </summary>
++    private static void AddPaymentProvider(IServiceCollection services, IConfiguration configuration)
++    {
++        var options = configuration.GetSection(PaymentProviderOptions.SectionName).Get<PaymentProviderOptions>();
++        if (options?.BaseUrl is not { } baseUrl)
++        {
++            services.AddSingleton<IPaymentProvider, MockPaymentProvider>();
++            return;
++        }
++
++        services.AddHttpClient(RestPaymentProvider.HttpClientName, client =>
++        {
++            client.BaseAddress = WithTrailingSlash(baseUrl);
++            client.Timeout = options.Timeout;
++        });
++        services.AddSingleton<IPaymentProvider, RestPaymentProvider>();
++    }
++
++    /// <summary>So the provider's paths resolve below its address instead of replacing its last segment.</summary>
++    private static Uri WithTrailingSlash(Uri address) =>
++        address.AbsoluteUri.EndsWith('/') ? address : new Uri(address.AbsoluteUri + "/");
+ }
+\ No newline at end of file
+diff --git a/src/DcaShop.Infrastructure/DcaShopRegistration.cs b/src/DcaShop.Infrastructure/DcaShopRegistration.cs
+index c2dadf7..e091f75 100644
+--- a/src/DcaShop.Infrastructure/DcaShopRegistration.cs
++++ b/src/DcaShop.Infrastructure/DcaShopRegistration.cs
+@@ -47,7 +47,7 @@ public static class DcaShopRegistration
+         services.AddInventoryContext();
+         services.AddProductContext();
+         services.AddCartContext();
+-        services.AddCheckoutContext();
++        services.AddCheckoutContext(configuration);
+ 
+         // Generic subdomain: operating the application itself
+         services.AddBackofficeContext(configuration);
+diff --git a/src/DcaShop.Web/Views/Checkout/_OrderSummary.cshtml b/src/DcaShop.Web/Views/Checkout/_OrderSummary.cshtml
+index a66ba8d..6017b64 100644
+--- a/src/DcaShop.Web/Views/Checkout/_OrderSummary.cshtml
++++ b/src/DcaShop.Web/Views/Checkout/_OrderSummary.cshtml
+@@ -29,7 +29,7 @@ else
+ <div class="order-summary__line"><span>Shipping</span><span>@s.Totals.Shipping</span></div>
+ }
+ <div class="order-summary__line"><span>Tax</span><span>@s.Totals.Tax</span></div>
+-<div class="order-summary__total"><span>Total</span><span>@s.Totals.Total</span></div>
++<div class="order-summary__total"><span>Total</span><span data-test="order-summary-total">@s.Totals.Total</span></div>
+ }
+ </div>
+ }
+diff --git a/tests/DcaShop.E2eTests/BaseE2eTest.cs b/tests/DcaShop.E2eTests/BaseE2eTest.cs
+index de5df50..ed2ec07 100644
+--- a/tests/DcaShop.E2eTests/BaseE2eTest.cs
++++ b/tests/DcaShop.E2eTests/BaseE2eTest.cs
+@@ -5,13 +5,13 @@ namespace DcaShop.E2eTests;
+ /// <summary>Browser per test class, fresh context + page per test — the shape of the Java sample's <c>BaseE2ETest</c>.</summary>
+ public sealed class BrowserFixture : IAsyncLifetime
+ {
+-    public static readonly string BaseUrl = Environment.GetEnvironmentVariable("E2E_BASE_URL") ?? "http://localhost:5080";
++    public static string BaseUrl => ShopUnderTest.BaseUrl;
+     private static readonly string BrowserType = Environment.GetEnvironmentVariable("E2E_BROWSER") ?? "chromium";
+     private static readonly bool Headless = !string.Equals(Environment.GetEnvironmentVariable("E2E_HEADLESS"), "false", StringComparison.OrdinalIgnoreCase);
+ 
+     private IPlaywright? _playwright;
+ 
+-    public IBrowser Browser => _browser ?? throw new InvalidOperationException("Browser fixture not initialised — is E2E_BASE_URL set?");
++    public IBrowser Browser => _browser ?? throw new InvalidOperationException("Browser fixture not initialised");
+ 
+     private IBrowser? _browser;
+ 
+diff --git a/tests/DcaShop.E2eTests/DcaShop.E2eTests.csproj b/tests/DcaShop.E2eTests/DcaShop.E2eTests.csproj
+index ada3084..e25eccc 100644
+--- a/tests/DcaShop.E2eTests/DcaShop.E2eTests.csproj
++++ b/tests/DcaShop.E2eTests/DcaShop.E2eTests.csproj
+@@ -3,5 +3,8 @@
+     <!-- Same Playwright release as the Java sample's suite, so both drive the same browser builds. -->
+     <PackageReference Include="Microsoft.Playwright" Version="1.62.0" />
+     <PackageReference Include="WireMock.Net" Version="2.18.0" />
++    <!-- the suite starts the shop itself, in the test process, on a free port -->
++    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
++    <ProjectReference Include="../../src/DcaShop.Web/DcaShop.Web.csproj" />
+   </ItemGroup>
+ </Project>
+diff --git a/tests/DcaShop.E2eTests/E2eFactAttribute.cs b/tests/DcaShop.E2eTests/E2eFactAttribute.cs
+index f23bcb6..7f78f1e 100644
+--- a/tests/DcaShop.E2eTests/E2eFactAttribute.cs
++++ b/tests/DcaShop.E2eTests/E2eFactAttribute.cs
+@@ -1,18 +1,11 @@
+ namespace DcaShop.E2eTests;
+ 
+ /// <summary>
+-/// E2E tests drive a running shop through a real browser, so they only run when <c>E2E_BASE_URL</c> is set
+-/// (e.g. <c>E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests</c>); otherwise they are skipped.
++/// An E2E test. It runs against the shop the suite starts itself (<see cref="ShopUnderTest"/>), or against the one
++/// <c>E2E_BASE_URL</c> names.
+ /// </summary>
+ public sealed class E2eFactAttribute : FactAttribute
+ {
+-    public E2eFactAttribute()
+-    {
+-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("E2E_BASE_URL")))
+-        {
+-            Skip = "set E2E_BASE_URL to the running shop to run E2E tests";
+-        }
+-    }
+ }
+ 
+ /// <summary>
+@@ -27,15 +20,11 @@ public sealed class EmbeddedModeFactAttribute : FactAttribute
+         var shopRunsEmbedded = string.Equals(
+             Environment.GetEnvironmentVariable("E2E_EMBEDDED"), "true", StringComparison.OrdinalIgnoreCase);
+ 
+-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("E2E_BASE_URL")))
+-        {
+-            Skip = "set E2E_BASE_URL to the running shop to run E2E tests";
+-        }
+-        else if (embedded && !shopRunsEmbedded)
++        if (embedded && !shopRunsEmbedded)
+         {
+             Skip = "needs a shop started with Jwt__SameSite=None Jwt__SecureCookies=true behind TLS (E2E_EMBEDDED=true)";
+         }
+-        else if (embedded && !Environment.GetEnvironmentVariable("E2E_BASE_URL")!.Contains("localhost", StringComparison.Ordinal))
++        else if (embedded && !ShopUnderTest.BaseUrl.Contains("localhost", StringComparison.Ordinal))
+         {
+             Skip = "the cross-site case pairs localhost with 127.0.0.1; point E2E_BASE_URL at localhost to run it";
+         }
+diff --git a/tests/DcaShop.E2eTests/Pages/PaymentPage.cs b/tests/DcaShop.E2eTests/Pages/PaymentPage.cs
+index b927825..6c8512c 100644
+--- a/tests/DcaShop.E2eTests/Pages/PaymentPage.cs
++++ b/tests/DcaShop.E2eTests/Pages/PaymentPage.cs
+@@ -7,6 +7,7 @@ public sealed class PaymentPage : BasePage
+     private const string UrlPattern = "/checkout/payment";
+     private const string ContinueButton = "payment-continue-button";
+     private const string ProviderRadio = "payment-provider-radio";
++    private const string Total = "order-summary-total";
+ 
+     private PaymentPage(IPage page) : base(page)
+     {
+@@ -29,6 +30,9 @@ public sealed class PaymentPage : BasePage
+         return this;
+     }
+ 
++    /// <summary>The checkout session's total as the order summary shows it, e.g. <c>9.99 EUR</c>.</summary>
++    public Task<string> TotalAsync() => Page.Locator($"[data-test='{Total}']").InnerTextAsync();
++
+     public async Task<ReviewPage> ContinueToReviewAsync()
+     {
+         await ClickAsync(ContinueButton);
+diff --git a/tests/DcaShop.E2eTests/Pages/ReviewPage.cs b/tests/DcaShop.E2eTests/Pages/ReviewPage.cs
+index 8f8c1b2..7f3b83a 100644
+--- a/tests/DcaShop.E2eTests/Pages/ReviewPage.cs
++++ b/tests/DcaShop.E2eTests/Pages/ReviewPage.cs
+@@ -18,6 +18,8 @@ public sealed class ReviewPage : BasePage
+         return review;
+     }
+ 
++    public bool IsOnPage => CurrentPath.StartsWith(UrlPattern, StringComparison.Ordinal);
++
+     public Task<bool> ShowsEmailAsync(string email) => PageContainsAsync(email);
+ 
+     public Task<bool> ShowsAddressAsync(string address) => PageContainsAsync(address);
+diff --git a/tests/DcaShop.E2eTests/PaymentProviderStub.cs b/tests/DcaShop.E2eTests/PaymentProviderStub.cs
+new file mode 100644
+index 0000000..9a69404
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/PaymentProviderStub.cs
+@@ -0,0 +1,57 @@
++using System.Globalization;
++using System.Text.Json;
++
++using WireMock.RequestBuilders;
++using WireMock.ResponseBuilders;
++using WireMock.Server;
++
++namespace DcaShop.E2eTests;
++
++/// <summary>
++/// The payment provider of the shop the suite starts: a stub on a free port, started with the shop, whose address the
++/// shop is given. Unless a test arranges otherwise it authorizes every payment, so every checkout of the suite can pay.
++/// </summary>
++public static class PaymentProviderStub
++{
++    private static readonly Lazy<WireMockServer> Server = new(Start, LazyThreadSafetyMode.ExecutionAndPublication);
++
++    public static string Url => Server.Value.Url!;
++
++    /// <summary>From now on every payment request is authorized with a payment reference; the requests so far are forgotten.</summary>
++    public static void AuthorizesPayments()
++    {
++        Server.Value.Reset();
++        Authorize(Server.Value);
++    }
++
++    /// <summary>The payment requests the provider received, as amount and currency.</summary>
++    public static IReadOnlyList<(decimal Amount, string Currency)> PaymentRequests() =>
++        Server.Value.LogEntries
++            .Select(entry => entry.RequestMessage!)
++            .Where(request => request.Method == "POST" && request.Path == "/payments")
++            .Select(request =>
++            {
++                using var body = JsonDocument.Parse(request.Body!);
++                return (body.RootElement.GetProperty("amount").GetDecimal(), body.RootElement.GetProperty("currency").GetString()!);
++            })
++            .ToList();
++
++    /// <summary>A shown amount such as <c>9.99 EUR</c>, as amount and currency.</summary>
++    public static (decimal Amount, string Currency) ParseShownAmount(string shown)
++    {
++        var parts = shown.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
++        return (decimal.Parse(parts[0], CultureInfo.InvariantCulture), parts[1]);
++    }
++
++    private static WireMockServer Start()
++    {
++        var server = WireMockServer.Start();
++        Authorize(server);
++        AppDomain.CurrentDomain.ProcessExit += (_, _) => server.Stop();
++        return server;
++    }
++
++    private static void Authorize(WireMockServer server) =>
++        server.Given(Request.Create().WithPath("/payments").UsingPost())
++            .RespondWith(Response.Create().WithStatusCode(201).WithBodyAsJson(new { reference = "e2e-" + Guid.NewGuid() }));
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.E2eTests/ProviderPaymentE2eTest.cs b/tests/DcaShop.E2eTests/ProviderPaymentE2eTest.cs
+new file mode 100644
+index 0000000..e08684a
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/ProviderPaymentE2eTest.cs
+@@ -0,0 +1,52 @@
++using DcaShop.E2eTests.Pages;
++
++namespace DcaShop.E2eTests;
++
++/// <summary>
++/// Tests that arrange the suite's payment provider stub. They run alone, after the parallel suites, so the requests
++/// the stub records are this test's own.
++/// </summary>
++[CollectionDefinition(Name, DisableParallelization = true)]
++public sealed class PaymentProviderCollection
++{
++    public const string Name = "payment provider";
++}
++
++/// <summary>Paying at checkout through the payment provider, in the browser.</summary>
++[Collection(PaymentProviderCollection.Name)]
++public sealed class ProviderPaymentE2eTest : BaseE2eTest
++{
++    public ProviderPaymentE2eTest(BrowserFixture browser) : base(browser)
++    {
++    }
++
++    [E2eFact(DisplayName = "A payment the provider authorizes moves the checkout on to the review step")]
++    public async Task APaymentTheProviderAuthorizesLeadsOnToTheReview()
++    {
++        // Given a checkout session at the payment step
++        var catalog = await ProductCatalogPage.NavigateToAsync(Page);
++        var detail = await catalog.ViewFirstProductAsync();
++        await detail.AddToCartAsync();
++        var cart = await CartPage.NavigateToAsync(Page);
++        var buyer = await cart.ProceedToCheckoutAsync();
++        var delivery = await (await buyer.FillBuyerInfoAsync("payer@example.com", "Test", "Payer", "+1-555-0100")).ContinueToDeliveryAsync();
++        await delivery.FillAddressAsync("123 Main Street", "Springfield", "12345", "United States", "IL");
++        await delivery.SelectFirstShippingOptionAsync();
++        var payment = await delivery.ContinueToPaymentAsync();
++        var sessionTotal = PaymentProviderStub.ParseShownAmount(await payment.TotalAsync());
++
++        // And the payment provider authorizes payments
++        PaymentProviderStub.AuthorizesPayments();
++
++        // When the customer pays through the payment provider
++        await payment.SelectFirstPaymentProviderAsync();
++        var review = await payment.ContinueToReviewAsync();
++
++        // Then the checkout shows the review step
++        Assert.True(review.IsOnPage, "the checkout should show the review step");
++
++        // And the payment provider received one payment request for the checkout session's total
++        var request = Assert.Single(PaymentProviderStub.PaymentRequests());
++        Assert.Equal(sessionTotal, request);
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.E2eTests/ShopUnderTest.cs b/tests/DcaShop.E2eTests/ShopUnderTest.cs
+new file mode 100644
+index 0000000..9d23b8d
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/ShopUnderTest.cs
+@@ -0,0 +1,39 @@
++using Microsoft.AspNetCore.Hosting.Server;
++using Microsoft.AspNetCore.Hosting.Server.Features;
++using Microsoft.AspNetCore.Mvc.Testing;
++using Microsoft.Extensions.DependencyInjection;
++
++namespace DcaShop.E2eTests;
++
++/// <summary>
++/// The shop the browser suite drives: started once per test run, in this process, on a free port. With
++/// <c>E2E_BASE_URL</c> the suite drives a shop started elsewhere instead; without it, nothing has to run
++/// beforehand and every dependency the shop needs starts with it.
++/// </summary>
++public static class ShopUnderTest
++{
++    private static readonly Lazy<string> Url = new(Start, LazyThreadSafetyMode.ExecutionAndPublication);
++
++    public static string BaseUrl => Url.Value;
++
++    /// <summary>Whether the suite drives a shop started elsewhere, named by <c>E2E_BASE_URL</c>.</summary>
++    public static bool StartedElsewhere => !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("E2E_BASE_URL"));
++
++    private static string Start()
++    {
++        if (StartedElsewhere)
++        {
++            return Environment.GetEnvironmentVariable("E2E_BASE_URL")!.TrimEnd('/');
++        }
++
++        var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
++            builder.UseSetting("Checkout:PaymentProvider:BaseUrl", PaymentProviderStub.Url));
++        factory.UseKestrel(0);
++        factory.StartServer();
++        AppDomain.CurrentDomain.ProcessExit += (_, _) => factory.Dispose();
++
++        var address = factory.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
++        // the port Kestrel chose, on the host name the embedded case pairs with 127.0.0.1
++        return $"http://localhost:{new Uri(address).Port}";
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.IntegrationTests/ProviderPaymentTest.cs b/tests/DcaShop.IntegrationTests/ProviderPaymentTest.cs
+new file mode 100644
+index 0000000..89d0b07
+--- /dev/null
++++ b/tests/DcaShop.IntegrationTests/ProviderPaymentTest.cs
+@@ -0,0 +1,175 @@
++using System.Diagnostics;
++using System.Net;
++using System.Net.Http.Json;
++using System.Text.Json;
++using System.Text.RegularExpressions;
++
++using Microsoft.AspNetCore.Mvc.Testing;
++
++using WireMock.RequestBuilders;
++using WireMock.ResponseBuilders;
++using WireMock.Server;
++
++namespace DcaShop.IntegrationTests;
++
++/// <summary>
++/// The payment step against the payment provider, reached over HTTP: the shop is started with the provider's
++/// address, and the provider is a stub on a free port that answers what the test arranges.
++/// </summary>
++public sealed class ProviderPaymentTest : IClassFixture<WebApplicationFactory<Program>>, IDisposable
++{
++    private const string RefusalText = "The payment was refused. Please choose another way to pay.";
++    private const string UnavailableText = "The payment provider is not available right now. Please try again later.";
++
++    private readonly WebApplicationFactory<Program> _factory;
++    private readonly WireMockServer _provider = WireMockServer.Start();
++
++    public ProviderPaymentTest(WebApplicationFactory<Program> factory) => _factory = factory;
++
++    [Fact]
++    public async Task ARefusedPaymentKeepsTheCustomerAtThePaymentStepWithTheRefusalText()
++    {
++        ProviderAnswers(Response.Create().WithStatusCode(402));
++        var client = await ClientAtThePaymentStepAsync();
++
++        var response = await PayAsync(client);
++
++        await AssertStaysAtPaymentShowingAsync(response, RefusalText);
++    }
++
++    [Fact]
++    public async Task AProviderThatAnswersOnlyAfterFiveSecondsCountsAsUnavailable()
++    {
++        ProviderAnswers(Response.Create().WithStatusCode(201).WithBodyAsJson(new { reference = "late" }).WithDelay(TimeSpan.FromSeconds(5)));
++        var client = await ClientAtThePaymentStepAsync();
++
++        var watch = Stopwatch.StartNew();
++        var response = await PayAsync(client);
++        watch.Stop();
++
++        await AssertStaysAtPaymentShowingAsync(response, UnavailableText);
++        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(4), $"the late answer was awaited ({watch.Elapsed.TotalSeconds:0.0} s) instead of being abandoned at the timeout");
++    }
++
++    [Fact]
++    public async Task AnAuthorizedPaymentMovesOnToTheReviewAfterOneRequestForTheSessionTotal()
++    {
++        ProviderAnswers(Response.Create().WithStatusCode(201).WithBodyAsJson(new { reference = "pay-4711" }));
++        var client = await ClientAtThePaymentStepAsync();
++
++        var response = await PayAsync(client);
++
++        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
++        Assert.Equal("/checkout/review", response.Headers.Location!.ToString());
++        var request = Assert.Single(_provider.LogEntries).RequestMessage!;
++        Assert.Equal("POST", request.Method);
++        Assert.Equal("/payments", request.Path);
++        using var body = JsonDocument.Parse(request.Body!);
++        Assert.Equal(9.99m, body.RootElement.GetProperty("amount").GetDecimal());
++        Assert.Equal("EUR", body.RootElement.GetProperty("currency").GetString());
++    }
++
++    [Fact]
++    public async Task AProviderFailingWithAServerErrorCountsAsUnavailable()
++    {
++        ProviderAnswers(Response.Create().WithStatusCode(500));
++        var client = await ClientAtThePaymentStepAsync();
++
++        var response = await PayAsync(client);
++
++        await AssertStaysAtPaymentShowingAsync(response, UnavailableText);
++    }
++
++    [Fact]
++    public async Task AnAuthorizationWithoutAPaymentReferenceCountsAsUnavailable()
++    {
++        ProviderAnswers(Response.Create().WithStatusCode(201).WithBody("{}", encoding: System.Text.Encoding.UTF8).WithHeader("Content-Type", "application/json"));
++        var client = await ClientAtThePaymentStepAsync();
++
++        var response = await PayAsync(client);
++
++        await AssertStaysAtPaymentShowingAsync(response, UnavailableText);
++    }
++
++    [Fact]
++    public async Task AProviderThatCannotBeReachedCountsAsUnavailable()
++    {
++        _provider.Stop();
++        var client = await ClientAtThePaymentStepAsync();
++
++        var response = await PayAsync(client);
++
++        await AssertStaysAtPaymentShowingAsync(response, UnavailableText);
++    }
++
++    private void ProviderAnswers(IResponseBuilder answer) =>
++        _provider.Given(Request.Create().WithPath("/payments").UsingPost()).RespondWith(answer);
++
++    /// <summary>The shop as it runs with a payment provider configured — this test's stub.</summary>
++    private WebApplicationFactory<Program> ShopWithTheProvider() =>
++        _factory.WithWebHostBuilder(builder => builder.UseSetting("Checkout:PaymentProvider:BaseUrl", _provider.Url));
++
++    /// <summary>
++    /// A visitor whose checkout is at the payment step: one Hexagon Sticker Sheet (9.99 EUR) with Free Shipping,
++    /// so the session total is 9.99 EUR.
++    /// </summary>
++    private async Task<HttpClient> ClientAtThePaymentStepAsync()
++    {
++        var client = ShopWithTheProvider().CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
++
++        var products = await client.GetFromJsonAsync<JsonElement>("/api/products");
++        var productId = products.EnumerateArray().First(p => p.GetProperty("sku").GetString() == "STICKER-001").GetProperty("id").GetString()!;
++
++        var detail = await client.GetStringAsync($"/products/{productId}");
++        var added = await client.PostAsync("/cart/add-product", Form(detail, ("productId", productId), ("quantity", "1")));
++        Assert.Equal(HttpStatusCode.Redirect, added.StatusCode);
++
++        var cartPage = await client.GetStringAsync("/cart");
++        var cartId = Regex.Match(cartPage, @"name=""cartId"" value=""([0-9a-f-]{36})""").Groups[1].Value;
++        var started = await client.PostAsync("/checkout/start", Form(cartPage, ("cartId", cartId)));
++        Assert.Equal(HttpStatusCode.Redirect, started.StatusCode);
++
++        await Step(client, "/checkout/buyer", "/checkout/delivery",
++            ("email", "ada@example.com"), ("firstName", "Ada"), ("lastName", "Lovelace"), ("phone", "0123"));
++        await Step(client, "/checkout/delivery", "/checkout/payment",
++            ("street", "Analytical Engine Way 1"), ("city", "London"), ("postalCode", "12345"), ("country", "UK"), ("shippingOptionId", "free"));
++
++        return client;
++    }
++
++    /// <summary>The customer pays with the provider the payment page offers.</summary>
++    private static async Task<HttpResponseMessage> PayAsync(HttpClient client)
++    {
++        var paymentPage = await client.GetStringAsync("/checkout/payment");
++        var providerId = Regex.Match(paymentPage, @"name=""providerId"" value=""([^""]+)""").Groups[1].Value;
++        Assert.NotEmpty(providerId);
++
++        return await client.PostAsync("/checkout/payment", Form(paymentPage, ("providerId", providerId)));
++    }
++
++    /// <summary>Stays at the payment step: the payment page itself answers, not a redirect, with the text in its error slot.</summary>
++    private static async Task AssertStaysAtPaymentShowingAsync(HttpResponseMessage response, string text)
++    {
++        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
++        var page = await response.Content.ReadAsStringAsync();
++        Assert.Contains("data-test=\"payment-form\"", page, StringComparison.Ordinal);
++        var error = Regex.Match(page, @"data-test=""payment-error-message"">([^<]*)<").Groups[1].Value;
++        Assert.Equal(text, WebUtility.HtmlDecode(error));
++    }
++
++    private static async Task Step(HttpClient client, string url, string expectedNext, params (string, string)[] fields)
++    {
++        var response = await client.PostAsync(url, Form(await client.GetStringAsync(url), fields));
++        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
++        Assert.Equal(expectedNext, response.Headers.Location!.ToString());
++    }
++
++    private static FormUrlEncodedContent Form(string renderedPage, params (string Key, string Value)[] fields)
++    {
++        var token = Regex.Match(renderedPage, @"name=""__RequestVerificationToken"" type=""hidden"" value=""([^""]+)""").Groups[1].Value;
++        Assert.NotEmpty(token);
++        return new(fields.Append(("__RequestVerificationToken", token)).Select(f => new KeyValuePair<string, string>(f.Item1, f.Item2)));
++    }
++
++    public void Dispose() => _provider.Stop();
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.UnitTests/Checkout/SubmitPaymentUseCaseTest.cs b/tests/DcaShop.UnitTests/Checkout/SubmitPaymentUseCaseTest.cs
+index 855379e..fbdfa50 100644
+--- a/tests/DcaShop.UnitTests/Checkout/SubmitPaymentUseCaseTest.cs
++++ b/tests/DcaShop.UnitTests/Checkout/SubmitPaymentUseCaseTest.cs
+@@ -98,6 +98,41 @@ public sealed class SubmitPaymentUseCaseTest
+         Assert.Empty(_provider.Cancellations);
+     }
+ 
++    [Fact]
++    public async Task APaymentTheProviderRefusesIsReportedAsARefusalAndLeavesTheSessionAtPayment()
++    {
++        var session = await ReadySessionAsync();
++        var refusing = new AnsweringPaymentProvider(() => IPaymentProvider.PaymentResult.Refused("card declined"));
++
++        await Assert.ThrowsAsync<PaymentInitiationFailedException>(() => UseCaseWith(refusing).ExecuteAsync(
++            new SubmitPaymentCommand(session.Id.Value, Customer, "mock")));
++
++        var unchanged = await _sessions.FindByIdAsync(session.Id);
++        Assert.Equal(CheckoutStep.Payment, unchanged!.CurrentStep);
++        Assert.Null(unchanged.PaymentSelection);
++    }
++
++    [Fact]
++    public async Task AProviderThatCannotBeReachedIsReportedAsUnavailableAndLeavesTheSessionAtPayment()
++    {
++        var session = await ReadySessionAsync();
++        var unreachable = new AnsweringPaymentProvider(() => IPaymentProvider.PaymentResult.Unavailable("no answer within the timeout"));
++
++        await Assert.ThrowsAsync<PaymentProviderUnavailableException>(() => UseCaseWith(unreachable).ExecuteAsync(
++            new SubmitPaymentCommand(session.Id.Value, Customer, "mock")));
++
++        var unchanged = await _sessions.FindByIdAsync(session.Id);
++        Assert.Equal(CheckoutStep.Payment, unchanged!.CurrentStep);
++        Assert.Null(unchanged.PaymentSelection);
++    }
++
++    private SubmitPaymentUseCase UseCaseWith(IPaymentProvider provider) => new(
++        _sessions,
++        new SingleProviderRegistry(provider),
++        new SilentPublisher(),
++        new InMemoryTransactionBoundary(),
++        NullLogger<SubmitPaymentUseCase>.Instance);
++
+     private async Task<CheckoutSession> SessionWithBuyerInfoOnlyAsync()
+     {
+         var session = StartedSession();
+@@ -156,6 +191,25 @@ public sealed class SubmitPaymentUseCaseTest
+         public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
+     }
+ 
++    /// <summary>A provider whose every initiation gets the answer the test arranged.</summary>
++    private sealed class AnsweringPaymentProvider(Func<IPaymentProvider.PaymentResult> answer) : IPaymentProvider
++    {
++        public PaymentProviderId Id => PaymentProviderId.Of("mock");
++
++        public string DisplayName => "Answering provider";
++
++        public Task<IPaymentProvider.PaymentResult> InitiatePaymentAsync(CheckoutSessionId sessionId, Money amount, CancellationToken cancellationToken = default) =>
++            Task.FromResult(answer());
++
++        public Task<IPaymentProvider.PaymentResult> ConfirmPaymentAsync(string providerReference, CancellationToken cancellationToken = default) =>
++            Task.FromResult(IPaymentProvider.PaymentResult.Succeeded(providerReference));
++
++        public Task<IPaymentProvider.PaymentResult> CancelPaymentAsync(string providerReference, CancellationToken cancellationToken = default) =>
++            Task.FromResult(IPaymentProvider.PaymentResult.Succeeded(providerReference));
++
++        public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
++    }
++
+     /// <summary>The only provider this shop knows in the test.</summary>
+     private sealed record SingleProviderRegistry(IPaymentProvider Provider) : IPaymentProviderRegistry
+     {

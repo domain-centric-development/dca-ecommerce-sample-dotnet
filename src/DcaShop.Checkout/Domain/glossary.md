@@ -261,8 +261,9 @@ Kernel should be used here.
 
 ### PaymentProviderId
 
-**Definition:** Identifier of an external payment provider. The sample registers a single one,
-`mock`, standing in for a real provider such as Stripe, PayPal or invoice.
+**Definition:** Identifier of an external payment provider. The shop registers exactly one: `provider`, the
+payment service provider over REST, when its address is configured (`Checkout:PaymentProvider:BaseUrl`), and `mock`,
+the stand-in inside the sample, otherwise.
 
 **Type:** Value Object (ID)
 
@@ -491,7 +492,25 @@ Session and cart lookups are scoped to the caller, so "not yours" reads as "not 
 
 ### PaymentProviderNotFound · PaymentProviderUnavailable · PaymentInitiationFailed
 
-**Definition:** The selected provider is unknown to the shop, known but not taking payments right now, or refused
-to open a payment. The provider's own reason travels through unchanged.
+**Definition:** The selected provider is unknown to the shop; it is unavailable (it says it is not taking payments,
+cannot be reached, does not answer in time or answers outside its contract); or it refused to open a payment. The
+provider's reason travels on the failure and into the log. The customer sees the shop's own text: "The payment was
+refused. Please choose another way to pay." for a refusal, "The payment provider is not available right now. Please
+try again later." when the provider is unavailable.
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IPaymentProviderRegistry`, `IPaymentProvider`
+**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IPaymentProviderRegistry`, `IPaymentProvider`,
+`PaymentOutcome`
+
+---
+
+### PaymentOutcome
+
+**Definition:** How the payment provider answered a payment operation: `Succeeded` (the payment is authorized and
+comes with the provider's payment reference), `Refused` (the provider declined the payment, or does not offer the
+operation, and asking again the same way will not change that) or `Unavailable` (no usable answer). A refusal keeps
+the customer at the payment step to choose another way to pay.
+
+**Type:** Concept (part of the `IPaymentProvider` port contract)
+
+**Related terms:** `PaymentSelection` (keeps the reference of a succeeded payment), `PaymentInitiationFailed`,
+`PaymentProviderUnavailable`

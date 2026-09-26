@@ -25,6 +25,21 @@ Browse `/products`, add items to the cart, check out in five steps (buyer → de
 confirmation), register an account and log in. All state is in memory; restarting resets the shop, accounts
 included.
 
+Payment goes to a stand-in inside the sample. To pay through a payment service provider over REST, give its address
+as `Checkout:PaymentProvider:BaseUrl` (environment: `Checkout__PaymentProvider__BaseUrl`); `RestPaymentProvider`
+then sends `POST /payments` and treats no answer within `Checkout:PaymentProvider:Timeout` (default 2 seconds) as
+the provider being unavailable.
+
+To see the payment provider on this machine, start its stub and point the shop at it. `PAYMENT_STUB` picks how it
+answers — `authorize` (default), `refuse` or `slow` (`stubs/payment-provider/README.md`):
+
+```bash
+PAYMENT_STUB=refuse docker compose --profile provider-stub up -d payment-provider   # WireMock on localhost:8089
+Checkout__PaymentProvider__BaseUrl=http://localhost:8089 dotnet run --project src/DcaShop.Web
+```
+
+Another answer is the same command with another `PAYMENT_STUB` and `--force-recreate`; the shop keeps running.
+
 > Architecture tests must run on **Debug** builds — ArchUnitNET drops the async state machines of optimized
 > builds and would miss dependencies inside `async` method bodies. `dotnet test` defaults to Debug.
 

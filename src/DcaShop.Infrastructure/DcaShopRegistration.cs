@@ -47,7 +47,7 @@ public static class DcaShopRegistration
         services.AddInventoryContext();
         services.AddProductContext();
         services.AddCartContext();
-        services.AddCheckoutContext();
+        services.AddCheckoutContext(configuration);
 
         // Generic subdomain: operating the application itself
         services.AddBackofficeContext(configuration);
