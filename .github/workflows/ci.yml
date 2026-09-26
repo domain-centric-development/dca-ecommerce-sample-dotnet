@@ -31,6 +31,10 @@ jobs:
       # state machines a Release build produces.
       - run: dotnet build -c Debug --no-restore
 
+      # The browser suite starts the shop itself and needs a browser: the one the Playwright package pins.
+      - name: Install the browser for the end-user suite
+        run: pwsh tests/DcaShop.E2eTests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
+
       - run: dotnet test -c Debug --no-build --logger "trx"
 
       - name: Context map is up to date
