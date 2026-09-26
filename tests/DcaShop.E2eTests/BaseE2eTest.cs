@@ -5,13 +5,13 @@ namespace DcaShop.E2eTests;
 /// <summary>Browser per test class, fresh context + page per test — the shape of the Java sample's <c>BaseE2ETest</c>.</summary>
 public sealed class BrowserFixture : IAsyncLifetime
 {
-    public static readonly string BaseUrl = Environment.GetEnvironmentVariable("E2E_BASE_URL") ?? "http://localhost:5080";
+    public static string BaseUrl => ShopUnderTest.BaseUrl;
     private static readonly string BrowserType = Environment.GetEnvironmentVariable("E2E_BROWSER") ?? "chromium";
     private static readonly bool Headless = !string.Equals(Environment.GetEnvironmentVariable("E2E_HEADLESS"), "false", StringComparison.OrdinalIgnoreCase);
 
     private IPlaywright? _playwright;
 
-    public IBrowser Browser => _browser ?? throw new InvalidOperationException("Browser fixture not initialised — is E2E_BASE_URL set?");
+    public IBrowser Browser => _browser ?? throw new InvalidOperationException("Browser fixture not initialised");
 
     private IBrowser? _browser;
 

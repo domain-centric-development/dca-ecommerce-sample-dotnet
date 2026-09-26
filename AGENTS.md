@@ -44,7 +44,8 @@ dotnet test                              # everything
 dotnet test tests/DcaShop.ArchitectureTests   # DCA rule catalog (Debug build required)
 dotnet test tests/DcaShop.UnitTests --filter "FullyQualifiedName~ShoppingCart"
 dotnet run --project src/DcaShop.Web     # http://localhost:5080
-E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests   # Playwright; skipped without E2E_BASE_URL
+dotnet test tests/DcaShop.E2eTests                                       # Playwright; the suite starts the shop on a free port
+E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests   # the same, against a shop started elsewhere
 docker compose --profile tools run --rm e2e                              # same suite, browsers from the image
 docker compose up --build                                                # same shop in a container
 docker compose run --rm test                                             # tests without a local SDK
