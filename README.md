@@ -30,15 +30,18 @@ as `Checkout:PaymentProvider:BaseUrl` (environment: `Checkout__PaymentProvider__
 then sends `POST /payments` and treats no answer within `Checkout:PaymentProvider:Timeout` (default 2 seconds) as
 the provider being unavailable.
 
-To see the payment provider on this machine, start its stub and point the shop at it. `PAYMENT_STUB` picks how it
-answers — `authorize` (default), `refuse` or `slow` (`stubs/payment-provider/README.md`):
+To see the payment provider on this machine, run the shop against its stub — WireMock on `localhost:8089`, which
+answers `authorize` (default), `refuse` or `slow` (`stubs/payment-provider/README.md`). The `justfile` wraps it
+(`brew install just`; `just` lists the recipes):
 
 ```bash
-PAYMENT_STUB=refuse docker compose --profile provider-stub up -d payment-provider   # WireMock on localhost:8089
-Checkout__PaymentProvider__BaseUrl=http://localhost:8089 dotnet run --project src/DcaShop.Web
+just run-with-provider refuse        # the stub, then the shop paying through it; the stub stops with the shop
+just run-with-provider authorize 5091  # another answer, another port
+just stub slow                       # only the stub — another answer while the shop keeps running
 ```
 
-Another answer is the same command with another `PAYMENT_STUB` and `--force-recreate`; the shop keeps running.
+Without `just`: `PAYMENT_STUB=refuse docker compose --profile provider-stub up -d payment-provider`, then
+`Checkout__PaymentProvider__BaseUrl=http://localhost:8089 dotnet run --project src/DcaShop.Web`.
 
 > Architecture tests must run on **Debug** builds — ArchUnitNET drops the async state machines of optimized
 > builds and would miss dependencies inside `async` method bodies. `dotnet test` defaults to Debug.

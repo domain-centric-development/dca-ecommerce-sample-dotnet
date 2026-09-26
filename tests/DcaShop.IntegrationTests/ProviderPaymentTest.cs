@@ -65,7 +65,7 @@ public sealed class ProviderPaymentTest : IClassFixture<WebApplicationFactory<Pr
         Assert.Equal("POST", request.Method);
         Assert.Equal("/payments", request.Path);
         using var body = JsonDocument.Parse(request.Body!);
-        Assert.Equal(9.99m, body.RootElement.GetProperty("amount").GetDecimal());
+        Assert.Equal("9.99", body.RootElement.GetProperty("amount").GetString());
         Assert.Equal("EUR", body.RootElement.GetProperty("currency").GetString());
     }
 

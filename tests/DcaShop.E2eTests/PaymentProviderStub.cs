@@ -32,7 +32,9 @@ public static class PaymentProviderStub
             .Select(request =>
             {
                 using var body = JsonDocument.Parse(request.Body!);
-                return (body.RootElement.GetProperty("amount").GetDecimal(), body.RootElement.GetProperty("currency").GetString()!);
+                // the contract sends the amount as a decimal string ("9.99"); reading it as a number would fail here
+                var amount = decimal.Parse(body.RootElement.GetProperty("amount").GetString()!, CultureInfo.InvariantCulture);
+                return (amount, body.RootElement.GetProperty("currency").GetString()!);
             })
             .ToList();
 

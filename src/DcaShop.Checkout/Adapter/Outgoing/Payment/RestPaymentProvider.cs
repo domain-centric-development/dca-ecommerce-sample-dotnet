@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -44,7 +45,7 @@ public sealed class RestPaymentProvider : IPaymentProvider
         try
         {
             using var response = await _httpClients.CreateClient(HttpClientName)
-                .PostAsJsonAsync("payments", new PaymentRequest(amount.Amount, amount.Currency), cancellationToken)
+                .PostAsJsonAsync("payments", new PaymentRequest(amount.Amount.ToString("0.00", CultureInfo.InvariantCulture), amount.Currency), cancellationToken)
                 .ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.PaymentRequired)
@@ -91,7 +92,8 @@ public sealed class RestPaymentProvider : IPaymentProvider
         return IPaymentProvider.PaymentResult.Unavailable(reason);
     }
 
-    private sealed record PaymentRequest(decimal Amount, string Currency);
+    /// <summary>The amount as a decimal string with two places — a JSON number would pass through binary floating point.</summary>
+    private sealed record PaymentRequest(string Amount, string Currency);
 
     private sealed record PaymentAuthorization(string? Reference);
 }
