@@ -56,12 +56,13 @@ public sealed class ActiveCartUniquenessTest
         for (var round = 0; round < Rounds; round++)
         {
             var carts = new InMemoryShoppingCartRepository();
-            var useCase = new GetOrCreateActiveCartUseCase(carts, new SilentPublisher(), new InMemoryTransactionBoundary());
             var customer = $"customer-{Guid.NewGuid()}";
 
             using var startLine = new Barrier(ConcurrentRequests);
             var answers = await Task.WhenAll(Enumerable.Range(0, ConcurrentRequests).Select(_ => Task.Run(async () =>
             {
+                // One boundary per request, as the application scopes it; the store is the one they share.
+                var useCase = new GetOrCreateActiveCartUseCase(carts, new SilentPublisher(), new InMemoryTransactionBoundary());
                 startLine.SignalAndWait();
                 var result = await useCase.ExecuteAsync(new GetOrCreateActiveCartCommand(customer));
                 return result.CartId;
