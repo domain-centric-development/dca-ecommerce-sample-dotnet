@@ -1,0 +1,18 @@
+gate:pass story — not-found-title in context portal with 1 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.8)
+gate:pass approved — story is approved
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:note decisions — no decision record for this story
+gate:pass tests-mapped — 1 test(s) mapped to 1 criterion(s)
+gate:pass tests-exist — DcaShop.E2eTests.NotFoundTitleE2eTest#NotFoundPageIsTitledWithTheShopName found in tests/DcaShop.E2eTests/NotFoundTitleE2eTest.cs (not-found-tab-reads-the-shop-name, by a file named after the class)
+gate:pass compiles — `dotnet build` succeeded
+gate:pass tests-green — DcaShop.E2eTests.NotFoundTitleE2eTest#NotFoundPageIsTitledWithTheShopName is green (not-found-tab-reads-the-shop-name, via `e2eTest:`, report by the display name declared in the code ("The not-found page is titled with the shop's name"))
+gate:pass red-proof — 1 test(s) are the version that was seen failing
+gate:pass suite — `dotnet test tests/DcaShop.IntegrationTests --logger trx` (test.integration) ran 80 case(s), none failed
+gate:pass suite — `dotnet test tests/DcaShop.UnitTests --logger trx` (test) ran 158 case(s), none failed
+gate:note files-listed — listed but not changed by this stage: Views/Shared/_Layout.cshtml:9
+gate:pass files-listed — build.md lists the 1 file(s) the stage changed
+gate:pass tests-kept — no test that existed before this story changed what it expects
+gate:pass architecture — `dotnet test tests/DcaShop.ArchitectureTests` succeeded
+gate:pass format — `dotnet format --verify-no-changes` succeeded
+gate:pass story not-found-title stage build

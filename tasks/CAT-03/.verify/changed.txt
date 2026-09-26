@@ -1,0 +1,7 @@
+modified	project/backlog/README.md
+modified	project/backlog/browse-catalogue/CAT-03.md
+added	project/backlog/browse-catalogue/not-found-title.md
+modified	src/DcaShop.Web/Views/Error/404.cshtml
+added	tests/DcaShop.E2eTests/NotFoundTitleE2eTest.cs
+added	tests/DcaShop.E2eTests/Pages/NotFoundPage.cs
+added	tests/DcaShop.IntegrationTests/NotFoundPageTest.cs

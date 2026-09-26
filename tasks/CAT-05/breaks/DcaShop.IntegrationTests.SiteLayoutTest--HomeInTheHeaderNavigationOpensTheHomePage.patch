@@ -1,0 +1,12 @@
+diff --git a/src/DcaShop.Web/Views/Shared/_Layout.cshtml b/src/DcaShop.Web/Views/Shared/_Layout.cshtml
+--- a/src/DcaShop.Web/Views/Shared/_Layout.cshtml
++++ b/src/DcaShop.Web/Views/Shared/_Layout.cshtml
+@@ -23,7 +23,7 @@
+ <a class="site-header__logo" href="/" data-test="site-logo"><svg class="site-header__mark" viewBox="17.4 12 85.2 96" fill="none" aria-hidden="true" focusable="false"><polygon points="60,20 94.6,40 94.6,80 60,100 25.4,80 25.4,40" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/><circle cx="60" cy="20" r="8" fill="currentColor"/><circle cx="94.6" cy="40" r="8" fill="currentColor"/><circle cx="94.6" cy="80" r="8" fill="currentColor"/><circle cx="60" cy="100" r="8" fill="currentColor"/><circle cx="25.4" cy="80" r="8" fill="currentColor"/><circle cx="25.4" cy="40" r="8" fill="currentColor"/><circle class="site-header__mark-core" cx="60" cy="60" r="12"/></svg><span class="site-header__wordmark">domaincentric<span class="brand-tld">.commerce</span></span></a>
+ <nav class="nav" aria-label="Main navigation">
+ <ul class="nav__list">
+-<li class="nav__item"><a class="nav__link" href="/" data-test="nav-home-link">Home</a></li>
++<li class="nav__item"><a class="nav__link" href="/products" data-test="nav-home-link">Home</a></li>
+ <li class="nav__item"><a class="nav__link" href="/products" data-test="nav-products-link">Products</a></li>
+ </ul>
+ </nav>

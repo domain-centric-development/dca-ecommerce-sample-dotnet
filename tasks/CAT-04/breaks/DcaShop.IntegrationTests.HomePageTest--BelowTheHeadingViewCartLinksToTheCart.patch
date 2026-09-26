@@ -1,0 +1,12 @@
+diff --git a/src/DcaShop.Web/Views/Home/Index.cshtml b/src/DcaShop.Web/Views/Home/Index.cshtml
+--- a/src/DcaShop.Web/Views/Home/Index.cshtml
++++ b/src/DcaShop.Web/Views/Home/Index.cshtml
+@@ -5,7 +5,7 @@
+ <p class="hero__description">Everything this architecture is made of: the books it grew out of, the supplies a design workshop runs on, and hexagons for your desk.</p>
+ <div class="hero__actions">
+ <a class="hero__cta hero__cta--primary" href="/products" data-test="browse-products-link">Browse Products</a>
+-<a class="hero__cta hero__cta--secondary" href="/cart" data-test="view-cart-link">View Cart</a>
++<a class="hero__cta hero__cta--secondary" href="/products" data-test="view-cart-link">View Cart</a>
+ </div>
+ </section>
+ @await Component.InvokeAsync("ProductSlider")

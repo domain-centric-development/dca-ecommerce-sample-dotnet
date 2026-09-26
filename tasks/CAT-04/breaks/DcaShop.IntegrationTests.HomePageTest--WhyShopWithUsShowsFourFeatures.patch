@@ -1,0 +1,12 @@
+diff --git a/src/DcaShop.Web/Views/Home/Index.cshtml b/src/DcaShop.Web/Views/Home/Index.cshtml
+--- a/src/DcaShop.Web/Views/Home/Index.cshtml
++++ b/src/DcaShop.Web/Views/Home/Index.cshtml
+@@ -15,7 +15,7 @@
+ <div class="feature-card"><span class="feature-card__icon">&#10140;</span><h3 class="feature-card__title">Free Shipping</h3><p class="feature-card__description">Books ship cushioned, posters rolled in a tube, hexagons in a fitted box. Free over &#8364;50.</p></div>
+ <div class="feature-card"><span class="feature-card__icon">&#9670;</span><h3 class="feature-card__title">Secure Payments</h3><p class="feature-card__description">Card or invoice, encrypted end to end. Your payment details never touch our order history.</p></div>
+ <div class="feature-card"><span class="feature-card__icon">&#10022;</span><h3 class="feature-card__title">Built to Last</h3><p class="feature-card__description">Beech and oiled oak, hard enamel, heavyweight cotton. Objects that survive a decade of workshops.</p></div>
+-<div class="feature-card"><span class="feature-card__icon">&#8635;</span><h3 class="feature-card__title">Easy Returns</h3><p class="feature-card__description">Not the hexagon you pictured? Send any item back within 30 days for a full refund.</p></div>
++<div class="feature-card"><span class="feature-card__icon">&#8635;</span><h3 class="feature-card__title">Easy Returns</h3><p class="feature-card__description">Not the hexagon you pictured? Send any item back within 14 days for a full refund.</p></div>
+ </div>
+ </section>
+ <section class="section section--muted" data-test="categories">

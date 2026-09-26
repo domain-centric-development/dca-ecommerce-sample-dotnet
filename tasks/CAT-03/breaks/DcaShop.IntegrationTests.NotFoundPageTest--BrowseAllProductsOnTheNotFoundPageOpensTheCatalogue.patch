@@ -1,0 +1,10 @@
+--- a/src/DcaShop.Web/Views/Error/404.cshtml
++++ b/src/DcaShop.Web/Views/Error/404.cshtml
+@@ -4,6 +4,6 @@
+ <p class="error-page__message">The page you're looking for doesn't exist or has been removed.
+ Perhaps you were looking for one of our products?</p>
+ <div class="error-page__action">
+-<a class="btn btn--accent" href="/products" data-test="error-browse-link">Browse All Products</a>
++<a class="btn btn--accent" href="/" data-test="error-browse-link">Browse All Products</a>
+ <a class="btn btn--secondary" href="/" data-test="error-home-link">Go to Homepage</a>
+ </div>

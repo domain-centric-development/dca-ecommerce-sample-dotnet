@@ -1,0 +1,13 @@
+gate:pass story — not-found-title in context portal with 1 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.8)
+gate:pass approved — story is approved
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:pass tests-mapped — 1 test(s) mapped to 1 criterion(s)
+gate:pass tests-exist — DcaShop.E2eTests.NotFoundTitleE2eTest#NotFoundPageIsTitledWithTheShopName found in tests/DcaShop.E2eTests/NotFoundTitleE2eTest.cs (not-found-tab-reads-the-shop-name, by a file named after the class)
+gate:pass compiles — `dotnet build` succeeded
+gate:fail tests-red — DcaShop.E2eTests.NotFoundTitleE2eTest#NotFoundPageIsTitledWithTheShopName passes before the build stage — a test that is green before the code exists proves nothing about 'not-found-tab-reads-the-shop-name'. Either the test asserts nothing new (the test stage fixes it), or 'not-found-tab-reads-the-shop-name' describes behaviour the system already has — then the criterion does not belong in the story, and that is the story author's call, not a stage's.
+gate:pass levels — every end-user test belongs to the happy path or a browser-only scenario
+gate:pass test-titles — every end-user test carries its scenario's title
+gate:pass files-listed — tests.md lists the 2 file(s) the stage changed
+gate:pass tests-kept — no test that existed before this story changed what it expects
+gate:fail story not-found-title stage test

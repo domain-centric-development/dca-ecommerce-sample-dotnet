@@ -1,0 +1,3 @@
+modified	src/DcaShop.Web/Views/Error/404.cshtml
+added	tests/DcaShop.E2eTests/NotFoundTitleE2eTest.cs
+added	tests/DcaShop.E2eTests/Pages/NotFoundPage.cs

@@ -21,5 +21,6 @@ What the shop does today comes in as **adopted** stories (`status: adopted`) fro
 replay backlog: the pipeline maps each scenario to a test that exists here and is green, writes a
 characterization test where none does — shown to work by a break that turns it red — and a fresh judge
 reads every test against its scenario. Adoption is incremental, epic by epic as new work needs it.
-`browse-catalogue` is the first — CAT-01 and CAT-02 adopted, and `catalogue-title`, the change that brought
-the catalogue's title in line with the Java shop, which the adoption found.
+`browse-catalogue` is the first, adopted whole — CAT-01 to CAT-05 — with two changes the adoption found where
+this shop differed from the Java shop: `catalogue-title` (the catalogue's title) and `not-found-title` (the
+not-found page's title).

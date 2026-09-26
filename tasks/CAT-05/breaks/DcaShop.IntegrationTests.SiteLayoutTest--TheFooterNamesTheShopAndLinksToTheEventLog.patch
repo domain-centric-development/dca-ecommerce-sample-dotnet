@@ -1,0 +1,12 @@
+diff --git a/src/DcaShop.Web/Views/Shared/_Layout.cshtml b/src/DcaShop.Web/Views/Shared/_Layout.cshtml
+--- a/src/DcaShop.Web/Views/Shared/_Layout.cshtml
++++ b/src/DcaShop.Web/Views/Shared/_Layout.cshtml
+@@ -64,7 +64,7 @@
+ </main>
+ <footer class="site-footer" data-test="site-footer">
+ <div class="site-footer__inner">
+-<div class="site-footer__text">domaincentric.commerce &mdash; Built with Domain-Centric Architecture</div>
++<div class="site-footer__text">domaincentric.commerce - Built with Domain-Centric Architecture</div>
+ <div class="site-footer__links"><a class="site-footer__link" href="/backoffice/events" data-test="footer-event-log-link">Event Log</a></div>
+ <div class="theme-switcher" data-test="theme-switcher">
+ <label class="theme-switcher__label" for="theme-select">Theme</label>

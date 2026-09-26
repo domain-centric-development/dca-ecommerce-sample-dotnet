@@ -1,0 +1,11 @@
+gate:pass story — not-found-title in context portal with 1 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.8)
+gate:pass approved — story is approved
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:note decisions — no decision record for this story
+gate:pass happy-path — happy path: not-found-tab-reads-the-shop-name
+gate:pass context-map — context 'portal' is on project/domain.md
+gate:pass instruction-size — AGENTS.md is 25908 bytes, within a tool's budget
+gate:pass product — project/product.md fills all 6 headings of the product description
+gate:pass tech — project/tech.md fills all 6 headings of the technical description
+gate:pass story not-found-title stage plan

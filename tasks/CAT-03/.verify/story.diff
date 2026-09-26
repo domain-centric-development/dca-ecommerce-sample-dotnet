@@ -1,0 +1,242 @@
+diff --git a/project/backlog/README.md b/project/backlog/README.md
+index 48c657a..23a7ac6 100644
+--- a/project/backlog/README.md
++++ b/project/backlog/README.md
+@@ -21,5 +21,6 @@ What the shop does today comes in as **adopted** stories (`status: adopted`) fro
+ replay backlog: the pipeline maps each scenario to a test that exists here and is green, writes a
+ characterization test where none does — shown to work by a break that turns it red — and a fresh judge
+ reads every test against its scenario. Adoption is incremental, epic by epic as new work needs it.
+-`browse-catalogue` is the first — CAT-01 and CAT-02 adopted, and `catalogue-title`, the change that brought
+-the catalogue's title in line with the Java shop, which the adoption found.
++`browse-catalogue` is the first, adopted whole — CAT-01 to CAT-05 — with two changes the adoption found where
++this shop differed from the Java shop: `catalogue-title` (the catalogue's title) and `not-found-title` (the
++not-found page's title).
+diff --git a/project/backlog/browse-catalogue/CAT-03.md b/project/backlog/browse-catalogue/CAT-03.md
+index cf20973..50ab483 100644
+--- a/project/backlog/browse-catalogue/CAT-03.md
++++ b/project/backlog/browse-catalogue/CAT-03.md
+@@ -4,7 +4,7 @@ epic: browse-catalogue
+ status: adopted
+ context: product
+ title: A product that does not exist
+-depends_on: [CAT-02, CAT-04]
++depends_on: [CAT-02, CAT-04, not-found-title]
+ ---
+ 
+ # A product that does not exist
+diff --git a/project/backlog/browse-catalogue/not-found-title.md b/project/backlog/browse-catalogue/not-found-title.md
+new file mode 100644
+index 0000000..80e3c6a
+--- /dev/null
++++ b/project/backlog/browse-catalogue/not-found-title.md
+@@ -0,0 +1,33 @@
++---
++id: not-found-title
++epic: browse-catalogue
++status: approved
++context: portal
++title: The not-found page carries the shop's name as its title
++depends_on: []
++---
++
++# The not-found page carries the shop's name as its title
++
++## Story
++
++As a visitor who lands on a page that does not exist I want the tab to still name the shop, so that the tab
++reads the same way in both shops.
++
++## Acceptance criteria
++
++### Rule: The not-found page carries the shop's name as its title
++
++#### not-found-tab-reads-the-shop-name (happy path)
++Title: The not-found page is titled with the shop's name
++- Given the seeded sample catalogue, in which no product has the id "no-such-product"
++- When a visitor opens the product page `/products/no-such-product`
++- Then the browser tab title is "domaincentric.commerce"
++
++## Changed expectations
++
++- The not-found page's title reads "Page Not Found" now and "domaincentric.commerce" after.
++
++## Assumptions
++
++- answered: the "404" code, the heading "Page Not Found", the message and both links stay as they are — CAT-03-01.
+diff --git a/src/DcaShop.Web/Views/Error/404.cshtml b/src/DcaShop.Web/Views/Error/404.cshtml
+index 6cac4a4..9530063 100644
+--- a/src/DcaShop.Web/Views/Error/404.cshtml
++++ b/src/DcaShop.Web/Views/Error/404.cshtml
+@@ -1,4 +1,3 @@
+-@{ ViewData["Title"] = "Page Not Found"; }
+ <div class="error-page">
+ <div class="error-page__code">404</div>
+ <h2 class="error-page__title">Page Not Found</h2>
+diff --git a/tests/DcaShop.E2eTests/NotFoundTitleE2eTest.cs b/tests/DcaShop.E2eTests/NotFoundTitleE2eTest.cs
+new file mode 100644
+index 0000000..4e4e717
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/NotFoundTitleE2eTest.cs
+@@ -0,0 +1,27 @@
++using DcaShop.E2eTests.Pages;
++
++namespace DcaShop.E2eTests;
++
++/// <summary>
++/// A page that does not exist still names the shop in the browser tab, the same way in both samples.
++/// </summary>
++public sealed class NotFoundTitleE2eTest : BaseE2eTest
++{
++    public NotFoundTitleE2eTest(BrowserFixture browser) : base(browser)
++    {
++    }
++
++    [E2eFact(DisplayName = "The not-found page is titled with the shop's name")]
++    public async Task NotFoundPageIsTitledWithTheShopName()
++    {
++        var notFound = await NotFoundPage.NavigateToAsync(Page, "/products/no-such-product");
++
++        Assert.Equal("domaincentric.commerce", await notFound.DocumentTitleAsync());
++        Assert.True(await notFound.ShowsAsync("404"));
++        Assert.True(await notFound.ShowsAsync("Page Not Found"));
++        Assert.True(await notFound.ShowsAsync(
++            "The page you're looking for doesn't exist or has been removed. Perhaps you were looking for one of our products?"));
++        Assert.Equal(("Browse All Products", "/products"), await notFound.BrowseLinkAsync());
++        Assert.Equal(("Go to Homepage", "/"), await notFound.HomeLinkAsync());
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.E2eTests/Pages/NotFoundPage.cs b/tests/DcaShop.E2eTests/Pages/NotFoundPage.cs
+new file mode 100644
+index 0000000..0566320
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/Pages/NotFoundPage.cs
+@@ -0,0 +1,47 @@
++using System.Text.RegularExpressions;
++
++using Microsoft.Playwright;
++
++namespace DcaShop.E2eTests.Pages;
++
++/// <summary>The page the shop answers for a path that does not exist.</summary>
++public sealed partial class NotFoundPage : BasePage
++{
++    private const string BrowseLink = "error-browse-link";
++    private const string HomeLink = "error-home-link";
++
++    private NotFoundPage(IPage page) : base(page)
++    {
++    }
++
++    public static async Task<NotFoundPage> NavigateToAsync(IPage page, string path)
++    {
++        await page.GotoAsync(BaseUrl + path);
++        var notFound = new NotFoundPage(page);
++        await notFound.WaitForUrlAsync(path);
++        await notFound.WaitForAsync(BrowseLink);
++        return notFound;
++    }
++
++    /// <summary>The document title, as the browser tab shows it.</summary>
++    public Task<string> DocumentTitleAsync() => Page.TitleAsync();
++
++    /// <summary>True when the page shows the text, whitespace and line breaks read as single spaces.</summary>
++    public async Task<bool> ShowsAsync(string text) =>
++        Whitespace().Replace(await Page.Locator("body").InnerTextAsync(), " ").Contains(text, StringComparison.Ordinal);
++
++    /// <summary>The label and target of the link to the catalogue.</summary>
++    public Task<(string Label, string? Href)> BrowseLinkAsync() => LinkAsync(BrowseLink);
++
++    /// <summary>The label and target of the link to the homepage.</summary>
++    public Task<(string Label, string? Href)> HomeLinkAsync() => LinkAsync(HomeLink);
++
++    private async Task<(string Label, string? Href)> LinkAsync(string dataTest)
++    {
++        var link = Page.Locator($"[data-test='{dataTest}']");
++        return ((await link.InnerTextAsync()).Trim(), await link.GetAttributeAsync("href"));
++    }
++
++    [GeneratedRegex(@"\s+")]
++    private static partial Regex Whitespace();
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.IntegrationTests/NotFoundPageTest.cs b/tests/DcaShop.IntegrationTests/NotFoundPageTest.cs
+new file mode 100644
+index 0000000..940a0f2
+--- /dev/null
++++ b/tests/DcaShop.IntegrationTests/NotFoundPageTest.cs
+@@ -0,0 +1,73 @@
++using System.Net;
++using System.Text.RegularExpressions;
++
++using Microsoft.AspNetCore.Mvc.Testing;
++
++namespace DcaShop.IntegrationTests;
++
++/// <summary>
++/// The page the shop answers for a product address no product has, through the real HTTP pipeline: where its two
++/// ways on lead.
++/// </summary>
++public sealed class NotFoundPageTest : IClassFixture<WebApplicationFactory<Program>>
++{
++    private const string UnknownProduct = "/products/no-such-product";
++
++    private readonly WebApplicationFactory<Program> _factory;
++
++    public NotFoundPageTest(WebApplicationFactory<Program> factory)
++    {
++        _factory = factory;
++    }
++
++    [Fact]
++    public async Task BrowseAllProductsOnTheNotFoundPageOpensTheCatalogue()
++    {
++        var client = _factory.CreateClient();
++        var notFound = await NotFoundPage(client);
++        var browse = Link(notFound, "error-browse-link");
++        Assert.Equal("Browse All Products", browse.Text);
++
++        var followed = await client.GetStringAsync(browse.Target);
++
++        Assert.Equal("Our Products", Rendered(Match(followed, @"<h1[^>]*>(.*?)</h1>")));
++    }
++
++    [Fact]
++    public async Task GoToHomepageOnTheNotFoundPageOpensTheHomePage()
++    {
++        var client = _factory.CreateClient();
++        var notFound = await NotFoundPage(client);
++        var home = Link(notFound, "error-home-link");
++        Assert.Equal("Go to Homepage", home.Text);
++
++        var followed = await client.GetStringAsync(home.Target);
++
++        Assert.Equal("Welcome to domaincentric.commerce", Rendered(Match(followed, @"<h1[^>]*>(.*?)</h1>")));
++    }
++
++    private static async Task<string> NotFoundPage(HttpClient client)
++    {
++        var response = await client.GetAsync(UnknownProduct);
++        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
++        return await response.Content.ReadAsStringAsync();
++    }
++
++    /// <summary>The target and text of the anchor carrying <paramref name="dataTest"/>.</summary>
++    private static (string Target, string Text) Link(string markup, string dataTest)
++    {
++        var match = Regex.Match(markup, $@"<a\b[^>]*href=""([^""]+)""[^>]*data-test=""{Regex.Escape(dataTest)}"">([^<]*)</a>");
++        Assert.True(match.Success, $"the markup offers a {dataTest}");
++        return (match.Groups[1].Value, Rendered(match.Groups[2].Value));
++    }
++
++    private static string Match(string markup, string pattern)
++    {
++        var match = Regex.Match(markup, pattern, RegexOptions.Singleline);
++        Assert.True(match.Success, $"the markup matches {pattern}");
++        return match.Groups[1].Value;
++    }
++
++    /// <summary>The text a reader sees: tags removed, entities decoded.</summary>
++    private static string Rendered(string html) => WebUtility.HtmlDecode(Regex.Replace(html, "<[^>]*>", string.Empty)).Trim();
++}
+\ No newline at end of file

@@ -1,0 +1,97 @@
+diff --git a/src/DcaShop.Web/Views/Error/404.cshtml b/src/DcaShop.Web/Views/Error/404.cshtml
+index 6cac4a4..9530063 100644
+--- a/src/DcaShop.Web/Views/Error/404.cshtml
++++ b/src/DcaShop.Web/Views/Error/404.cshtml
+@@ -1,4 +1,3 @@
+-@{ ViewData["Title"] = "Page Not Found"; }
+ <div class="error-page">
+ <div class="error-page__code">404</div>
+ <h2 class="error-page__title">Page Not Found</h2>
+diff --git a/tests/DcaShop.E2eTests/NotFoundTitleE2eTest.cs b/tests/DcaShop.E2eTests/NotFoundTitleE2eTest.cs
+new file mode 100644
+index 0000000..4e4e717
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/NotFoundTitleE2eTest.cs
+@@ -0,0 +1,27 @@
++using DcaShop.E2eTests.Pages;
++
++namespace DcaShop.E2eTests;
++
++/// <summary>
++/// A page that does not exist still names the shop in the browser tab, the same way in both samples.
++/// </summary>
++public sealed class NotFoundTitleE2eTest : BaseE2eTest
++{
++    public NotFoundTitleE2eTest(BrowserFixture browser) : base(browser)
++    {
++    }
++
++    [E2eFact(DisplayName = "The not-found page is titled with the shop's name")]
++    public async Task NotFoundPageIsTitledWithTheShopName()
++    {
++        var notFound = await NotFoundPage.NavigateToAsync(Page, "/products/no-such-product");
++
++        Assert.Equal("domaincentric.commerce", await notFound.DocumentTitleAsync());
++        Assert.True(await notFound.ShowsAsync("404"));
++        Assert.True(await notFound.ShowsAsync("Page Not Found"));
++        Assert.True(await notFound.ShowsAsync(
++            "The page you're looking for doesn't exist or has been removed. Perhaps you were looking for one of our products?"));
++        Assert.Equal(("Browse All Products", "/products"), await notFound.BrowseLinkAsync());
++        Assert.Equal(("Go to Homepage", "/"), await notFound.HomeLinkAsync());
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.E2eTests/Pages/NotFoundPage.cs b/tests/DcaShop.E2eTests/Pages/NotFoundPage.cs
+new file mode 100644
+index 0000000..0566320
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/Pages/NotFoundPage.cs
+@@ -0,0 +1,47 @@
++using System.Text.RegularExpressions;
++
++using Microsoft.Playwright;
++
++namespace DcaShop.E2eTests.Pages;
++
++/// <summary>The page the shop answers for a path that does not exist.</summary>
++public sealed partial class NotFoundPage : BasePage
++{
++    private const string BrowseLink = "error-browse-link";
++    private const string HomeLink = "error-home-link";
++
++    private NotFoundPage(IPage page) : base(page)
++    {
++    }
++
++    public static async Task<NotFoundPage> NavigateToAsync(IPage page, string path)
++    {
++        await page.GotoAsync(BaseUrl + path);
++        var notFound = new NotFoundPage(page);
++        await notFound.WaitForUrlAsync(path);
++        await notFound.WaitForAsync(BrowseLink);
++        return notFound;
++    }
++
++    /// <summary>The document title, as the browser tab shows it.</summary>
++    public Task<string> DocumentTitleAsync() => Page.TitleAsync();
++
++    /// <summary>True when the page shows the text, whitespace and line breaks read as single spaces.</summary>
++    public async Task<bool> ShowsAsync(string text) =>
++        Whitespace().Replace(await Page.Locator("body").InnerTextAsync(), " ").Contains(text, StringComparison.Ordinal);
++
++    /// <summary>The label and target of the link to the catalogue.</summary>
++    public Task<(string Label, string? Href)> BrowseLinkAsync() => LinkAsync(BrowseLink);
++
++    /// <summary>The label and target of the link to the homepage.</summary>
++    public Task<(string Label, string? Href)> HomeLinkAsync() => LinkAsync(HomeLink);
++
++    private async Task<(string Label, string? Href)> LinkAsync(string dataTest)
++    {
++        var link = Page.Locator($"[data-test='{dataTest}']");
++        return ((await link.InnerTextAsync()).Trim(), await link.GetAttributeAsync("href"));
++    }
++
++    [GeneratedRegex(@"\s+")]
++    private static partial Regex Whitespace();
++}
+\ No newline at end of file

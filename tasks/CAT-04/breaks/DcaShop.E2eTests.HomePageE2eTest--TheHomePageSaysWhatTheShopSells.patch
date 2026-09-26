@@ -1,0 +1,11 @@
+diff --git a/src/DcaShop.Web/Views/Home/Index.cshtml b/src/DcaShop.Web/Views/Home/Index.cshtml
+--- a/src/DcaShop.Web/Views/Home/Index.cshtml
++++ b/src/DcaShop.Web/Views/Home/Index.cshtml
+@@ -1,6 +1,6 @@
+ @{ ViewData["Title"] = "domaincentric.commerce"; }
+ <section class="hero" data-test="hero">
+-<h1 class="hero__title">Welcome to domaincentric<span class="brand-tld">.commerce</span></h1>
++<h1 class="hero__title">Welcome to domaincentric</h1>
+ <p class="hero__subtitle">Books, modelling supplies and hexagon merchandise for people who draw boundaries</p>
+ <p class="hero__description">Everything this architecture is made of: the books it grew out of, the supplies a design workshop runs on, and hexagons for your desk.</p>
+ <div class="hero__actions">

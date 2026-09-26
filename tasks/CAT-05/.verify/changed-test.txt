@@ -1,0 +1,4 @@
+modified	tests/DcaShop.E2eTests/Pages/BasePage.cs
+modified	tests/DcaShop.E2eTests/Pages/HomePage.cs
+added	tests/DcaShop.E2eTests/SiteHeaderE2eTest.cs
+added	tests/DcaShop.IntegrationTests/SiteLayoutTest.cs

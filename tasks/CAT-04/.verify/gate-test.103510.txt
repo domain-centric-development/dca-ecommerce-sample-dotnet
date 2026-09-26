@@ -1,0 +1,25 @@
+gate:pass story — CAT-04 in context portal with 7 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.8)
+gate:pass approved — story is adopted — it describes behaviour the project already has; adopted, never built
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:pass decisions — CAT-04-01 applied by stage test ("Option 2. The round count is reset (tasks/CAT-04/.rounds removed); run the test gate once more with nothing changed, so the breaks are checked too. The earlier rounds failed on the operator's environment (no dotnet on PATH), not on the story." by Claude (operator, on Christoph Bloemer's instruction "mach wp68")) — stamped in .agents/factory/decisions/CAT-04-01.md
+gate:pass tests-mapped — 7 test(s) mapped to 7 criterion(s)
+gate:pass tests-exist — DcaShop.IntegrationTests.HomePageTest#BrowseProductsOpensTheCatalogue found in tests/DcaShop.IntegrationTests/HomePageTest.cs (browse-products-opens-the-catalogue, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.HomePageTest#TheBrowserTabTitleIsTheShopName found in tests/DcaShop.IntegrationTests/HomePageTest.cs (home-page-title, by a file named after the class)
+gate:pass tests-exist — DcaShop.E2eTests.HomePageE2eTest#TheHomePageSaysWhatTheShopSells found in tests/DcaShop.E2eTests/HomePageE2eTest.cs (home-page-welcomes-the-visitor, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.HomePageTest#PopularCategoriesShowsFiveCategoriesAsTextNotLinks found in tests/DcaShop.IntegrationTests/HomePageTest.cs (popular-categories, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.HomePageTest#ShopNowBelowTheCallToShopOpensTheCatalogue found in tests/DcaShop.IntegrationTests/HomePageTest.cs (shop-now-opens-the-catalogue, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.HomePageTest#BelowTheHeadingViewCartLinksToTheCart found in tests/DcaShop.IntegrationTests/HomePageTest.cs (view-cart-links-to-the-cart, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.HomePageTest#WhyShopWithUsShowsFourFeatures found in tests/DcaShop.IntegrationTests/HomePageTest.cs (why-shop-with-us, by a file named after the class)
+gate:pass compiles — `dotnet build` succeeded
+gate:pass tests-green — DcaShop.IntegrationTests.HomePageTest#BrowseProductsOpensTheCatalogue passes — a journey guards what is delivered (browse-products-opens-the-catalogue)
+gate:pass tests-green — DcaShop.IntegrationTests.HomePageTest#TheBrowserTabTitleIsTheShopName passes — a journey guards what is delivered (home-page-title)
+gate:pass tests-green — DcaShop.E2eTests.HomePageE2eTest#TheHomePageSaysWhatTheShopSells passes — a journey guards what is delivered (home-page-welcomes-the-visitor)
+gate:pass tests-green — DcaShop.IntegrationTests.HomePageTest#PopularCategoriesShowsFiveCategoriesAsTextNotLinks passes — a journey guards what is delivered (popular-categories)
+gate:pass tests-green — DcaShop.IntegrationTests.HomePageTest#ShopNowBelowTheCallToShopOpensTheCatalogue passes — a journey guards what is delivered (shop-now-opens-the-catalogue)
+gate:pass tests-green — DcaShop.IntegrationTests.HomePageTest#BelowTheHeadingViewCartLinksToTheCart passes — a journey guards what is delivered (view-cart-links-to-the-cart)
+gate:pass tests-green — DcaShop.IntegrationTests.HomePageTest#WhyShopWithUsShowsFourFeatures passes — a journey guards what is delivered (why-shop-with-us)
+gate:note files-listed — listed but not changed by this stage: tasks/CAT-04/breaks/DcaShop.E2eTests.HomePageE2eTest--TheHomePageSaysWhatTheShopSells.patch, tasks/CAT-04/breaks/DcaShop.IntegrationTests.HomePageTest--BelowTheHeadingViewCartLinksToTheCart.patch, tasks/CAT-04/breaks/DcaShop.IntegrationTests.HomePageTest--BrowseProductsOpensTheCatalogue.patch, tasks/CAT-04/breaks/DcaShop.IntegrationTests.HomePageTest--PopularCategoriesShowsFiveCategoriesAsTextNotLinks.patch, tasks/CAT-04/breaks/DcaShop.IntegrationTests.HomePageTest--ShopNowBelowTheCallToShopOpensTheCatalogue.patch
+gate:pass files-listed — tests.md lists the 0 file(s) the stage changed
+gate:pass tests-kept — no test that existed before this story changed what it expects
+gate:pass story CAT-04 stage test

@@ -1,0 +1,184 @@
+diff --git a/tests/DcaShop.E2eTests/Pages/BasePage.cs b/tests/DcaShop.E2eTests/Pages/BasePage.cs
+index bba5fc3..ef0148b 100644
+--- a/tests/DcaShop.E2eTests/Pages/BasePage.cs
++++ b/tests/DcaShop.E2eTests/Pages/BasePage.cs
+@@ -32,6 +32,16 @@ public abstract class BasePage
+     public Task<bool> FitsViewportAsync() =>
+         Page.EvaluateAsync<bool>("() => document.documentElement.scrollWidth <= document.documentElement.clientWidth");
+ 
++    /// <summary>The logo's wordmark in the site header, as the browser renders it.</summary>
++    public async Task<string> LogoTextAsync() => (await Page.Locator("[data-test='site-header'] [data-test='site-logo']").InnerTextAsync()).Trim();
++
++    /// <summary>Follows the logo in the site header.</summary>
++    public async Task<HomePage> FollowLogoAsync()
++    {
++        await Page.Locator("[data-test='site-header'] [data-test='site-logo']").ClickAsync();
++        return await HomePage.OpenAsync(Page);
++    }
++
+     protected string CurrentPath => Page.Url.Replace(BaseUrl, string.Empty, StringComparison.Ordinal);
+ 
+     protected async Task<bool> PageContainsAsync(string text) => (await Page.Locator("body").TextContentAsync() ?? string.Empty).Contains(text, StringComparison.Ordinal);
+diff --git a/tests/DcaShop.E2eTests/Pages/HomePage.cs b/tests/DcaShop.E2eTests/Pages/HomePage.cs
+index f240e76..c98610b 100644
+--- a/tests/DcaShop.E2eTests/Pages/HomePage.cs
++++ b/tests/DcaShop.E2eTests/Pages/HomePage.cs
+@@ -50,6 +50,15 @@ public sealed class HomePage : BasePage
+         return home;
+     }
+ 
++    /// <summary>The home page reached by following a link: waits for its address and its hero.</summary>
++    public static async Task<HomePage> OpenAsync(IPage page)
++    {
++        var home = new HomePage(page);
++        await home.WaitForUrlAsync("/");
++        await home.WaitForAsync(Hero);
++        return home;
++    }
++
+     public async Task ReloadAsync()
+     {
+         await Page.ReloadAsync();
+diff --git a/tests/DcaShop.E2eTests/SiteHeaderE2eTest.cs b/tests/DcaShop.E2eTests/SiteHeaderE2eTest.cs
+new file mode 100644
+index 0000000..5d19369
+--- /dev/null
++++ b/tests/DcaShop.E2eTests/SiteHeaderE2eTest.cs
+@@ -0,0 +1,23 @@
++using DcaShop.E2eTests.Pages;
++
++namespace DcaShop.E2eTests;
++
++/// <summary>The site header's logo carries the shop's name and leads home from any page.</summary>
++public sealed class SiteHeaderE2eTest : BaseE2eTest
++{
++    public SiteHeaderE2eTest(BrowserFixture browser) : base(browser)
++    {
++    }
++
++    [E2eFact(DisplayName = "Logo leads home")]
++    public async Task TheLogoLeadsFromAProductPageToTheHomePage()
++    {
++        var catalog = await ProductCatalogPage.NavigateToAsync(Page);
++        var product = await catalog.ViewProductAsync("Domain-Driven Design");
++        Assert.Equal("domaincentric.commerce", await product.LogoTextAsync());
++
++        var home = await product.FollowLogoAsync();
++
++        Assert.Equal("Welcome to domaincentric.commerce", await home.HeadingAsync());
++    }
++}
+\ No newline at end of file
+diff --git a/tests/DcaShop.IntegrationTests/SiteLayoutTest.cs b/tests/DcaShop.IntegrationTests/SiteLayoutTest.cs
+new file mode 100644
+index 0000000..a3346f5
+--- /dev/null
++++ b/tests/DcaShop.IntegrationTests/SiteLayoutTest.cs
+@@ -0,0 +1,106 @@
++using System.Net;
++using System.Text.RegularExpressions;
++
++using Microsoft.AspNetCore.Mvc.Testing;
++
++namespace DcaShop.IntegrationTests;
++
++/// <summary>
++/// The header and footer every page shares, through the real HTTP pipeline: where the header navigation leads, what
++/// the footer says, and that the home page carries the same frame as the catalogue.
++/// </summary>
++public sealed class SiteLayoutTest : IClassFixture<WebApplicationFactory<Program>>
++{
++    private readonly WebApplicationFactory<Program> _factory;
++
++    public SiteLayoutTest(WebApplicationFactory<Program> factory)
++    {
++        _factory = factory;
++    }
++
++    [Fact]
++    public async Task HomeInTheHeaderNavigationOpensTheHomePage()
++    {
++        var client = _factory.CreateClient();
++        var catalogue = await client.GetStringAsync("/products");
++        var home = Link(Header(catalogue), "nav-home-link");
++        Assert.Equal("Home", home.Text);
++
++        var followed = await client.GetStringAsync(home.Target);
++
++        Assert.Equal("Welcome to domaincentric.commerce", Rendered(Match(followed, @"<h1[^>]*>(.*?)</h1>")));
++    }
++
++    [Fact]
++    public async Task ProductsInTheHeaderNavigationOpensTheCatalogue()
++    {
++        var client = _factory.CreateClient();
++        var homePage = await client.GetStringAsync("/");
++        var products = Link(Header(homePage), "nav-products-link");
++        Assert.Equal("Products", products.Text);
++
++        var followed = await client.GetStringAsync(products.Target);
++
++        Assert.Equal("Our Products", Rendered(Match(followed, @"<h1[^>]*>(.*?)</h1>")));
++    }
++
++    [Fact]
++    public async Task TheFooterNamesTheShopAndLinksToTheEventLog()
++    {
++        var client = _factory.CreateClient();
++
++        var catalogue = await client.GetStringAsync("/products");
++
++        var footer = Footer(catalogue);
++        Assert.Equal(
++            "domaincentric.commerce — Built with Domain-Centric Architecture",
++            Rendered(Match(footer, @"class=""site-footer__text"">(.*?)</div>")));
++        var eventLog = Link(footer, "footer-event-log-link");
++        Assert.Equal("Event Log", eventLog.Text);
++        Assert.Equal("/backoffice/events", eventLog.Target);
++    }
++
++    [Fact]
++    public async Task TheHomePageShowsTheSameHeaderAndFooterAsTheCatalogue()
++    {
++        var client = _factory.CreateClient();
++        var catalogue = await client.GetStringAsync("/products");
++
++        var homePage = await client.GetStringAsync("/");
++
++        Assert.Equal("Home", Link(Header(homePage), "nav-home-link").Text);
++        Assert.Equal("Products", Link(Header(homePage), "nav-products-link").Text);
++        Assert.Equal(Header(catalogue), Header(homePage));
++        Assert.Equal(Footer(catalogue), Footer(homePage));
++    }
++
++    private static string Header(string page) => Element(page, "site-header", "</header>");
++
++    private static string Footer(string page) => Element(page, "site-footer", "</footer>");
++
++    /// <summary>The markup from the element carrying <paramref name="dataTest"/> to its closing tag.</summary>
++    private static string Element(string page, string dataTest, string closingTag)
++    {
++        var start = page.IndexOf($"data-test=\"{dataTest}\"", StringComparison.Ordinal);
++        Assert.True(start >= 0, $"the page has a {dataTest}");
++        return page[start..].Split(closingTag)[0];
++    }
++
++    /// <summary>The target and text of the anchor carrying <paramref name="dataTest"/>.</summary>
++    private static (string Target, string Text) Link(string markup, string dataTest)
++    {
++        var match = Regex.Match(markup, $@"<a\b[^>]*href=""([^""]+)""[^>]*data-test=""{Regex.Escape(dataTest)}"">([^<]*)</a>");
++        Assert.True(match.Success, $"the markup offers a {dataTest}");
++        return (match.Groups[1].Value, Rendered(match.Groups[2].Value));
++    }
++
++    private static string Match(string markup, string pattern)
++    {
++        var match = Regex.Match(markup, pattern, RegexOptions.Singleline);
++        Assert.True(match.Success, $"the markup matches {pattern}");
++        return match.Groups[1].Value;
++    }
++
++    /// <summary>The text a reader sees: tags removed, entities decoded.</summary>
++    private static string Rendered(string html) => WebUtility.HtmlDecode(Regex.Replace(html, "<[^>]*>", string.Empty)).Trim();
++}
+\ No newline at end of file

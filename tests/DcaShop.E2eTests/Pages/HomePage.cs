@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 using Microsoft.Playwright;
 
 namespace DcaShop.E2eTests.Pages;
@@ -48,6 +50,15 @@ public sealed class HomePage : BasePage
         return home;
     }
 
+    /// <summary>The home page reached by following a link: waits for its address and its hero.</summary>
+    public static async Task<HomePage> OpenAsync(IPage page)
+    {
+        var home = new HomePage(page);
+        await home.WaitForUrlAsync("/");
+        await home.WaitForAsync(Hero);
+        return home;
+    }
+
     public async Task ReloadAsync()
     {
         await Page.ReloadAsync();
@@ -73,6 +84,19 @@ public sealed class HomePage : BasePage
         await slider.ScrollIntoViewIfNeededAsync();
         return true;
     }
+
+    /// <summary>The hero's heading as the browser renders it.</summary>
+    public async Task<string> HeadingAsync() =>
+        (await Locator(Hero).GetByRole(AriaRole.Heading, new LocatorGetByRoleOptions { Level = 1 }).InnerTextAsync()).Trim();
+
+    /// <summary>The wording of the hero's first paragraph, directly below the heading — the stylesheet's casing aside.</summary>
+    public Task<string> SubtitleAsync() => HeroParagraphTextAsync(0);
+
+    /// <summary>The wording of the hero's second paragraph, below the subtitle.</summary>
+    public Task<string> DescriptionAsync() => HeroParagraphTextAsync(1);
+
+    private async Task<string> HeroParagraphTextAsync(int index) =>
+        Regex.Replace(await Locator(Hero).Locator("p").Nth(index).TextContentAsync() ?? "", @"\s+", " ").Trim();
 
     public async Task<string> SliderTitleAsync() => (await Locator(SliderTitle).InnerTextAsync()).Trim();
 

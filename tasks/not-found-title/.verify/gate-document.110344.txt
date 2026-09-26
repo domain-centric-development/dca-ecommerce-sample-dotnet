@@ -1,0 +1,9 @@
+gate:pass story — not-found-title in context portal with 1 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.8)
+gate:pass approved — story is approved
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:note decisions — no decision record for this story
+gate:pass documented — 0 document(s) updated, every claim resolves
+gate:pass architecture — `dotnet test tests/DcaShop.ArchitectureTests` succeeded
+gate:wait acceptance — not-found-title-accept-1 asks a human to accept the story before it is delivered — .agents/factory/decisions/not-found-title-accept-1.md, answered through /factory-decisions
+gate:wait story not-found-title stage document

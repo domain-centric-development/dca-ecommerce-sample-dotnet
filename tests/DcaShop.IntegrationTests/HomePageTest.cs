@@ -1,0 +1,152 @@
+using System.Net;
+using System.Text.RegularExpressions;
+
+using Microsoft.AspNetCore.Mvc.Testing;
+
+namespace DcaShop.IntegrationTests;
+
+/// <summary>
+/// The home page through the real HTTP pipeline: how it names itself, where its links lead, and what its features,
+/// categories and closing call to shop say.
+/// </summary>
+public sealed class HomePageTest : IClassFixture<WebApplicationFactory<Program>>
+{
+    private readonly WebApplicationFactory<Program> _factory;
+
+    public HomePageTest(WebApplicationFactory<Program> factory)
+    {
+        _factory = factory;
+    }
+
+    [Fact]
+    public async Task TheBrowserTabTitleIsTheShopName()
+    {
+        var client = _factory.CreateClient();
+
+        var home = await client.GetStringAsync("/");
+
+        Assert.Equal("domaincentric.commerce", Text(home, @"<title>([^<]*)</title>"));
+    }
+
+    [Fact]
+    public async Task BrowseProductsOpensTheCatalogue()
+    {
+        var client = _factory.CreateClient();
+        var home = await client.GetStringAsync("/");
+        var browse = Link(home, "browse-products-link");
+        Assert.Equal("Browse Products", browse.Text);
+
+        var followed = await client.GetStringAsync(browse.Target);
+
+        Assert.Equal("Our Products", Text(followed, @"<h1>([^<]*)</h1>"));
+    }
+
+    [Fact]
+    public async Task BelowTheHeadingViewCartLinksToTheCart()
+    {
+        var client = _factory.CreateClient();
+
+        var home = await client.GetStringAsync("/");
+
+        var hero = Section(home, "hero").Split("</section>")[0];
+        var belowHeading = hero[(hero.IndexOf("</h1>", StringComparison.Ordinal) + "</h1>".Length)..];
+        var viewCart = Link(belowHeading, "view-cart-link");
+        Assert.Equal("View Cart", viewCart.Text);
+        Assert.Equal("/cart", viewCart.Target);
+    }
+
+    [Fact]
+    public async Task WhyShopWithUsShowsFourFeatures()
+    {
+        var client = _factory.CreateClient();
+
+        var home = await client.GetStringAsync("/");
+
+        var features = Section(home, "features").Split("</section>")[0];
+        Assert.Equal("Why Shop With Us", Text(features, @"<h2[^>]*>([^<]*)</h2>"));
+        var cards = Regex.Matches(
+                features,
+                @"class=""feature-card__title"">([^<]*)</h3><p class=""feature-card__description"">([^<]*)</p>")
+            .Select(m => (Title: Decoded(m.Groups[1].Value), Description: Decoded(m.Groups[2].Value)))
+            .ToList();
+        Assert.Equal(
+            new[]
+            {
+                ("Free Shipping", "Books ship cushioned, posters rolled in a tube, hexagons in a fitted box. Free over €50."),
+                ("Secure Payments", "Card or invoice, encrypted end to end. Your payment details never touch our order history."),
+                ("Built to Last", "Beech and oiled oak, hard enamel, heavyweight cotton. Objects that survive a decade of workshops."),
+                ("Easy Returns", "Not the hexagon you pictured? Send any item back within 30 days for a full refund."),
+            },
+            cards);
+    }
+
+    [Fact]
+    public async Task PopularCategoriesShowsFiveCategoriesAsTextNotLinks()
+    {
+        var client = _factory.CreateClient();
+
+        var home = await client.GetStringAsync("/");
+
+        var categories = Section(home, "categories").Split("</section>")[0];
+        Assert.Equal("Popular Categories", Text(categories, @"<h2[^>]*>([^<]*)</h2>"));
+        var cards = Regex.Matches(
+                categories,
+                @"class=""highlight-card__title"">([^<]*)</span><p class=""highlight-card__description"">([^<]*)</p>")
+            .Select(m => (Title: Decoded(m.Groups[1].Value), Description: Decoded(m.Groups[2].Value)))
+            .ToList();
+        Assert.Equal(
+            new[]
+            {
+                ("Books", "The works this architecture was synthesized from — Evans, Vernon, Cockburn, Fowler, Martin."),
+                ("Modeling", "Sticky notes, hexagon magnets, posters and card decks for your next design workshop."),
+                ("Apparel", "Shirts, hoodies and caps that explain your architecture before you open your laptop."),
+                ("Desk & Office", "Mugs, coasters, a hex-grid notebook, and the wooden hexagon for your desk."),
+                ("Stickers & Pins", "Small enough for a laptop lid, loud enough for a conference hallway."),
+            },
+            cards);
+        Assert.DoesNotMatch(@"<a\b", categories);
+    }
+
+    [Fact]
+    public async Task ShopNowBelowTheCallToShopOpensTheCatalogue()
+    {
+        var client = _factory.CreateClient();
+        var home = await client.GetStringAsync("/");
+        var cta = Section(home, "cta-section").Split("</section>")[0];
+        Assert.Equal("Ready to Draw Some Boundaries?", Text(cta, @"<h2[^>]*>([^<]*)</h2>"));
+        Assert.Equal(
+            "Browse the full catalog: the books, the modelling supplies, and the hexagons.",
+            Text(cta, @"<p[^>]*>([^<]*)</p>"));
+        var shopNow = Link(cta, "shop-now-link");
+        Assert.Equal("Shop Now", shopNow.Text);
+
+        var followed = await client.GetStringAsync(shopNow.Target);
+
+        Assert.Equal("Our Products", Text(followed, @"<h1>([^<]*)</h1>"));
+    }
+
+    /// <summary>The target and text of the anchor carrying <paramref name="dataTest"/>.</summary>
+    private static (string Target, string Text) Link(string markup, string dataTest)
+    {
+        var match = Regex.Match(markup, $@"<a\b[^>]*href=""([^""]+)""[^>]*data-test=""{Regex.Escape(dataTest)}"">([^<]*)</a>");
+        Assert.True(match.Success, $"the markup offers a {dataTest}");
+        return (match.Groups[1].Value, Decoded(match.Groups[2].Value));
+    }
+
+    /// <summary>The markup from the element carrying <paramref name="dataTest"/> to the end of the page.</summary>
+    private static string Section(string page, string dataTest)
+    {
+        var start = page.IndexOf($"data-test=\"{dataTest}\"", StringComparison.Ordinal);
+        Assert.True(start >= 0, $"the page has a {dataTest}");
+        return page[start..];
+    }
+
+    private static string Text(string markup, string pattern)
+    {
+        var match = Regex.Match(markup, pattern);
+        Assert.True(match.Success, $"the markup matches {pattern}");
+        return Decoded(match.Groups[1].Value);
+    }
+
+    private static string Decoded(string html) => WebUtility.HtmlDecode(html).Trim();
+}

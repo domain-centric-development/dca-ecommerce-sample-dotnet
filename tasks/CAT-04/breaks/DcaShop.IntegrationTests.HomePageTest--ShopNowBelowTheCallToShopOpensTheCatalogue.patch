@@ -1,0 +1,11 @@
+diff --git a/src/DcaShop.Web/Views/Home/Index.cshtml b/src/DcaShop.Web/Views/Home/Index.cshtml
+--- a/src/DcaShop.Web/Views/Home/Index.cshtml
++++ b/src/DcaShop.Web/Views/Home/Index.cshtml
+@@ -32,6 +32,6 @@
+ <div class="hero" data-test="cta-banner">
+ <h2 class="hero__title">Ready to Draw Some Boundaries?</h2>
+ <p class="hero__subtitle">Browse the full catalog: the books, the modelling supplies, and the hexagons.</p>
+-<div class="hero__actions"><a class="hero__cta hero__cta--primary" href="/products" data-test="shop-now-link">Shop Now</a></div>
++<div class="hero__actions"><a class="hero__cta hero__cta--primary" href="/" data-test="shop-now-link">Shop Now</a></div>
+ </div>
+ </section>

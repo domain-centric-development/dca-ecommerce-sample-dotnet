@@ -1,0 +1,33 @@
+gate:pass story — CAT-04 in context portal with 7 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.8)
+gate:pass approved — story is adopted — it describes behaviour the project already has; adopted, never built
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:note decisions — no decision record for this story
+gate:pass tests-mapped — 7 test(s) mapped to 7 criterion(s)
+gate:pass tests-exist — DcaShop.IntegrationTests.HomePageTest#BrowseProductsOpensTheCatalogue found in tests/DcaShop.IntegrationTests/HomePageTest.cs (browse-products-opens-the-catalogue, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.HomePageTest#TheBrowserTabTitleIsTheShopName found in tests/DcaShop.IntegrationTests/HomePageTest.cs (home-page-title, by a file named after the class)
+gate:pass tests-exist — DcaShop.E2eTests.HomePageE2eTest#TheHomePageSaysWhatTheShopSells found in tests/DcaShop.E2eTests/HomePageE2eTest.cs (home-page-welcomes-the-visitor, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.HomePageTest#PopularCategoriesShowsFiveCategoriesAsTextNotLinks found in tests/DcaShop.IntegrationTests/HomePageTest.cs (popular-categories, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.HomePageTest#ShopNowBelowTheCallToShopOpensTheCatalogue found in tests/DcaShop.IntegrationTests/HomePageTest.cs (shop-now-opens-the-catalogue, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.HomePageTest#BelowTheHeadingViewCartLinksToTheCart found in tests/DcaShop.IntegrationTests/HomePageTest.cs (view-cart-links-to-the-cart, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.HomePageTest#WhyShopWithUsShowsFourFeatures found in tests/DcaShop.IntegrationTests/HomePageTest.cs (why-shop-with-us, by a file named after the class)
+gate:fail compiles — `dotnet build` failed:
+/bin/sh: dotnet: command not found
+gate:fail tests-green — DcaShop.IntegrationTests.HomePageTest#BrowseProductsOpensTheCatalogue: no test report from this run shows it ran (0 report file(s) written by this run). Let the runner write one (JUnit XML is the default on the JVM; .NET needs `--logger trx`), point `testReport:` at it, give the test a name the report carries, or accept the weaker check with `testEvidence: exit-code`:
+/bin/sh: dotnet: command not found
+gate:fail tests-green — DcaShop.IntegrationTests.HomePageTest#TheBrowserTabTitleIsTheShopName: no test report from this run shows it ran (0 report file(s) written by this run). Let the runner write one (JUnit XML is the default on the JVM; .NET needs `--logger trx`), point `testReport:` at it, give the test a name the report carries, or accept the weaker check with `testEvidence: exit-code`:
+/bin/sh: dotnet: command not found
+gate:fail tests-green — DcaShop.E2eTests.HomePageE2eTest#TheHomePageSaysWhatTheShopSells: no test report from this run shows it ran (0 report file(s) written by this run). Let the runner write one (JUnit XML is the default on the JVM; .NET needs `--logger trx`), point `testReport:` at it, give the test a name the report carries, or accept the weaker check with `testEvidence: exit-code`:
+/bin/sh: dotnet: command not found
+gate:fail tests-green — DcaShop.IntegrationTests.HomePageTest#PopularCategoriesShowsFiveCategoriesAsTextNotLinks: no test report from this run shows it ran (0 report file(s) written by this run). Let the runner write one (JUnit XML is the default on the JVM; .NET needs `--logger trx`), point `testReport:` at it, give the test a name the report carries, or accept the weaker check with `testEvidence: exit-code`:
+/bin/sh: dotnet: command not found
+gate:fail tests-green — DcaShop.IntegrationTests.HomePageTest#ShopNowBelowTheCallToShopOpensTheCatalogue: no test report from this run shows it ran (0 report file(s) written by this run). Let the runner write one (JUnit XML is the default on the JVM; .NET needs `--logger trx`), point `testReport:` at it, give the test a name the report carries, or accept the weaker check with `testEvidence: exit-code`:
+/bin/sh: dotnet: command not found
+gate:fail tests-green — DcaShop.IntegrationTests.HomePageTest#BelowTheHeadingViewCartLinksToTheCart: no test report from this run shows it ran (0 report file(s) written by this run). Let the runner write one (JUnit XML is the default on the JVM; .NET needs `--logger trx`), point `testReport:` at it, give the test a name the report carries, or accept the weaker check with `testEvidence: exit-code`:
+/bin/sh: dotnet: command not found
+gate:fail tests-green — DcaShop.IntegrationTests.HomePageTest#WhyShopWithUsShowsFourFeatures: no test report from this run shows it ran (0 report file(s) written by this run). Let the runner write one (JUnit XML is the default on the JVM; .NET needs `--logger trx`), point `testReport:` at it, give the test a name the report carries, or accept the weaker check with `testEvidence: exit-code`:
+/bin/sh: dotnet: command not found
+gate:note files-listed — listed but not changed by this stage: tasks/CAT-04/breaks/DcaShop.E2eTests.HomePageE2eTest--TheHomePageSaysWhatTheShopSells.patch, tasks/CAT-04/breaks/DcaShop.IntegrationTests.HomePageTest--BelowTheHeadingViewCartLinksToTheCart.patch, tasks/CAT-04/breaks/DcaShop.IntegrationTests.HomePageTest--BrowseProductsOpensTheCatalogue.patch, tasks/CAT-04/breaks/DcaShop.IntegrationTests.HomePageTest--PopularCategoriesShowsFiveCategoriesAsTextNotLinks.patch, tasks/CAT-04/breaks/DcaShop.IntegrationTests.HomePageTest--ShopNowBelowTheCallToShopOpensTheCatalogue.patch
+gate:pass files-listed — tests.md lists the 3 file(s) the stage changed
+gate:pass tests-kept — no test that existed before this story changed what it expects
+gate:fail story CAT-04 stage test

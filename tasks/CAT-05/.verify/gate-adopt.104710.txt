@@ -1,0 +1,24 @@
+gate:pass story — CAT-05 in context portal with 5 criterion(s)
+gate:pass contract — profile and gate agree on contract 9 (gate 0.39.8)
+gate:pass approved — story is adopted — it describes behaviour the project already has; adopted, never built
+gate:pass epic — epic 'browse-catalogue' complete (intent, goal, metric, domain_contact)
+gate:note decisions — no decision record for this story
+gate:pass tests-mapped — 5 test(s) mapped to 5 criterion(s)
+gate:pass tests-exist — DcaShop.IntegrationTests.SiteLayoutTest#TheFooterNamesTheShopAndLinksToTheEventLog found in tests/DcaShop.IntegrationTests/SiteLayoutTest.cs (footer-names-the-shop, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.SiteLayoutTest#TheHomePageShowsTheSameHeaderAndFooterAsTheCatalogue found in tests/DcaShop.IntegrationTests/SiteLayoutTest.cs (header-and-footer-on-the-home-page, by a file named after the class)
+gate:pass tests-exist — DcaShop.E2eTests.SiteHeaderE2eTest#TheLogoLeadsFromAProductPageToTheHomePage found in tests/DcaShop.E2eTests/SiteHeaderE2eTest.cs (logo-leads-home, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.SiteLayoutTest#HomeInTheHeaderNavigationOpensTheHomePage found in tests/DcaShop.IntegrationTests/SiteLayoutTest.cs (nav-home-opens-the-home-page, by a file named after the class)
+gate:pass tests-exist — DcaShop.IntegrationTests.SiteLayoutTest#ProductsInTheHeaderNavigationOpensTheCatalogue found in tests/DcaShop.IntegrationTests/SiteLayoutTest.cs (nav-products-opens-the-catalogue, by a file named after the class)
+gate:pass compiles — `dotnet build` succeeded
+gate:pass tests-green — DcaShop.IntegrationTests.SiteLayoutTest#TheFooterNamesTheShopAndLinksToTheEventLog passes — a journey guards what is delivered (footer-names-the-shop)
+gate:pass tests-green — DcaShop.IntegrationTests.SiteLayoutTest#TheHomePageShowsTheSameHeaderAndFooterAsTheCatalogue passes — a journey guards what is delivered (header-and-footer-on-the-home-page)
+gate:pass tests-green — DcaShop.E2eTests.SiteHeaderE2eTest#TheLogoLeadsFromAProductPageToTheHomePage passes — a journey guards what is delivered (logo-leads-home)
+gate:pass tests-green — DcaShop.IntegrationTests.SiteLayoutTest#HomeInTheHeaderNavigationOpensTheHomePage passes — a journey guards what is delivered (nav-home-opens-the-home-page)
+gate:pass tests-green — DcaShop.IntegrationTests.SiteLayoutTest#ProductsInTheHeaderNavigationOpensTheCatalogue passes — a journey guards what is delivered (nav-products-opens-the-catalogue)
+gate:pass adopt-judged — the judge confirmed that the tests prove the scenarios
+gate:pass break-proof — DcaShop.E2eTests.SiteHeaderE2eTest#TheLogoLeadsFromAProductPageToTheHomePage (logo-leads-home): red under its break, on a scratch copy
+gate:pass break-proof — DcaShop.IntegrationTests.SiteLayoutTest#HomeInTheHeaderNavigationOpensTheHomePage (nav-home-opens-the-home-page): red under its break, on a scratch copy
+gate:pass break-proof — DcaShop.IntegrationTests.SiteLayoutTest#ProductsInTheHeaderNavigationOpensTheCatalogue (nav-products-opens-the-catalogue): red under its break, on a scratch copy
+gate:pass break-proof — DcaShop.IntegrationTests.SiteLayoutTest#TheFooterNamesTheShopAndLinksToTheEventLog (footer-names-the-shop): red under its break, on a scratch copy
+gate:pass break-proof — DcaShop.IntegrationTests.SiteLayoutTest#TheHomePageShowsTheSameHeaderAndFooterAsTheCatalogue (header-and-footer-on-the-home-page): red under its break, on a scratch copy
+gate:pass story CAT-05 stage adopt

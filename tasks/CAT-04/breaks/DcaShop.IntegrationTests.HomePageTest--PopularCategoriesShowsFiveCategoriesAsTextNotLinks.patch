@@ -1,0 +1,12 @@
+diff --git a/src/DcaShop.Web/Views/Home/Index.cshtml b/src/DcaShop.Web/Views/Home/Index.cshtml
+--- a/src/DcaShop.Web/Views/Home/Index.cshtml
++++ b/src/DcaShop.Web/Views/Home/Index.cshtml
+@@ -22,7 +22,7 @@
+ <h2 class="section__title">Popular Categories</h2>
+ <div class="highlight-grid">
+ <div class="highlight-card"><span class="highlight-card__title">Books</span><p class="highlight-card__description">The works this architecture was synthesized from — Evans, Vernon, Cockburn, Fowler, Martin.</p></div>
+-<div class="highlight-card"><span class="highlight-card__title">Modeling</span><p class="highlight-card__description">Sticky notes, hexagon magnets, posters and card decks for your next design workshop.</p></div>
++<div class="highlight-card"><span class="highlight-card__title">Modeling</span><p class="highlight-card__description">Sticky notes, hexagon magnets, posters and <a href="/products">card decks</a> for your next design workshop.</p></div>
+ <div class="highlight-card"><span class="highlight-card__title">Apparel</span><p class="highlight-card__description">Shirts, hoodies and caps that explain your architecture before you open your laptop.</p></div>
+ <div class="highlight-card"><span class="highlight-card__title">Desk &amp; Office</span><p class="highlight-card__description">Mugs, coasters, a hex-grid notebook, and the wooden hexagon for your desk.</p></div>
+ <div class="highlight-card"><span class="highlight-card__title">Stickers &amp; Pins</span><p class="highlight-card__description">Small enough for a laptop lid, loud enough for a conference hallway.</p></div>

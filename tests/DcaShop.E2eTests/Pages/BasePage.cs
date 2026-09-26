@@ -32,6 +32,16 @@ public abstract class BasePage
     public Task<bool> FitsViewportAsync() =>
         Page.EvaluateAsync<bool>("() => document.documentElement.scrollWidth <= document.documentElement.clientWidth");
 
+    /// <summary>The logo's wordmark in the site header, as the browser renders it.</summary>
+    public async Task<string> LogoTextAsync() => (await Page.Locator("[data-test='site-header'] [data-test='site-logo']").InnerTextAsync()).Trim();
+
+    /// <summary>Follows the logo in the site header.</summary>
+    public async Task<HomePage> FollowLogoAsync()
+    {
+        await Page.Locator("[data-test='site-header'] [data-test='site-logo']").ClickAsync();
+        return await HomePage.OpenAsync(Page);
+    }
+
     protected string CurrentPath => Page.Url.Replace(BaseUrl, string.Empty, StringComparison.Ordinal);
 
     protected async Task<bool> PageContainsAsync(string text) => (await Page.Locator("body").TextContentAsync() ?? string.Empty).Contains(text, StringComparison.Ordinal);
