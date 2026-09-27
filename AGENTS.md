@@ -132,7 +132,8 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   here). Keep selectors and scenarios in sync with the Java suite.
 - Views mirror the Java sample's Pug templates one to one (classes, `data-test` attributes, routes, seed data);
   `wwwroot/css/main.css` and `wwwroot/images/products/` are copies of the Java static assets — keep them in sync
-  when the Java UI changes. The one deliberate markup difference besides the antiforgery field is the corner
+  when the Java UI changes. A page change delivered here first is the source the Java sample takes over, with the
+  same names; nothing is named anew on the second side. The one deliberate markup difference besides the antiforgery field is the corner
   ribbon in the layout: `.stack-ribbon--dotnet` here, `.stack-ribbon--java` in the Java sample, both styled by
   the same `.stack-ribbon` block in `main.css`. It exists so two tabs of the same-looking shop can be told
   apart; keep the CSS identical and only the modifier class and the label different. `ErrorPageController` and `MiniBasketViewComponent` stay in the web host; the
