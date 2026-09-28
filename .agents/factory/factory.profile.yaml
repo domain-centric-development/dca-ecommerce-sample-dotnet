@@ -40,3 +40,4 @@ format: dotnet format --verify-no-changes
 formatFix: dotnet format
 acceptance: pages
 run: dotnet run --project src/DcaShop.Web
+carrier.plan: dca-modelling
