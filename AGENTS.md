@@ -55,6 +55,17 @@ The architecture tests also (re)generate `docs/architecture/context-map.md` and 
 commit it with the change that caused it. `project/domain.md` is the designed, hand-maintained strategic map
 (relationship patterns, subdomain types) — the project description section below names it; no test writes it.
 
+### Test levels
+
+- **Unit:** every invariant of an aggregate, entity or value object — its guards included; a guard nobody
+  named as an invariant is not written. The domain type alone, no framework.
+- **Integration, the use case once:** through its input port resolved from the `WebApplicationFactory`'s
+  services, real outgoing adapters and persistence, an external system stubbed at the protocol (WireMock.Net).
+- **Integration, each incoming adapter its translation:** the adapter against a stubbed input port
+  (`ConfigureTestServices`), asserting status and body of the result and of each refusal.
+- Existing tests that run a use case through its endpoint stay; new ones follow the two shapes (guide:
+  `topics/testing-levels.md`). Mirrors the Java sample's section.
+
 ## Tech stack
 
 .NET 10 (LTS; SDK pinned via `global.json`), ASP.NET Core MVC + Razor views, xUnit, `DomainCentric.BuildingBlocks` + `DomainCentric.ArchRules(.Xunit)`
