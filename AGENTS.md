@@ -108,7 +108,9 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   `Adapter/Incoming/Api/`) — the layout's `RestControllerSuffix` is set to `Resource` in `ArchitectureRulesTest`
   so `DCA-NAM-006` enforces the Java sample's name rather than the .NET default `Controller`; event adapters `*EventConsumer` (incoming) and
   `*EventPublisher` (domain → integration relay, outgoing); domain events in past tense, integration events
-  with the `Event` suffix and `[IntegrationEventType]`.
+  with the `Event` suffix and `[IntegrationEventType]`; failures (domain and use-case exceptions) named by the
+  broken rule in the domain's words, with the suffix `Exception` (`CartNotModifiableException`) — the method's
+  `failure_suffix: Exception`.
 - Ports and use cases are **async only** (`Task<TOut> ExecuteAsync(TIn, CancellationToken)`, `*Async` methods);
   the **domain stays synchronous**. Value objects are `sealed record`s, ids `readonly record struct : IId`.
 - Cross-context calls go **only** through the other context's `Api/` from an outgoing adapter (ACL); consumed

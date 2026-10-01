@@ -46,6 +46,20 @@ unchanged. The buyer explicitly starts a fresh checkout against the new prices. 
 publishes the same total; there is no no-argument confirmation path. Local in-memory repository serialization is not a
 claim of durable distributed transactions or universal rollback of unenlisted resources.
 
+**Type:** Aggregate Root
+
+**Operations:**
+- `Start` — the session comes into existence over a snapshot of the cart's positions, quantities and prices
+- `Supersede` — kept with status superseded when a new checkout action replaces it; no event; only an active session can be superseded
+- `SubmitBuyerInfo`, `SubmitDelivery`, `SubmitPayment` — record the step's data and move on to the next step when standing on it
+- `AssertReadyForPayment` — a question: the preconditions of `SubmitPayment`, checked without changing anything
+- `GoBackTo` — moves the current step back; data already submitted stays
+- `Confirm` — status confirmed, totals recomputed at current prices; refused while the pricing verdict reports a changed price or a shortage
+- `Complete` — after payment: status completed, with the order reference
+- `Abandon` — kept with status abandoned; the cart's contents stay
+- `Expire` — kept with status expired, for inactivity; the cart's contents stay
+- `SyncLineItems` — exists only to refuse: a session's positions are immutable, a changed cart needs a new session
+
 
 ### BuyerInfo
 

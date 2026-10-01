@@ -28,13 +28,13 @@ open orders, and ensures that reservations never exceed the available quantity.
 `StockChanged`
 
 **Operations:**
-- `Create(productId, initialQuantity)` — Create a new stock-keeping unit
-- `IncreaseStock(amount)` — Record incoming goods
-- `DecreaseStock(amount)` — Record outgoing goods (e.g. shipment)
-- `Reserve(amount)` — Reserve stock for an order
-- `Release(amount)` — Release previously reserved stock
-- `AdjustStockTo(quantity)` — Manual correction / stocktake (see Open Issues)
-- `IsAvailable` — Says whether unreserved stock is available
+- `Create(productId, initialQuantity)` — Create a new stock-keeping unit: the stock level comes into existence for one product, nothing reserved
+- `IncreaseStock(amount)` — Record incoming goods: the available quantity grows by the amount
+- `DecreaseStock(amount)` — Record outgoing goods (e.g. shipment): the available quantity shrinks by the amount. It does not consume a reservation — a reservation above the new figure is only capped to it; there is no separate operation that turns reserved stock into shipped stock
+- `Reserve(amount)` — Reserve stock for an order: the amount is earmarked out of the unreserved stock and stays in the available quantity
+- `Release(amount)` — Release previously reserved stock: the reservation shrinks, the available quantity is unchanged
+- `AdjustStockTo(quantity)` — Manual correction / stocktake (see Open Issues): the available quantity is set to the counted figure, a reservation above it is capped
+- `IsAvailable` — Says whether unreserved stock is available (a question; changes nothing)
 
 **Notes:** Invariant: `reservedQuantity <= availableQuantity`. If the available
 stock drops below the reserved amount, the reservation is automatically
