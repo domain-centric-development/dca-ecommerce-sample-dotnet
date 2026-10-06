@@ -20,6 +20,7 @@ architecture: dotnet test tests/DcaShop.ArchitectureTests
 # The one source a stage may treat as an authority. Generated from the same sources as the
 # building blocks and the rule catalog this project consumes.
 knowledge: dca-knowledge
+knowledge.read: guide/language-mappings/building-blocks.md
 
 carrier.build: dca-modelling
 carrier.guard: dca-discipline
