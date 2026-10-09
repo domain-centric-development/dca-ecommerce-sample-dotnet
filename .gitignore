@@ -33,6 +33,7 @@ __pycache__/
 .claude/skills/factory-verify
 .claude/skills/stage-build
 .claude/skills/stage-document
+.claude/skills/stage-integrate
 .claude/skills/stage-judge
 .claude/skills/stage-plan
 .claude/skills/stage-test
@@ -47,6 +48,7 @@ __pycache__/
 .claude/skills/review-ddd
 .claude/skills/review-hexagonal
 .claude/skills/ubiquitous-language
+Thumbs.db
 .codex/skills/factory-backlog
 .codex/skills/factory-decisions
 .codex/skills/factory-discover
@@ -58,6 +60,7 @@ __pycache__/
 .codex/skills/factory-verify
 .codex/skills/stage-build
 .codex/skills/stage-document
+.codex/skills/stage-integrate
 .codex/skills/stage-judge
 .codex/skills/stage-plan
 .codex/skills/stage-test
@@ -91,6 +94,7 @@ __pycache__/
 .opencode/skills/factory-verify
 .opencode/skills/stage-build
 .opencode/skills/stage-document
+.opencode/skills/stage-integrate
 .opencode/skills/stage-judge
 .opencode/skills/stage-plan
 .opencode/skills/stage-test
