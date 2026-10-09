@@ -270,8 +270,8 @@ this file; what is to be built is in the project description below it.
 - `project/product.md`, `project/tech.md`, `project/domain.md` — the project description: the product,
   the technical decisions, the designed context map (the generated one is
   `docs/architecture/context-map.md`)
-- `project/backlog/<epic>/<story>.md` — new stories; the porting log and the work packages keep the delivered work
-- `.agents/factory/factory.profile.yaml` — the only file that tells the pipeline how this project
+- `project/epics/<epic>/<story>/story.md` — new stories, each a folder with its `decisions/`; the porting log and the work packages keep the delivered work
+- `dca-factory.profile.yaml` at the root — the only file that tells the pipeline how this project
   builds: `dotnet build`, the unit/integration/E2E test projects, `dotnet test tests/DcaShop.ArchitectureTests` (Debug)
   and `dotnet format`, plus the knowledge source (`dca-knowledge`), the carriers and the review perspectives
 - `.agents/factory/story-gate.py` — the gate between the stages
