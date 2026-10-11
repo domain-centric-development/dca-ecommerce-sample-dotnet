@@ -9,8 +9,8 @@ public sealed class ShoppingCartMergeTest
 {
     private static readonly Price Ten = Price.Of(Money.Euro(10m));
 
-    private readonly ShoppingCart _target = new(CartId.Generate(), CustomerId.Of("target-customer"));
-    private readonly ShoppingCart _source = new(CartId.Generate(), CustomerId.Of("source-customer"));
+    private readonly ShoppingCart _target = ShoppingCart.Create(CartId.Generate(), CustomerId.Of("target-customer"));
+    private readonly ShoppingCart _source = ShoppingCart.Create(CartId.Generate(), CustomerId.Of("source-customer"));
 
     [Fact]
     public void MergesSameProductByCombiningQuantities()

@@ -35,7 +35,7 @@ An editable collection of stable positions. Checkout copies a snapshot through t
 **Type:** Aggregate Root
 
 **Operations:**
-- create (`new ShoppingCart`) — the cart comes into existence, active and empty
+- `Create` — the cart comes into existence, active and empty
 - `Reconstitute` — restores a stored cart; no rule re-evaluated, no event
 - `AddItem` — a product goes into the cart as a new position, or the position already holding it grows by the quantity
 - `RemoveItem`, `RemoveItemByProductId` — the position is gone from the cart

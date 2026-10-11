@@ -41,11 +41,11 @@ public sealed class ShoppingCartRepositoryPagingTest
     {
         var repository = new InMemoryShoppingCartRepository();
         var customerId = CustomerId.Of("customer-1");
-        var first = new ShoppingCart(CartId.Generate(), customerId);
+        var first = ShoppingCart.Create(CartId.Generate(), customerId);
         first.AddItem(ProductId.Generate(), Quantity.Of(1), Ten);
         first.Abandon();
         await repository.SaveAsync(first);
-        await repository.SaveAsync(new ShoppingCart(CartId.Generate(), customerId));
+        await repository.SaveAsync(ShoppingCart.Create(CartId.Generate(), customerId));
         await repository.SaveAsync(CartWith(Quantity.Of(1)));
 
         var carts = await repository.FindByCustomerAsync(customerId);
@@ -55,7 +55,7 @@ public sealed class ShoppingCartRepositoryPagingTest
 
     private static ShoppingCart CartWith(Quantity quantity)
     {
-        var cart = new ShoppingCart(CartId.Generate(), CustomerId.Of($"customer-{Guid.NewGuid()}"));
+        var cart = ShoppingCart.Create(CartId.Generate(), CustomerId.Of($"customer-{Guid.NewGuid()}"));
         cart.AddItem(ProductId.Generate(), quantity, Ten);
         return cart;
     }

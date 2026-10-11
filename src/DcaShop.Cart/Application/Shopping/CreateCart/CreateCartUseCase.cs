@@ -25,7 +25,7 @@ public sealed class CreateCartUseCase : ICreateCartInputPort
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
-                var cart = new ShoppingCart(CartId.Generate(), CustomerId.Of(command.CustomerId));
+                var cart = ShoppingCart.Create(CartId.Generate(), CustomerId.Of(command.CustomerId));
                 await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);
                 return new CreateCartResult(cart.Id.Value, cart.CustomerId.Value);

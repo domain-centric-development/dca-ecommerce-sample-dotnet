@@ -11,7 +11,7 @@ public sealed class ShoppingCartResolverTest
 
     private static readonly Price Ten = Price.Of(Money.Euro(10m));
 
-    private readonly ShoppingCart _cart = new(CartId.Generate(), CustomerId.Of("test-customer"));
+    private readonly ShoppingCart _cart = ShoppingCart.Create(CartId.Generate(), CustomerId.Of("test-customer"));
     private readonly StubPriceResolver _resolver = new();
 
     private IReadOnlyDictionary<ProductId, ArticlePrice> Facts() => _cart.Items.ToDictionary(i => i.ProductId, i => _resolver.Resolve(i.ProductId));

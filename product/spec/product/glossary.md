@@ -30,6 +30,7 @@ truth for product identity and descriptive attributes.
 
 **Operations:** `Create` (the product comes into existence with a new `ProductId`; its initial price and
 stock travel only in `ProductCreated`, the aggregate holds neither; `ProductFactory` delegates here),
+`Reconstitute` (restores a stored product; no rule re-evaluated, no event),
 `UpdateName`, `UpdateDescription`, `UpdateCategory` (each replaces the attribute and raises its `…Changed` event)
 
 **Notes:** Prices and stock levels are NOT managed by the Product aggregate —

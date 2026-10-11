@@ -41,7 +41,7 @@ public sealed class GetOrCreateActiveCartUseCase : IGetOrCreateActiveCartInputPo
             return await _transactionBoundary.InTransactionAsync(
                 async ct =>
                 {
-                    var cart = new ShoppingCart(CartId.Generate(), customerId);
+                    var cart = ShoppingCart.Create(CartId.Generate(), customerId);
                     await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
                     await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);
                     return new GetOrCreateActiveCartResult(cart.Id.Value, Created: true);

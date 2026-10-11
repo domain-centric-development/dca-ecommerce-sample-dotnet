@@ -69,7 +69,7 @@ public sealed class SharedSpecificationTest
     }
     private static void Reconciliation(JsonElement v)
     {
-        var cart = new ShoppingCart(CartId.Generate(), CustomerId.Of("specification")); var product = ProductId.Generate(); var price = Price.Of(Money.Euro(10));
+        var cart = ShoppingCart.Create(CartId.Generate(), CustomerId.Of("specification")); var product = ProductId.Generate(); var price = Price.Of(Money.Euro(10));
         cart.AddItem(product, Quantity.Of(v.GetProperty("initial").GetInt32()), price); var snapshot = cart.Items[0].PositionSnapshot;
         foreach (var edit in v.GetProperty("edits").EnumerateArray())
         {

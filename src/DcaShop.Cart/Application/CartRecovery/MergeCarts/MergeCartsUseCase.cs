@@ -38,7 +38,7 @@ public sealed class MergeCartsUseCase : IMergeCartsInputPort
 
                 var accountCart = await _carts.FindActiveByCustomerAsync(registeredCustomerId, ct)
                     .ConfigureAwait(false)
-                    ?? await _carts.SaveAsync(new ShoppingCart(CartId.Generate(), registeredCustomerId), ct)
+                    ?? await _carts.SaveAsync(ShoppingCart.Create(CartId.Generate(), registeredCustomerId), ct)
                         .ConfigureAwait(false);
 
                 var itemsFromAccount = accountCart.ItemCount;

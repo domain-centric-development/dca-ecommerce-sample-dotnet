@@ -53,7 +53,7 @@ public sealed class OutboxEligibilityTest
         var boundary = new DcaShop.SharedKernel.Infrastructure.Transactions.InMemoryTransactionBoundary();
         var publisher = new DcaShop.SharedKernel.Adapter.Outgoing.Event.OutboxIntegrationEventPublisher(outbox, boundary);
         DcaShop.Cart.Domain.Model.ShoppingCart? stored = null;
-        var cart = new DcaShop.Cart.Domain.Model.ShoppingCart(DcaShop.Cart.Domain.Model.CartId.Generate(), DcaShop.Cart.Domain.Model.CustomerId.Of("participant"));
+        var cart = DcaShop.Cart.Domain.Model.ShoppingCart.Create(DcaShop.Cart.Domain.Model.CartId.Generate(), DcaShop.Cart.Domain.Model.CustomerId.Of("participant"));
         await Assert.ThrowsAsync<InvalidOperationException>(() => boundary.InTransactionAsync<int>(async ct =>
         {
             boundary.EnlistCommit(() => stored = cart);

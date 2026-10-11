@@ -27,10 +27,10 @@ public sealed class ActiveCartUniquenessTest
     {
         var carts = new InMemoryShoppingCartRepository();
         var customer = CustomerId.Of($"customer-{Guid.NewGuid()}");
-        await carts.SaveAsync(new ShoppingCart(CartId.Generate(), customer));
+        await carts.SaveAsync(ShoppingCart.Create(CartId.Generate(), customer));
 
         await Assert.ThrowsAsync<ActiveCartAlreadyExistsException>(() =>
-            carts.SaveAsync(new ShoppingCart(CartId.Generate(), customer)));
+            carts.SaveAsync(ShoppingCart.Create(CartId.Generate(), customer)));
     }
 
     [Fact]
@@ -38,13 +38,13 @@ public sealed class ActiveCartUniquenessTest
     {
         var carts = new InMemoryShoppingCartRepository();
         var customer = CustomerId.Of($"customer-{Guid.NewGuid()}");
-        var first = new ShoppingCart(CartId.Generate(), customer);
+        var first = ShoppingCart.Create(CartId.Generate(), customer);
         await carts.SaveAsync(first);
 
         first.Complete();
         await carts.SaveAsync(first);
 
-        var second = new ShoppingCart(CartId.Generate(), customer);
+        var second = ShoppingCart.Create(CartId.Generate(), customer);
         await carts.SaveAsync(second);
 
         Assert.Equal(second.Id, (await carts.FindActiveByCustomerAsync(customer))!.Id);

@@ -9,7 +9,7 @@ public sealed class ShoppingCartTest
 {
     private static readonly Price Ten = Price.Of(Money.Euro(10m));
 
-    private static ShoppingCart NewCart() => new(CartId.Generate(), CustomerId.Of("guest-1"));
+    private static ShoppingCart NewCart() => ShoppingCart.Create(CartId.Generate(), CustomerId.Of("guest-1"));
 
     [Fact]
     public void DefaultQuantityIsRejectedAtEveryEntryIncludingReconstitution()

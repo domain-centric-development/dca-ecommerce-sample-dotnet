@@ -106,7 +106,7 @@ public sealed class CheckoutSpecificationTest
     private sealed class Fixture : ICartDataPort, ICheckoutArticleDataPort
     {
         public readonly ProductId Product = ProductId.Generate();
-        public readonly CartModel.ShoppingCart Cart = new(CartModel.CartId.Generate(), CartModel.CustomerId.Of("specification"));
+        public readonly CartModel.ShoppingCart Cart = CartModel.ShoppingCart.Create(CartModel.CartId.Generate(), CartModel.CustomerId.Of("specification"));
         public readonly InMemoryCheckoutSessionRepository Repository = new();
         public readonly Publisher Events = new();
         public Money Price; public int Stock;

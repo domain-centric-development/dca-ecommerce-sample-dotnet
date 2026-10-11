@@ -75,7 +75,7 @@ public sealed class CartSpecificationTest
 
     private static ShoppingCart CartWithOneItem()
     {
-        var cart = new ShoppingCart(CartId.Generate(), CustomerId.Of("customer-1"));
+        var cart = ShoppingCart.Create(CartId.Generate(), CustomerId.Of("customer-1"));
         cart.AddItem(ProductId.Generate(), Quantity.Of(1), Ten);
         return cart;
     }

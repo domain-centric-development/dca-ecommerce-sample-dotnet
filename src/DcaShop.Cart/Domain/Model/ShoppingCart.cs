@@ -13,12 +13,18 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
 {
     private readonly List<CartItem> _items = new();
 
-    public ShoppingCart(CartId id, CustomerId customerId)
+    private ShoppingCart(CartId id, CustomerId customerId)
     {
         Id = id;
         CustomerId = customerId;
         Status = CartStatus.Active;
     }
+
+    /// <summary>
+    /// Opens a new, empty and active cart for a customer. Opening a cart is no business fact anyone downstream
+    /// reacts to, so no event is raised; the first one comes with the first line added.
+    /// </summary>
+    public static ShoppingCart Create(CartId id, CustomerId customerId) => new(id, customerId);
 
     /// <summary>A stored line as the repository hands it back; only the aggregate turns it into a <see cref="CartItem"/>.</summary>
     public sealed record StoredItem(CartItemId Id, ProductId ProductId, Quantity Quantity, Price PriceAtAddition, string? Units = null);

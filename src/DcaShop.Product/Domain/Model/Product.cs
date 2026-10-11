@@ -11,7 +11,7 @@ namespace DcaShop.Product.Domain.Model;
 /// </summary>
 public sealed class Product : AggregateRootBase<Product, ProductId>
 {
-    public Product(ProductId id, Sku sku, ProductName name, ProductDescription description, Category category, ImageUrl imageUrl)
+    private Product(ProductId id, Sku sku, ProductName name, ProductDescription description, Category category, ImageUrl imageUrl)
     {
         Id = id;
         Sku = sku ?? throw new ArgumentNullException(nameof(sku));
@@ -66,4 +66,8 @@ public sealed class Product : AggregateRootBase<Product, ProductId>
         product.RegisterEvent(ProductCreated.Now(product.Id, sku, name, category, initialPrice, initialStock));
         return product;
     }
+
+    /// <summary>Restores a stored product as it was — a fact to restore, not a decision to re-make: no event is raised.</summary>
+    public static Product Reconstitute(ProductId id, Sku sku, ProductName name, ProductDescription description, Category category, ImageUrl imageUrl) =>
+        new(id, sku, name, description, category, imageUrl);
 }
