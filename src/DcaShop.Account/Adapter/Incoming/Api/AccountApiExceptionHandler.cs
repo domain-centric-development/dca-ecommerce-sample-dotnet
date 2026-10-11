@@ -31,6 +31,16 @@ public sealed class AccountApiExceptionHandler : IExceptionHandler
 {
     private static readonly string[] RoutePrefixes = ["/api/auth"];
 
+    /// <summary>The failure names no attempt, so the sentence is the adapter's own.</summary>
+    private const string AccountAlreadyExistsDetail = "User already has an account";
+
+    /// <summary>
+    /// The strength rule the model applies, in this adapter's words: the refusal carries no value, and the attempt
+    /// itself is never repeated back.
+    /// </summary>
+    private static readonly string PasswordTooWeakDetail =
+        $"Password must be at least {HashedPassword.MinLength} characters long and contain an uppercase letter, a lowercase letter and a digit";
+
     private readonly IProblemDetailsService _problemDetails;
     private readonly ILogger<AccountApiExceptionHandler> _logger;
 
@@ -50,21 +60,22 @@ public sealed class AccountApiExceptionHandler : IExceptionHandler
         switch (exception)
         {
             // Another account already holds that address.
-            case EmailAlreadyRegisteredException:
-                return ProblemAsync(httpContext, exception, StatusCodes.Status409Conflict, "Email already registered");
+            case EmailAlreadyRegisteredException taken:
+                return ProblemAsync(
+                    httpContext, exception, StatusCodes.Status409Conflict, "Email already registered", $"Email is already registered: {taken.Email.Value}");
 
             // The signed-in user already has an account.
             case AccountAlreadyExistsException:
-                return ProblemAsync(httpContext, exception, StatusCodes.Status409Conflict, "Account already exists");
+                return ProblemAsync(httpContext, exception, StatusCodes.Status409Conflict, "Account already exists", AccountAlreadyExistsDetail);
 
-            // The password does not meet the strength rules. The model's own wording goes to the caller
-            // verbatim — it says what to change, and it describes the rule, not the attempt.
+            // The password does not meet the strength rules. The answer states the rule, not the attempt.
             case PasswordTooWeakException:
-                return ProblemAsync(httpContext, exception, StatusCodes.Status422UnprocessableEntity, "Password too weak");
+                return ProblemAsync(httpContext, exception, StatusCodes.Status422UnprocessableEntity, "Password too weak", PasswordTooWeakDetail);
 
             // The account exists but is closed.
-            case AccountClosedException:
-                return ProblemAsync(httpContext, exception, StatusCodes.Status409Conflict, "Account closed");
+            case AccountClosedException closed:
+                return ProblemAsync(
+                    httpContext, exception, StatusCodes.Status409Conflict, "Account closed", $"Account {closed.AccountId.Value} is closed");
 
             // The account's status does not allow signing in. The status itself is deliberately not in the
             // answer: it would tell a stranger which addresses have suspended accounts.
@@ -97,6 +108,10 @@ public sealed class AccountApiExceptionHandler : IExceptionHandler
         httpContext.Request.Path.Value is { } path
         && RoutePrefixes.Any(prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>
+    /// Writes the problem document. The detail is worded here, from the failure's values — the exception's message
+    /// is for the log, never for the caller; a catch-all arm answers with its title alone.
+    /// </summary>
     private async ValueTask<bool> ProblemAsync(
         HttpContext httpContext, Exception exception, int status, string title, string? detail = null)
     {
@@ -105,7 +120,7 @@ public sealed class AccountApiExceptionHandler : IExceptionHandler
         {
             HttpContext = httpContext,
             Exception = exception,
-            ProblemDetails = new ProblemDetails { Status = status, Title = title, Detail = detail ?? exception.Message },
+            ProblemDetails = new ProblemDetails { Status = status, Title = title, Detail = detail },
         }).ConfigureAwait(false);
     }
 }

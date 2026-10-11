@@ -1,3 +1,4 @@
+using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
@@ -53,11 +54,25 @@ public sealed class CartPageController : Controller
         {
             // The context's own refusals, plus the argument exception a form field still reaches a value object
             // with.
-            TempData["Error"] = e.Message;
+            TempData["Error"] = MessageFor(e);
         }
 
         return RedirectToAction(nameof(Show));
     }
+
+    /// <summary>
+    /// What the page tells the customer, worded from the failure's type and values — the exception's message is
+    /// for the log, never for the page.
+    /// </summary>
+    private static string MessageFor(Exception failure) => failure switch
+    {
+        InsufficientArticleStockException insufficient => $"Insufficient stock for product: {insufficient.ProductId.Value}",
+        ArticleNotAvailableException notAvailable => $"Product not found: {notAvailable.ProductId.Value}",
+        CartNotFoundException notFound => $"Cart not found: {notFound.CartId.Value}",
+        CartNotModifiableException notModifiable => $"Cannot modify cart {notModifiable.CartId.Value} with status: {notModifiable.Status}",
+        ArgumentException => "Please enter a valid quantity.",
+        _ => "The product could not be added to the cart.",
+    };
 
     private string CurrentCustomerId => _identityProvider.GetCurrentIdentity().UserId.Value;
 

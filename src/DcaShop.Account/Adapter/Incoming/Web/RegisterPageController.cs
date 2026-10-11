@@ -1,5 +1,6 @@
 using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.Account.Application.RegisterAccount;
+using DcaShop.Account.Domain.Model;
 using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 
@@ -88,9 +89,23 @@ public sealed class RegisterPageController : Controller
         {
             // The context's own refusals, plus the argument exception a form field still reaches a value object
             // with.
-            return Rejected(submission, e.Message);
+            return Rejected(submission, MessageFor(e));
         }
     }
+
+    /// <summary>
+    /// What the page tells the visitor, worded from the failure's type and values — the exception's message is for
+    /// the log, never for the page.
+    /// </summary>
+    private static string MessageFor(Exception failure) => failure switch
+    {
+        EmailAlreadyRegisteredException taken => $"Email is already registered: {taken.Email.Value}",
+        AccountAlreadyExistsException => "User already has an account",
+        PasswordTooWeakException =>
+            $"Password must be at least {HashedPassword.MinLength} characters long and contain an uppercase letter, a lowercase letter and a digit",
+        ArgumentException => "Please check the email address, your name and your date of birth.",
+        _ => "The account could not be created.",
+    };
 
     private IActionResult Rejected(RegisterPageViewModel submission, string error) =>
         View("~/Views/Account/Register.cshtml", submission with { ErrorMessage = error });

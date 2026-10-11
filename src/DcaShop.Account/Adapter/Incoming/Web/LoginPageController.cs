@@ -2,6 +2,7 @@ using System.Net;
 
 using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.Account.Application.AuthenticateAccount;
+using DcaShop.Account.Domain.Model;
 using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 
@@ -64,7 +65,7 @@ public sealed class LoginPageController : Controller
         {
             // The context's own refusals, plus the argument exception a form field still reaches a value object
             // with.
-            return Rejected(email, returnUrl, e.Message);
+            return Rejected(email, returnUrl, MessageFor(e));
         }
 
         if (!result.Success)
@@ -83,6 +84,18 @@ public sealed class LoginPageController : Controller
 
         return Redirect(mergeUrl);
     }
+
+    /// <summary>
+    /// What the page tells the visitor, worded from the failure's type — the exception's message is for the log,
+    /// never for the page. The account's status stays out of it: it would tell a stranger which addresses have
+    /// suspended accounts.
+    /// </summary>
+    private static string MessageFor(Exception failure) => failure switch
+    {
+        AccountNotAccessibleException => "This account cannot sign in",
+        ArgumentException => "Please enter your email and password.",
+        _ => "Sign-in failed. Please try again.",
+    };
 
     private IActionResult Rejected(string email, string? returnUrl, string error) =>
         View("~/Views/Account/Login.cshtml", new LoginPageViewModel(returnUrl, email, error, false));

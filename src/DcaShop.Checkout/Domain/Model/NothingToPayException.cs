@@ -15,7 +15,10 @@ public sealed class NothingToPayException : DomainException
         : base($"Nothing to pay: the total is {total}")
     {
         SessionId = sessionId;
+        Total = total;
     }
 
     public CheckoutSessionId SessionId { get; }
+
+    public Money Total { get; }
 }

@@ -81,7 +81,7 @@ public sealed class CheckoutPageController : Controller
             // The two base types are the checkout's own refusals. ArgumentException is still here because a form
             // field the customer typed reaches a value object unvalidated; each field moved into request
             // validation is one reason less to catch it.
-            TempData["Error"] = e.Message;
+            TempData["Error"] = MessageFor(e);
             return Redirect(CheckoutRoutes.Cart);
         }
     }
@@ -163,16 +163,39 @@ public sealed class CheckoutPageController : Controller
         {
             // The two base types are the checkout's own refusals; the argument exception is the form field that
             // reaches a value object unvalidated.
-            return await Page(step, cancellationToken, CustomerMessage(e));
+            return await Page(step, cancellationToken, MessageFor(e));
         }
     }
 
-    /// <summary>What the customer is told: the provider's own wording never reaches the page, the shop's does.</summary>
-    private static string CustomerMessage(Exception refusal) => refusal switch
+    /// <summary>
+    /// What the customer is told, worded from the failure's type and values — the exception's message is for the
+    /// log, never for the page; the provider's own wording never reaches the page either, the shop's does.
+    /// </summary>
+    private static string MessageFor(Exception failure) => failure switch
     {
         PaymentInitiationFailedException => "The payment was refused. Please choose another way to pay.",
         PaymentProviderUnavailableException => "The payment provider is not available right now. Please try again later.",
-        _ => refusal.Message,
+        PaymentProviderNotFoundException notFound => $"Payment provider not found: {notFound.ProviderId}",
+        CheckoutSessionNotFoundException notFound => $"Session not found: {notFound.SessionId.Value}",
+        CartNotAvailableException notAvailable => $"Cart not found: {notAvailable.CartId.Value}",
+        CartNotActiveException notActive => $"Cart is not active: {notActive.CartId.Value}",
+        EmptyCartException empty => $"Cannot checkout empty cart: {empty.CartId.Value}",
+        EmptyCheckoutException empty => $"Cannot start checkout for cart {empty.CartId.Value} without line items",
+        CheckoutItemsUnavailableException unavailable =>
+            $"Cannot start checkout, {unavailable.ProductIds.Count} item(s) unavailable or out of stock",
+        ArticleNotAvailableException notAvailable => $"Product not found: {notAvailable.ProductId.Value}",
+        CheckoutValidationException invalid =>
+            $"Cannot continue checkout, {invalid.Validation.Errors.Count} item(s) unavailable or out of stock",
+        CheckoutStepOutOfOrderException outOfOrder => $"Cannot move to step {outOfOrder.Requested} from {outOfOrder.Current}",
+        CheckoutStepNotCompletedException notCompleted => $"Step {notCompleted.Step} must be completed first",
+        CheckoutStepNotNavigableException notNavigable => $"Cannot navigate directly to step {notNavigable.Step}",
+        CheckoutNotModifiableException notModifiable =>
+            $"Cannot modify checkout {notModifiable.SessionId.Value} with status: {notModifiable.Status}",
+        CheckoutNotConfirmedException notConfirmed =>
+            $"Cannot complete checkout {notConfirmed.SessionId.Value} with status: {notConfirmed.Status}",
+        NothingToPayException nothingToPay => $"Nothing to pay: the total is {nothingToPay.Total}",
+        ArgumentException => "Please check your entries.",
+        _ => "The checkout could not continue. Please try again.",
     };
 
     private async Task<CheckoutCartSnapshot?> ActiveSessionAsync(CancellationToken cancellationToken)

@@ -50,8 +50,9 @@ public sealed class ProductApiExceptionHandler : IExceptionHandler
         switch (exception)
         {
             // The catalog already carries that stock keeping unit — a conflict with existing state.
-            case DuplicateSkuException:
-                return ProblemAsync(httpContext, exception, StatusCodes.Status409Conflict, "Stock keeping unit already in use");
+            case DuplicateSkuException duplicate:
+                return ProblemAsync(
+                    httpContext, exception, StatusCodes.Status409Conflict, "Stock keeping unit already in use", $"Product with SKU already exists: {duplicate.Sku.Value}");
 
             // Any other failure the use case reports. The request was understood and refused for a stated reason,
             // which is what 422 means; a use-case failure that deserves its own status gets its own arm above.
@@ -79,14 +80,19 @@ public sealed class ProductApiExceptionHandler : IExceptionHandler
         httpContext.Request.Path.Value is { } path
         && RoutePrefixes.Any(prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
 
-    private async ValueTask<bool> ProblemAsync(HttpContext httpContext, Exception exception, int status, string title)
+    /// <summary>
+    /// Writes the problem document. The detail is worded here, from the failure's values — the exception's message
+    /// is for the log, never for the caller; a catch-all arm answers with its title alone.
+    /// </summary>
+    private async ValueTask<bool> ProblemAsync(
+        HttpContext httpContext, Exception exception, int status, string title, string? detail = null)
     {
         httpContext.Response.StatusCode = status;
         return await _problemDetails.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,
             Exception = exception,
-            ProblemDetails = new ProblemDetails { Status = status, Title = title, Detail = exception.Message },
+            ProblemDetails = new ProblemDetails { Status = status, Title = title, Detail = detail },
         }).ConfigureAwait(false);
     }
 }
