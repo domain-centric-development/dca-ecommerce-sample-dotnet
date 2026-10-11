@@ -1,5 +1,6 @@
 using DcaShop.Account.Application.ChangePassword;
 using DcaShop.Account.Application.GetAccountOverview;
+using DcaShop.Account.Domain.Model;
 using DcaShop.SharedKernel.Application.Shared;
 
 using Microsoft.AspNetCore.Authorization;
@@ -14,6 +15,7 @@ public sealed class ChangePasswordPageController : Controller
 {
     internal const string ConfirmationMismatch = "New password and confirmation do not match";
     internal const string PasswordChanged = "Your password has been changed.";
+    internal const string CurrentPasswordInvalid = "Current password is not correct";
 
     private const string ViewName = "~/Views/Account/ChangePassword.cshtml";
 
@@ -66,9 +68,25 @@ public sealed class ChangePasswordPageController : Controller
         {
             ChangePasswordOutcome.Changed => ChangedRedirect(),
             ChangePasswordOutcome.AccountNotAccessible => LoginRedirect(),
-            _ => View(ViewName, ChangePasswordPageViewModel.WithError(result.ErrorMessage!)),
+            ChangePasswordOutcome.CurrentPasswordInvalid =>
+                View(ViewName, ChangePasswordPageViewModel.WithError(CurrentPasswordInvalid)),
+            _ => View(ViewName, ChangePasswordPageViewModel.WithError(PasswordRuleSentence(result.BrokenRule!.Value))),
         };
     }
+
+    /// <summary>
+    /// The account pages' sentence for a password the policy refuses, worded from the broken rule — the rule,
+    /// never the attempt. The register page uses it too.
+    /// </summary>
+    internal static string PasswordRuleSentence(PasswordRule rule) => rule switch
+    {
+        PasswordRule.TooShort => $"Password must be at least {HashedPassword.MinLength} characters long.",
+        PasswordRule.TooLong => $"Password must not be longer than {HashedPassword.MaxByteLength} bytes.",
+        PasswordRule.NoUppercaseLetter => "Password must contain an uppercase letter.",
+        PasswordRule.NoLowercaseLetter => "Password must contain a lowercase letter.",
+        PasswordRule.NoDigit => "Password must contain a digit.",
+        _ => throw new ArgumentOutOfRangeException(nameof(rule), rule, null),
+    };
 
     private IActionResult ChangedRedirect()
     {

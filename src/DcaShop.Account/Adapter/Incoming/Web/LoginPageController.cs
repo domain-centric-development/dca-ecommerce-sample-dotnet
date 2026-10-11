@@ -92,9 +92,9 @@ public sealed class LoginPageController : Controller
     /// </summary>
     private static string MessageFor(Exception failure) => failure switch
     {
-        AccountNotAccessibleException => "This account cannot sign in",
-        ArgumentException => "Please enter your email and password.",
-        _ => "Sign-in failed. Please try again.",
+        AccountNotAccessibleException => "This account cannot sign in.",
+        ArgumentException => "Please enter your email and your password.",
+        _ => "Signing in failed. Please try again.",
     };
 
     private IActionResult Rejected(string email, string? returnUrl, string error) =>

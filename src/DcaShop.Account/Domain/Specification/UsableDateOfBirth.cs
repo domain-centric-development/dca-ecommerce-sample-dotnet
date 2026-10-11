@@ -23,7 +23,7 @@ public sealed class UsableDateOfBirth : ISpecification<DateOnly?>
     public bool IsSatisfiedBy(DateOnly? candidate) =>
         candidate is not null && candidate.Value <= DateOnly.FromDateTime(DateTime.UtcNow);
 
-    /// <summary>Throws with the user-facing message naming which half of the rule failed.</summary>
+    /// <summary>Throws naming which half of the rule failed; the message is for the log, a page words the refusal itself.</summary>
     public void RequireSatisfiedBy(DateOnly? candidate)
     {
         if (candidate is null)

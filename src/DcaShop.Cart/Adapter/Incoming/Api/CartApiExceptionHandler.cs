@@ -53,27 +53,28 @@ public sealed class CartApiExceptionHandler : IExceptionHandler
             // No cart of this customer under that identity.
             case CartNotFoundException notFound:
                 return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status404NotFound, "Cart not found", $"Cart not found: {notFound.CartId.Value}");
+                    httpContext, exception, StatusCodes.Status404NotFound, "Cart not found", $"There is no cart {notFound.CartId.Value}.");
 
             // The assortment carries no article for that product.
             case ArticleNotAvailableException notAvailable:
                 return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status404NotFound, "Article not available", $"Product not found: {notAvailable.ProductId.Value}");
+                    httpContext, exception, StatusCodes.Status404NotFound, "Article not available", $"There is no article for product {notAvailable.ProductId.Value}.");
 
             // The cart does not hold the position the caller named.
             case CartItemNotFoundException notInCart:
                 return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status404NotFound, "Position not in cart", $"Not found in cart: {notInCart.Reference}");
+                    httpContext, exception, StatusCodes.Status404NotFound, "Position not in cart", $"The cart holds no position for {notInCart.Reference}.");
 
             // Not enough of the article to promise the requested quantity.
             case InsufficientArticleStockException insufficient:
                 return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status409Conflict, "Not enough stock", $"Insufficient stock for product: {insufficient.ProductId.Value}");
+                    httpContext, exception, StatusCodes.Status409Conflict, "Not enough stock",
+                    $"Requested {insufficient.Requested} of product {insufficient.ProductId.Value}, more than is in stock.");
 
             // The customer already shops in another cart.
             case ActiveCartAlreadyExistsException alreadyActive:
                 return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status409Conflict, "Active cart already exists", $"Customer {alreadyActive.CustomerId.Value} already has an active cart");
+                    httpContext, exception, StatusCodes.Status409Conflict, "Active cart already exists", $"Customer {alreadyActive.CustomerId.Value} already has an active cart.");
 
             // Any other failure the use case reports.
             case UseCaseException:

@@ -71,7 +71,7 @@ public sealed class ReduceStockUseCase : IReduceStockInputPort
         if (stockLevel is null)
         {
             _logger.LogWarning("Stock level not found for product {ProductId}", line.ProductId);
-            return ReduceStockResult.LineOutcome.Failure(line.ProductId, $"Stock level not found for product: {line.ProductId}");
+            return ReduceStockResult.LineOutcome.StockLevelNotFound(line.ProductId);
         }
 
         var previousStock = stockLevel.AvailableQuantity.Value;
@@ -84,7 +84,7 @@ public sealed class ReduceStockUseCase : IReduceStockInputPort
             // Only the stock rule becomes a failure result. An argument guard from the aggregate would be a
             // malformed call — a defect here, not an answer for the caller — and keeps travelling.
             _logger.LogWarning("Stock too low for product {ProductId}: {Reason}", line.ProductId, e.Message);
-            return ReduceStockResult.LineOutcome.Failure(line.ProductId, e.Message);
+            return ReduceStockResult.LineOutcome.InsufficientStock(line.ProductId, e.Available);
         }
 
         await _stockLevels.SaveAsync(stockLevel, ct).ConfigureAwait(false);

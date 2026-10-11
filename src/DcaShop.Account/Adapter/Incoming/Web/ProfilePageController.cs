@@ -17,6 +17,9 @@ namespace DcaShop.Account.Adapter.Incoming.Web;
 public sealed class ProfilePageController : Controller
 {
     internal const string ProfileUpdated = "Your profile has been updated.";
+    internal const string EmailAlreadyInUse = "This email address is already registered";
+    internal const string EmailInvalid = "Please enter a valid email address.";
+    internal const string DateOfBirthInvalid = "Please enter a date of birth that is not in the future.";
 
     private const string ViewName = "~/Views/Account/Profile.cshtml";
 
@@ -78,7 +81,7 @@ public sealed class ProfilePageController : Controller
 
             default:
                 return await RejectedAsync(
-                    identity.UserId.Value, email, dateOfBirth, result.ErrorMessage!, cancellationToken);
+                    identity.UserId.Value, email, dateOfBirth, MessageFor(result.Outcome), cancellationToken);
         }
     }
 
@@ -90,6 +93,15 @@ public sealed class ProfilePageController : Controller
             ? LoginRedirect()
             : View(ViewName, ProfilePageViewModel.WithError(stored, submittedEmail, submittedDateOfBirth, message));
     }
+
+    /// <summary>The page's own sentence for a refused change, worded from the outcome.</summary>
+    private static string MessageFor(ChangeProfileOutcome outcome) => outcome switch
+    {
+        ChangeProfileOutcome.EmailAlreadyInUse => EmailAlreadyInUse,
+        ChangeProfileOutcome.EmailInvalid => EmailInvalid,
+        ChangeProfileOutcome.DateOfBirthInvalid => DateOfBirthInvalid,
+        _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "not a refusal"),
+    };
 
     private async Task<GetProfileResult.ProfileView?> StoredProfileAsync(string userId, CancellationToken ct) =>
         (await _getProfile.ExecuteAsync(new GetProfileQuery(userId), ct)).Profile;

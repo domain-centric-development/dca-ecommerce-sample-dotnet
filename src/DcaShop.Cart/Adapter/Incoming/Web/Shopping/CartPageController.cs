@@ -66,12 +66,13 @@ public sealed class CartPageController : Controller
     /// </summary>
     private static string MessageFor(Exception failure) => failure switch
     {
-        InsufficientArticleStockException insufficient => $"Insufficient stock for product: {insufficient.ProductId.Value}",
-        ArticleNotAvailableException notAvailable => $"Product not found: {notAvailable.ProductId.Value}",
-        CartNotFoundException notFound => $"Cart not found: {notFound.CartId.Value}",
-        CartNotModifiableException notModifiable => $"Cannot modify cart {notModifiable.CartId.Value} with status: {notModifiable.Status}",
+        InsufficientArticleStockException insufficient =>
+            $"There is not enough stock to add {insufficient.Requested} of this product.",
+        ArticleNotAvailableException => "This product is no longer available.",
+        CartNotFoundException => "Your cart could not be found.",
+        CartNotModifiableException => "This cart can no longer be changed.",
         ArgumentException => "Please enter a valid quantity.",
-        _ => "The product could not be added to the cart.",
+        _ => "The product could not be added to the cart. Please try again.",
     };
 
     private string CurrentCustomerId => _identityProvider.GetCurrentIdentity().UserId.Value;

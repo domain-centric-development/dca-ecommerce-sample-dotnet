@@ -13,8 +13,6 @@ namespace DcaShop.Account.Application.ChangeProfile;
 /// <summary>Changes the login address and the owner's date of birth of the current account.</summary>
 public sealed class ChangeProfileUseCase : IChangeProfileInputPort
 {
-    private const string EmailAlreadyInUseMessage = "This email address is already registered";
-
     private readonly IAccountRepository _accounts;
     private readonly IDomainEventPublisher _events;
     private readonly ITransactionBoundary _transactionBoundary;
@@ -47,25 +45,29 @@ public sealed class ChangeProfileUseCase : IChangeProfileInputPort
                     return ChangeProfileResult.AccountNotAccessible();
                 }
 
+                // Both values are checked before either is applied, so a rejection leaves the profile whole.
                 Email newEmail;
                 try
                 {
                     newEmail = Email.Of(command.Email);
-
-                    // Both values are checked before either is applied, so a rejection leaves the profile whole.
-                    UsableDateOfBirth.Rule.RequireSatisfiedBy(command.DateOfBirth);
                 }
                 catch (ArgumentException e)
                 {
                     _logger.LogDebug("Profile change rejected: {Reason}", e.Message);
-                    return ChangeProfileResult.InputRejected(e.Message);
+                    return ChangeProfileResult.EmailInvalid();
+                }
+
+                if (!UsableDateOfBirth.Rule.IsSatisfiedBy(command.DateOfBirth))
+                {
+                    _logger.LogDebug("Profile change rejected: date of birth not usable");
+                    return ChangeProfileResult.DateOfBirthInvalid();
                 }
 
                 if (newEmail != account.Email
                     && await _accounts.ExistsByEmailAsync(newEmail, ct).ConfigureAwait(false))
                 {
                     _logger.LogDebug("Profile change rejected: email already in use");
-                    return ChangeProfileResult.EmailAlreadyInUse(EmailAlreadyInUseMessage);
+                    return ChangeProfileResult.EmailAlreadyInUse();
                 }
 
                 account.ChangeEmail(newEmail);

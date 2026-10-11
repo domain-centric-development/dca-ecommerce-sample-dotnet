@@ -28,10 +28,11 @@ public sealed class HashedPasswordTest
     }
 
     [Fact]
-    public void AViolationReadsAsASentenceForTheUser()
+    public void AViolationNamesTheBrokenRule()
     {
         var e = Assert.Throws<PasswordTooWeakException>(() => HashedPassword.ValidatePasswordStrength("alllower123"));
 
+        Assert.Equal(PasswordRule.NoUppercaseLetter, e.Rule);
         Assert.Equal("Password must contain at least one uppercase letter", e.Message);
     }
 

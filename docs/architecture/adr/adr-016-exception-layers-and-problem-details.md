@@ -97,3 +97,8 @@ What changed is that the catch which converts a domain rule into such a variant 
   `DCA-ERR-001…006` already cover the shape, and the one thing they cannot see (a transport-status attribute on a
   domain exception) is the open gap ADR-002 of `dca-dotnet` records, unchanged by this work. Marker: nothing new —
   `DomainException` and `UseCaseException` are the two the samples needed.
+
+## Note
+
+2026-10-11: a page no longer renders the failure's message; the adapter words the refusal from its type and values
+(guide: The adapter answers; WP-101).

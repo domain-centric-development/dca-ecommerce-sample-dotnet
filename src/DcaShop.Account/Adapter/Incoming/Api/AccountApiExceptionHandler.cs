@@ -32,14 +32,7 @@ public sealed class AccountApiExceptionHandler : IExceptionHandler
     private static readonly string[] RoutePrefixes = ["/api/auth"];
 
     /// <summary>The failure names no attempt, so the sentence is the adapter's own.</summary>
-    private const string AccountAlreadyExistsDetail = "User already has an account";
-
-    /// <summary>
-    /// The strength rule the model applies, in this adapter's words: the refusal carries no value, and the attempt
-    /// itself is never repeated back.
-    /// </summary>
-    private static readonly string PasswordTooWeakDetail =
-        $"Password must be at least {HashedPassword.MinLength} characters long and contain an uppercase letter, a lowercase letter and a digit";
+    private const string AccountAlreadyExistsDetail = "The signed-in user already has an account.";
 
     private readonly IProblemDetailsService _problemDetails;
     private readonly ILogger<AccountApiExceptionHandler> _logger;
@@ -62,27 +55,29 @@ public sealed class AccountApiExceptionHandler : IExceptionHandler
             // Another account already holds that address.
             case EmailAlreadyRegisteredException taken:
                 return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status409Conflict, "Email already registered", $"Email is already registered: {taken.Email.Value}");
+                    httpContext, exception, StatusCodes.Status409Conflict, "Email already registered", $"The email address {taken.Email.Value} is already registered.");
 
             // The signed-in user already has an account.
             case AccountAlreadyExistsException:
                 return ProblemAsync(httpContext, exception, StatusCodes.Status409Conflict, "Account already exists", AccountAlreadyExistsDetail);
 
-            // The password does not meet the strength rules. The answer states the rule, not the attempt.
-            case PasswordTooWeakException:
-                return ProblemAsync(httpContext, exception, StatusCodes.Status422UnprocessableEntity, "Password too weak", PasswordTooWeakDetail);
+            // The password does not meet the strength rules. The answer names the broken rule — the rule, never the
+            // attempt.
+            case PasswordTooWeakException weak:
+                return ProblemAsync(
+                    httpContext, exception, StatusCodes.Status422UnprocessableEntity, "Password too weak", PasswordRuleSentence(weak.Rule));
 
             // The account exists but is closed.
             case AccountClosedException closed:
                 return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status409Conflict, "Account closed", $"Account {closed.AccountId.Value} is closed");
+                    httpContext, exception, StatusCodes.Status409Conflict, "Account closed", $"Account {closed.AccountId.Value} is closed.");
 
             // The account's status does not allow signing in. The status itself is deliberately not in the
             // answer: it would tell a stranger which addresses have suspended accounts.
             case AccountNotAccessibleException inaccessible:
                 _logger.LogInformation(
                     "Sign-in refused for account {AccountId}: {Status}", inaccessible.AccountId.Value, inaccessible.Status);
-                return ProblemAsync(httpContext, exception, StatusCodes.Status403Forbidden, "Account not accessible", "This account cannot sign in");
+                return ProblemAsync(httpContext, exception, StatusCodes.Status403Forbidden, "Account not accessible", "This account cannot sign in.");
 
             // Any other failure the use case reports.
             case UseCaseException:
@@ -103,6 +98,16 @@ public sealed class AccountApiExceptionHandler : IExceptionHandler
                 return ValueTask.FromResult(false);
         }
     }
+
+    private static string PasswordRuleSentence(PasswordRule rule) => rule switch
+    {
+        PasswordRule.TooShort => $"Password must be at least {HashedPassword.MinLength} characters long.",
+        PasswordRule.TooLong => $"Password must not be longer than {HashedPassword.MaxByteLength} bytes.",
+        PasswordRule.NoUppercaseLetter => "Password must contain an uppercase letter.",
+        PasswordRule.NoLowercaseLetter => "Password must contain a lowercase letter.",
+        PasswordRule.NoDigit => "Password must contain a digit.",
+        _ => throw new ArgumentOutOfRangeException(nameof(rule), rule, null),
+    };
 
     private static bool IsOwnRoute(HttpContext httpContext) =>
         httpContext.Request.Path.Value is { } path

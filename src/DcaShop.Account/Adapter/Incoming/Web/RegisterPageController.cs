@@ -99,12 +99,11 @@ public sealed class RegisterPageController : Controller
     /// </summary>
     private static string MessageFor(Exception failure) => failure switch
     {
-        EmailAlreadyRegisteredException taken => $"Email is already registered: {taken.Email.Value}",
-        AccountAlreadyExistsException => "User already has an account",
-        PasswordTooWeakException =>
-            $"Password must be at least {HashedPassword.MinLength} characters long and contain an uppercase letter, a lowercase letter and a digit",
+        EmailAlreadyRegisteredException => "This email address is already registered",
+        AccountAlreadyExistsException => "You already have an account.",
+        PasswordTooWeakException weak => ChangePasswordPageController.PasswordRuleSentence(weak.Rule),
         ArgumentException => "Please check the email address, your name and your date of birth.",
-        _ => "The account could not be created.",
+        _ => "The account could not be created. Please try again.",
     };
 
     private IActionResult Rejected(RegisterPageViewModel submission, string error) =>

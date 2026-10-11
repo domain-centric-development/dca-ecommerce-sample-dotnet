@@ -18,7 +18,7 @@ public sealed record HashedPassword : IValue
     /// <summary>
     /// Maximum length of an acceptable plaintext password, in <b>bytes</b> rather than characters, because that
     /// is the bound hashing algorithms impose — BCrypt rejects input beyond 72 bytes. Keeping the policy at that
-    /// value means an over-long password is refused as a rule with a message meant for the user, and can never
+    /// value means an over-long password is refused as a rule the user broke, and can never
     /// reach the hasher and fail there as a technical fault.
     /// </summary>
     public const int MaxByteLength = 72;
@@ -52,36 +52,34 @@ public sealed record HashedPassword : IValue
     /// bytes UTF-8 encoded, and at least one uppercase letter, one lowercase letter and one digit.
     /// </summary>
     /// <remarks>
-    /// The thrown messages are shown to the person filling in the form, which is why they carry no parameter
-    /// name: a rule the user broke has to read as a sentence, not as an argument-validation trace. The same
-    /// holds for <see cref="Email"/>, <see cref="Owner"/> and the date-of-birth specification.
+    /// The refusal names the broken <see cref="PasswordRule"/>; its message is for the log. A page or an API words
+    /// the refusal from the rule.
     /// </remarks>
     public static void ValidatePasswordStrength(string plaintext)
     {
         if (plaintext is null || plaintext.Length < MinLength)
         {
-            throw new PasswordTooWeakException($"Password must be at least {MinLength} characters long");
+            throw new PasswordTooWeakException(PasswordRule.TooShort);
         }
 
         if (Encoding.UTF8.GetByteCount(plaintext) > MaxByteLength)
         {
-            throw new PasswordTooWeakException(
-                $"Password must not be longer than {MaxByteLength} bytes (UTF-8 encoded)");
+            throw new PasswordTooWeakException(PasswordRule.TooLong);
         }
 
         if (!plaintext.Any(char.IsUpper))
         {
-            throw new PasswordTooWeakException("Password must contain at least one uppercase letter");
+            throw new PasswordTooWeakException(PasswordRule.NoUppercaseLetter);
         }
 
         if (!plaintext.Any(char.IsLower))
         {
-            throw new PasswordTooWeakException("Password must contain at least one lowercase letter");
+            throw new PasswordTooWeakException(PasswordRule.NoLowercaseLetter);
         }
 
         if (!plaintext.Any(char.IsDigit))
         {
-            throw new PasswordTooWeakException("Password must contain at least one digit");
+            throw new PasswordTooWeakException(PasswordRule.NoDigit);
         }
     }
 

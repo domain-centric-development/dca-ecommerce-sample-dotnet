@@ -52,7 +52,7 @@ public sealed class ProductApiExceptionHandler : IExceptionHandler
             // The catalog already carries that stock keeping unit — a conflict with existing state.
             case DuplicateSkuException duplicate:
                 return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status409Conflict, "Stock keeping unit already in use", $"Product with SKU already exists: {duplicate.Sku.Value}");
+                    httpContext, exception, StatusCodes.Status409Conflict, "Stock keeping unit already in use", $"A product with SKU {duplicate.Sku.Value} already exists.");
 
             // Any other failure the use case reports. The request was understood and refused for a stated reason,
             // which is what 422 means; a use-case failure that deserves its own status gets its own arm above.

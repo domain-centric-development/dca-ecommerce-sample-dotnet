@@ -30,7 +30,9 @@ public sealed class StockReductionEventConsumer : EventListener<IStockReductionT
         var result = await _reduceStock.ExecuteAsync(new ReduceStockCommand(lines, @event.EventId), cancellationToken).ConfigureAwait(false);
         foreach (var failed in result.Lines.Where(line => !line.Success))
         {
-            _logger.LogWarning("Stock reduction for product {ProductId} failed: {Error}", failed.ProductId, failed.ErrorMessage);
+            _logger.LogWarning(
+                "Stock reduction for product {ProductId} failed: {Failure} (stock {Stock})",
+                failed.ProductId, failed.Failure, failed.PreviousStock);
         }
     }
 }

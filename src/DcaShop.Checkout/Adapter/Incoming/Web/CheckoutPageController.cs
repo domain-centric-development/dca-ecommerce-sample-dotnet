@@ -81,7 +81,7 @@ public sealed class CheckoutPageController : Controller
             // The two base types are the checkout's own refusals. ArgumentException is still here because a form
             // field the customer typed reaches a value object unvalidated; each field moved into request
             // validation is one reason less to catch it.
-            TempData["Error"] = MessageFor(e);
+            TempData["Error"] = StartMessageFor(e);
             return Redirect(CheckoutRoutes.Cart);
         }
     }
@@ -163,38 +163,54 @@ public sealed class CheckoutPageController : Controller
         {
             // The two base types are the checkout's own refusals; the argument exception is the form field that
             // reaches a value object unvalidated.
-            return await Page(step, cancellationToken, MessageFor(e));
+            return await Page(step, cancellationToken, MessageFor(step, e));
         }
     }
 
     /// <summary>
-    /// What the customer is told, worded from the failure's type and values — the exception's message is for the
-    /// log, never for the page; the provider's own wording never reaches the page either, the shop's does.
+    /// What the customer is told when a checkout cannot start, worded from the failure's type and values — the
+    /// exception's message is for the log, never for the page.
     /// </summary>
-    private static string MessageFor(Exception failure) => failure switch
+    private static string StartMessageFor(Exception failure) => failure switch
     {
-        PaymentInitiationFailedException => "The payment was refused. Please choose another way to pay.",
-        PaymentProviderUnavailableException => "The payment provider is not available right now. Please try again later.",
-        PaymentProviderNotFoundException notFound => $"Payment provider not found: {notFound.ProviderId}",
-        CheckoutSessionNotFoundException notFound => $"Session not found: {notFound.SessionId.Value}",
-        CartNotAvailableException notAvailable => $"Cart not found: {notAvailable.CartId.Value}",
-        CartNotActiveException notActive => $"Cart is not active: {notActive.CartId.Value}",
-        EmptyCartException empty => $"Cannot checkout empty cart: {empty.CartId.Value}",
-        EmptyCheckoutException empty => $"Cannot start checkout for cart {empty.CartId.Value} without line items",
+        CartNotAvailableException => "Your cart could not be found.",
+        CartNotActiveException => "This cart can no longer be checked out.",
+        EmptyCartException or EmptyCheckoutException => "Cannot check out an empty cart.",
+        ArticleNotAvailableException => "A product in your cart is no longer available.",
         CheckoutItemsUnavailableException unavailable =>
-            $"Cannot start checkout, {unavailable.ProductIds.Count} item(s) unavailable or out of stock",
-        ArticleNotAvailableException notAvailable => $"Product not found: {notAvailable.ProductId.Value}",
-        CheckoutValidationException invalid =>
-            $"Cannot continue checkout, {invalid.Validation.Errors.Count} item(s) unavailable or out of stock",
-        CheckoutStepOutOfOrderException outOfOrder => $"Cannot move to step {outOfOrder.Requested} from {outOfOrder.Current}",
-        CheckoutStepNotCompletedException notCompleted => $"Step {notCompleted.Step} must be completed first",
-        CheckoutStepNotNavigableException notNavigable => $"Cannot navigate directly to step {notNavigable.Step}",
-        CheckoutNotModifiableException notModifiable =>
-            $"Cannot modify checkout {notModifiable.SessionId.Value} with status: {notModifiable.Status}",
-        CheckoutNotConfirmedException notConfirmed =>
-            $"Cannot complete checkout {notConfirmed.SessionId.Value} with status: {notConfirmed.Status}",
-        NothingToPayException nothingToPay => $"Nothing to pay: the total is {nothingToPay.Total}",
-        ArgumentException => "Please check your entries.",
+            $"Cannot start checkout, {unavailable.ProductIds.Count} item(s) unavailable or out of stock.",
+        _ => "The checkout could not be started. Please try again.",
+    };
+
+    /// <summary>
+    /// What the customer is told when a step refuses a submission, worded from the step and the failure's type and
+    /// values — the exception's message is for the log, never for the page; the provider's own wording never
+    /// reaches the page either, the shop's does.
+    /// </summary>
+    private static string MessageFor(CheckoutStep step, Exception failure) => (step, failure) switch
+    {
+        (_, CheckoutSessionNotFoundException) => "Checkout session not found",
+        (_, CheckoutNotModifiableException) => "This checkout can no longer be changed.",
+        (CheckoutStep.Payment, PaymentInitiationFailedException) =>
+            "The payment was refused. Please choose another way to pay.",
+        (CheckoutStep.Payment, PaymentProviderUnavailableException) =>
+            "The payment provider is not available right now. Please try again later.",
+        (CheckoutStep.Payment, PaymentProviderNotFoundException) =>
+            "This way to pay is not offered. Please choose another one.",
+        (CheckoutStep.Payment, NothingToPayException) => "There is nothing to pay for this order.",
+        (CheckoutStep.Review, CheckoutValidationException invalid) =>
+            $"Cannot place the order, {invalid.Validation.Errors.Count} item(s) unavailable or out of stock.",
+        (CheckoutStep.Review, CheckoutStepNotCompletedException) => "Please complete the previous checkout steps first.",
+        (CheckoutStep.Review, CheckoutStepOutOfOrderException) => "Please review your order before placing it.",
+        (CheckoutStep.Review, _) => "Your order could not be placed. Please try again.",
+        (_, CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException) =>
+            "Please complete the previous checkout steps first.",
+        (CheckoutStep.BuyerInfo, ArgumentException) => "Please check the details you entered.",
+        (CheckoutStep.Delivery, ArgumentException) => "Please check the delivery address you entered.",
+        (CheckoutStep.Payment, ArgumentException) => "Please choose a way to pay.",
+        (CheckoutStep.BuyerInfo, _) => "Your details could not be saved. Please try again.",
+        (CheckoutStep.Delivery, _) => "Your delivery details could not be saved. Please try again.",
+        (CheckoutStep.Payment, _) => "Your payment selection could not be saved. Please try again.",
         _ => "The checkout could not continue. Please try again.",
     };
 

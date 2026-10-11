@@ -13,8 +13,6 @@ namespace DcaShop.Account.Application.ChangePassword;
 /// <summary>Changes the password of the account the current session belongs to.</summary>
 public sealed class ChangePasswordUseCase : IChangePasswordInputPort
 {
-    private const string CurrentPasswordInvalidMessage = "Current password is not correct";
-
     private readonly IAccountRepository _accounts;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IDomainEventPublisher _events;
@@ -53,13 +51,13 @@ public sealed class ChangePasswordUseCase : IChangePasswordInputPort
                 if (!account.CheckPassword(command.CurrentPassword, _passwordHasher))
                 {
                     _logger.LogWarning("Password change attempt with a wrong current password");
-                    return ChangePasswordResult.CurrentPasswordInvalid(CurrentPasswordInvalidMessage);
+                    return ChangePasswordResult.CurrentPasswordInvalid();
                 }
 
                 // Only the strength decision may become NewPasswordRejected. The rule has its own type, so a
                 // malformed call inside the hasher or the HashedPassword factory — which would arrive as the
-                // platform's argument exception — is no longer caught here and rendered to the user as if it were
-                // a password rule.
+                // platform's argument exception — is no longer caught here and reported as if it were a password
+                // rule.
                 try
                 {
                     HashedPassword.ValidatePasswordStrength(command.NewPassword);
@@ -67,7 +65,7 @@ public sealed class ChangePasswordUseCase : IChangePasswordInputPort
                 catch (PasswordTooWeakException e)
                 {
                     _logger.LogDebug("Password change rejected: {Reason}", e.Message);
-                    return ChangePasswordResult.NewPasswordRejected(e.Message);
+                    return ChangePasswordResult.NewPasswordRejected(e.Rule);
                 }
 
                 account.ChangePassword(command.NewPassword, _passwordHasher);

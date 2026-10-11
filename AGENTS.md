@@ -122,8 +122,8 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   both as well, but only to present its own pages. A product **nobody has priced** is offered as unavailable
   (price 0, stock 0, `IsAvailable = false`) with a warning in the log — not with an exception: that is the state
   of every product between its creation and Pricing consuming `ProductCreatedEvent`, and a shop must not answer
-  it with an error page. Add-to-cart then refuses with "Insufficient stock for product: …", and the checkout
-  validation names the line as `ProductUnavailable`. The Java sample behaves the same way.
+  it with an error page. Add-to-cart then refuses with "There is not enough stock to add … of this product.", and
+  the checkout validation names the line as `ProductUnavailable`. The Java sample behaves the same way.
 - Settlement is checked against current figures, not stored ones: `ShoppingCart.ValidateForCheckout(
   IReadOnlyDictionary<ProductId, ArticlePrice>)` delegates to pure `CartPricing` over line snapshots and answers a
   `CartValidationResult`; the Checkout context's `StartCheckoutUseCase` refuses a cart whose articles are gone or

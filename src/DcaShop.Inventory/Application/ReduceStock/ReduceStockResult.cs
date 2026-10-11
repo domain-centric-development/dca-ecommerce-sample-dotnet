@@ -8,13 +8,32 @@ public sealed record ReduceStockResult(IReadOnlyList<ReduceStockResult.LineOutco
 {
     public static ReduceStockResult Duplicate() => new([], AlreadyReduced: true);
 
-    /// <summary>One line's outcome.</summary>
-    public sealed record LineOutcome(Guid ProductId, bool Success, int PreviousStock, int RemainingStock, string? ErrorMessage)
+    /// <summary>Why a line was not reduced.</summary>
+    public enum LineFailure
     {
-        public static LineOutcome Reduced(Guid productId, int previousStock, int remainingStock) =>
-            new(productId, true, previousStock, remainingStock, null);
+        /// <summary>The inventory keeps no stock level for the product.</summary>
+        StockLevelNotFound,
 
-        public static LineOutcome Failure(Guid productId, string errorMessage) =>
-            new(productId, false, 0, 0, errorMessage);
+        /// <summary>Less is in stock than the line asks for; the stock stays as it was.</summary>
+        InsufficientStock,
+    }
+
+    /// <summary>
+    /// One line's outcome. A failure is named by its type and values, never in words: whoever reports it words it.
+    /// For a failure, <paramref name="PreviousStock"/> and <paramref name="RemainingStock"/> are the stock as it is.
+    /// </summary>
+    public sealed record LineOutcome(Guid ProductId, int PreviousStock, int RemainingStock, LineFailure? Failure)
+    {
+        /// <summary>Whether the line was reduced.</summary>
+        public bool Success => Failure is null;
+
+        public static LineOutcome Reduced(Guid productId, int previousStock, int remainingStock) =>
+            new(productId, previousStock, remainingStock, null);
+
+        public static LineOutcome StockLevelNotFound(Guid productId) =>
+            new(productId, 0, 0, LineFailure.StockLevelNotFound);
+
+        public static LineOutcome InsufficientStock(Guid productId, int available) =>
+            new(productId, available, available, LineFailure.InsufficientStock);
     }
 }
