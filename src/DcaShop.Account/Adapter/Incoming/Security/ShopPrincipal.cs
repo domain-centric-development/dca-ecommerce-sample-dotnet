@@ -3,7 +3,7 @@ using System.Security.Claims;
 using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 
-namespace DcaShop.Account.Adapter.Outgoing.Security;
+namespace DcaShop.Account.Adapter.Incoming.Security;
 
 /// <summary>
 /// The scheme names of the shop's identity and the mapping from the port's <see cref="IIdentityProvider.IIdentity"/>

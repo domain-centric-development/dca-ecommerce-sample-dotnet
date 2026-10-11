@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
-using DcaShop.Account.Adapter.Outgoing.Security;
+using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 

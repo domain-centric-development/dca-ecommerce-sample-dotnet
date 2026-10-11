@@ -1,4 +1,4 @@
-namespace DcaShop.Account.Adapter.Outgoing.Security;
+namespace DcaShop.Account.Adapter.Incoming.Security;
 
 /// <summary>
 /// Configuration of the token and cookie design of ADR-029/030: one cookie carries the visitor identity the cart

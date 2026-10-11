@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 
-namespace DcaShop.Account.Adapter.Outgoing.Security;
+namespace DcaShop.Account.Adapter.Incoming.Security;
 
 /// <summary>Options of <see cref="ShopIdentityAuthenticationHandler"/>.</summary>
 public sealed class ShopIdentityAuthenticationOptions : AuthenticationSchemeOptions

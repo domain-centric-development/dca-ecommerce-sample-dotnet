@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace DcaShop.Account.Adapter.Outgoing.Security;
+namespace DcaShop.Account.Adapter.Incoming.Security;
 
 /// <summary>
 /// The one place that writes an auth cookie. Cookie hardening is not optional (ADR-030): <c>HttpOnly</c> always,

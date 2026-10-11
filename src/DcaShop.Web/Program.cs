@@ -1,4 +1,4 @@
-using DcaShop.Account.Adapter.Outgoing.Security;
+using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.Infrastructure;
 using DcaShop.Web;
 
@@ -28,7 +28,7 @@ builder.Services.AddProblemDetails();
 // The antiforgery cookie follows the identity cookie's policy: a form inside a foreign frame sends its token
 // only if the cookie carrying it may travel there too. Its default is SameSite=Strict, which the browser withholds
 // exactly where the identity still arrives -- every POST would then fail as a missing token rather than a refused one.
-var jwtSection = DcaShop.Account.Adapter.Outgoing.Security.JwtOptions.SectionName;
+var jwtSection = DcaShop.Account.Adapter.Incoming.Security.JwtOptions.SectionName;
 var crossSiteCookies = string.Equals(
     builder.Configuration[$"{jwtSection}:SameSite"],
     "None",

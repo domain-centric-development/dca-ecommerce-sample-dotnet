@@ -1,7 +1,7 @@
 using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 
-namespace DcaShop.Account.Adapter.Outgoing.Security;
+namespace DcaShop.Account.Adapter.Incoming.Security;
 
 /// <summary>The identity a request runs under, as read from the cookies or the Authorization header.</summary>
 public sealed record JwtIdentity(

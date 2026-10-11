@@ -1,4 +1,4 @@
-using DcaShop.Account.Adapter.Outgoing.Security;
+using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.Account.Infrastructure;
 using DcaShop.Backoffice.Adapter.Incoming.Web;
 using DcaShop.Backoffice.Infrastructure;

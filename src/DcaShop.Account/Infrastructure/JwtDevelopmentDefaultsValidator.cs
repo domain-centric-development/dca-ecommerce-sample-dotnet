@@ -1,4 +1,4 @@
-using DcaShop.Account.Adapter.Outgoing.Security;
+using DcaShop.Account.Adapter.Incoming.Security;
 
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;

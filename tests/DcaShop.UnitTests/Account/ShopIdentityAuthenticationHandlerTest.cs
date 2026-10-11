@@ -3,7 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 
-using DcaShop.Account.Adapter.Outgoing.Security;
+using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.Account.Application.IsAccountRegistered;
 using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;

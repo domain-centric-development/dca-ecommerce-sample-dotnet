@@ -1,10 +1,9 @@
-using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.SharedKernel.Domain.Model;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-namespace DcaShop.Account.Adapter.Outgoing.Security;
+namespace DcaShop.Account.Adapter.Incoming.Security;
 
 /// <summary>
 /// Writes the two cookies of ADR-030 on the current response. It is request-scoped because it needs that

@@ -1,6 +1,6 @@
 using DcaShop.SharedKernel.Application.Shared;
 
-namespace DcaShop.Account.Adapter.Outgoing.Security;
+namespace DcaShop.Account.Adapter.Incoming.Security;
 
 /// <summary>
 /// The identity <see cref="ShopIdentityAuthenticationHandler"/> resolved for the current request, in the port's

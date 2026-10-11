@@ -1,3 +1,4 @@
+using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.SharedKernel.Application.Shared;
 
 using Microsoft.AspNetCore.Http;
