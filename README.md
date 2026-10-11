@@ -191,6 +191,7 @@ what tells them apart.
 | Open Host Service | `ProductCatalogService`, `CartService` |
 | Domain event → integration event relay | `CheckoutConfirmedEventPublisher` → `CheckoutConfirmedEvent` |
 | Interface inversion between contexts | `CheckoutConfirmedEvent : ICartCompletionTrigger` (owned by Cart), `ProductCreatedEvent : IPriceInitializationTrigger, IStockInitializationTrigger` |
+| Idempotent consumer | every trigger extends `IIntegrationEvent`; `StockReductionEventConsumer` and its siblings skip an `EventId` their context's `IProcessedEvents` has recorded |
 | Domain service | `CheckoutPricing`, `CartPricing` — take the aggregate, called by the use case |
 | Read model detached from the aggregate | `CheckoutCartSnapshot`, `LineItemSnapshot` |
 | Eventual consistency between contexts | explicit checkout → immutable snapshot; checkout confirmed → snapshot reconciliation and `ReduceStock` |

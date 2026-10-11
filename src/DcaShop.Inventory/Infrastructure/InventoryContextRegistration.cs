@@ -25,6 +25,7 @@ public static class InventoryContextRegistration
 
         // Outgoing adapters (output ports)
         services.AddSingleton<IStockLevelRepository, InMemoryStockLevelRepository>();
+        services.AddSingleton<IProcessedEvents, InMemoryProcessedEvents>();
 
         // Incoming event adapters
         services.AddScoped<IEventListener, StockInitializationEventConsumer>();

@@ -186,7 +186,7 @@ via "clear cart").
 
 ### CartCompleted
 
-Legacy event name retained for the cart reconciliation notification. The current completion handler removes only captured units; it does not change an active cart to Completed. Replays with no intersection emit nothing.
+Legacy event name retained for the cart reconciliation notification. The current completion handler removes only captured units; it does not change an active cart to Completed. Replays with no intersection emit nothing. The handler, `CartCompletionEventConsumer`, skips an `ICartCompletionTrigger` (an `IIntegrationEvent`) whose `EventId` `IProcessedEvents` has already recorded.
 
 ### CartAbandoned
 

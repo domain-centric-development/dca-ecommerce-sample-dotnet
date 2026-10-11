@@ -215,7 +215,9 @@ catalog.
 **Related terms:** `StockLevel`, `IStockReductionTrigger`
 
 **Notes:** Consumed by `DcaShop.Inventory.Adapter.Incoming.Event.StockInitializationEventConsumer`, which calls
-the `SetStockLevel` use case. Idempotent: setting the same figure twice has the same effect.
+the `SetStockLevel` use case. The contract extends `IIntegrationEvent`, so the consumer reads the event's
+`EventId`; it skips an id `IProcessedEvents` has already recorded, and a redelivery cannot reset a stock level
+that changed since.
 
 ---
 
@@ -228,8 +230,9 @@ whose stock must go down. Owned here and implemented by Checkout's `CheckoutConf
 
 **Related terms:** `StockLevel`, `IStockInitializationTrigger`
 
-**Notes:** Consumed by `DcaShop.Inventory.Adapter.Incoming.Event.StockReductionEventConsumer`. Its
-`OrderLineItem` wording is an open issue — see below.
+**Notes:** Consumed by `DcaShop.Inventory.Adapter.Incoming.Event.StockReductionEventConsumer`. The contract
+extends `IIntegrationEvent`; the consumer skips an `EventId` `IProcessedEvents` has already recorded, so a
+redelivered order never reduces stock twice. Its `OrderLineItem` wording is an open issue — see below.
 
 ---
 

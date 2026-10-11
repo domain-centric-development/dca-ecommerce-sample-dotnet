@@ -21,6 +21,7 @@ public static class PricingContextRegistration
 
         // Outgoing adapters (output ports)
         services.AddSingleton<IProductPriceRepository, InMemoryProductPriceRepository>();
+        services.AddSingleton<IProcessedEvents, InMemoryProcessedEvents>();
 
         // Incoming event adapters
         services.AddScoped<IEventListener, PriceInitializationEventConsumer>();

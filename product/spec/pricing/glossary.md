@@ -136,7 +136,9 @@ whoever creates products (Interface Inversion).
 **Related terms:** `ProductPrice`, **Initial Price Determination**
 
 **Notes:** Consumed by `DcaShop.Pricing.Adapter.Incoming.Event.PriceInitializationEventConsumer`, which calls
-the `SetProductPrice` use case. Idempotent: a redelivery updates the existing price instead of failing.
+the `SetProductPrice` use case. The contract extends `IIntegrationEvent`, so the consumer reads the event's
+`EventId`; it skips an id `IProcessedEvents` has already recorded, and a redelivery cannot reset a price that
+changed since.
 
 ---
 
