@@ -1,6 +1,8 @@
 using DcaShop.Checkout.Events;
 using DcaShop.Inventory.Adapter.Incoming.Event;
 using DcaShop.Inventory.Api;
+using DcaShop.Inventory.Application.ReduceStock;
+using DcaShop.Inventory.Application.SetStockLevel;
 using DcaShop.Pricing.Adapter.Incoming.Event;
 using DcaShop.Pricing.Api;
 using DcaShop.Product.Events;
@@ -15,7 +17,7 @@ namespace DcaShop.IntegrationTests;
 /// <summary>
 /// Delivery is at least once: each consumer of a trigger deduplicates on the event id, so the same event delivered
 /// twice changes the consuming context's state once. Each test changes the state between the two deliveries, so a
-/// consumer that acted again would be seen.
+/// consumer that acted again would be seen. The record is per effect: two effects of one event both happen.
 /// </summary>
 public sealed class RedeliveredTriggerTest : IClassFixture<WebApplicationFactory<Program>>
 {
@@ -63,6 +65,34 @@ public sealed class RedeliveredTriggerTest : IClassFixture<WebApplicationFactory
         await DeliverAsync<PriceInitializationEventConsumer>(created);
 
         Assert.Equal(Money.Euro(12.00m), (await Pricing().GetPriceAsync(product))!.CurrentPrice);
+    }
+
+    [Fact]
+    public async Task TwoInventoryEffectsOfTheSameEventBothHappen()
+    {
+        var product = ProductId.Generate();
+        var eventId = Guid.NewGuid();
+        using var scope = _factory.Services.CreateScope();
+
+        await scope.ServiceProvider.GetRequiredService<ISetStockLevelInputPort>()
+            .ExecuteAsync(new SetStockLevelCommand(product.Value, 10, eventId));
+        var reduced = await scope.ServiceProvider.GetRequiredService<IReduceStockInputPort>()
+            .ExecuteAsync(new ReduceStockCommand([new ReduceStockCommand.Line(product.Value, 2)], eventId));
+
+        Assert.False(reduced.AlreadyReduced);
+        Assert.Equal(8, (await Inventory().GetStockAsync(product))!.AvailableStock);
+    }
+
+    [Fact]
+    public async Task PricingKeysAProcessedEventByItsEffect()
+    {
+        var processedEvents = _factory.Services.GetRequiredService<Pricing.Application.Shared.IProcessedEvents>();
+        var eventId = Guid.NewGuid();
+
+        await processedEvents.MarkProcessedAsync("set-product-price", eventId);
+
+        Assert.True(await processedEvents.ContainsAsync("set-product-price", eventId));
+        Assert.False(await processedEvents.ContainsAsync("another-effect", eventId));
     }
 
     private static ProductCreatedEvent ProductCreated(out ProductId product)

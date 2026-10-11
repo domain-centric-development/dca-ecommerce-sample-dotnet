@@ -10,13 +10,18 @@ namespace DcaShop.Inventory.Application.SetStockLevel;
 /// <summary>Creates the stock record on first use and corrects it afterwards. Whole use case is local: one short transaction.</summary>
 public sealed class SetStockLevelUseCase : ISetStockLevelInputPort
 {
+    /// <summary>The effect's key in <see cref="IProcessedEvents"/> — stable: a rename would replay old events.</summary>
+    private const string Effect = "set-stock-level";
+
     private readonly IStockLevelRepository _stockLevels;
+    private readonly IProcessedEvents _processedEvents;
     private readonly IDomainEventPublisher _events;
     private readonly ITransactionBoundary _transactionBoundary;
 
-    public SetStockLevelUseCase(IStockLevelRepository stockLevels, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
+    public SetStockLevelUseCase(IStockLevelRepository stockLevels, IProcessedEvents processedEvents, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
         _stockLevels = stockLevels;
+        _processedEvents = processedEvents;
         _events = events;
         _transactionBoundary = transactionBoundary;
     }
@@ -29,6 +34,13 @@ public sealed class SetStockLevelUseCase : ISetStockLevelInputPort
         return _transactionBoundary.InTransactionAsync(async ct =>
         {
             var existing = await _stockLevels.FindByProductIdAsync(productId, ct).ConfigureAwait(false);
+            if (input.EventId is { } eventId && await _processedEvents.ContainsAsync(Effect, eventId, ct).ConfigureAwait(false))
+            {
+                return existing is null
+                    ? new SetStockLevelResult(Guid.Empty, input.ProductId, 0, 0, Created: false, AlreadyApplied: true)
+                    : ResultOf(existing, created: false, alreadyApplied: true);
+            }
+
             StockLevel stockLevel;
             bool created;
             if (existing is not null)
@@ -45,13 +57,21 @@ public sealed class SetStockLevelUseCase : ISetStockLevelInputPort
 
             await _stockLevels.SaveAsync(stockLevel, ct).ConfigureAwait(false);
             await _events.PublishAndClearEventsAsync(stockLevel, ct).ConfigureAwait(false);
+            if (input.EventId is { } processed)
+            {
+                await _processedEvents.MarkProcessedAsync(Effect, processed, ct).ConfigureAwait(false);
+            }
 
-            return new SetStockLevelResult(
-                stockLevel.Id.Value,
-                stockLevel.ProductId.Value,
-                stockLevel.AvailableQuantity.Value,
-                stockLevel.ReservedQuantity.Value,
-                created);
+            return ResultOf(stockLevel, created, alreadyApplied: false);
         }, cancellationToken);
     }
+
+    private static SetStockLevelResult ResultOf(StockLevel stockLevel, bool created, bool alreadyApplied) =>
+        new(
+            stockLevel.Id.Value,
+            stockLevel.ProductId.Value,
+            stockLevel.AvailableQuantity.Value,
+            stockLevel.ReservedQuantity.Value,
+            created,
+            alreadyApplied);
 }

@@ -4,17 +4,20 @@ using DcaShop.Pricing.Application.Shared;
 
 namespace DcaShop.Pricing.Adapter.Outgoing.Persistence;
 
-/// <summary>In-memory record of handled integration events — demo stand-in for a table keyed by event id (ADR-001).</summary>
+/// <summary>
+/// In-memory record of produced effects, keyed by effect and event id — demo stand-in for a table with that
+/// composite key (ADR-001).
+/// </summary>
 public sealed class InMemoryProcessedEvents : IProcessedEvents
 {
-    private readonly ConcurrentDictionary<Guid, byte> _processed = new();
+    private readonly ConcurrentDictionary<(string Effect, Guid EventId), byte> _processed = new();
 
-    public Task<bool> ContainsAsync(Guid eventId, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_processed.ContainsKey(eventId));
+    public Task<bool> ContainsAsync(string effect, Guid eventId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_processed.ContainsKey((effect, eventId)));
 
-    public Task MarkProcessedAsync(Guid eventId, CancellationToken cancellationToken = default)
+    public Task MarkProcessedAsync(string effect, Guid eventId, CancellationToken cancellationToken = default)
     {
-        _processed.TryAdd(eventId, 0);
+        _processed.TryAdd((effect, eventId), 0);
         return Task.CompletedTask;
     }
 }

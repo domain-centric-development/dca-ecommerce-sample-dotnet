@@ -198,9 +198,12 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   (Cart), `IStockReductionTrigger` (Inventory) — both implemented by `CheckoutConfirmedEvent`;
   `IPriceInitializationTrigger` (Pricing) and `IStockInitializationTrigger` (Inventory) — implemented by
   `ProductCreatedEvent`. The Java sample carries the same four contracts (without the `I` prefix), so the
-  creation flow is the same on both sides. Every trigger extends `IIntegrationEvent` (`DCA-STR-013`), and each
-  consumer skips an `EventId` its context's `IProcessedEvents` store (`Application/Shared`, in-memory adapter)
-  has already recorded — a redelivery changes the state once.
+  creation flow is the same on both sides. Every trigger extends `IIntegrationEvent` (`DCA-STR-013`); the consumer
+  only translates it into a command carrying the `EventId`, and the use case deduplicates **per effect**: it keeps a
+  stable `private const string Effect` (`complete-cart`, `reduce-stock`, `set-stock-level`, `set-product-price`),
+  asks its context's `IProcessedEvents` store (`Application/Shared`, keyed by effect and event id) inside its
+  transaction, returns its already-done result on a duplicate and records the pair after the effect — a redelivery
+  changes the state once, two effects of one event both happen.
 - Backoffice, the REST API and MCP arrived in stage 2c: the footer's Event Log link is live, `/api/**` carries
   the resources of Product, Cart and Account, and `/mcp` exposes the catalog as the tools `all-products` and
   `product-by-id`. The event log is built from the **integration-event outbox**, not from a per-listener domain

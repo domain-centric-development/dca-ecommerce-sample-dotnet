@@ -1,3 +1,4 @@
 namespace DcaShop.Inventory.Application.SetStockLevel;
 
-public sealed record SetStockLevelResult(Guid StockLevelId, Guid ProductId, int AvailableQuantity, int ReservedQuantity, bool Created);
+/// <summary>The stock record after the call; <paramref name="AlreadyApplied"/> when the event had set it before and nothing changed.</summary>
+public sealed record SetStockLevelResult(Guid StockLevelId, Guid ProductId, int AvailableQuantity, int ReservedQuantity, bool Created, bool AlreadyApplied = false);

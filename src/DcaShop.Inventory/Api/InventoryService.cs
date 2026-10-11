@@ -61,5 +61,5 @@ public sealed class InventoryService
         _setStockLevel.ExecuteAsync(new SetStockLevelCommand(productId.Value, quantity), cancellationToken);
 
     public Task<ReduceStockResult> ReduceStockAsync(ProductId productId, int quantity, CancellationToken cancellationToken = default) =>
-        _reduceStock.ExecuteAsync(new ReduceStockCommand(productId.Value, quantity), cancellationToken);
+        _reduceStock.ExecuteAsync(new ReduceStockCommand([new ReduceStockCommand.Line(productId.Value, quantity)]), cancellationToken);
 }
