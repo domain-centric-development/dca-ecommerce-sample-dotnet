@@ -52,7 +52,7 @@ docker compose run --rm test                                             # tests
 ```
 
 The architecture tests also (re)generate `docs/architecture/context-map.md` and fail when it was stale —
-commit it with the change that caused it. `project/domain.md` is the designed, hand-maintained strategic map
+commit it with the change that caused it. `product/domain.md` is the designed, hand-maintained strategic map
 (relationship patterns, subdomain types) — the project description section below names it; no test writes it.
 
 ### Test levels
@@ -95,8 +95,8 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   `Adapter/Incoming/Api` (REST resources + their DTOs and converters), `Adapter/Incoming/Mcp` (MCP tools),
   `Api/` (Open Host Service), `Events/` (integration events, consumer-defined trigger interfaces),
   `Infrastructure/` (DI registration `Add<Context>Context()`). Each context keeps its ubiquitous language in
-  `Domain/glossary.md` — the same glossaries as the Java sample; a renamed or added domain term is changed there
-  too.
+  `product/spec/<context>/glossary.md` — the same glossaries as the Java sample; a renamed or added domain term is
+  changed there too.
 - Naming: `I<Name>InputPort : IUseCase<TCommand|TQuery, TResult>`, `<Name>UseCase`, `<Name>Command` (writes) /
   `<Name>Query` (reads), `<Name>Result` — values only, never an aggregate root or entity (`DCA-USE-015`); part records
   named by content (`CartItemSummary`), nested in the result; command results small (the checkout wizard's
@@ -267,10 +267,13 @@ into this repository (the skill links in `.claude/`, `.codex/`, `.opencode/` are
 gets them with `factory.sh update`). The pipeline's own instructions are in its section at the end of
 this file; what is to be built is in the project description below it.
 
-- `project/product.md`, `project/tech.md`, `project/domain.md` — the project description: the product,
+- `product/overview.md`, `product/tech.md`, `product/domain.md` — the project description: the product,
   the technical decisions, the designed context map (the generated one is
   `docs/architecture/context-map.md`)
-- `project/epics/<epic>/<story>/story.md` — new stories, each a folder with its `decisions/`; the porting log and the work packages keep the delivered work
+- `product/spec/<context>/scenarios.md` — what holds today, per bounded context, each criterion with its `Test:`
+  line; written only by the gate that delivers a story. `product/spec/<context>/glossary.md` is the context's
+  glossary (the glossary skill and the document stage keep it)
+- `product/epics/<epic>/<story>/story.md` — the changes: stories, each a folder with its `decisions/`; the porting log and the work packages keep the delivered work
 - `dca-factory.profile.yaml` at the root — the only file that tells the pipeline how this project
   builds: `dotnet build`, the unit/integration/E2E test projects, `dotnet test tests/DcaShop.ArchitectureTests` (Debug)
   and `dotnet format`, plus the knowledge source (`dca-knowledge`), the carriers and the review perspectives
@@ -292,11 +295,11 @@ What is to be built is described in three files. Read them before any implementa
 delivery pipeline or by hand — and treat a contradiction between them and a change as a finding,
 not as something to fix in the code:
 
-- product: `project/product.md` — what is built, for whom, surfaces, how it works, how it looks,
+- product: `product/overview.md` — what is built, for whom, surfaces, how it works, how it looks,
   qualities, what it is not
-- tech: `project/tech.md` — stack, frontend approach, persistence, runtime, integrations,
+- tech: `product/tech.md` — stack, frontend approach, persistence, runtime, integrations,
   version policy
-- domain: `project/domain.md` — the designed bounded contexts, their subdomain types and
+- domain: `product/domain.md` — the designed bounded contexts, their subdomain types and
   relationships; the map generated from the code shows what was built
 <!-- dca-describe: end -->
 

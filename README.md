@@ -276,7 +276,7 @@ are not marked `Secure`.
 ## Context map
 
 See [docs/architecture/context-map.md](docs/architecture/context-map.md) (generated from the context
-attributes) and [project/domain.md](project/domain.md) (the designed, hand-maintained strategic reading). Cart and Checkout each consume the Product
+attributes) and [product/domain.md](product/domain.md) (the designed, hand-maintained strategic reading). Cart and Checkout each consume the Product
 Catalog through an ACL; Checkout consumes the Cart's Api (ACL), conforms to its `ICartCompletionTrigger`
 contract; Cart's `CartContentsChangedEvent` leaves the captured session unchanged; the Product Catalog reads price and
 stock from the Pricing and Inventory Open Host Services, which in turn fill themselves from
@@ -285,10 +285,10 @@ partners over the trigger contracts they share.
 
 ## What is built, and how it is delivered
 
-What the shop is and how it is built is decided in [`project/`](project/): the product
-([product.md](project/product.md) — surfaces, how it works, look and feel with the page sizes s, m, l
-and xl), the technical decisions ([tech.md](project/tech.md)), the designed domain
-([domain.md](project/domain.md)) and the backlog under `project/backlog/`. Stories are delivered by a
+What the shop is and how it is built is decided in [`product/`](product/): the product
+([overview.md](product/overview.md) — surfaces, how it works, look and feel with the page sizes s, m, l
+and xl), the technical decisions ([tech.md](product/tech.md)), the designed domain
+([domain.md](product/domain.md)) and the backlog under `product/epics/`. Stories are delivered by a
 gated pipeline under `.agents/factory/` — plan, test, build, tidy, judge, document — and a story with
 a page waits for a human's acceptance before it counts as delivered.
 
