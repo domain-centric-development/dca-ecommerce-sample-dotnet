@@ -56,4 +56,27 @@ public sealed class CartPage : BasePage
         }
         return lines;
     }
+
+    /// <summary>What the line of the named product shows: its image's address, quantity, unit price and line total.</summary>
+    public async Task<CartLine> LineAsync(string productName)
+    {
+        var item = Page.Locator($"[data-test='{CartItem}']")
+            .Filter(new LocatorFilterOptions { Has = Page.Locator("[data-test='cart-item-name']", new PageLocatorOptions { HasTextString = productName }) });
+        await Assertions.Expect(item).ToHaveCountAsync(1);
+        return new CartLine(
+            await item.Locator(".cart__item-image img").GetAttributeAsync("src") ?? string.Empty,
+            (await item.Locator("[data-test='cart-item-quantity']").InnerTextAsync()).Trim(),
+            await ValueBesideAsync(item, "Unit Price"),
+            await ValueBesideAsync(item, "Line Total"));
+    }
+
+    /// <summary>The value shown beside a label in a line. The markup carries no data-test for it.</summary>
+    private async Task<string> ValueBesideAsync(ILocator item, string label) =>
+        (await item.Locator(".cart__item-row")
+            .Filter(new LocatorFilterOptions { Has = Page.Locator(".cart__item-label", new PageLocatorOptions { HasTextString = label }) })
+            .Locator("span")
+            .Nth(1)
+            .InnerTextAsync()).Trim();
+
+    public sealed record CartLine(string ImageSource, string Quantity, string UnitPrice, string LineTotal);
 }
