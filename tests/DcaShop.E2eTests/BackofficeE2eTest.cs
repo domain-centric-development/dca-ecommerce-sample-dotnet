@@ -26,7 +26,9 @@ public sealed class BackofficeE2eTest : BaseE2eTest
         var events = await SignInAsync();
 
         Assert.True(await events.IsOnPageAsync(), "Should be on the event log page after login");
+        Assert.Equal("Event Publication Log", await events.HeadingAsync());
         Assert.True(await events.HasSummaryAsync(), "Event log should display the summary section");
+        Assert.Equal(["Total Events", "Completed", "Incomplete"], await events.SummaryLabelsAsync());
         Assert.True(await events.TotalEventsAsync() >= 0, "Total events count should be a non-negative number");
     }
 

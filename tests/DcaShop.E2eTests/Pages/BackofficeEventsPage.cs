@@ -48,6 +48,16 @@ public sealed class BackofficeEventsPage : BasePage
 
     public Task<bool> HasEventListAsync() => ExistsAsync(EventLogList);
 
+    public async Task<string> HeadingAsync() =>
+        (await Page.Locator("main h1").InnerTextAsync()).Trim();
+
+    public async Task<IReadOnlyList<string>> SummaryLabelsAsync()
+    {
+        await WaitForAsync(EventLogSummary);
+        var labels = await Page.Locator($"[data-test='{EventLogSummary}'] .event-log__stat-label").AllInnerTextsAsync();
+        return labels.Select(label => label.Trim()).ToList();
+    }
+
     public Task<int> TotalEventsAsync() => NumberAsync(EventLogTotal);
 
     public Task<int> CompletedCountAsync() => NumberAsync(EventLogCompleted);
