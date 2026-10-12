@@ -50,6 +50,20 @@ public sealed class ProductDetailPage : BasePage
 
     public async Task<string> PriceAsync() => (await Page.Locator($"[data-test='{PriceValue}']").InnerTextAsync()).Trim();
 
+    /// <summary>
+    /// The stock badge in the page's header ("In Stock", "Out of Stock"), as written — the style shows it in capitals.
+    /// The markup carries no data-test for it.
+    /// </summary>
+    public async Task<string> StockBadgeAsync() =>
+        ((await Page.Locator($"[data-test='{ProductDetail}'] .product-detail__header .badge").TextContentAsync()) ?? string.Empty).Trim();
+
+    /// <summary>The value shown beside the label "Availability". The markup carries no data-test for it.</summary>
+    public async Task<string> AvailabilityAsync() =>
+        (await Page.Locator($"[data-test='{ProductDetail}'] .product-detail__meta-item")
+            .Filter(new LocatorFilterOptions { Has = Page.Locator(".product-detail__meta-label", new PageLocatorOptions { HasTextString = "Availability" }) })
+            .Locator(".product-detail__meta-value")
+            .InnerTextAsync()).Trim();
+
     /// <summary>The address of the product image the page shows.</summary>
     public Task<string> ImageSourceAsync() =>
         Page.Locator($"[data-test='{ProductDetail}'] img").First.EvaluateAsync<string>("e => e.currentSrc || e.getAttribute('src') || ''");
