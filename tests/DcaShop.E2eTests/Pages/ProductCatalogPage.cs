@@ -11,6 +11,7 @@ public sealed class ProductCatalogPage : BasePage
     private const string ViewDetailsLink = "view-product";
     private const string ProductTitle = "product-card-title";
     private const string Breadcrumb = "breadcrumb";
+    private const string CardPriceClass = "product-card__price";
 
     private ProductCatalogPage(IPage page) : base(page)
     {
@@ -51,6 +52,16 @@ public sealed class ProductCatalogPage : BasePage
             .ClickAsync();
         return await ProductDetailPage.OpenAsync(Page);
     }
+
+    /// <summary>
+    /// The price shown on the card whose title is <paramref name="name"/>. The price carries no <c>data-test</c> yet,
+    /// so it is found by its class inside the card.
+    /// </summary>
+    public async Task<string> CardPriceAsync(string name) =>
+        (await Page.Locator($"[data-test='{ProductCard}']")
+            .Filter(new LocatorFilterOptions { Has = Page.Locator($"[data-test='{ProductTitle}']", new PageLocatorOptions { HasTextRegex = new Regex($"^\\s*{Regex.Escape(name)}\\s*$") }) })
+            .Locator($".{CardPriceClass}")
+            .InnerTextAsync()).Trim();
 
     public Task<bool> HasProductsAsync() => ExistsAsync(ProductCard);
 
