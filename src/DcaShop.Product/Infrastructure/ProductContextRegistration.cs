@@ -15,6 +15,8 @@ using DcaShop.SharedKernel.Infrastructure.Events;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using ModelContextProtocol.Protocol;
+
 namespace DcaShop.Product.Infrastructure;
 
 /// <summary>Wires the Product Catalog context: the .NET counterpart of Spring's component scan, made explicit.</summary>
@@ -48,9 +50,14 @@ public static class ProductContextRegistration
         // The one place in this context that turns a failure into an HTTP answer
         services.AddExceptionHandler<ProductApiExceptionHandler>();
 
-        // The catalog as MCP tools. The transport is HTTP; the host maps it at /mcp.
+        // The catalog as MCP tools. The transport is HTTP; the host maps it at /mcp. The server names itself as the
+        // Java sample's does, so an assistant meets the same server in either shop.
         services
-            .AddMcpServer()
+            .AddMcpServer(options => options.ServerInfo = new Implementation
+            {
+                Name = "dca-ecommerce-sample-mcp-server",
+                Version = "1.0.0",
+            })
             .WithHttpTransport()
             .WithTools<ProductCatalogMcpToolProvider>();
 

@@ -1,9 +1,12 @@
 using System.ComponentModel;
+using System.Text.Json;
 
 using DcaShop.Product.Adapter.Incoming.Api;
 using DcaShop.Product.Application.GetAllProducts;
 using DcaShop.Product.Application.GetProductById;
 
+using ModelContextProtocol;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace DcaShop.Product.Adapter.Incoming.Mcp;
@@ -44,10 +47,35 @@ public sealed class ProductCatalogMcpToolProvider
 
     [McpServerTool(Name = "product-by-id")]
     [Description("Get detailed product information by product ID. Requires the internal product UUID. Returns complete product details including all attributes.")]
-    public async Task<ProductDto?> GetProductByIdAsync(
-        [Description("The product ID (UUID format)")] Guid id, CancellationToken cancellationToken = default)
+    public async Task<CallToolResult> GetProductByIdAsync(
+        [Description("The product ID (UUID format)")] string id, CancellationToken cancellationToken = default)
     {
-        var result = await _getProductById.ExecuteAsync(new GetProductByIdQuery(id), cancellationToken);
-        return result.Product is { } product ? _converter.ToDto(product) : null;
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BlankIdRefused;
+        }
+
+        // An assistant may pass any string; one that is no product id names no product.
+        if (!Guid.TryParse(id, out var productId))
+        {
+            return NoProduct;
+        }
+
+        var result = await _getProductById.ExecuteAsync(new GetProductByIdQuery(productId), cancellationToken);
+        return result.Product is { } product ? Answer(_converter.ToDto(product)) : NoProduct;
     }
+
+    /// <summary>
+    /// The refusal of a blank id, answered here word for word: a thrown <see cref="McpException"/> reaches the
+    /// assistant only behind the SDK's own "An error occurred invoking …" prefix.
+    /// </summary>
+    private static CallToolResult BlankIdRefused =>
+        new() { IsError = true, Content = [new TextContentBlock { Text = "Product ID cannot be null or blank" }] };
+
+    /// <summary>What the SDK answers for a tool that returns <c>null</c>: no content at all.</summary>
+    private static CallToolResult NoProduct => new() { Content = [] };
+
+    /// <summary>The product as the SDK answers any other return value: its JSON, as one text block.</summary>
+    private static CallToolResult Answer(ProductDto product) =>
+        new() { Content = [new TextContentBlock { Text = JsonSerializer.Serialize(product, McpJsonUtilities.DefaultOptions) }] };
 }

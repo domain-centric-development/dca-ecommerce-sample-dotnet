@@ -255,7 +255,10 @@ types into form errors.
 
 **MCP** (`/mcp`, `ModelContextProtocol.AspNetCore`) exposes the catalog as the two tools `all-products` and
 `product-by-id`, over the same input ports and the same DTO converter as the REST resources — one representation
-of a product, not two that can drift. Bearer-only, like `/api/**`.
+of a product, not two that can drift. Bearer-only, like `/api/**`. The server introduces itself as
+`dca-ecommerce-sample-mcp-server`, version `1.0.0`, as the Java sample's does. `product-by-id` takes any string as
+its `id`. A blank id is a tool error ("Product ID cannot be null or blank"), and an id that names no product answers
+`null`.
 
 **Backoffice** (`/backoffice/events`, reachable from the footer) is a bounded context of a *generic* subdomain —
 operating this application. It owns a language no business context uses (an *event publication* is a dispatched
