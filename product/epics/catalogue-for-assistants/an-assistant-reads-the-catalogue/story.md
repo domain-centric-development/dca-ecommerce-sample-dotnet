@@ -5,7 +5,7 @@ status: adopted
 context: product
 feature: catalogue
 title: An assistant reads the catalogue through tools
-depends_on: [CAT-01, prices-shown-from-the-price-owner, availability-shown]
+depends_on: [CAT-01, prices-shown-from-the-price-owner, availability-shown, assistant-tools-name-their-server]
 ---
 
 # An assistant reads the catalogue through tools

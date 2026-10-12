@@ -5,7 +5,7 @@ status: adopted
 context: product
 feature: catalogue
 title: Read the catalogue through the API
-depends_on: [CAT-01, prices-shown-from-the-price-owner, availability-shown]
+depends_on: [CAT-01, prices-shown-from-the-price-owner, availability-shown, api-answers-an-unknown-product-plainly]
 ---
 
 # Read the catalogue through the API

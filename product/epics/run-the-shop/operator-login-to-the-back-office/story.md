@@ -59,3 +59,7 @@ can look at what the running shop did without being a customer.
 - Replay story: `OPS-01` (run-the-shop).
 - Shared scenario: `scenario.backoffice.login-shows-event-log`, `scenario.backoffice.invalid-login`.
 - Inventory: backoffice B1, B2, B3.
+
+## Assumptions
+
+- answered: a — list BackofficeE2eTest.LoginAndViewEventLog under ## Changed tests, add the heading and counter-label assertions there, delete BackofficeLoginE2eTest and map login-opens-the-event-log to the existing test. The specification and the Java suite stay as they are. (operator-login-to-the-back-office-01)

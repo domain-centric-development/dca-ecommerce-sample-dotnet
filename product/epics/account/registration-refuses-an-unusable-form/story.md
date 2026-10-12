@@ -12,7 +12,7 @@ depends_on: [register-an-account]
 
 ## Story
 
-As a visitor I want the registration to tell me exactly which entry it cannot accept, and keep what I typed,
+As a visitor I want the registration to refuse what it cannot accept, say what to check, and keep what I typed,
 so that I can correct it without starting over.
 
 ## Acceptance criteria
@@ -45,26 +45,26 @@ so that I can correct it without starting over.
 #### future-date-is-refused
 - Given a visitor with no cookies on `/register`
 - When they submit an otherwise valid registration with Date of Birth 2999-01-01
-- Then the registration page shows "Date of birth cannot be in the future"
+- Then the registration page shows "Please check the email address, your name and your date of birth."
 
 ### Rule: The address must be an email address
 
 #### malformed-email-is-refused
 - Given a visitor with no cookies on `/register`
 - When they submit an otherwise valid registration with Email "anna.schmidt@example"
-- Then the registration page shows "Invalid email format: anna.schmidt@example"
+- Then the registration page shows "Please check the email address, your name and your date of birth."
 
 ### Rule: Both names are required and at most 100 characters long
 
 #### blank-first-name-is-refused
 - Given a visitor with no cookies on `/register`
 - When they submit an otherwise valid registration with First Name "   "
-- Then the registration page shows "First name is required"
+- Then the registration page shows "Please check the email address, your name and your date of birth."
 
 #### overlong-last-name-is-refused
 - Given a visitor with no cookies on `/register`
 - When they submit an otherwise valid registration with a Last Name of 101 characters
-- Then the registration page shows "Last name is too long"
+- Then the registration page shows "Please check the email address, your name and your date of birth."
 
 ## Out of scope
 
@@ -78,3 +78,7 @@ so that I can correct it without starting over.
 - The browser limits the fields (required, 100 and 72 characters, date input); the refusals above are what the
   shop answers when such a value reaches it anyway.
 - Inventory: account A5, A6, A7, A10.
+
+## Assumptions
+
+- answered: 1 — the four scenarios expect the page's sentence for an argument exception, "Please check the email address, your name and your date of birth.", and the story's sentence says the page names what to check, not which entry. It stays adopted; the story text is already changed, in both shops alike. Naming the field is not part of this story. (registration-refuses-an-unusable-form-01)

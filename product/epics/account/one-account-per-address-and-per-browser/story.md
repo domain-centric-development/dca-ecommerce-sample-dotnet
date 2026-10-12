@@ -24,20 +24,20 @@ creating a second account by mistake, so that my address always leads to my own 
 #### taken-address-is-refused
 - Given the account "anna.schmidt@example.com", registered earlier, and another visitor with no cookies on `/register`
 - When they submit a valid registration with Email "anna.schmidt@example.com"
-- Then the registration page shows "Email is already registered: anna.schmidt@example.com"
+- Then the registration page shows "This email address is already registered"
 - And the visitor is not logged in
 
 #### taken-address-in-other-capitals-is-refused
 - Given the account "anna.schmidt@example.com", registered earlier, and another visitor with no cookies on `/register`
 - When they submit a valid registration with Email " Anna.Schmidt@Example.COM "
-- Then the registration page shows "Email is already registered: anna.schmidt@example.com"
+- Then the registration page shows "This email address is already registered"
 
 ### Rule: A browser that already has an account cannot register a second one
 
 #### second-registration-from-the-same-browser-is-refused
 - Given a visitor who just registered "anna.schmidt@example.com" and is logged in
 - When they open `/register` and submit a valid registration with Email "anna.second@example.com"
-- Then the registration page shows "User already has an account"
+- Then the registration page shows "You already have an account."
 - And the header still shows "Welcome, anna.schmidt@example.com"
 
 ## Out of scope
@@ -49,3 +49,7 @@ creating a second account by mistake, so that my address always leads to my own 
 
 - Replay story: `ACC-04` (account).
 - Inventory: account A8, A9.
+
+## Assumptions
+
+- answered: 1 — the story carries today's page sentences: "This email address is already registered" (both address scenarios) and "You already have an account.". It stays adopted; the story text is already changed, in both shops alike. (one-account-per-address-and-per-browser-01)
