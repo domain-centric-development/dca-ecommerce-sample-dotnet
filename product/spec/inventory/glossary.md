@@ -370,3 +370,19 @@ own answer. A negative quantity is not among them — that is a malformed call a
 **Definition:** More stock would be released than was ever reserved.
 
 **Type:** Domain failure (`DomainException`) · **Related terms:** Reserved quantity, `StockLevel.Release`
+
+## Features
+
+The parts of the context's behaviour its people name; each groups what holds in a folder of the living spec.
+
+### Availability (availability)
+
+**Definition:** Whether a product can be had, as the shop shows it.
+
+**Type:** Feature
+
+### Stock (stock)
+
+**Definition:** Stock going down by what was bought.
+
+**Type:** Feature
