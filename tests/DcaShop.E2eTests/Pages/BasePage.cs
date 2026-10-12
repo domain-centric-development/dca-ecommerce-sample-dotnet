@@ -42,6 +42,17 @@ public abstract class BasePage
         return await HomePage.OpenAsync(Page);
     }
 
+    /// <summary>The greeting in the site header as the browser renders it; empty when the header greets nobody.</summary>
+    public async Task<string> HeaderGreetingAsync()
+    {
+        var greeting = Page.Locator("[data-test='site-header'] [data-test='user-greeting']");
+        return await greeting.CountAsync() == 0 ? string.Empty : (await greeting.InnerTextAsync()).Trim();
+    }
+
+    /// <summary>Whether the site header offers the "Register" link.</summary>
+    public async Task<bool> HeaderOffersRegisterAsync() =>
+        await Page.Locator("[data-test='site-header'] [data-test='nav-register-link']").CountAsync() > 0;
+
     protected string CurrentPath => Page.Url.Replace(BaseUrl, string.Empty, StringComparison.Ordinal);
 
     protected async Task<bool> PageContainsAsync(string text) => (await Page.Locator("body").TextContentAsync() ?? string.Empty).Contains(text, StringComparison.Ordinal);

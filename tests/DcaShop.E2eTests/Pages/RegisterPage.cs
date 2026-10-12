@@ -29,6 +29,21 @@ public sealed class RegisterPage : BasePage
         return register;
     }
 
+    /// <summary>Fills in every field of the form as given and submits it; waits until the browser has left the page.</summary>
+    public async Task RegisterAsync(
+        string firstName, string lastName, string dateOfBirth, string email, string password, string confirmPassword)
+    {
+        await WaitForAsync("register-form");
+        await FillAsync("firstName", firstName);
+        await FillAsync("lastName", lastName);
+        await FillAsync("dateOfBirth", dateOfBirth);
+        await FillAsync("email", email);
+        await FillAsync("password", password);
+        await FillAsync("confirmPassword", confirmPassword);
+        await ClickAsync(SubmitButton);
+        await Page.WaitForURLAsync(url => !url.Contains("/register", StringComparison.Ordinal));
+    }
+
     public async Task RegisterAsync(string email, string password)
     {
         await FillAsync("firstName", DefaultFirstName);

@@ -1,0 +1,148 @@
+using System.Net;
+using System.Text.RegularExpressions;
+
+using Microsoft.AspNetCore.Mvc.Testing;
+
+namespace DcaShop.IntegrationTests;
+
+/// <summary>
+/// The registration page through the real HTTP pipeline, each test as a visitor with no cookies: how the header leads
+/// there, what the form asks for, and where a registration and the login link lead when the page was opened for
+/// another page.
+/// </summary>
+public sealed class RegistrationPageTest : IClassFixture<WebApplicationFactory<Program>>
+{
+    private readonly WebApplicationFactory<Program> _factory;
+
+    public RegistrationPageTest(WebApplicationFactory<Program> factory)
+    {
+        _factory = factory;
+    }
+
+    [Fact]
+    public async Task TheHeaderOfTheCatalogueOffersARegisterLinkToTheRegistrationPage()
+    {
+        var client = Visitor();
+
+        var catalogue = await client.GetStringAsync("/products");
+
+        var register = Link(Element(catalogue, "site-header", "</header>"), "nav-register-link");
+        Assert.Equal("Register", register.Text);
+        Assert.Equal("/register", register.Target);
+    }
+
+    [Fact]
+    public async Task TheRegistrationPageAsksForOwnerAddressAndPasswordWithItsHintsAndLimits()
+    {
+        var client = Visitor();
+
+        var page = await client.GetStringAsync("/register");
+
+        Assert.Equal("Create Account", Text(page, @"class=""auth__title"">([^<]*)</h2>"));
+        var form = Element(page, "register-form", "</form>");
+        Assert.Equal(
+            ["First Name", "Last Name", "Date of Birth", "Email", "Password", "Confirm Password"],
+            Regex.Matches(form, @"<label\b[^>]*>([^<]*)</label>").Select(m => Rendered(m.Groups[1].Value)));
+        foreach (Match label in Regex.Matches(form, @"<label\b[^>]*for=""([^""]+)"""))
+        {
+            Assert.Matches($@"<input\b[^>]*id=""{Regex.Escape(label.Groups[1].Value)}""", form);
+        }
+        Assert.Equal("Create Account", Text(form, @"data-test=""register-submit-button"">([^<]*)</button>"));
+        var hints = Regex.Matches(form, @"class=""form__hint"">([^<]*)</p>").Select(m => Rendered(m.Groups[1].Value)).ToList();
+        Assert.Contains("Your name cannot be changed later", hints);
+        Assert.Contains("Password must be at least 8 characters", hints);
+        Assert.Equal("100", MaxLength(form, "firstName"));
+        Assert.Equal("100", MaxLength(form, "lastName"));
+        Assert.Equal("72", MaxLength(form, "password"));
+        Assert.Equal("72", MaxLength(form, "confirmPassword"));
+        var login = Link(page, "register-login-link");
+        Assert.Equal("Login here", login.Text);
+        Assert.Equal("/login", login.Target);
+    }
+
+    [Fact]
+    public async Task ARegistrationOpenedForTheCatalogueReturnsThereLoggedIn()
+    {
+        var client = Visitor();
+        var page = await client.GetStringAsync("/register?returnUrl=/products");
+
+        var registered = await client.PostAsync(
+            "/register",
+            Submission(
+                Element(page, "register-form", "</form>"),
+                ("firstName", "Anna"),
+                ("lastName", "Schmidt"),
+                ("dateOfBirth", "1990-05-17"),
+                ("email", "anna.schmidt@example.com"),
+                ("password", "Secret123"),
+                ("confirmPassword", "Secret123")));
+
+        Assert.Equal(HttpStatusCode.Redirect, registered.StatusCode);
+        Assert.Equal("/products", registered.Headers.Location!.ToString());
+        var catalogue = await client.GetStringAsync(registered.Headers.Location);
+        Assert.Equal(
+            "Welcome, anna.schmidt@example.com",
+            Text(Element(catalogue, "site-header", "</header>"), @"data-test=""user-greeting"">([^<]*)</span>"));
+    }
+
+    [Fact]
+    public async Task TheLoginLinkOfARegistrationOpenedForTheCatalogueKeepsTheCatalogue()
+    {
+        var client = Visitor();
+
+        var page = await client.GetStringAsync("/register?returnUrl=/products");
+
+        var login = Link(page, "register-login-link");
+        Assert.Equal("/login?returnUrl=/products", Uri.UnescapeDataString(login.Target));
+    }
+
+    /// <summary>A browser of its own, with no cookies yet; redirects are not followed — each one is an assertion.</summary>
+    private HttpClient Visitor() =>
+        _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+    /// <summary>The form as the browser would send it: its hidden fields as rendered, plus what the visitor typed.</summary>
+    private static FormUrlEncodedContent Submission(string form, params (string Name, string Value)[] typed)
+    {
+        var hidden = Regex.Matches(form, @"<input\b[^>]*type=""hidden""[^>]*>")
+            .Select(input => (
+                Name: Regex.Match(input.Value, @"name=""([^""]+)""").Groups[1].Value,
+                Value: WebUtility.HtmlDecode(Regex.Match(input.Value, @"value=""([^""]*)""").Groups[1].Value)));
+
+        return new FormUrlEncodedContent(
+            hidden.Concat(typed).Select(f => new KeyValuePair<string, string>(f.Name, f.Value)));
+    }
+
+    /// <summary>The <c>maxlength</c> of the input named <paramref name="name"/>.</summary>
+    private static string MaxLength(string form, string name)
+    {
+        var input = Regex.Match(form, $@"<input\b[^>]*name=""{Regex.Escape(name)}""[^>]*>");
+        Assert.True(input.Success, $"the form has an input {name}");
+        return Regex.Match(input.Value, @"maxlength=""(\d+)""").Groups[1].Value;
+    }
+
+    /// <summary>The markup from the element carrying <paramref name="dataTest"/> to its closing tag.</summary>
+    private static string Element(string page, string dataTest, string closingTag)
+    {
+        var start = page.IndexOf($"data-test=\"{dataTest}\"", StringComparison.Ordinal);
+        Assert.True(start >= 0, $"the page has a {dataTest}");
+        return page[start..].Split(closingTag)[0];
+    }
+
+    /// <summary>The target and text of the anchor carrying <paramref name="dataTest"/>.</summary>
+    private static (string Target, string Text) Link(string markup, string dataTest)
+    {
+        var match = Regex.Match(markup, $@"<a\b[^>]*href=""([^""]+)""[^>]*data-test=""{Regex.Escape(dataTest)}"">([^<]*)</a>");
+        Assert.True(match.Success, $"the markup offers a {dataTest}");
+        return (WebUtility.HtmlDecode(match.Groups[1].Value), Rendered(match.Groups[2].Value));
+    }
+
+    private static string Text(string markup, string pattern)
+    {
+        var match = Regex.Match(markup, pattern);
+        Assert.True(match.Success, $"the markup matches {pattern}");
+        return Rendered(match.Groups[1].Value);
+    }
+
+    /// <summary>The text a reader sees: tags removed, entities decoded.</summary>
+    private static string Rendered(string html) => WebUtility.HtmlDecode(Regex.Replace(html, "<[^>]*>", string.Empty)).Trim();
+}
