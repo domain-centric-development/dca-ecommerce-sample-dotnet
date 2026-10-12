@@ -52,7 +52,9 @@ context.** The Java sample decided the same in its ADR-044; the two samples carr
   (`/api/products` and `/mcp`, `/api/carts`, `/api/auth`) and the next context's handler gets its turn. The chain
   runs only for the token-only paths: `Program.cs` branches it with `app.UseWhen(TokenOnlyPaths.IsTokenOnlyEndpoint
   …)`, and the pages keep `UseExceptionHandler("/error")`. It is registered after that endpoint so it is the inner
-  handler and sees an API failure first.
+  handler and sees an API failure first. The HTML status-code pages (`UseStatusCodePagesWithReExecute("/error/{0}")`)
+  are switched off per request on the same token-only paths, so an API address that matches no route answers with
+  its bare status and an empty body, never with the HTML error page.
 - **The status follows the failure, not the base type.** `CartItemNotFoundException` is a rule of the model and
   still answers `404`, because what the caller has to do about it is ask for something that exists. Deciding that
   is the adapter's job: the same use case serves the REST exposure and a page with different answers.

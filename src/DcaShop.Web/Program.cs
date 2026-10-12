@@ -2,6 +2,7 @@ using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.Infrastructure;
 using DcaShop.Web;
 
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -83,7 +84,19 @@ if (!allowFraming)
     });
 }
 
+// The HTML status-code pages are for the pages alone. A bodiless error on /api/** and /mcp -- an address that matches
+// no route -- stays as it is: a client reading JSON is never handed a web page. Switched off per request rather than
+// registered in a UseWhen branch, because a re-execution from inside a branch no longer reaches the error endpoint.
 app.UseStatusCodePagesWithReExecute("/error/{0}");
+app.Use(async (context, next) =>
+{
+    if (TokenOnlyPaths.IsTokenOnlyEndpoint(context.Request.Path)
+        && context.Features.Get<IStatusCodePagesFeature>() is { } statusCodePages)
+    {
+        statusCodePages.Enabled = false;
+    }
+    await next();
+});
 app.UseStaticFiles();
 
 // Before any endpoint: the shop's default scheme puts the visitor identity on HttpContext.User — cookies on the

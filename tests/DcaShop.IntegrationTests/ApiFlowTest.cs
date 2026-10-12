@@ -51,6 +51,15 @@ public sealed class ApiFlowTest : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
+    public async Task AProductAddressThatNamesNoProductAnswers404WithAnEmptyBody()
+    {
+        var response = await _factory.CreateClient().GetAsync("/api/products/no-such-product");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(string.Empty, await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task ACartRouteOnlyEverAnswersWithTheCallersOwnCart()
     {
         var (mine, _) = await RegisterAsync("cart-owner@example.com");
