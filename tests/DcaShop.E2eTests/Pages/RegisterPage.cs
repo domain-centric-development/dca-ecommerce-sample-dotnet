@@ -6,6 +6,7 @@ public sealed class RegisterPage : BasePage
 {
     private const string UrlPattern = "/register**";
     private const string SubmitButton = "register-submit-button";
+    private const string ErrorMessage = "register-error-message";
 
     /// <summary>Registration needs an owner; flows that only care about credentials use these.</summary>
     private const string DefaultFirstName = "Test";
@@ -44,11 +45,8 @@ public sealed class RegisterPage : BasePage
         await Page.WaitForURLAsync(url => !url.Contains("/register", StringComparison.Ordinal));
     }
 
-    /// <summary>
-    /// Fills in every field of the form as given and submits it, expecting the page to refuse it: answers the error
-    /// message the page shows instead.
-    /// </summary>
-    public async Task<string> RegisterRefusedAsync(
+    /// <summary>Fills in every field of the form as given and submits it; expects to stay here with the page's refusal.</summary>
+    public async Task SubmitExpectingRefusalAsync(
         string firstName, string lastName, string dateOfBirth, string email, string password, string confirmPassword)
     {
         await WaitForAsync("register-form");
@@ -59,10 +57,26 @@ public sealed class RegisterPage : BasePage
         await FillAsync("password", password);
         await FillAsync("confirmPassword", confirmPassword);
         await ClickAsync(SubmitButton);
-        var error = Page.Locator("[data-test='register-error-message']");
-        await error.WaitForAsync();
-        return (await error.InnerTextAsync()).Trim();
+        await WaitForAsync(ErrorMessage);
     }
+
+    /// <summary>
+    /// Fills in every field of the form as given and submits it, expecting the page to refuse it: answers the error
+    /// message the page shows instead.
+    /// </summary>
+    public async Task<string> RegisterRefusedAsync(
+        string firstName, string lastName, string dateOfBirth, string email, string password, string confirmPassword)
+    {
+        await SubmitExpectingRefusalAsync(firstName, lastName, dateOfBirth, email, password, confirmPassword);
+        return await ErrorMessageAsync();
+    }
+
+    /// <summary>The refusal the page shows, as the browser renders it.</summary>
+    public async Task<string> ErrorMessageAsync() =>
+        (await Page.Locator($"[data-test='{ErrorMessage}']").InnerTextAsync()).Trim();
+
+    /// <summary>What the input named <paramref name="name"/> holds right now.</summary>
+    public Task<string> FieldValueAsync(string name) => Page.Locator($"input[name='{name}']").InputValueAsync();
 
     public async Task RegisterAsync(string email, string password)
     {

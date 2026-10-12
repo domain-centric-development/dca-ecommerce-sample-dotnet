@@ -97,6 +97,54 @@ public sealed class RegistrationPageTest : IClassFixture<WebApplicationFactory<P
     }
 
     [Fact]
+    public async Task APasswordShorterThanEightCharactersIsRefused()
+    {
+        var refusal = await RefusalOfAsync("anna.short@example.com", ("password", "Sec123"), ("confirmPassword", "Sec123"));
+
+        Assert.Equal("Password must be at least 8 characters", refusal);
+    }
+
+    [Fact]
+    public async Task ADateOfBirthThatIsNotADateIsRefused()
+    {
+        var refusal = await RefusalOfAsync("anna.unreadable@example.com", ("dateOfBirth", "17.05.1990"));
+
+        Assert.Equal("Please enter a date like 1990-05-17", refusal);
+    }
+
+    [Fact]
+    public async Task ADateOfBirthInTheFutureIsRefused()
+    {
+        var refusal = await RefusalOfAsync("anna.future@example.com", ("dateOfBirth", "2999-01-01"));
+
+        Assert.Equal("Please check the email address, your name and your date of birth.", refusal);
+    }
+
+    [Fact]
+    public async Task AnAddressWithoutATopLevelDomainIsRefused()
+    {
+        var refusal = await RefusalOfAsync("anna.schmidt@example");
+
+        Assert.Equal("Please check the email address, your name and your date of birth.", refusal);
+    }
+
+    [Fact]
+    public async Task ABlankFirstNameIsRefused()
+    {
+        var refusal = await RefusalOfAsync("anna.blank@example.com", ("firstName", "   "));
+
+        Assert.Equal("Please check the email address, your name and your date of birth.", refusal);
+    }
+
+    [Fact]
+    public async Task ALastNameOfMoreThanAHundredCharactersIsRefused()
+    {
+        var refusal = await RefusalOfAsync("anna.overlong@example.com", ("lastName", new string('S', 101)));
+
+        Assert.Equal("Please check the email address, your name and your date of birth.", refusal);
+    }
+
+    [Fact]
     public async Task AnAddressAnotherAccountHasIsRefusedWhateverItsCapitalsAndSurroundingSpaces()
     {
         var shop = _factory.WithWebHostBuilder(_ => { });
@@ -125,6 +173,38 @@ public sealed class RegistrationPageTest : IClassFixture<WebApplicationFactory<P
         Assert.Equal(
             "Welcome, anna.schmidt@example.com",
             Text(Element(page, "site-header", "</header>"), @"data-test=""user-greeting"">([^<]*)</span>"));
+    }
+
+    /// <summary>
+    /// Submits an otherwise valid registration for <paramref name="email"/>, with <paramref name="changed"/> in place
+    /// of the valid values, as a visitor with no cookies; returns the refusal the registration page shows.
+    /// </summary>
+    private async Task<string> RefusalOfAsync(string email, params (string Name, string Value)[] changed)
+    {
+        var client = Visitor();
+        var page = await client.GetStringAsync("/register");
+        var valid = new Dictionary<string, string>
+        {
+            ["firstName"] = "Anna",
+            ["lastName"] = "Schmidt",
+            ["dateOfBirth"] = "1990-05-17",
+            ["email"] = email,
+            ["password"] = "Secret123",
+            ["confirmPassword"] = "Secret123",
+        };
+        foreach (var (name, value) in changed)
+        {
+            valid[name] = value;
+        }
+
+        var answer = await client.PostAsync(
+            "/register",
+            Submission(Element(page, "register-form", "</form>"), [.. valid.Select(f => (f.Key, f.Value))]));
+
+        Assert.Equal(HttpStatusCode.OK, answer.StatusCode);
+        var refused = await answer.Content.ReadAsStringAsync();
+        Assert.Equal("Create Account", Text(refused, @"class=""auth__title"">([^<]*)</h2>"));
+        return Text(refused, @"data-test=""register-error-message"">([^<]*)</div>");
     }
 
     /// <summary>A browser of its own, with no cookies yet; redirects are not followed — each one is an assertion.</summary>

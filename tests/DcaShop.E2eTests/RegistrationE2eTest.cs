@@ -21,4 +21,23 @@ public sealed class RegistrationE2eTest : BaseE2eTest
         Assert.Equal("Welcome, anna.schmidt@example.com", await home.HeaderGreetingAsync());
         Assert.False(await home.HeaderOffersRegisterAsync(), "the header no longer offers to register");
     }
+
+    [E2eFact(DisplayName = "Differing passwords are refused")]
+    public async Task DifferingPasswordsAreRefusedAndKeepEverythingButThePasswords()
+    {
+        var register = await RegisterPage.NavigateToAsync(Page);
+
+        await register.SubmitExpectingRefusalAsync(
+            "Anna", "Schmidt", "1990-05-17", "anna.schmidt@example.com", "Secret123", "Secret124");
+
+        Assert.Equal("Passwords do not match", await register.ErrorMessageAsync());
+        Assert.Equal("Anna", await register.FieldValueAsync("firstName"));
+        Assert.Equal("Schmidt", await register.FieldValueAsync("lastName"));
+        Assert.Equal("1990-05-17", await register.FieldValueAsync("dateOfBirth"));
+        Assert.Equal("anna.schmidt@example.com", await register.FieldValueAsync("email"));
+        Assert.Equal(string.Empty, await register.FieldValueAsync("password"));
+        Assert.Equal(string.Empty, await register.FieldValueAsync("confirmPassword"));
+        Assert.Equal(string.Empty, await register.HeaderGreetingAsync());
+        Assert.True(await register.HeaderOffersRegisterAsync(), "the header still offers to register");
+    }
 }
