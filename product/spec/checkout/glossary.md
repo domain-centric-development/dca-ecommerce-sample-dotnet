@@ -528,3 +528,13 @@ the customer at the payment step to choose another way to pay.
 
 **Related terms:** `PaymentSelection` (keeps the reference of a succeeded payment), `PaymentInitiationFailed`,
 `PaymentProviderUnavailable`
+
+## Features
+
+The parts of the context's behaviour its people name; each groups what holds in a folder of the living spec.
+
+### Payment (payment)
+
+**Definition:** Paying for the checkout's order through a payment provider — authorized, refused or unanswered.
+
+**Type:** Feature
