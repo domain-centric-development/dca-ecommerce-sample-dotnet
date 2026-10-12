@@ -96,9 +96,60 @@ public sealed class RegistrationPageTest : IClassFixture<WebApplicationFactory<P
         Assert.Equal("/login?returnUrl=/products", Uri.UnescapeDataString(login.Target));
     }
 
+    [Fact]
+    public async Task AnAddressAnotherAccountHasIsRefusedWhateverItsCapitalsAndSurroundingSpaces()
+    {
+        var shop = _factory.WithWebHostBuilder(_ => { });
+        Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(Visitor(shop), "anna.schmidt@example.com")).StatusCode);
+
+        var refused = await RegisterAsync(Visitor(shop), " Anna.Schmidt@Example.COM ");
+
+        Assert.Equal(HttpStatusCode.OK, refused.StatusCode);
+        Assert.Equal(
+            "This email address is already registered",
+            Text(await refused.Content.ReadAsStringAsync(), @"data-test=""register-error-message"">([^<]*)</div>"));
+    }
+
+    [Fact]
+    public async Task ABrowserThatAlreadyHasAnAccountCannotRegisterASecondOneAndStaysLoggedInToTheFirst()
+    {
+        var shop = _factory.WithWebHostBuilder(_ => { });
+        var client = Visitor(shop);
+        Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(client, "anna.schmidt@example.com")).StatusCode);
+
+        var refused = await RegisterAsync(client, "anna.second@example.com");
+
+        Assert.Equal(HttpStatusCode.OK, refused.StatusCode);
+        var page = await refused.Content.ReadAsStringAsync();
+        Assert.Equal("You already have an account.", Text(page, @"data-test=""register-error-message"">([^<]*)</div>"));
+        Assert.Equal(
+            "Welcome, anna.schmidt@example.com",
+            Text(Element(page, "site-header", "</header>"), @"data-test=""user-greeting"">([^<]*)</span>"));
+    }
+
     /// <summary>A browser of its own, with no cookies yet; redirects are not followed — each one is an assertion.</summary>
     private HttpClient Visitor() =>
         _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+    /// <summary>A browser of its own in <paramref name="shop"/>, a shop with a store of its own.</summary>
+    private static HttpClient Visitor(WebApplicationFactory<Program> shop) =>
+        shop.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+    /// <summary>Opens the registration page and submits it with Anna's details under <paramref name="email"/>.</summary>
+    private static async Task<HttpResponseMessage> RegisterAsync(HttpClient client, string email)
+    {
+        var page = await client.GetStringAsync("/register");
+        return await client.PostAsync(
+            "/register",
+            Submission(
+                Element(page, "register-form", "</form>"),
+                ("firstName", "Anna"),
+                ("lastName", "Schmidt"),
+                ("dateOfBirth", "1990-05-17"),
+                ("email", email),
+                ("password", "Secret123"),
+                ("confirmPassword", "Secret123")));
+    }
 
     /// <summary>The form as the browser would send it: its hidden fields as rendered, plus what the visitor typed.</summary>
     private static FormUrlEncodedContent Submission(string form, params (string Name, string Value)[] typed)

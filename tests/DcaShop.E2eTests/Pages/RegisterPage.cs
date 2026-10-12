@@ -44,6 +44,26 @@ public sealed class RegisterPage : BasePage
         await Page.WaitForURLAsync(url => !url.Contains("/register", StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// Fills in every field of the form as given and submits it, expecting the page to refuse it: answers the error
+    /// message the page shows instead.
+    /// </summary>
+    public async Task<string> RegisterRefusedAsync(
+        string firstName, string lastName, string dateOfBirth, string email, string password, string confirmPassword)
+    {
+        await WaitForAsync("register-form");
+        await FillAsync("firstName", firstName);
+        await FillAsync("lastName", lastName);
+        await FillAsync("dateOfBirth", dateOfBirth);
+        await FillAsync("email", email);
+        await FillAsync("password", password);
+        await FillAsync("confirmPassword", confirmPassword);
+        await ClickAsync(SubmitButton);
+        var error = Page.Locator("[data-test='register-error-message']");
+        await error.WaitForAsync();
+        return (await error.InnerTextAsync()).Trim();
+    }
+
     public async Task RegisterAsync(string email, string password)
     {
         await FillAsync("firstName", DefaultFirstName);
