@@ -7,6 +7,7 @@ public sealed class CartPage : BasePage
     private const string UrlPattern = "/cart**";
     private const string CartItem = "cart-item";
     private const string CheckoutButton = "cart-checkout-button";
+    private const string SuccessMessage = "cart-success-message";
 
     private CartPage(IPage page) : base(page)
     {
@@ -31,6 +32,11 @@ public sealed class CartPage : BasePage
         await ClickAsync(CheckoutButton);
         return await BuyerInfoPage.OpenAsync(Page);
     }
+
+    public string ShownPath => CurrentPath;
+
+    /// <summary>The success message the page shows after a product was added.</summary>
+    public async Task<string> SuccessMessageAsync() => (await Page.Locator($"[data-test='{SuccessMessage}']").InnerTextAsync()).Trim();
 
     public Task<bool> HasItemsAsync() => ExistsAsync(CartItem);
 
