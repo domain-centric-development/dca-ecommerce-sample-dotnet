@@ -83,4 +83,28 @@ public sealed class BuyerInfoPage : BasePage
     }
 
     public bool IsOnPage => CurrentPath.Contains("/checkout/buyer", StringComparison.Ordinal);
+
+    /// <summary>Presses "Continue to Delivery" without waiting for a page — the browser may hold the form back.</summary>
+    public async Task PressContinueToDeliveryAsync()
+    {
+        var button = Page.Locator($"[data-test='{ContinueButton}']");
+        await Assertions.Expect(button).ToBeVisibleAsync();
+        await button.ClickAsync();
+    }
+
+    /// <summary>Submits the form and answers the path of whatever page the shop opens next, without expecting one.</summary>
+    public async Task<string> SubmitAndShowNextPathAsync()
+    {
+        var button = Page.Locator($"[data-test='{ContinueButton}']");
+        await Assertions.Expect(button).ToBeVisibleAsync();
+        await Page.RunAndWaitForRequestFinishedAsync(
+            () => button.ClickAsync(),
+            new PageRunAndWaitForRequestFinishedOptions { Predicate = request => request.IsNavigationRequest && request.Method == "GET" });
+        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+        return CurrentPath;
+    }
+
+    /// <summary>The names of the form's fields the browser's own checks refuse, in form order.</summary>
+    public Task<string[]> FieldsTheBrowserRefusesAsync() =>
+        Page.EvaluateAsync<string[]>("() => [...document.querySelectorAll('[data-test=\"buyer-form\"] input:not([type=hidden])')].filter(f => !f.checkValidity()).map(f => f.name)");
 }
