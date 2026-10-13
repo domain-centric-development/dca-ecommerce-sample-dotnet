@@ -1,11 +1,13 @@
 ---
 id: the-event-log-lists-every-delivery
 epic: run-the-shop
-status: adopted
+status: delivered
+delivered: 2026-10-13T01:45:36Z
+delivered_by: gate
 context: backoffice
 feature: eventlog
 title: The event log lists every delivery
-depends_on: [operator-login-to-the-back-office, CAT-01]
+depends_on: [operator-login-to-the-back-office, CAT-01, event-log-marks-incomplete-deliveries]
 ---
 
 # The event log lists every delivery
@@ -73,3 +75,7 @@ it, newest first, so that I notice a delivery that did not go through before a c
 - Replay story: `OPS-02` (run-the-shop).
 - Shared scenario: `scenario.backoffice.event-log-counts`.
 - Inventory: backoffice B5, B6, B9, B12 (breadcrumb).
+
+## Assumptions
+
+- answered: Point 1: b, as one story — the Java shop is right. The .NET shop is brought in line by a change story, event-log-marks-incomplete-deliveries (entry-shows-listener-state-and-dates and counts-add-up as written: the badge "Incomplete" for every entry that has not completed), which this story and failed-deliveries-are-retried-on-their and retry-a-failed-delivery depend on. This story stays adopted as written. Point 2: a — list tests/DcaShop.E2eTests/BackofficeE2eTest.cs under ## Changed tests; EventLogShowsPublishedEvents keeps its title and gains "every entry has a type label". (the-event-log-lists-every-delivery-01)

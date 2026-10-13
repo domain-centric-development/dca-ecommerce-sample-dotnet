@@ -1,7 +1,9 @@
 ---
 id: one-account-per-address-and-per-browser
 epic: account
-status: adopted
+status: delivered
+delivered: 2026-10-12T21:14:52Z
+delivered_by: gate
 context: account
 feature: registration
 title: One account per address and per browser

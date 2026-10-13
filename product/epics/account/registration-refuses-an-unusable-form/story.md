@@ -1,7 +1,9 @@
 ---
 id: registration-refuses-an-unusable-form
 epic: account
-status: adopted
+status: delivered
+delivered: 2026-10-12T21:34:12Z
+delivered_by: gate
 context: account
 feature: registration
 title: Registration refuses an unusable form

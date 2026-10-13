@@ -5,7 +5,7 @@ status: adopted
 context: account
 feature: profile
 title: Keep the profile up to date
-depends_on: [my-account-overview]
+depends_on: [my-account-overview, old-address-stops-logging-in]
 ---
 
 # Keep the profile up to date

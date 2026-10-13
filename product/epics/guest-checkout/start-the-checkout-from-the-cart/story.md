@@ -1,7 +1,9 @@
 ---
 id: start-the-checkout-from-the-cart
 epic: guest-checkout
-status: adopted
+status: delivered
+delivered: 2026-10-13T00:47:26Z
+delivered_by: gate
 context: checkout
 feature: session
 title: Start the checkout from the cart

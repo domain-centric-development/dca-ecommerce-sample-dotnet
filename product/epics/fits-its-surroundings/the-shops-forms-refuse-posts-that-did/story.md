@@ -4,7 +4,7 @@ epic: fits-its-surroundings
 status: adopted
 context: account
 title: The shop's forms refuse posts that did not come from its pages
-depends_on: [register-an-account, log-in-and-log-out]
+depends_on: [register-an-account, log-in-and-log-out, forms-refuse-a-post-without-token-with-403]
 ---
 
 # The shop's forms refuse posts that did not come from its pages

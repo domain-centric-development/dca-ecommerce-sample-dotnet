@@ -1,7 +1,9 @@
 ---
 id: register-through-the-api
 epic: shop-api
-status: adopted
+status: delivered
+delivered: 2026-10-13T01:37:55Z
+delivered_by: gate
 context: account
 feature: registration
 title: Register through the API

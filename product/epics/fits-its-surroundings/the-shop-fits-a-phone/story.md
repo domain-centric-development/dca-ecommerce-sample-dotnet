@@ -1,7 +1,9 @@
 ---
 id: the-shop-fits-a-phone
 epic: fits-its-surroundings
-status: adopted
+status: delivered
+delivered: 2026-10-13T01:18:33Z
+delivered_by: gate
 context: portal
 feature: appearance
 title: The shop fits a phone

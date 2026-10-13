@@ -5,7 +5,7 @@ status: adopted
 context: backoffice
 feature: redelivery
 title: Failed deliveries are retried on their own
-depends_on: [look-into-an-events-payload]
+depends_on: [look-into-an-events-payload, event-log-marks-incomplete-deliveries, event-payload-shows-status-and-attempts]
 ---
 
 # Failed deliveries are retried on their own

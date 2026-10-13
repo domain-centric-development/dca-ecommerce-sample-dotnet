@@ -5,7 +5,7 @@ status: adopted
 context: product
 feature: assortment
 title: Staff create a product through the API
-depends_on: [register-through-the-api, read-the-catalogue-through-the-api, CAT-02]
+depends_on: [register-through-the-api, read-the-catalogue-through-the-api, CAT-02, created-product-answers-with-its-price]
 ---
 
 # Staff create a product through the API

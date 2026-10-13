@@ -1,7 +1,9 @@
 ---
 id: api-answers-an-unknown-product-plainly
 epic: shop-api
-status: approved
+status: delivered
+delivered: 2026-10-12T21:59:58Z
+delivered_by: gate
 context: product
 feature: catalogue
 title: The API answers an unknown product with a plain 404

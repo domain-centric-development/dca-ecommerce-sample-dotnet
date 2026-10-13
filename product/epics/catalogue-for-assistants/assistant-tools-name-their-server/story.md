@@ -1,7 +1,9 @@
 ---
 id: assistant-tools-name-their-server
 epic: catalogue-for-assistants
-status: approved
+status: delivered
+delivered: 2026-10-12T22:01:16Z
+delivered_by: gate
 context: product
 feature: catalogue
 title: The assistant tools name their server and take any id

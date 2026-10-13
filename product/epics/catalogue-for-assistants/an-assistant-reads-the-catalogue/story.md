@@ -1,7 +1,9 @@
 ---
 id: an-assistant-reads-the-catalogue
 epic: catalogue-for-assistants
-status: adopted
+status: delivered
+delivered: 2026-10-13T00:28:55Z
+delivered_by: gate
 context: product
 feature: catalogue
 title: An assistant reads the catalogue through tools
@@ -63,3 +65,7 @@ I can answer a customer's question about what the shop sells from the shop's own
 
 - Replay story: `MCP-01` (catalogue-for-assistants).
 - Inventory: product P18, P19; cross-cutting X3 (the tool endpoint needs no form token).
+
+## Assumptions
+
+- answered: b, as a story of its own — the Java shop is right. The .NET shop is brought in line by a change story, assistant-tools-name-their-server (server identity "dca-ecommerce-sample-mcp-server" 1.0.0, a string id, an unknown id answers null, a blank id is the tool error "Product ID cannot be null or blank"), which an-assistant-reads-the-catalogue depends on. This story stays adopted as written and is adopted once that story is delivered. (an-assistant-reads-the-catalogue-01)

@@ -5,7 +5,7 @@ status: adopted
 context: backoffice
 feature: access
 title: The back office stays closed to others
-depends_on: [operator-login-to-the-back-office, register-an-account]
+depends_on: [operator-login-to-the-back-office, register-an-account, back-office-guards-every-address]
 ---
 
 # The back office stays closed to others

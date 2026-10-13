@@ -5,7 +5,7 @@ status: adopted
 context: backoffice
 feature: eventlog
 title: Look into an event's payload
-depends_on: [the-event-log-lists-every-delivery]
+depends_on: [the-event-log-lists-every-delivery, event-payload-shows-status-and-attempts]
 ---
 
 # Look into an event's payload

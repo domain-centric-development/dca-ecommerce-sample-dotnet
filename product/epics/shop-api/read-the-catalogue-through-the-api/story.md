@@ -1,7 +1,9 @@
 ---
 id: read-the-catalogue-through-the-api
 epic: shop-api
-status: adopted
+status: delivered
+delivered: 2026-10-13T00:22:42Z
+delivered_by: gate
 context: product
 feature: catalogue
 title: Read the catalogue through the API
@@ -55,3 +57,7 @@ in, so that I can offer the range in my own application without copying it by ha
 
 - Replay story: `API-02` (shop-api).
 - Inventory: product P11, P12; cross-cutting X11 (the public half).
+
+## Assumptions
+
+- answered: b, as a story of its own — the Java shop is right. The .NET shop is brought in line by a change story, api-answers-an-unknown-product-plainly (an unmatched product address under /api answers 404 with an empty body), which read-the-catalogue-through-the-api depends on. This story stays adopted as written and is adopted once that story is delivered. (read-the-catalogue-through-the-api-01)

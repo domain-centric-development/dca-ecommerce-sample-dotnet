@@ -5,7 +5,7 @@ status: adopted
 context: backoffice
 feature: redelivery
 title: Retry a failed delivery
-depends_on: [failed-deliveries-are-retried-on-their]
+depends_on: [failed-deliveries-are-retried-on-their, event-log-marks-incomplete-deliveries]
 ---
 
 # Retry a failed delivery

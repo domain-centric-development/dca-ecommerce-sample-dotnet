@@ -5,7 +5,7 @@ status: adopted
 context: product
 feature: assortment
 title: Creating a product holds its price and stock to the rules
-depends_on: [staff-create-a-product-through-the-api, prices-shown-from-the-price-owner, availability-shown]
+depends_on: [staff-create-a-product-through-the-api, prices-shown-from-the-price-owner, availability-shown, created-product-answers-with-its-price]
 ---
 
 # Creating a product holds its price and stock to the rules

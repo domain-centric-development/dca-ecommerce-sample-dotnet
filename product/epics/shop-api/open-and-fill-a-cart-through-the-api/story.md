@@ -5,7 +5,7 @@ status: adopted
 context: cart
 feature: shopping
 title: Open and fill a cart through the API
-depends_on: [register-through-the-api, read-the-catalogue-through-the-api, add-a-product-to-the-cart]
+depends_on: [register-through-the-api, read-the-catalogue-through-the-api, add-a-product-to-the-cart, cart-api-answers-as-the-reference]
 ---
 
 # Open and fill a cart through the API
