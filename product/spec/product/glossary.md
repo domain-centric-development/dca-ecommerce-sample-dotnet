@@ -79,8 +79,8 @@ values.
 
 ### ImageUrl
 
-**Definition:** URL of a product's display image. May be empty (products
-without an image).
+**Definition:** URL of a product's display image. Maximum 2000 characters,
+may be empty (products without an image).
 
 **Type:** Value Object
 

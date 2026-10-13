@@ -41,6 +41,30 @@ public sealed class CreateProductApiE2eTest : IDisposable
         Assert.Equal("Desk & Office", body.GetProperty("category").GetString());
     }
 
+    [E2eFact(DisplayName = "An overlong image url is refused")]
+    public async Task AnImageUrlLongerThan2000CharactersIsRefusedAsAnUnacceptableValue()
+    {
+        var staff = Bearer(await StaffTokenAsync("big-picture@example.com"));
+        var imageUrl = "https://images.example.com/" + new string('a', 2001 - "https://images.example.com/".Length);
+
+        var response = await staff.PostAsJsonAsync("/api/products", new
+        {
+            sku = "IMG-001",
+            name = "Big Picture",
+            description = "",
+            imageUrl,
+            price = 9.99m,
+            category = "Books",
+            stock = 1,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Unacceptable value", problem.GetProperty("title").GetString());
+        Assert.False(problem.TryGetProperty("detail", out _));
+    }
+
     public void Dispose() => _shop.Dispose();
 
     private HttpClient Bearer(string token)

@@ -2,12 +2,18 @@ using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Product.Domain.Model;
 
-/// <summary>URL of the product's display image; empty for products without an image.</summary>
+/// <summary>URL of the product's display image, at most 2000 characters; empty for products without an image.</summary>
 public sealed record ImageUrl : IValue
 {
     public ImageUrl(string value)
     {
-        Value = value ?? string.Empty;
+        value ??= string.Empty;
+        if (value.Length > 2000)
+        {
+            throw new ArgumentException("Image URL cannot exceed 2000 characters", nameof(value));
+        }
+
+        Value = value;
     }
 
     public string Value { get; }
