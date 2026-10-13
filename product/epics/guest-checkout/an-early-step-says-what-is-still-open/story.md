@@ -46,3 +46,5 @@ why, so that I know what to do instead of wondering why the page changed.
 - The shop runs as several instances without sticky sessions (`product/tech.md`, Runtime): the sentence travels with
   the redirect to the step still open — not in a server session, a flash attribute or TempData — so any instance
   that answers the next request shows it.
+- The redirect carries `?notice=earlier-steps-first` — the parameter `notice` and the code `earlier-steps-first`, the
+  same in both shops' routes; the step page turns the code into the sentence and shows nothing for an unknown code.
