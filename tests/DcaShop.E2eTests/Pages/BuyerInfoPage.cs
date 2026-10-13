@@ -82,6 +82,22 @@ public sealed class BuyerInfoPage : BasePage
         return lines;
     }
 
+    /// <summary>The values the form's four fields hold, in form order: email, first name, last name, phone.</summary>
+    public async Task<string[]> FieldValuesAsync()
+    {
+        var email = Page.Locator($"[data-test='{EmailInput}']");
+        await Assertions.Expect(email).ToBeVisibleAsync();
+        return new[]
+        {
+            await email.InputValueAsync(),
+            await Page.Locator("[data-test='buyer-firstname-input']").InputValueAsync(),
+            await Page.Locator("[data-test='buyer-lastname-input']").InputValueAsync(),
+            await Page.Locator("[data-test='buyer-phone-input']").InputValueAsync(),
+        };
+    }
+
+    public string ShownPath => CurrentPath;
+
     public bool IsOnPage => CurrentPath.Contains("/checkout/buyer", StringComparison.Ordinal);
 
     /// <summary>Presses "Continue to Delivery" without waiting for a page — the browser may hold the form back.</summary>
