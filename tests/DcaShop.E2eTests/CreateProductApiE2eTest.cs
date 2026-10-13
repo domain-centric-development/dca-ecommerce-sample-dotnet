@@ -82,6 +82,27 @@ public sealed class CreateProductApiE2eTest : IDisposable
         Assert.False(problem.TryGetProperty("detail", out _));
     }
 
+    [E2eFact(DisplayName = "A duplicate sku is a conflict")]
+    public async Task ASkuTheCatalogueAlreadyCarriesIsAConflictAndNoProductIsAdded()
+    {
+        var staff = Bearer(await StaffTokenAsync("second-book@example.com"));
+        var seeded = (await staff.GetFromJsonAsync<JsonElement>("/api/products")).EnumerateArray()
+            .Single(p => p.GetProperty("sku").GetString() == "BOOK-001");
+        Assert.Equal("Domain-Driven Design", seeded.GetProperty("name").GetString());
+
+        var response = await staff.PostAsync("/api/products", new StringContent(
+            """{"sku":"BOOK-001","name":"Another Book","description":"","imageUrl":"","price":19.99,"category":"Books","stock":5}""",
+            System.Text.Encoding.UTF8,
+            "application/json"));
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Stock keeping unit already in use", problem.GetProperty("title").GetString());
+        Assert.Equal("A product with SKU BOOK-001 already exists.", problem.GetProperty("detail").GetString());
+        Assert.Equal(21, (await staff.GetFromJsonAsync<JsonElement>("/api/products")).GetArrayLength());
+    }
+
     public void Dispose() => _shop.Dispose();
 
     private HttpClient Bearer(string token)
