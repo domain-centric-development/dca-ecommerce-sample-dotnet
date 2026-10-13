@@ -103,6 +103,19 @@ public sealed class BackofficeE2eTest : BaseE2eTest
         Assert.False(string.IsNullOrWhiteSpace(await events.FirstEventPayloadTextAsync()), "Expanded payload should have content");
     }
 
+    [E2eFact(DisplayName = "Payload starts with status and attempts")]
+    public async Task PayloadOpensWithItsStatusAndAttemptsBeforeTheEventsContent()
+    {
+        var events = await SignInAsync();
+
+        var lines = await events.ExpandCompletedPayloadOfAsync("ProductCreatedEvent");
+
+        Assert.Equal("Status: COMPLETED, attempts: 1", lines[0]);
+        var content = string.Join('\n', lines.Skip(1));
+        Assert.All(["\"eventId\"", "\"occurredOn\"", "\"productId\"", "\"amount\"", "\"currency\"", "\"initialStock\""],
+            field => Assert.Contains(field, content, StringComparison.Ordinal));
+    }
+
     private async Task<BackofficeEventsPage> SignInAsync()
     {
         var login = await BackofficeLoginPage.NavigateToAsync(Page);

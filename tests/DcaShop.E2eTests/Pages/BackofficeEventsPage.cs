@@ -93,6 +93,26 @@ public sealed class BackofficeEventsPage : BasePage
 
     public Task<string> FirstEventPayloadTextAsync() => TextAsync(EventPayload);
 
+    /// <summary>
+    /// Expands the "Event Payload" of the first entry of the given type that carries the badge "Completed" and reads the
+    /// payload's lines as the browser shows them.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> ExpandCompletedPayloadOfAsync(string eventType)
+    {
+        var entry = Page.Locator($"[data-test='{EventLogItem}']")
+            .Filter(new() { Has = Page.Locator($"[data-test='{EventType}']", new() { HasTextString = eventType }) })
+            .Filter(new() { Has = Page.Locator($"[data-test='{EventStatus}']", new() { HasTextString = "Completed" }) })
+            .First;
+        await Assertions.Expect(entry).ToBeVisibleAsync();
+
+        var payload = entry.Locator($"[data-test='{EventPayload}']");
+        await payload.Locator("summary").ClickAsync();
+        var content = payload.Locator("pre");
+        await Assertions.Expect(content).ToBeVisibleAsync();
+
+        return (await content.InnerTextAsync()).Split('\n').Select(line => line.TrimEnd('\r')).ToList();
+    }
+
     private async Task<int> NumberAsync(string dataTest) =>
         int.Parse(await TextAsync(dataTest), CultureInfo.InvariantCulture);
 

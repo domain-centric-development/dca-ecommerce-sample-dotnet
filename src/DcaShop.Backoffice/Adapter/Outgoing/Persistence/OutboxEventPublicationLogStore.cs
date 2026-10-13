@@ -47,11 +47,16 @@ public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
     {
         var progress = string.Join(Environment.NewLine, publication.Consumers.Values.Select(c =>
             $"{c.ConsumerId}: {c.Status}, failed attempts {c.Attempts}, next {c.NextAttemptOn}, error {c.LastError}"));
-        var body = $"Status: {publication.Status}{Environment.NewLine}{Serialize(publication.Event)}{Environment.NewLine}{progress}";
+        var status = $"Status: {publication.Status.ToString().ToUpperInvariant()}, attempts: {Tries(publication)}";
+        var body = $"{status}{Environment.NewLine}{Serialize(publication.Event)}{Environment.NewLine}{progress}";
         return publication.LastError is { } error
             ? $"{body}{Environment.NewLine}{Environment.NewLine}Last error after {publication.Attempts} attempt(s): {error}"
             : body;
     }
+
+    // The outbox counts failed deliveries; the operator reads every try, the successful one included.
+    private static int Tries(IntegrationEventPublication publication) =>
+        publication.Attempts + (publication.Status == PublicationStatus.Completed ? 1 : 0);
 
     private static string Serialize(object @event)
     {

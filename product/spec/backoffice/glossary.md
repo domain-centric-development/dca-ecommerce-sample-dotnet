@@ -95,7 +95,38 @@ the one an operator can retry from the log.
 **Type:** Concept (derived attribute)
 
 **Related terms:** `EventPublicationEntry.IsCompleted`,
-`GetEventPublicationsResult.CompletedCount` / `IncompleteCount`
+`GetEventPublicationsResult.CompletedCount` / `IncompleteCount`, `Publication Status`
+
+---
+
+### Publication Status
+
+**Definition:** The outbox's own status of a publication — `STAGED`, `PENDING`,
+`FAILED` or `COMPLETED`. An entry's payload names it upper-case on its first line,
+`Status: <STATUS>, attempts: <number>`. The badge reduces it to the two words of
+the **Completion Status**: `COMPLETED` is completed, every other status is incomplete.
+
+**Type:** Concept
+
+**Related terms:** `Completion Status`, `Attempt`
+
+---
+
+### Attempt
+
+**Definition:** One try at delivering a publication. The number on the payload's
+first line counts every try, including the successful one. A publication delivered
+at its first try reads `attempts: 1`. A pending or failed publication counts only
+its failed deliveries. The per-consumer line underneath reads `failed attempts`
+and counts only that consumer's failures.
+
+**Type:** Concept
+
+**Related terms:** `Publication Status`, `EventPublicationEntry`
+
+**Notes:** The outbox records failed deliveries only. The store adds the
+successful try once the publication is completed
+(`OutboxEventPublicationLogStore.Tries`).
 
 ---
 
@@ -179,5 +210,8 @@ The parts of the context's behaviour its people name; each groups what holds in 
   glossary? (It will likely be relevant for other operational views as well.)
 - Planned extensions (retry, republish) — will these live in Backoffice or with
   the outbox dispatcher that owns delivery?
+- What does an **Attempt** count when a publication has several consumers? Today
+  the failed deliveries of all consumers are added up, plus one for the success,
+  while the Java shop counts per listener row.
 - Should Backoffice become its own Bounded Context in the long term, or remain
   classified as a Generic Subdomain?
