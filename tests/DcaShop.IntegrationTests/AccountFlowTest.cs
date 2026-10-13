@@ -166,7 +166,7 @@ public sealed class AccountFlowTest : IClassFixture<WebApplicationFactory<Progra
                 new KeyValuePair<string, string>("password", "Secret123"),
             ]));
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]

@@ -104,7 +104,7 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
         var response = await client.PostAsync("/cart/add-product",
             new FormUrlEncodedContent([new KeyValuePair<string, string>("productId", Guid.NewGuid().ToString()), new("quantity", "1")]));
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     private static async Task Step(HttpClient client, string url, string expectedNext, params (string, string)[] fields) =>

@@ -38,9 +38,9 @@ internal sealed class TokenOnlyAwareAntiforgeryFilter : IAsyncAuthorizationFilte
         }
         catch (AntiforgeryValidationException)
         {
-            // The same answer the framework's own AutoValidateAntiforgeryTokenAttribute gives: a missing or
-            // invalid token is a bad request, not a server fault.
-            context.Result = new BadRequestResult();
+            // A post that did not come from the shop's own page is refused as forbidden, as the Java sample's CSRF
+            // protection refuses it -- not as the framework's default bad request (ADR-005).
+            context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
         }
     }
 }

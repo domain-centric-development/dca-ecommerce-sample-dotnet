@@ -15,8 +15,10 @@ The Java sample made the same two changes at the same time (its ADR-035); the tw
 ## Decision
 
 - `AutoValidateAntiforgeryTokenAttribute` is a global MVC filter: every unsafe method (`POST`, `PUT`, `DELETE`,
-  `PATCH`) is rejected with `400` unless the request carries a valid antiforgery token. Every writing Razor form
-  renders `@Html.AntiForgeryToken()`.
+  `PATCH`) is rejected with `403` unless the request carries a valid antiforgery token. Every writing Razor form
+  renders `@Html.AntiForgeryToken()`. (Amended 2026-10-13: the refusal was `400`, the framework's default; it is
+  `403` now, the answer the Java sample's CSRF protection gives, so both shops hold the same scenarios. The filter
+  that answers it is `TokenOnlyAwareAntiforgeryFilter`, which replaced the attribute, see ADR-007.)
 - A use case that changes state is reached only through an unsafe method. Starting the checkout is a `POST`
   form on the cart page (`cart-checkout-form`, hidden `cartId`); `GET /checkout/start` no longer exists (`405`).
 - Stage 1 has no token-authenticated API; if one is added, it is exempt from antiforgery only if it neither reads
@@ -27,7 +29,7 @@ The Java sample made the same two changes at the same time (its ADR-035); the tw
 - Positive: identical protection and identical markup in both samples — the Java Playwright suite passes against
   this shop unchanged; the only visible difference is the token field name (`__RequestVerificationToken` vs
   `_csrf`).
-- Positive: the integration test `ShopFlowTest` asserts the negative case (POST without token → `400`) next to the
+- Positive: the integration test `ShopFlowTest` asserts the negative case (POST without token → `403`) next to the
   happy path, so the filter cannot be removed unnoticed.
-- Negative: every form needs the helper; forgetting it surfaces as a `400` in the first manual click, not at
+- Negative: every form needs the helper; forgetting it surfaces as a `403` in the first manual click, not at
   compile time.
