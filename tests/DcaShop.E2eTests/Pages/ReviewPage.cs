@@ -29,4 +29,16 @@ public sealed class ReviewPage : BasePage
         await ClickAsync(PlaceOrderButton);
         return await ConfirmationPage.OpenAsync(Page);
     }
+
+    /// <summary>Presses "Place Order" and answers the path of whatever page the shop opens next, without expecting one.</summary>
+    public async Task<string> PlaceOrderAndShowNextPathAsync()
+    {
+        var button = Page.Locator($"[data-test='{PlaceOrderButton}']");
+        await Assertions.Expect(button).ToBeVisibleAsync();
+        await Page.RunAndWaitForRequestFinishedAsync(
+            () => button.ClickAsync(),
+            new PageRunAndWaitForRequestFinishedOptions { Predicate = request => request.IsNavigationRequest && request.Method == "GET" });
+        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+        return CurrentPath;
+    }
 }

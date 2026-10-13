@@ -6,6 +6,7 @@ public sealed class ConfirmationPage : BasePage
 {
     private const string UrlPattern = "/checkout/confirmation";
     private const string ConfirmationMessage = "confirmation-message";
+    private const string ConfirmationTitle = "confirmation-title";
 
     private ConfirmationPage(IPage page) : base(page)
     {
@@ -19,4 +20,7 @@ public sealed class ConfirmationPage : BasePage
     }
 
     public Task<bool> IsOrderConfirmedAsync() => ExistsAsync(ConfirmationMessage);
+
+    /// <summary>The confirmation's title as the browser renders it.</summary>
+    public async Task<string> TitleAsync() => (await Page.Locator($"[data-test='{ConfirmationTitle}']").InnerTextAsync()).Trim();
 }
