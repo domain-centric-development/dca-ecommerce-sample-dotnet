@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -165,6 +166,63 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
             Text(await landing.Response.Content.ReadAsStringAsync(), @"data-test=""user-greeting"">([^<]*)</span>"));
     }
 
+    [Fact]
+    public async Task ANewPasswordShorterThanEightCharactersIsRefusedForItsLength() =>
+        Assert.Equal("Password must be at least 8 characters long.", await RefusalOfAsync("Abc1234"));
+
+    [Fact]
+    public async Task AShortPasswordIsRefusedForItsLengthBeforeItsCharacters() =>
+        // Seven lowercase letters break the length and the character rules alike; the length is named.
+        Assert.Equal("Password must be at least 8 characters long.", await RefusalOfAsync("abcdefg"));
+
+    [Fact]
+    public async Task ANewPasswordOverSeventyTwoBytesIsRefusedThoughItHasFewerCharacters()
+    {
+        var replacement = "Aa1" + new string('ä', 35);
+        Assert.Equal((38, 73), (replacement.Length, Encoding.UTF8.GetByteCount(replacement)));
+
+        Assert.Equal("Password must not be longer than 72 bytes.", await RefusalOfAsync(replacement));
+    }
+
+    [Fact]
+    public async Task ANewPasswordWithoutALowercaseLetterIsRefusedForIt() =>
+        Assert.Equal("Password must contain a lowercase letter.", await RefusalOfAsync("SECRET123"));
+
+    [Fact]
+    public async Task ANewPasswordWithoutADigitIsRefusedForIt() =>
+        Assert.Equal("Password must contain a digit.", await RefusalOfAsync("SecretPass"));
+
+    [Fact]
+    public async Task ANewPasswordOfExactlySeventyTwoBytesIsAccepted()
+    {
+        var client = Visitor(_factory.WithWebHostBuilder(_ => { }));
+        Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(client, Email)).StatusCode);
+        var replacement = "Aa1" + new string('ä', 34) + "b";
+        Assert.Equal((38, 72), (replacement.Length, Encoding.UTF8.GetByteCount(replacement)));
+
+        var changed = await ChangePasswordAsync(client, Password, replacement);
+
+        var answer = await FollowRedirectsAsync(client, changed);
+        Assert.Equal(
+            "Your password has been changed.",
+            Text(await answer.Response.Content.ReadAsStringAsync(), @"data-test=""change-password-success-message"">([^<]*)</div>"));
+    }
+
+    /// <summary>
+    /// Registers Anna in a shop of her own, submits <paramref name="replacement"/> as her new password twice and answers
+    /// the refusal the page shows.
+    /// </summary>
+    private async Task<string> RefusalOfAsync(string replacement)
+    {
+        var client = Visitor(_factory.WithWebHostBuilder(_ => { }));
+        Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(client, Email)).StatusCode);
+
+        var refused = await ChangePasswordAsync(client, Password, replacement);
+
+        Assert.Equal(HttpStatusCode.OK, refused.StatusCode);
+        return ErrorMessage(await refused.Content.ReadAsStringAsync());
+    }
+
     /// <summary>Opens the change-password page and submits the three fields as typed.</summary>
     private static async Task<HttpResponseMessage> SubmitChangeAsync(
         HttpClient client, string current, string replacement, string confirmation)
@@ -178,9 +236,6 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
                 ("newPassword", replacement),
                 ("confirmPassword", confirmation)));
     }
-
-    private static string ErrorMessage(string page) =>
-        Text(page, @"data-test=""change-password-error-message"">([^<]*)</div>");
 
     /// <summary>Registers Anna in <paramref name="shop"/> and changes her password from the old one to the new one.</summary>
     private static async Task ChangedPasswordAsync(WebApplicationFactory<Program> shop)
@@ -276,6 +331,10 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
         var id = Regex.Match(Input(form, name), @"\bid=""([^""]+)""").Groups[1].Value;
         return Text(form, $@"<label\b[^>]*for=""{Regex.Escape(id)}""[^>]*>([^<]*)</label>");
     }
+
+    /// <summary>The refusal the change-password page shows.</summary>
+    private static string ErrorMessage(string page) =>
+        Text(page, @"data-test=""change-password-error-message"">([^<]*)</div>");
 
     private static string Text(string markup, string pattern)
     {
