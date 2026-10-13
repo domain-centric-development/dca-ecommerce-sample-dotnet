@@ -25,7 +25,9 @@ container (`docker compose up`).
 It is built to run as several instances behind a load balancer without sticky sessions: nothing a later request
 needs lives in one instance's memory. A message for the page a redirect leads to travels with the redirect as a
 fixed code in its URL (`?notice=<code>`), never as the sentence and never in a server session: the page turns the code
-into its own sentence and shows nothing for a code it does not know. What must outlast a request lives in the
+into its own sentence and shows nothing for a code it does not know. The valid codes are one enum in the incoming
+web adapter, each value with its code and its sentence; reading the parameter is a lookup in that enum, never a
+switch over strings. What must outlast a request lives in the
 database or in a cookie every instance can read.
 
 ## Integrations
