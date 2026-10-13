@@ -1,11 +1,13 @@
 ---
 id: retry-a-failed-delivery
 epic: run-the-shop
-status: adopted
+status: delivered
+delivered: 2026-10-13T17:34:22Z
+delivered_by: gate
 context: backoffice
 feature: redelivery
 title: Retry a failed delivery
-depends_on: [failed-deliveries-are-retried-on-their, event-log-marks-incomplete-deliveries]
+depends_on: [failed-deliveries-are-retried-on-their, event-log-marks-incomplete-deliveries, event-log-has-an-entry-per-listener]
 ---
 
 # Retry a failed delivery
@@ -58,6 +60,7 @@ reaches its listener after all and nobody has to repeat what they did in the sho
 
 - answered: How does a delivery fail, when nothing reachable from outside makes one fail? — The test arranges it,
   with a listener that fails; the shop offers no way of its own (user, 2026-09-25).
+- answered: a — the Java shop is right. The .NET shop is brought in line by a change story, event-log-has-an-entry-per-listener (an entry per event and listener, the button "Retry failed listener"), which this story depends on. This story stays adopted as written. (retry-a-failed-delivery-01)
 
 ## Notes
 

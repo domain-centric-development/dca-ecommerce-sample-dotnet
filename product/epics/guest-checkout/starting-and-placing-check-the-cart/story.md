@@ -1,11 +1,13 @@
 ---
 id: starting-and-placing-check-the-cart
 epic: guest-checkout
-status: adopted
+status: delivered
+delivered: 2026-10-13T18:15:23Z
+delivered_by: gate
 context: checkout
 feature: ordering
 title: Starting and placing check the cart against what can still be sold
-depends_on: [after-the-order-the-cart-keeps-only, stock-goes-down-by-what-was-bought]
+depends_on: [after-the-order-the-cart-keeps-only, stock-goes-down-by-what-was-bought, stock-checks-answer-on-the-page]
 ---
 
 # Starting and placing check the cart against what can still be sold
@@ -43,7 +45,7 @@ places an order in a separate browser; the stock has gone down by that order bef
   "Proceed to Checkout"
 - And the guest has since placed an order for exactly that cart in another tab, and the cart is now empty
 - When the guest presses "Proceed to Checkout" on the old page
-- Then the cart page opens with an error beginning "Cannot checkout empty cart"
+- Then the cart page opens with the error "Cannot check out an empty cart."
 
 ### Rule: Place Order checks every line again and changes nothing when one fails
 
@@ -73,3 +75,7 @@ places an order in a separate browser; the stock has gone down by that order bef
 
 - Replay story: `CHK-12` (guest-checkout).
 - Inventory: checkout 1 (disabled button), 4, 5, 38 (availability and stock); cart C-24, C-25.
+
+## Assumptions
+
+- answered: Split by side: start-from-an-emptied-cart-is-refused now names today's sentence "Cannot check out an empty cart." (the story text is changed in both shops and the replay source, the shops' one refusal wording); the outdated cart page and the review's address after a refused Place Order are the Java shop's behaviour, brought to the .NET shop by the change story stock-checks-answer-on-the-page, which this story depends on. This story stays adopted, all five scenarios. (starting-and-placing-check-the-cart-01)

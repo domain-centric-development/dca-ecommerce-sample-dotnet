@@ -48,14 +48,6 @@ Title: The catalogue page is titled Product Catalog
 - Then the page title is "Product Catalog"
 Test: DcaShop.E2eTests.CatalogTitleE2eTest#CatalogPageIsTitledProductCatalog
 
-### Rule: An unknown product is not found
-
-#### an-unknown-product-is-not-found
-- Given the seeded sample catalogue
-- When a client sends `GET /api/products/no-such-product`
-- Then the shop answers 404 with an empty body
-Test: DcaShop.IntegrationTests.ApiFlowTest#AProductAddressThatNamesNoProductAnswers404WithAnEmptyBody
-
 ### Rule: The shop offers its catalogue as two tools, to anyone
 
 #### the-server-offers-two-catalogue-tools
@@ -65,6 +57,15 @@ Test: DcaShop.IntegrationTests.ApiFlowTest#AProductAddressThatNamesNoProductAnsw
 - And it offers the tool `all-products` described as "Get all products in the catalog. Returns complete product information including SKU, name, price, category, and available stock."
 - And the tool `product-by-id` with one parameter `id`, described as "Get detailed product information by product ID. Requires the internal product UUID. Returns complete product details including all attributes."
 Test: DcaShop.E2eTests.McpServerE2eTest#TheServerIntroducesItselfAndOffersTheTwoCatalogueTools
+
+### Rule: all-products returns every product with its price and stock, in catalogue order
+
+#### all-products-lists-the-range-with-price-and-stock
+- Given the shop has started and seeded the sample catalogue of `seed-catalogue.json`
+- When an assistant calls `all-products`
+- Then the answer holds 21 products in ordinal order of the product name, the first named `"Bounded Context" Enamel Pin`
+- And the entry for "Domain-Driven Design" has an `id`, `sku` "BOOK-001", its `description`, an `imageUrl`, `price` 54.99, `currency` "EUR", `category` "Books", `stockQuantity` 20 and `isAvailable` true
+Test: DcaShop.E2eTests.McpServerE2eTest#AllProductsListsTheWholeRangeInNameOrderWithPriceAndStock
 
 ### Rule: product-by-id returns the one product with that id
 
@@ -109,11 +110,10 @@ Test: DcaShop.IntegrationTests.ProductCatalogueApiTest#AListedProductCarriesItsM
 - Then the shop answers 200 with that product: `sku` "BOOK-005", `price` 34.99, `currency` "EUR", `category` "Books", `stockQuantity` 26 and `isAvailable` true
 Test: DcaShop.IntegrationTests.ProductCatalogueApiTest#OneProductIsReadByTheIdTheListingGave
 
-### Rule: all-products returns every product with its price and stock, in catalogue order
+### Rule: An unknown product is not found
 
-#### all-products-lists-the-range-with-price-and-stock
-- Given the shop has started and seeded the sample catalogue of `seed-catalogue.json`
-- When an assistant calls `all-products`
-- Then the answer holds 21 products in ordinal order of the product name, the first named `"Bounded Context" Enamel Pin`
-- And the entry for "Domain-Driven Design" has an `id`, `sku` "BOOK-001", its `description`, an `imageUrl`, `price` 54.99, `currency` "EUR", `category` "Books", `stockQuantity` 20 and `isAvailable` true
-Test: DcaShop.E2eTests.McpServerE2eTest#AllProductsListsTheWholeRangeInNameOrderWithPriceAndStock
+#### an-unknown-product-is-not-found
+- Given the seeded sample catalogue
+- When a client sends `GET /api/products/no-such-product`
+- Then the shop answers 404 with an empty body
+Test: DcaShop.IntegrationTests.ApiFlowTest#AProductAddressThatNamesNoProductAnswers404WithAnEmptyBody

@@ -1,7 +1,9 @@
 ---
 id: the-shops-forms-refuse-posts-that-did
 epic: fits-its-surroundings
-status: adopted
+status: delivered
+delivered: 2026-10-13T07:44:34Z
+delivered_by: gate
 context: account
 title: The shop's forms refuse posts that did not come from its pages
 depends_on: [register-an-account, log-in-and-log-out, forms-refuse-a-post-without-token-with-403]
@@ -48,3 +50,7 @@ page open in my browser cannot log me in, register me or log me out behind my ba
 
 - Replay story: `FIT-05` (fits-its-surroundings).
 - Inventory: cross-cutting X1 (X2 is the normal flow of every form story).
+
+## Assumptions
+
+- answered: b — the Java shop answers 403 (it adopted these three scenarios as written). The .NET shop is brought in line by a change story, forms-refuse-a-post-without-token-with-403, which this story depends on. This story stays adopted as written. (the-shops-forms-refuse-posts-that-did-01)

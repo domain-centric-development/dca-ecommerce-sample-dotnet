@@ -1,7 +1,9 @@
 ---
 id: old-address-stops-logging-in
 epic: account
-status: approved
+status: delivered
+delivered: 2026-10-13T07:37:23Z
+delivered_by: gate
 context: account
 feature: profile
 title: A changed address takes the old one out of the login

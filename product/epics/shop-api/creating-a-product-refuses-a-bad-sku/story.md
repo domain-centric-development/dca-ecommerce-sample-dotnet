@@ -1,11 +1,13 @@
 ---
 id: creating-a-product-refuses-a-bad-sku
 epic: shop-api
-status: adopted
+status: delivered
+delivered: 2026-10-13T17:41:20Z
+delivered_by: gate
 context: product
 feature: assortment
 title: Creating a product refuses a bad SKU, name or text
-depends_on: [staff-create-a-product-through-the-api]
+depends_on: [staff-create-a-product-through-the-api, image-url-is-held-to-2000-characters]
 ---
 
 # Creating a product refuses a bad SKU, name or text
@@ -78,3 +80,7 @@ ever holds products it can tell apart and show.
 
 - Replay story: `API-04` (shop-api).
 - Inventory: product P15, P16, P17 (status only); product rules SKU, name, description, image URL.
+
+## Assumptions
+
+- answered: a — the Java shop is right. The .NET shop is brought in line by a change story, image-url-is-held-to-2000-characters, which this story depends on. This story stays adopted as written, all seven scenarios. (creating-a-product-refuses-a-bad-sku-01)

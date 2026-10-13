@@ -31,3 +31,26 @@ Test: DcaShop.E2eTests.EmbeddingPolicyE2eTest#AShopStartedForEmbeddingTakesThePr
 - When the visitor opens that page
 - Then the shop's pages answer with `X-Frame-Options: SAMEORIGIN` and the browser shows nothing of the shop inside the frame
 Test: DcaShop.E2eTests.EmbeddingPolicyE2eTest#AShopStartedWithFramingSwitchedOffShowsNothingInsideAnotherPagesFrame
+
+### Rule: A form post without the token of the shop's page is refused with 403
+
+#### a-login-post-without-the-form-token-is-refused
+- Given an account "ada@example.com" with password "Secret123"
+- When a browser posts email "ada@example.com" and password "Secret123" to `/login` without the form token the login page carries
+- Then the shop answers 403
+- And the visitor is not logged in: the header still shows "Login" and "Register"
+Test: DcaShop.E2eTests.FormTokenRefusalE2eTest#ALoginPostedWithoutTheTokenOfTheLoginPageIsForbiddenAndLogsNobodyIn
+
+#### a-registration-post-without-the-form-token-is-refused
+- Given no account exists for "grace@example.com"
+- When a browser posts a complete, valid registration for "grace@example.com" to `/register` without the form token
+- Then the shop answers 403
+- And logging in as "grace@example.com" afterwards fails with "Invalid email or password"
+Test: DcaShop.IntegrationTests.FormTokenRefusalTest#ARegistrationPostedWithoutTheFormTokenIsForbiddenAndCreatesNoAccount
+
+#### a-logout-post-without-the-form-token-is-refused
+- Given a customer logged in as "ada@example.com"
+- When a post to `/logout` arrives from her browser without the form token
+- Then the shop answers 403
+- And the header still shows "Welcome, ada@example.com"
+Test: DcaShop.IntegrationTests.FormTokenRefusalTest#ALogoutPostedWithoutTheFormTokenIsForbiddenAndKeepsTheCustomerLoggedIn

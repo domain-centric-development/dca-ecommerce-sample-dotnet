@@ -1,11 +1,13 @@
 ---
 id: only-your-own-cart-through-the-api
 epic: shop-api
-status: adopted
+status: delivered
+delivered: 2026-10-13T12:30:31Z
+delivered_by: gate
 context: cart
 feature: shopping
 title: Only your own cart through the API
-depends_on: [open-and-fill-a-cart-through-the-api]
+depends_on: [open-and-fill-a-cart-through-the-api, cart-list-spells-the-status]
 ---
 
 # Only your own cart through the API
@@ -78,3 +80,7 @@ exists, so that what I collect stays mine; and as staff I want to see every cart
 - Replay story: `API-07` (shop-api).
 - Inventory: cart C-54, C-55 (through the API), C-57 (foreign cart), C-60 (tokenless caller), C-61, C-62 (foreign
   id); cross-cutting X11 (cart list), X12, X13.
+
+## Assumptions
+
+- answered: 1 — the Java shop is right. The .NET shop is brought in line by a change story, cart-list-spells-the-status, which this story depends on. This story stays adopted as written. (only-your-own-cart-through-the-api-01)

@@ -1,7 +1,9 @@
 ---
 id: staff-create-a-product-through-the-api
 epic: shop-api
-status: adopted
+status: delivered
+delivered: 2026-10-13T08:01:10Z
+delivered_by: gate
 context: product
 feature: assortment
 title: Staff create a product through the API
@@ -81,3 +83,7 @@ without anyone touching the shop's data by hand; and as the shop owner I want no
 - Replay story: `API-03` (shop-api).
 - Inventory: product P4 (placeholder), P6 (empty description), P13, P14; account A38; cross-cutting X11 (the
   staff half), X12.
+
+## Assumptions
+
+- answered: a — the Java shop is right. The .NET shop is brought in line by a change story, created-product-answers-with-its-price (staff-create-a-product and a-product-page-without-description as written), which this story and creating-a-product-holds-its-price depend on. This story stays adopted as written. (staff-create-a-product-through-the-api-01)

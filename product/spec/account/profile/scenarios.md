@@ -52,3 +52,96 @@ Test: DcaShop.IntegrationTests.MyAccountPageTest#AVisitorWithoutCookiesIsSentFro
 - When they log in with "anna.schmidt@example.com" and "Secret123"
 - Then `/account` opens with "Welcome, anna.schmidt@example.com"
 Test: DcaShop.IntegrationTests.MyAccountPageTest#ALoginTheOverviewSentForReturnsToTheOverview
+
+### Rule: The profile shows the fixed name and the details that can change
+
+#### profile-shows-name-and-details
+- Given the customer "anna.schmidt@example.com", registered as Anna Schmidt born 1990-05-17, is logged in
+- When they follow "My Profile" in the account navigation
+- Then `/account/profile` shows the heading "My Profile", a card "Basic Information" and "My Profile" marked as the current page
+- And the name "Anna Schmidt" is shown as text with "Your name was set when you created your account and cannot be changed." and there is no input for a name
+- And the field "Email" holds "anna.schmidt@example.com" with the hint "This address is also your login"
+- And the field "Date of Birth" holds 1990-05-17 and the button reads "Save Changes"
+Test: DcaShop.IntegrationTests.ProfilePageTest#TheAccountNavigationLeadsToTheFixedNameAndTheAddressAndDateOfBirthThatCanChange
+
+### Rule: Saving stores email and date of birth and keeps the customer logged in
+
+#### saving-the-profile
+- Given the customer "anna.schmidt@example.com" is logged in on `/account/profile`
+- When they change Email to "anna.meyer@example.com" and Date of Birth to 1990-05-18 and press "Save Changes"
+- Then `/account/profile` opens again and shows "Your profile has been updated."
+- And the fields hold "anna.meyer@example.com" and 1990-05-18
+- And the header shows "Welcome, anna.meyer@example.com"
+Test: DcaShop.E2eTests.ProfileE2eTest#SavedChangesAreConfirmedOnTheProfileAndTheHeaderGreetsTheNewAddress
+
+#### own-address-in-other-capitals-is-accepted
+- Given the customer "anna.schmidt@example.com" is logged in on `/account/profile`
+- When they save Email "Anna.Schmidt@Example.com" with the same date of birth
+- Then the profile shows "Your profile has been updated." and the field Email holds "anna.schmidt@example.com"
+Test: DcaShop.IntegrationTests.ProfilePageTest#TheOwnAddressInOtherCapitalsIsSavedAsTheSameAddress
+
+### Rule: The new address is the login from now on
+
+#### new-address-logs-in
+- Given the customer changed the address from "anna.schmidt@example.com" to "anna.meyer@example.com" and a browser with no cookies
+- When they log in with "anna.meyer@example.com" and "Secret123"
+- Then the cart page opens and the header shows "Welcome, anna.meyer@example.com"
+Test: DcaShop.IntegrationTests.ProfilePageTest#TheNewAddressLogsInFromABrowserWithNoCookies
+
+#### old-address-no-longer-logs-in
+- Given the customer changed the address from "anna.schmidt@example.com" to "anna.meyer@example.com" and a browser with no cookies
+- When they log in with "anna.schmidt@example.com" and "Secret123"
+- Then the login page shows "Invalid email or password"
+Test: DcaShop.IntegrationTests.ProfilePageTest#TheOldAddressNoLongerLogsIn
+
+### Rule: The profile needs a login
+
+#### profile-sends-a-visitor-to-the-login
+- Given a visitor with no cookies
+- When they open `/account/profile`
+- Then they are sent to `/login?returnUrl=%2Faccount%2Fprofile`
+Test: DcaShop.IntegrationTests.ProfilePageTest#AVisitorWithoutCookiesIsSentFromTheProfileToTheLogin
+
+### Rule: An address another account uses cannot be taken over
+
+#### taken-address-is-refused-in-the-profile
+- Given the accounts "anna.schmidt@example.com" and "ben.weber@example.com", and Anna logged in on `/account/profile`
+- When she saves Email "ben.weber@example.com"
+- Then the profile shows "This email address is already registered"
+- And the field Email still holds "ben.weber@example.com"
+Test: DcaShop.E2eTests.ProfileE2eTest#AnAddressAnotherAccountHasIsRefusedAndStaysInTheField
+
+### Rule: Address and date of birth must be usable
+
+#### malformed-address-is-refused-in-the-profile
+- Given the customer "anna.schmidt@example.com" is logged in on `/account/profile`
+- When they save Email "anna.meyer@example"
+- Then the profile shows "Please enter a valid email address."
+Test: DcaShop.IntegrationTests.ProfilePageTest#AnAddressWithoutADomainEndingIsRefused
+
+#### missing-date-is-refused-in-the-profile
+- Given the customer "anna.schmidt@example.com" is logged in on `/account/profile`
+- When they save an empty Date of Birth
+- Then the profile shows "Please enter a date like 1990-05-17"
+Test: DcaShop.IntegrationTests.ProfilePageTest#AnEmptyDateOfBirthIsRefused
+
+#### future-date-is-refused-in-the-profile
+- Given the customer "anna.schmidt@example.com" is logged in on `/account/profile`
+- When they save Date of Birth 2999-01-01
+- Then the profile shows "Please enter a date of birth that is not in the future."
+Test: DcaShop.IntegrationTests.ProfilePageTest#ADateOfBirthInTheFutureIsRefused
+
+#### unreadable-date-is-refused-in-the-profile
+- Given the customer "anna.schmidt@example.com" is logged in on `/account/profile`
+- When they save Date of Birth "17.05.1990"
+- Then the profile shows "Please enter a date like 1990-05-17"
+- And the field Date of Birth still holds "17.05.1990"
+Test: DcaShop.IntegrationTests.ProfilePageTest#ADateOfBirthThatIsNotADateIsRefusedAndStaysInTheField
+
+### Rule: A refused change saves nothing, not even the valid field
+
+#### refused-change-saves-nothing
+- Given the customer "anna.schmidt@example.com", born 1990-05-17, saved Email "anna.meyer@example.com" together with Date of Birth 2999-01-01 and was refused
+- When they open `/account/profile` again
+- Then the fields hold "anna.schmidt@example.com" and 1990-05-17
+Test: DcaShop.IntegrationTests.ProfileRefusalTest#ARefusedChangeKeepsTheStoredAddressAndDateOfBirth

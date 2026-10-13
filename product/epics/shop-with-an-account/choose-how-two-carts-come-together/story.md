@@ -1,7 +1,9 @@
 ---
 id: choose-how-two-carts-come-together
 epic: shop-with-an-account
-status: adopted
+status: delivered
+delivered: 2026-10-13T12:46:43Z
+delivered_by: gate
 context: cart
 feature: cartrecovery
 title: Choose how two carts come together

@@ -1,7 +1,9 @@
 ---
 id: the-open-checkout-keeps-its-order-while
 epic: guest-checkout
-status: adopted
+status: delivered
+delivered: 2026-10-13T06:58:04Z
+delivered_by: gate
 context: checkout
 feature: cartsync
 title: The open checkout keeps its order while the cart changes

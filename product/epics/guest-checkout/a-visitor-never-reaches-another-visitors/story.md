@@ -1,7 +1,9 @@
 ---
 id: a-visitor-never-reaches-another-visitors
 epic: guest-checkout
-status: adopted
+status: delivered
+delivered: 2026-10-13T11:32:41Z
+delivered_by: gate
 context: checkout
 feature: session
 title: A visitor never reaches another visitor's checkout
@@ -35,7 +37,7 @@ Design" once and submitted the buyer step with "jane@example.com"; "the stranger
 #### starting-from-a-strangers-cart-is-refused
 - Given the owner's cart and a stranger who knows its cart id
 - When the stranger sends the start-checkout form with the owner's cart id
-- Then the stranger's cart page opens with an error beginning "Cart not found:"
+- Then the stranger's cart page opens with the error "Your cart could not be found."
 - And the owner's buyer step still shows "Domain-Driven Design x1" and "jane@example.com"
 
 ## Out of scope
@@ -47,3 +49,7 @@ Design" once and submitted the buyer step with "jane@example.com"; "the stranger
 
 - Replay story: `CHK-13` (guest-checkout).
 - Inventory: checkout 6 (someone else's cart), 41; cart C-56.
+
+## Assumptions
+
+- answered: 1 — starting-from-a-strangers-cart-is-refused expects "Your cart could not be found."; the story stays adopted, its text is already changed in both shops and the replay source alike. (a-visitor-never-reaches-another-visitors-01)

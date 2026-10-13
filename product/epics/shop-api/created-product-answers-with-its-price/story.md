@@ -1,7 +1,9 @@
 ---
 id: created-product-answers-with-its-price
 epic: shop-api
-status: approved
+status: delivered
+delivered: 2026-10-13T07:49:01Z
+delivered_by: gate
 context: product
 feature: assortment
 title: A created product answers with its price, and a page without description says so

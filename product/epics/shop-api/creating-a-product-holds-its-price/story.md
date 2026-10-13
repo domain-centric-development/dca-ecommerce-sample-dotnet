@@ -1,11 +1,13 @@
 ---
 id: creating-a-product-holds-its-price
 epic: shop-api
-status: adopted
+status: delivered
+delivered: 2026-10-13T17:31:07Z
+delivered_by: gate
 context: product
 feature: assortment
 title: Creating a product holds its price and stock to the rules
-depends_on: [staff-create-a-product-through-the-api, prices-shown-from-the-price-owner, availability-shown, created-product-answers-with-its-price]
+depends_on: [staff-create-a-product-through-the-api, prices-shown-from-the-price-owner, availability-shown, created-product-answers-with-its-price, price-rounding-to-zero-is-unacceptable]
 ---
 
 # Creating a product holds its price and stock to the rules
@@ -81,3 +83,7 @@ amount in the shop, so that the catalogue never shows a price of nothing, a frac
 - Replay story: `API-05` (shop-api).
 - Inventory: product P13 (price, stock), P17 (status only), P21; product rules price, initial stock; pricing R5,
   R6 (as reached through product creation).
+
+## Assumptions
+
+- answered: 1 — the Java shop is right. The .NET shop is brought in line by a change story, price-rounding-to-zero-is-unacceptable, which this story depends on. This story stays adopted as written. (creating-a-product-holds-its-price-01)

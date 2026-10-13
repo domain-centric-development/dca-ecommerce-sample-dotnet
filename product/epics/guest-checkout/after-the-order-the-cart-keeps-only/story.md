@@ -1,7 +1,9 @@
 ---
 id: after-the-order-the-cart-keeps-only
 epic: guest-checkout
-status: adopted
+status: delivered
+delivered: 2026-10-13T07:34:21Z
+delivered_by: gate
 context: cart
 feature: cartcheckout
 title: After the order the cart keeps only what was not bought

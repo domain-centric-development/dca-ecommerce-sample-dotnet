@@ -19,3 +19,8 @@ Start the application with `dotnet run --project src/DcaShop.Web`.
 ## Options
 - accepted: the story is delivered.
 - a correction: what should be different, written into the story (criteria and an `answered:` line naming this record); the story runs again from plan.
+
+## Answer
+answer: accepted
+by: Christoph Bloemer
+at: 2026-10-13T06:29:03Z

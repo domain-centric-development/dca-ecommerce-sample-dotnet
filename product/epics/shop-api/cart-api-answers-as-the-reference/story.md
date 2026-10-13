@@ -1,7 +1,9 @@
 ---
 id: cart-api-answers-as-the-reference
 epic: shop-api
-status: approved
+status: delivered
+delivered: 2026-10-13T07:14:51Z
+delivered_by: gate
 context: cart
 feature: shopping
 title: The cart API refuses a second open cart, spells its status and removes by product

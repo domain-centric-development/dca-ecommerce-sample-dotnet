@@ -1,7 +1,9 @@
 ---
 id: open-and-fill-a-cart-through-the-api
 epic: shop-api
-status: adopted
+status: delivered
+delivered: 2026-10-13T07:23:52Z
+delivered_by: gate
 context: cart
 feature: shopping
 title: Open and fill a cart through the API
@@ -75,3 +77,7 @@ API, so that my customer can shop in my application without the shop's pages.
 
 - Replay story: `API-06` (shop-api).
 - Inventory: cart C-10 (through the API), C-57 (own cart), C-58, C-59, C-62 (own id), C-63, C-64.
+
+## Assumptions
+
+- answered: 1 — the Java shop is right. The .NET shop is brought in line by a change story, cart-api-answers-as-the-reference (the four scenarios as written), which this story depends on. This story stays adopted as written. (open-and-fill-a-cart-through-the-api-01)

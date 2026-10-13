@@ -31,3 +31,37 @@ Test: DcaShop.IntegrationTests.BackofficeLoginPageTest#AWrongPasswordLeadsBackTo
 - When the operator logs in with username "operator" and password "admin"
 - Then the login page shows "Invalid username or password."
 Test: DcaShop.IntegrationTests.BackofficeLoginPageTest#AnUnknownUsernameLeadsBackToTheLoginPageWithTheMessage
+
+### Rule: Every back-office page needs an operator login
+
+#### event-log-sends-a-visitor-to-the-login
+- Given a browser with no cookies that is not logged in to the back office
+- When it opens `/backoffice/events` directly
+- Then the shop sends it to the backoffice login page `/backoffice/login`
+Test: DcaShop.E2eTests.BackofficeE2eTest#UnauthenticatedAccessRedirectsToLogin
+
+#### a-customer-login-does-not-open-the-back-office
+- Given a visitor who has just registered the account "anna.schmidt@example.com" and is logged in to the shop
+- When they open `/backoffice/events`
+- Then the shop sends them to the backoffice login page `/backoffice/login`
+Test: DcaShop.IntegrationTests.BackofficeAccessTest#ACustomerLoggedInToTheShopIsSentToTheBackofficeLogin
+
+#### login-after-a-redirect-opens-the-event-log
+- Given a browser that opened `/backoffice/settings` and was sent to the backoffice login page
+- When the operator logs in with username "admin" and password "admin"
+- Then the event log `/backoffice/events` opens
+Test: DcaShop.IntegrationTests.BackofficeAccessTest#LoggingInAfterBeingSentFromAnUnknownAddressOpensTheEventLog
+
+### Rule: Logging out closes the back office and says so
+
+#### logout-confirms-on-the-login-page
+- Given the operator is logged in on `/backoffice/events`
+- When they press "Logout"
+- Then the backoffice login page `/backoffice/login?logout=true` opens and shows "You have been logged out."
+Test: DcaShop.IntegrationTests.BackofficeAccessTest#LoggingOutOpensTheLoginPageWithTheConfirmation
+
+#### event-log-is-closed-after-logout
+- Given the operator has logged out of the back office
+- When they open `/backoffice/events` again
+- Then the shop sends them to the backoffice login page `/backoffice/login`
+Test: DcaShop.IntegrationTests.BackofficeAccessTest#AfterTheLogoutTheEventLogSendsTheOperatorToTheLoginAgain

@@ -1,7 +1,9 @@
 ---
 id: event-payload-shows-status-and-attempts
 epic: run-the-shop
-status: approved
+status: delivered
+delivered: 2026-10-13T07:39:46Z
+delivered_by: gate
 context: backoffice
 feature: eventlog
 title: An event's payload opens with its status and every attempt

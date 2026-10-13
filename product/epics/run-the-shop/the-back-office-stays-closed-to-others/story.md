@@ -1,7 +1,9 @@
 ---
 id: the-back-office-stays-closed-to-others
 epic: run-the-shop
-status: adopted
+status: delivered
+delivered: 2026-10-13T06:42:40Z
+delivered_by: gate
 context: backoffice
 feature: access
 title: The back office stays closed to others
@@ -57,3 +59,7 @@ out, so that neither a visitor nor a shop customer can read what the shop did.
 - Replay story: `OPS-04` (run-the-shop).
 - Shared scenario: `scenario.backoffice.unauthenticated-redirect`, `scenario.backoffice.logout`.
 - Inventory: backoffice B2 (always the log), B4, B11.
+
+## Assumptions
+
+- answered: b — the Java shop is right. The .NET shop is brought in line by a change story, back-office-guards-every-address (every address below /backoffice asks for the operator login, login-after-a-redirect-opens-the-event-log as written), which this story depends on. This story stays adopted as written, all five scenarios, and is adopted once that story is delivered. (the-back-office-stays-closed-to-others-01)

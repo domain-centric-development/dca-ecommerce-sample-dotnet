@@ -1,11 +1,13 @@
 ---
 id: moving-between-pages-is-animated
 epic: fits-its-surroundings
-status: adopted
+status: delivered
+delivered: 2026-10-13T07:47:27Z
+delivered_by: gate
 context: portal
 feature: appearance
 title: Moving between pages is animated
-depends_on: [CAT-02, start-the-checkout-from-the-cart]
+depends_on: [CAT-02, start-the-checkout-from-the-cart, reduced-motion-stills-the-transitions]
 ---
 
 # Moving between pages is animated
@@ -52,3 +54,8 @@ I have asked my device for less of it, so that the shop is pleasant to use and d
 
 - Replay story: `FIT-02` (fits-its-surroundings).
 - Inventory: cross-cutting X17.
+
+## Assumptions
+
+- answered: A story of its own — the scenario holds as written. Both shops get the change story reduced-motion-stills-the-transitions (no view-transition group animates under prefers-reduced-motion), which this story depends on. This story stays adopted as written, all four scenarios. (moving-between-pages-is-animated-01)
+- answered: a — refresh the worktree from main and run the test stage again. The worktree's uncommitted test files of the earlier round were set aside by hand (a copy is kept outside the project), so the story branch moves onto main as it is; the test stage maps reduced-motion-means-no-animation to ReducedMotionE2eTest and writes the other three on the one recorder BasePage has on main. (moving-between-pages-is-animated-02)

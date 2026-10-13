@@ -1,7 +1,9 @@
 ---
 id: forms-refuse-a-post-without-token-with-403
 epic: fits-its-surroundings
-status: approved
+status: delivered
+delivered: 2026-10-13T07:38:37Z
+delivered_by: gate
 context: account
 title: A form post without its token is refused with 403
 depends_on: [register-an-account, log-in-and-log-out]

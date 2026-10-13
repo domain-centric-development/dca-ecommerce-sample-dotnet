@@ -1,7 +1,9 @@
 ---
 id: look-into-an-events-payload
 epic: run-the-shop
-status: adopted
+status: delivered
+delivered: 2026-10-13T07:50:05Z
+delivered_by: gate
 context: backoffice
 feature: eventlog
 title: Look into an event's payload
@@ -48,3 +50,7 @@ the number of attempts, so that I can tell what a failed delivery was about.
 - Replay story: `OPS-03` (run-the-shop).
 - Shared scenario: `scenario.backoffice.event-payload`.
 - Inventory: backoffice B7.
+
+## Assumptions
+
+- answered: b — the Java shop is right. The .NET shop is brought in line by a change story, event-payload-shows-status-and-attempts (payload-starts-with-status-and-attempts as written), which this story and failed-deliveries-are-retried-on-their depend on. This story stays adopted as written. (look-into-an-events-payload-01)

@@ -1,7 +1,9 @@
 ---
 id: keep-the-profile-up-to-date
 epic: account
-status: adopted
+status: delivered
+delivered: 2026-10-13T07:52:11Z
+delivered_by: gate
 context: account
 feature: profile
 title: Keep the profile up to date
@@ -71,3 +73,8 @@ reaches and knows me correctly, while my name stays as I registered it.
 
 - Replay story: `ACC-07` (account).
 - Inventory: account A19 (profile), A22, A23, A24 (own address accepted).
+
+## Assumptions
+
+- answered: a, as a story the pipeline builds — the Java shop is right (it adopted old-address-no-longer-logs-in as written). The .NET shop is brought in line by old-address-stops-logging-in, which this story depends on. This story stays adopted as written, all six scenarios. (keep-the-profile-up-to-date-01)
+- answered: a — the worktree's uncommitted test files of the earlier round were set aside by hand (kept outside the project), so the branch moves onto main as it is when the story resumes; the test stage runs again on main's ProfilePage and ProfileE2eTest and keeps all six scenarios. (keep-the-profile-up-to-date-02)

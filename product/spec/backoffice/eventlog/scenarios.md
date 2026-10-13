@@ -1,5 +1,14 @@
 # backoffice — eventlog
 
+### Rule: The shop's start-up already shows in the log
+
+#### log-lists-the-events-published-at-start-up
+- Given the shop has started and seeded the sample catalogue, and the operator is logged in
+- When they open `/backoffice/events`
+- Then the log lists at least one entry
+- And every entry shows a type label that names the event
+Test: DcaShop.E2eTests.BackofficeE2eTest#EventLogShowsPublishedEvents
+
 ### Rule: One entry per event and listener, with its state and dates
 
 #### entry-shows-listener-state-and-dates
@@ -24,15 +33,6 @@ Test: DcaShop.IntegrationTests.EventLogOrderTest#TheNewestEntryComesFirst
 - And "Completed" is the number of entries with the badge "Completed", "Incomplete" the number with the badge "Incomplete", and both add up to "Total Events"
 Test: DcaShop.IntegrationTests.BackofficeEventLogPageTest#TheSummaryCountsTheEntriesByTheirBadge
 
-### Rule: The shop's start-up already shows in the log
-
-#### log-lists-the-events-published-at-start-up
-- Given the shop has started and seeded the sample catalogue, and the operator is logged in
-- When they open `/backoffice/events`
-- Then the log lists at least one entry
-- And every entry shows a type label that names the event
-Test: DcaShop.E2eTests.BackofficeE2eTest#EventLogShowsPublishedEvents
-
 ### Rule: The page is recognisable and can be reloaded
 
 #### log-page-breadcrumb
@@ -46,3 +46,26 @@ Test: DcaShop.IntegrationTests.BackofficeEventLogPageTest#TheBreadcrumbLeadsHome
 - When they press "Refresh"
 - Then `/backoffice/events` is loaded again with its summary and entries
 Test: DcaShop.IntegrationTests.BackofficeEventLogPageTest#RefreshLoadsTheLogAgainWithItsSummaryAndEntries
+
+### Rule: Every entry has a collapsible payload
+
+#### payload-is-collapsed-at-first
+- Given the operator is logged in and the log lists at least one entry
+- When they open `/backoffice/events`
+- Then every entry offers "Event Payload", collapsed
+Test: DcaShop.IntegrationTests.BackofficeEventLogPageTest#EveryEntryOffersItsEventPayloadClosed
+
+#### payload-can-be-expanded
+- Given the operator is logged in and the log lists at least one entry
+- When they expand "Event Payload" of the first entry
+- Then the payload is shown and is not empty
+Test: DcaShop.E2eTests.BackofficeE2eTest#EventPayloadCanBeExpanded
+
+### Rule: The payload starts with a line "Status: <status>, attempts: <number>", followed by the event's content
+
+#### payload-starts-with-status-and-attempts
+- Given the operator is logged in and the log lists a "Completed" entry for a product created at start-up, delivered at the first attempt
+- When they expand that entry's "Event Payload"
+- Then its first line reads "Status: COMPLETED, attempts: 1"
+- And the lines after it hold the event's content: eventId, occurredOn, productId, amount, currency and initialStock
+Test: DcaShop.E2eTests.BackofficeE2eTest#PayloadOpensWithItsStatusAndAttemptsBeforeTheEventsContent

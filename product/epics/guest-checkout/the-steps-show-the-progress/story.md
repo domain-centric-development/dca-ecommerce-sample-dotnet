@@ -1,11 +1,13 @@
 ---
 id: the-steps-show-the-progress
 epic: guest-checkout
-status: adopted
+status: delivered
+delivered: 2026-10-13T16:40:52Z
+delivered_by: gate
 context: checkout
 feature: steps
 title: The steps show the progress and are taken in order
-depends_on: [place-the-order-from-the-review-and-see]
+depends_on: [place-the-order-from-the-review-and-see, early-step-leads-to-the-open-step]
 ---
 
 # The steps show the progress and are taken in order
@@ -75,3 +77,7 @@ step by accident, so that I always know how far the order is and nothing is miss
 
 - Replay story: `CHK-06` (guest-checkout).
 - Inventory: checkout 15, 17, 30, 34 (step order), 40.
+
+## Assumptions
+
+- answered: 2, as a change story in this shop only — the Java shop holds the story (a refused step redirects, and the step guard sends the guest to the step that is open). The .NET shop is brought in line by early-step-leads-to-the-open-step, which this story depends on. This story stays adopted as written. (the-steps-show-the-progress-01)

@@ -1,7 +1,9 @@
 ---
 id: the-profile-refuses-an-unusable-change
 epic: account
-status: adopted
+status: delivered
+delivered: 2026-10-13T08:03:15Z
+delivered_by: gate
 context: account
 feature: profile
 title: The profile refuses an unusable change

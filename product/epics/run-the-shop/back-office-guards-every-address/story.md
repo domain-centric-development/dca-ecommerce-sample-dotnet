@@ -1,7 +1,9 @@
 ---
 id: back-office-guards-every-address
 epic: run-the-shop
-status: approved
+status: delivered
+delivered: 2026-10-13T06:33:15Z
+delivered_by: gate
 context: backoffice
 feature: access
 title: The back office guards every address below it
