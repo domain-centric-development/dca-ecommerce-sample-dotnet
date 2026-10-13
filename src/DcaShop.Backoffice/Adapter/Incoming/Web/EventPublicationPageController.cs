@@ -17,7 +17,7 @@ namespace DcaShop.Backoffice.Adapter.Incoming.Web;
 /// <remarks>
 /// Authentication here is the module's own (<see cref="BackofficeOptions.AuthenticationScheme"/>) and has nothing
 /// to do with the shop's session: an operator signs in with an operator credential, into an operator cookie.
-/// Every page but the login form requires it.
+/// Every address but the login form requires it, an unknown one included.
 /// </remarks>
 [Route("backoffice")]
 [Authorize(AuthenticationSchemes = BackofficeOptions.AuthenticationScheme)]
@@ -80,6 +80,13 @@ public sealed class EventPublicationPageController : Controller
         var result = await _replay.ExecuteAsync(new ReplayFailedPublicationCommand(id), cancellationToken);
         return result.Found ? Redirect("/backoffice/events") : NotFound();
     }
+
+    /// <summary>
+    /// Any other address below the backoffice: not found — but only to the operator. Without this route an unknown
+    /// address would never reach the class's <see cref="AuthorizeAttribute"/> and answer a visitor unguarded.
+    /// </summary>
+    [HttpGet("{**address}")]
+    public IActionResult ShowUnknownAddress() => NotFound();
 
     /// <summary>
     /// Compares both halves in fixed time, so a wrong username and a wrong password cost the same — the

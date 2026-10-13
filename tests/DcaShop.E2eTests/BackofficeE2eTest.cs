@@ -77,6 +77,21 @@ public sealed class BackofficeE2eTest : BaseE2eTest
         Assert.Contains("/backoffice/login", CurrentPath, StringComparison.Ordinal);
     }
 
+    [E2eFact(DisplayName = "Login after a redirect opens the event log")]
+    public async Task LoginAfterARedirectOpensTheEventLog()
+    {
+        await ClearCookiesAsync();
+        await NavigateToAsync("/backoffice/settings");
+        Assert.StartsWith("/backoffice/login", CurrentPath, StringComparison.Ordinal);
+
+        var login = await BackofficeLoginPage.OpenAsync(Page);
+        await login.FillCredentialsAsync(AdminUsername, AdminPassword);
+        var events = await login.SubmitAsync();
+
+        Assert.StartsWith("/backoffice/events", CurrentPath, StringComparison.Ordinal);
+        Assert.True(await events.IsOnPageAsync(), "The event log should open after the login");
+    }
+
     [E2eFact(DisplayName = "Event payload can be expanded to reveal details")]
     public async Task EventPayloadCanBeExpanded()
     {
