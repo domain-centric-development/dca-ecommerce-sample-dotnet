@@ -1,4 +1,7 @@
+using System.Text.Json;
+
 using ModelContextProtocol.Client;
+using ModelContextProtocol.Protocol;
 
 namespace DcaShop.E2eTests;
 
@@ -29,6 +32,38 @@ public sealed class McpServerE2eTest
             tools["product-by-id"].Description);
         Assert.Equal(["id"], Parameters(tools["product-by-id"]));
     }
+
+    [E2eFact(DisplayName = "All products lists the range with price and stock")]
+    public async Task AllProductsListsTheWholeRangeInNameOrderWithPriceAndStock()
+    {
+        await using var assistant = await McpClient.CreateAsync(new HttpClientTransport(new HttpClientTransportOptions
+        {
+            Endpoint = new Uri(ShopUnderTest.BaseUrl + "/mcp"),
+            TransportMode = HttpTransportMode.StreamableHttp,
+        }));
+
+        var result = await assistant.CallToolAsync("all-products");
+
+        using var answer = JsonDocument.Parse(Text(result));
+        var products = answer.RootElement.EnumerateArray().ToList();
+        var names = products.Select(product => product.GetProperty("name").GetString()!).ToList();
+        Assert.Equal(21, products.Count);
+        Assert.Equal(names.Order(StringComparer.Ordinal), names);
+        Assert.Equal("\"Bounded Context\" Enamel Pin", names[0]);
+        var book = products.Single(product => product.GetProperty("name").GetString() == "Domain-Driven Design");
+        Assert.False(string.IsNullOrEmpty(book.GetProperty("id").GetString()));
+        Assert.Equal("BOOK-001", book.GetProperty("sku").GetString());
+        Assert.StartsWith("The seminal work by Eric Evans", book.GetProperty("description").GetString());
+        Assert.False(string.IsNullOrEmpty(book.GetProperty("imageUrl").GetString()));
+        Assert.Equal(54.99m, book.GetProperty("price").GetDecimal());
+        Assert.Equal("EUR", book.GetProperty("currency").GetString());
+        Assert.Equal("Books", book.GetProperty("category").GetString());
+        Assert.Equal(20, book.GetProperty("stockQuantity").GetInt32());
+        Assert.True(book.GetProperty("isAvailable").GetBoolean());
+    }
+
+    private static string Text(CallToolResult result) =>
+        string.Concat(result.Content.OfType<TextContentBlock>().Select(block => block.Text));
 
     private static IReadOnlyList<string> Parameters(McpClientTool tool) =>
         tool.JsonSchema.TryGetProperty("properties", out var properties)
