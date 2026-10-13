@@ -92,6 +92,15 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task AFailedEntryOffersTheRetryOfItsListener()
+    {
+        var page = await EventLogAsync(Delivered, Failed);
+
+        var failed = Assert.Single(Entries(page), entry => entry.Contains(Failed.ListenerId, StringComparison.Ordinal));
+        Assert.Equal("Retry failed listener", Value(failed, "event-retry"));
+    }
+
+    [Fact]
     public async Task PressingRetryOnAFailedEntryRetriesItsListenerAndLeadsBackToTheLog()
     {
         var replay = new RecordedReplay(found: true);

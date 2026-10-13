@@ -23,6 +23,7 @@ public sealed class BackofficeEventsPage : BasePage
     private const string EventStatus = "event-status";
     private const string EventPayload = "event-payload";
     private const string EventRetry = "event-retry";
+    private const string EventCompletionDate = "event-completion-date";
     private const string EventLogRefresh = "event-log-refresh";
     private const string EventLogLogout = "event-log-logout";
 
@@ -140,6 +141,55 @@ public sealed class BackofficeEventsPage : BasePage
         await Assertions.Expect(retry).ToBeVisibleAsync();
         return (await retry.InnerTextAsync()).Trim();
     }
+
+    /// <summary>
+    /// Presses the retry on the first entry of the given type that carries the badge "Incomplete" and answers the path
+    /// of the page the shop opens next.
+    /// </summary>
+    public async Task<string> PressRetryOfAsync(string eventType)
+    {
+        var retry = IncompleteEntryOf(eventType).Locator($"[data-test='{EventRetry}']");
+        await Assertions.Expect(retry).ToBeVisibleAsync();
+        await Page.RunAndWaitForRequestFinishedAsync(
+            () => retry.ClickAsync(),
+            new PageRunAndWaitForRequestFinishedOptions { Predicate = request => request.IsNavigationRequest && request.Method == "GET" });
+        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+        return new Uri(Page.Url).AbsolutePath;
+    }
+
+    /// <summary>The badge of the first entry of the given type, as the markup words it (the stylesheet capitalises it).</summary>
+    public async Task<string> BadgeOfAsync(string eventType)
+    {
+        var badge = EntryOf(eventType).Locator($"[data-test='{EventStatus}']");
+        await Assertions.Expect(badge).ToBeVisibleAsync();
+        return (await badge.TextContentAsync() ?? string.Empty).Trim();
+    }
+
+    /// <summary>The "Completed" date of the first entry of the given type, once it shows one.</summary>
+    public async Task<string> CompletionDateOfAsync(string eventType)
+    {
+        var date = EntryOf(eventType).Locator($"[data-test='{EventCompletionDate}']");
+        await Assertions.Expect(date).ToBeVisibleAsync();
+        return (await date.InnerTextAsync()).Trim();
+    }
+
+    /// <summary>Opens the log of the shop at <paramref name="shopUrl"/>, a shop other than the suite's own.</summary>
+    public static async Task<BackofficeEventsPage> NavigateToAsync(IPage page, string shopUrl)
+    {
+        await page.GotoAsync(shopUrl + "/backoffice/events");
+        return await OpenAsync(page);
+    }
+
+    private ILocator EntryOf(string eventType) =>
+        Page.Locator($"[data-test='{EventLogItem}']")
+            .Filter(new() { Has = Page.Locator($"[data-test='{EventType}']", new() { HasTextString = eventType }) })
+            .First;
+
+    private ILocator IncompleteEntryOf(string eventType) =>
+        Page.Locator($"[data-test='{EventLogItem}']")
+            .Filter(new() { Has = Page.Locator($"[data-test='{EventType}']", new() { HasTextString = eventType }) })
+            .Filter(new() { Has = Page.Locator($"[data-test='{EventStatus}']", new() { HasTextString = "Incomplete" }) })
+            .First;
 
     private async Task<int> NumberAsync(string dataTest) =>
         int.Parse(await TextAsync(dataTest), CultureInfo.InvariantCulture);

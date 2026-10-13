@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using DcaShop.Backoffice.Application.GetEventPublications;
 using DcaShop.Backoffice.Application.ReplayFailedPublication;
 using DcaShop.SharedKernel.Infrastructure.Events;
@@ -53,6 +55,67 @@ public sealed class BackofficeListenerRetryTest : IClassFixture<WebApplicationFa
         await SettledAsync(@event.EventId, PublicationStatus.Completed);
         var after = await EntriesOfAsync(@event.EventId);
         Assert.Equal(steady.CompletionDate, Assert.Single(after, entry => entry.ListenerId == steady.ListenerId).CompletionDate);
+    }
+
+    [Fact]
+    public async Task ARetriedDeliveryCarriesTheEventAsItWasPublished()
+    {
+        var @event = new SplitEvent(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        await PublishAsync(@event);
+        await SettledAsync(@event.EventId, PublicationStatus.Failed);
+        var broken = Assert.Single(await EntriesOfAsync(@event.EventId), entry => entry.ListenerId == typeof(BrokenListener).FullName);
+        _factory.Services.GetRequiredService<Repair>().Done = true;
+
+        await RetryAsync(broken);
+
+        await SettledAsync(@event.EventId, PublicationStatus.Completed);
+        var retried = Assert.Single(await EntriesOfAsync(@event.EventId), entry => entry.ListenerId == broken.ListenerId);
+        Assert.NotNull(retried.CompletionDate);
+        Assert.Equal(EventIn(broken.SerializedEvent), EventIn(retried.SerializedEvent));
+        using var content = JsonDocument.Parse(EventIn(retried.SerializedEvent));
+        Assert.Equal(@event.EventId, content.RootElement.GetProperty(nameof(SplitEvent.EventId)).GetGuid());
+    }
+
+    [Fact]
+    public async Task ARetryWhoseListenerStillFailsLeavesTheDeliveryIncomplete()
+    {
+        var @event = new SplitEvent(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        await PublishAsync(@event);
+        await SettledAsync(@event.EventId, PublicationStatus.Failed);
+        var broken = Assert.Single(await EntriesOfAsync(@event.EventId), entry => entry.ListenerId == typeof(BrokenListener).FullName);
+
+        await RetryAsync(broken);
+
+        await StoppedAsync(@event.EventId);
+        var after = Assert.Single(await EntriesOfAsync(@event.EventId), entry => entry.ListenerId == broken.ListenerId);
+        Assert.False(after.IsCompleted);
+        Assert.Null(after.CompletionDate);
+    }
+
+    /// <summary>The operator's retry of one entry, through its input port.</summary>
+    private async Task RetryAsync(EventPublicationSummary entry)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var result = await scope.ServiceProvider.GetRequiredService<IReplayFailedPublicationInputPort>()
+            .ExecuteAsync(new ReplayFailedPublicationCommand(entry.Id, entry.ListenerId));
+        Assert.True(result.Found);
+    }
+
+    /// <summary>The event's own content in an entry's payload: the lines between the status line and the last error.</summary>
+    private static string EventIn(string payload) =>
+        string.Join('\n', payload.Split('\n').Select(line => line.TrimEnd('\r')).Skip(1).TakeWhile(line => line.Length > 0));
+
+    /// <summary>Waits until the shop has stopped working on the delivery, whichever state it ended in — or gives up waiting.</summary>
+    private async Task StoppedAsync(Guid eventId)
+    {
+        var outbox = _factory.Services.GetRequiredService<IIntegrationEventOutbox>();
+        bool Stopped() => outbox.All().Single(p => p.Id == eventId).Status is PublicationStatus.Completed or PublicationStatus.Failed;
+        for (var i = 0; i < 200 && !Stopped(); i++)
+        {
+            await Task.Delay(50);
+        }
+
+        Assert.True(Stopped(), "the delivery did not stop");
     }
 
     private async Task PublishAsync(IIntegrationEvent @event)
