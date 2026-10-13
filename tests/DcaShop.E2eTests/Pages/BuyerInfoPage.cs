@@ -15,6 +15,13 @@ public sealed class BuyerInfoPage : BasePage
     {
     }
 
+    /// <summary>Opens the buyer step of the checkout the visitor already started.</summary>
+    public static async Task<BuyerInfoPage> NavigateToAsync(IPage page)
+    {
+        await page.GotoAsync(BaseUrl + UrlPattern);
+        return await OpenAsync(page);
+    }
+
     public static async Task<BuyerInfoPage> OpenAsync(IPage page)
     {
         var buyer = new BuyerInfoPage(page);
