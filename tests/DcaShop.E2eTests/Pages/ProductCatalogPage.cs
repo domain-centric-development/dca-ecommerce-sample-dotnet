@@ -12,6 +12,7 @@ public sealed class ProductCatalogPage : BasePage
     private const string ProductTitle = "product-card-title";
     private const string Breadcrumb = "breadcrumb";
     private const string CardPriceClass = "product-card__price";
+    private const string ErrorMessage = "error-message";
 
     private ProductCatalogPage(IPage page) : base(page)
     {
@@ -21,6 +22,15 @@ public sealed class ProductCatalogPage : BasePage
     {
         await page.GotoAsync(BaseUrl + UrlPattern);
         return await OpenAsync(page);
+    }
+
+    /// <summary>Opens the catalogue of the shop at <paramref name="shopUrl"/>, a shop other than the suite's own.</summary>
+    public static async Task<ProductCatalogPage> NavigateToAsync(IPage page, string shopUrl)
+    {
+        await page.GotoAsync(shopUrl + UrlPattern);
+        var catalog = new ProductCatalogPage(page);
+        await catalog.WaitForAsync(ProductCard);
+        return catalog;
     }
 
     public static async Task<ProductCatalogPage> OpenAsync(IPage page)
@@ -64,6 +74,9 @@ public sealed class ProductCatalogPage : BasePage
             .InnerTextAsync()).Trim();
 
     public Task<bool> HasProductsAsync() => ExistsAsync(ProductCard);
+
+    /// <summary>Whether the page shows the layout's error message.</summary>
+    public Task<bool> ShowsErrorMessageAsync() => ExistsAsync(ErrorMessage);
 
     /// <summary>The document title, as the browser tab shows it.</summary>
     public Task<string> DocumentTitleAsync() => Page.TitleAsync();
