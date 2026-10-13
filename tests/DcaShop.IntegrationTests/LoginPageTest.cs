@@ -108,6 +108,21 @@ public sealed class LoginPageTest : IClassFixture<WebApplicationFactory<Program>
         Assert.DoesNotContain(@"data-test=""user-greeting""", header, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task AnAddressWithoutADomainEndingIsRefusedWithTheSameMessageAsAWrongPassword()
+    {
+        var client = Visitor(_factory);
+        var page = await client.GetStringAsync("/login");
+
+        var refused = await client.PostAsync(
+            "/login",
+            Submission(Element(page, "login-form", "</form>"), ("email", "anna.schmidt@example"), ("password", Password)));
+
+        Assert.Equal(HttpStatusCode.OK, refused.StatusCode);
+        var answer = await refused.Content.ReadAsStringAsync();
+        Assert.Equal("Invalid email or password", Text(answer, @"data-test=""login-error-message"">([^<]*)</div>"));
+    }
+
     /// <summary>
     /// A browser of its own in <paramref name="shop"/>, with no cookies yet; it keeps the cookies it is given, and
     /// redirects are not followed — each one is an assertion.
