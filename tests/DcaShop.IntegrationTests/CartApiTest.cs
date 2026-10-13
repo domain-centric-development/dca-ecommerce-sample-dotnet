@@ -68,6 +68,62 @@ public sealed class CartApiTest : IDisposable
     }
 
     [Fact]
+    public async Task AddingAProductAnswersWithTheCartHoldingItsLineAndTotal()
+    {
+        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
+        var cartId = opened.GetProperty("cartId").GetString();
+        var domainDrivenDesign = await ProductIdAsync("Domain-Driven Design");
+
+        var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId = domainDrivenDesign, quantity = 2 });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var cart = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var item = Assert.Single(cart.GetProperty("items").EnumerateArray());
+        Assert.Equal(domainDrivenDesign, item.GetProperty("productId").GetString());
+        Assert.Equal(2, item.GetProperty("quantity").GetInt32());
+        Assert.Equal(109.98m, cart.GetProperty("total").GetDecimal());
+        Assert.Equal("EUR", cart.GetProperty("currency").GetString());
+        Assert.Equal(1, cart.GetProperty("itemCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task AddingAProductTheCartHoldsRaisesItsLineInsteadOfAddingOne()
+    {
+        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
+        var cartId = opened.GetProperty("cartId").GetString();
+        var domainDrivenDesign = await ProductIdAsync("Domain-Driven Design");
+        await AddAsync(client, cartId!, domainDrivenDesign, 2);
+
+        var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId = domainDrivenDesign, quantity = 1 });
+
+        var cart = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var item = Assert.Single(cart.GetProperty("items").EnumerateArray());
+        Assert.Equal(3, item.GetProperty("quantity").GetInt32());
+        Assert.Equal(164.97m, cart.GetProperty("total").GetDecimal());
+    }
+
+    [Fact]
+    public async Task ReadingTheOwnCartAnswersItsLinesTotalAndLineCount()
+    {
+        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
+        var cartId = opened.GetProperty("cartId").GetString();
+        await AddAsync(client, cartId!, await ProductIdAsync("Domain-Driven Design"), 2);
+        await AddAsync(client, cartId!, await ProductIdAsync("Team Topologies"), 1);
+
+        var response = await client.GetAsync($"/api/carts/{cartId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var cart = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(2, cart.GetProperty("items").GetArrayLength());
+        Assert.Equal(139.97m, cart.GetProperty("total").GetDecimal());
+        Assert.Equal("EUR", cart.GetProperty("currency").GetString());
+        Assert.Equal(2, cart.GetProperty("itemCount").GetInt32());
+    }
+
+    [Fact]
     public async Task RemovingAProductByItsIdTakesItsWholeLineOut()
     {
         var client = Bearer(await RegisterAsync("ada@example.com"));
