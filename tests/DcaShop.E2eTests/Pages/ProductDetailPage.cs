@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 using Microsoft.Playwright;
 
 namespace DcaShop.E2eTests.Pages;
@@ -42,6 +44,24 @@ public sealed class ProductDetailPage : BasePage
     {
         await page.GotoAsync(BaseUrl + path);
         return await OpenAsync(page);
+    }
+
+    /// <summary>Opens the product page at <paramref name="path"/> of the shop at <paramref name="shopUrl"/>, a shop other than the suite's own.</summary>
+    public static async Task<ProductDetailPage> NavigateToAsync(IPage page, string shopUrl, string path)
+    {
+        await page.GotoAsync(shopUrl + path);
+        var detail = new ProductDetailPage(page);
+        await detail.WaitForAsync(ProductDetail);
+        return detail;
+    }
+
+    /// <summary>Presses "Add to Cart" and waits until the shop shows its cart page, whichever shop it is.</summary>
+    public async Task PressAddToCartAsync()
+    {
+        var button = Page.Locator($"[data-test='{AddToCartButton}']");
+        await Assertions.Expect(button).ToBeVisibleAsync();
+        await button.ClickAsync();
+        await Assertions.Expect(Page).ToHaveURLAsync(new Regex("^https?://[^/]+/cart$"));
     }
 
     public string ShownPath => CurrentPath;

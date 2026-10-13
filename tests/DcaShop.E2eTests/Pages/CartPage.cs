@@ -19,6 +19,15 @@ public sealed class CartPage : BasePage
         return await OpenAsync(page);
     }
 
+    /// <summary>Opens the cart page of the shop at <paramref name="shopUrl"/>, a shop other than the suite's own, with its lines.</summary>
+    public static async Task<CartPage> NavigateToAsync(IPage page, string shopUrl)
+    {
+        await page.GotoAsync(shopUrl + "/cart");
+        var cart = new CartPage(page);
+        await cart.WaitForAsync(CartItem);
+        return cart;
+    }
+
     public static async Task<CartPage> OpenAsync(IPage page)
     {
         var cart = new CartPage(page);
@@ -80,6 +89,15 @@ public sealed class CartPage : BasePage
             (await item.Locator("[data-test='cart-item-quantity']").InnerTextAsync()).Trim(),
             await ValueBesideAsync(item, "Unit Price"),
             await ValueBesideAsync(item, "Line Total"));
+    }
+
+    /// <summary>The stock warnings the line of the named product shows, as written; empty when it shows none.</summary>
+    public async Task<IReadOnlyList<string>> StockWarningsAsync(string productName)
+    {
+        var item = Page.Locator($"[data-test='{CartItem}']")
+            .Filter(new LocatorFilterOptions { Has = Page.Locator("[data-test='cart-item-name']", new PageLocatorOptions { HasTextString = productName }) });
+        await Assertions.Expect(item).ToHaveCountAsync(1);
+        return (await item.Locator("[data-test='stock-alert']").AllInnerTextsAsync()).Select(t => t.Trim()).ToList();
     }
 
     /// <summary>The value shown beside a label in a line. The markup carries no data-test for it.</summary>

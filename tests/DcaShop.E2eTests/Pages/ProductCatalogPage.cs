@@ -73,6 +73,13 @@ public sealed class ProductCatalogPage : BasePage
             .Locator($".{CardPriceClass}")
             .InnerTextAsync()).Trim();
 
+    /// <summary>The path "View Details" leads to on the card whose title is <paramref name="name"/>.</summary>
+    public async Task<string> ProductPathAsync(string name) =>
+        await Page.Locator($"[data-test='{ProductCard}']")
+            .Filter(new LocatorFilterOptions { Has = Page.Locator($"[data-test='{ProductTitle}']", new PageLocatorOptions { HasTextRegex = new Regex($"^\\s*{Regex.Escape(name)}\\s*$") }) })
+            .Locator($"[data-test='{ViewDetailsLink}']")
+            .GetAttributeAsync("href") ?? string.Empty;
+
     public Task<bool> HasProductsAsync() => ExistsAsync(ProductCard);
 
     /// <summary>Whether the page shows the layout's error message.</summary>
