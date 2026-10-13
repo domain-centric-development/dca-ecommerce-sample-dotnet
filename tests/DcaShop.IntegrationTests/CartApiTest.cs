@@ -4,7 +4,12 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
+using DcaShop.Account.Adapter.Incoming.Security;
+using DcaShop.SharedKernel.Application.Shared;
+using DcaShop.SharedKernel.Domain.Model;
+
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DcaShop.IntegrationTests;
 
@@ -144,6 +149,28 @@ public sealed class CartApiTest : IDisposable
         Assert.Equal(1, cart.GetProperty("itemCount").GetInt32());
     }
 
+    [Fact]
+    public async Task TheStaffListSpellsACartsStatusAsTheSingleCartsAnswerDoes()
+    {
+        var ada = Bearer(await RegisterAsync("ada@example.com"));
+        var opened = await (await ada.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
+        var cartId = opened.GetProperty("cartId").GetString();
+        var customerId = opened.GetProperty("customerId").GetString();
+        await AddAsync(ada, cartId!, await ProductIdAsync("Domain-Driven Design"), 2);
+        var staff = Bearer(StaffToken(SubjectOf(await RegisterAsync("operator@example.com")), "operator@example.com"));
+
+        var response = await staff.GetAsync("/api/carts");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var carts = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("carts");
+        var cart = Assert.Single(carts.EnumerateArray(), c => c.GetProperty("cartId").GetString() == cartId);
+        Assert.Equal(customerId, cart.GetProperty("customerId").GetString());
+        Assert.Equal("ACTIVE", cart.GetProperty("status").GetString());
+        Assert.Equal(1, cart.GetProperty("itemCount").GetInt32());
+        Assert.Equal(109.98m, cart.GetProperty("total").GetDecimal());
+        Assert.Equal("EUR", cart.GetProperty("currency").GetString());
+    }
+
     private async Task AddAsync(HttpClient client, string cartId, string productId, int quantity)
     {
         var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId, quantity });
@@ -178,6 +205,27 @@ public sealed class CartApiTest : IDisposable
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
+    }
+
+    /// <summary>
+    /// A staff token for an existing account. No registration path hands the role out, so the test mints the
+    /// token the way an operator provisioning tool would.
+    /// </summary>
+    private string StaffToken(string userId, string email)
+    {
+        using var scope = _factory.Services.CreateScope();
+        return scope.ServiceProvider.GetRequiredService<JwtTokenService>().GenerateRegisteredToken(
+            UserId.Of(userId),
+            email,
+            new HashSet<string> { IIdentityProvider.IIdentity.RoleCustomer, IIdentityProvider.IIdentity.RoleStaff });
+    }
+
+    private static string SubjectOf(string jwt)
+    {
+        var payload = jwt.Split('.')[1];
+        var padded = payload.PadRight(payload.Length + ((4 - (payload.Length % 4)) % 4), '=');
+        var json = JsonDocument.Parse(Convert.FromBase64String(padded.Replace('-', '+').Replace('_', '/')));
+        return json.RootElement.GetProperty("sub").GetString()!;
     }
 
     private static StringContent Empty() => new(string.Empty, Encoding.UTF8, "application/json");

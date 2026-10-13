@@ -18,7 +18,7 @@ public sealed class ShoppingCartDtoConverter
             cart.CartId.Value.ToString(),
             cart.CustomerId.Value,
             cart.Items.Select(ToItemDto).ToList(),
-            cart.Status.ToString().ToUpperInvariant(),
+            Spell(cart.Status),
             subtotal.Amount,
             subtotal.Currency,
             cart.ItemCount);
@@ -32,12 +32,15 @@ public sealed class ShoppingCartDtoConverter
                 .Select(c => new ShoppingCartListDto.CartSummaryDto(
                     c.CartId.ToString(),
                     c.CustomerId,
-                    c.Status,
+                    Spell(c.Status),
                     c.ItemCount,
                     c.Total.Amount,
                     c.Total.Currency))
                 .ToList());
     }
+
+    /// <summary>Every answer spells a cart's status the same way: upper-case, as the reference API does.</summary>
+    private static string Spell(CartStatus status) => status.ToString().ToUpperInvariant();
 
     private static CartItemDto ToItemDto(EnrichedCartItem item) =>
         new(

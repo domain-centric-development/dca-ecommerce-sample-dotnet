@@ -1,3 +1,4 @@
+using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
 namespace DcaShop.Cart.Application.Operations.GetAllCarts;
 
@@ -10,7 +11,7 @@ public sealed record GetAllCartsResult(IReadOnlyList<GetAllCartsResult.CartSumma
     public sealed record CartSummary(
         Guid CartId,
         string CustomerId,
-        string Status,
+        CartStatus Status,
         int ItemCount,
         Money Total);
 }

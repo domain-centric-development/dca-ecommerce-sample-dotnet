@@ -25,7 +25,7 @@ public sealed class GetAllCartsUseCase : IGetAllCartsInputPort
                 return new GetAllCartsResult.CartSummary(
                     cart.Id.Value,
                     cart.CustomerId.Value,
-                    cart.Status.ToString(),
+                    cart.Status,
                     cart.ItemCount,
                     total);
             })
