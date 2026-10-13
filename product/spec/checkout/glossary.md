@@ -275,11 +275,13 @@ Kernel should be used here.
 
 ### PaymentProviderId
 
-**Definition:** Identifier of an external payment provider. The shop registers exactly one: `provider`, the
-payment service provider over REST, when its address is configured (`Checkout:PaymentProvider:BaseUrl`), and `mock`,
-the stand-in inside the sample, otherwise.
+**Definition:** Identifier of an external payment provider. The shop registers a single one:
+`provider`, the payment provider behind its REST contract, where a provider address
+(`Checkout:PaymentProvider:BaseUrl`) is configured; `mock`, the payment stand-in, otherwise.
 
 **Type:** Value Object (ID)
+
+**Related terms:** `PaymentResult`, `PaymentSelection`.
 
 ### ArticlePrice
 
@@ -370,16 +372,16 @@ purposes.
 
 ### Step access
 
-**Definition:** Whether a checkout may be shown at a requested step, and where the customer goes instead:
-terminal and confirmed sessions only reach the confirmation, and a step whose prerequisites are unfulfilled
-sends them to the step they are actually on. Going back to a completed step is allowed. A session that is
-not there at all sends them back to the cart — the one part the model cannot answer, because there is no
-snapshot to ask; the `GetActiveCheckoutSession` use case answers that.
+**Definition:** Whether a checkout may be shown at a requested step, and where the customer goes
+instead: terminal and confirmed sessions only reach the confirmation, and a step whose prerequisites are
+unfulfilled sends them to the step they are actually on. Going back to a completed step is allowed. A
+session that is not there at all sends them back to the cart — the one part the model cannot answer,
+because there is no snapshot to ask; the `GetActiveCheckoutSession` use case answers that.
 
 **Type:** Behaviour of `CheckoutCartSnapshot`
 
-**Notes:** Business logic, not presentation: it holds whether the user interface shows one page or five. It
-decides on the snapshot alone, so a read does not load the session aggregate.
+**Notes:** Business logic, not presentation: it holds whether the user interface shows one page or five.
+It decides on the snapshot alone, so a read does not load the session aggregate.
 
 **Related terms:** `CheckoutSession`, `CheckoutCartSnapshot`, `CheckoutStep`, `StepAccess`.
 
@@ -420,7 +422,7 @@ and read purposes.
 **Related terms:** `CheckoutSession`, `LineItemSnapshot`.
 
 **Operations:** `From`, `ItemCount`, `TotalQuantity`, `HasBuyerInfo`, `HasDeliveryAddress`,
-`HasShippingOption`, `HasPaymentSelection`, `HasTotals`, `HasOrderReference`, `IsActive`,
+`HasShippingOption`, `HasPaymentSelection`, `HasOrderReference`, `IsActive`,
 `IsCompleted`, `IsConfirmed`.
 
 ### LineItemSnapshot
@@ -518,21 +520,29 @@ refused. Please choose another way to pay." for a refusal, "The payment provider
 try again later." when the provider is unavailable.
 
 **Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IPaymentProviderRegistry`, `IPaymentProvider`,
-`PaymentOutcome`
+`PaymentResult`
 
 ---
 
-### PaymentOutcome
+### PaymentResult
 
-**Definition:** How the payment provider answered a payment operation: `Succeeded` (the payment is authorized and
-comes with the provider's payment reference), `Refused` (the provider declined the payment, or does not offer the
-operation, and asking again the same way will not change that) or `Unavailable` (no usable answer). A refusal keeps
-the customer at the payment step to choose another way to pay.
+**Definition:** What the payment provider made of a payment operation, as checkout understands it. A payment
+request carries the checkout session's total amount and currency to the provider; its outcome is one of:
 
-**Type:** Concept (part of the `IPaymentProvider` port contract)
+- `Succeeded` — an **authorized payment**: the provider accepted it and gave a payment reference. Only then
+  does the session record its `PaymentSelection` and publish `PaymentSubmitted`.
+- `Refused` — a **refused payment**: the provider answered and declined. The checkout stays at the payment
+  step (`PaymentInitiationFailed`).
+- `Unavailable` — an **unavailable provider**: no answer within 2 seconds, no connection, or an answer outside
+  the provider's contract. The checkout stays at the payment step (`PaymentProviderUnavailable`).
 
-**Related terms:** `PaymentSelection` (keeps the reference of a succeeded payment), `PaymentInitiationFailed`,
-`PaymentProviderUnavailable`
+**Type:** Concept (result of the `IPaymentProvider` output port)
+
+**Related terms:** `PaymentProviderId`, `PaymentSelection`, `PaymentSubmitted`.
+
+**Notes:** The **payment stand-in** (`MockPaymentProvider`, id `mock`) authorizes every payment and takes
+payments where no provider address is configured. The provider's contract has no confirmation or cancellation;
+the REST adapter answers both with `Refused` without asking the provider.
 
 ## Features
 

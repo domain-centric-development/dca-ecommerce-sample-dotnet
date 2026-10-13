@@ -4,25 +4,25 @@
 > (`Application/`, `Adapter/`). Backoffice is a **Bounded Context of a generic
 > subdomain** — operating this application — and has no `Domain/` model of its own:
 > in transaction-script style the use case reads a Store and maps to a Result, which
-> the pattern-selection decision allows for a generic subdomain. Terms are therefore
-> taken from the application and adapter layers.
+> the pattern-selection decision (ADR-003) allows for a generic subdomain. Terms are
+> therefore taken from the application and adapter layers.
 
 ## Context Character
 
 Backoffice is the Bounded Context for **operating this application**: monitoring,
 the event publication log, future dashboards and operator navigation. Its language
-is its own — an *event publication* is a dispatched integration event with a
-delivery status, a term no business context uses. Context-specific admin pages
-(products, prices, inventory) belong to their own Bounded Contexts under
-`/backoffice/{context}/`, not here.
+is its own — an *event publication* is a dispatched event with a completion status,
+a term no business context uses. Context-specific admin pages (products, prices,
+inventory) belong to their own Bounded Contexts under `/backoffice/{context}/`, not
+here.
 
 ## Concepts
 
 ### EventPublicationLog
 
 **Definition:** Logical, append-only audit log of everything the shop has published,
-including its delivery status. Backoffice reads this log; the writes belong to the
-integration-event outbox, which registers a publication inside the publishing use
+including its delivery status. Backoffice reads this log; the writes belong to
+the integration-event outbox, which registers a publication inside the publishing use
 case's transaction and marks it completed once it has been delivered.
 
 **Type:** Concept (operational data set, not an Aggregate)
@@ -123,17 +123,16 @@ the **Completion Status**: `COMPLETED` is completed, every other status is incom
 
 **Definition:** One try at delivering an event to one listener, counted per entry.
 The number on the payload's first line counts every try, including the successful
-one. A delivery made at its first try reads `attempts: 1`. A pending or failed
-delivery counts only its failed tries; a delivery that used up its attempts reads
-`Status: FAILED, attempts: 5`.
+one. A delivery made at its first try reads `attempts: 1`; a delivery that used up
+its attempts reads `Status: FAILED, attempts: 5`.
 
 **Type:** Concept
 
 **Related terms:** `Publication Status`, `EventPublicationEntry`
 
-**Notes:** The outbox records failed deliveries only. The store adds the
-successful try once the listener's delivery is completed
-(`OutboxEventPublicationLogStore.Tries`).
+**Notes:** The outbox records failed deliveries only, so a pending or failed delivery
+counts only its failed tries. The store adds the successful try once the listener's
+delivery is completed (`OutboxEventPublicationLogStore.Tries`).
 
 ---
 
@@ -142,14 +141,15 @@ successful try once the listener's delivery is completed
 **Store** is used in Backoffice instead of **Repository** because the data has
 **no Aggregate lifecycle**:
 
-| Aspect          | Repository                                | Store (here)                                    |
-|-----------------|-------------------------------------------|-------------------------------------------------|
-| Lifecycle       | Load → mutate → save                      | Append-only, written externally                 |
-| Content         | Aggregate Roots                           | Operational entries without business identity   |
-| Operations      | `FindByIdAsync`, `SaveAsync`, `DeleteByIdAsync` | `FindAllAsync`, count, record (no save)   |
-| Example         | `IOrderRepository`                        | `IEventPublicationLogStore`                     |
+| Aspect          | Repository                                      | Store (here)                                    |
+|-----------------|-------------------------------------------------|-------------------------------------------------|
+| Lifecycle       | Load → mutate → save                            | Append-only, written externally                 |
+| Content         | Aggregate Roots                                 | Operational entries without business identity   |
+| Operations      | `FindByIdAsync`, `SaveAsync`, `DeleteByIdAsync` | `FindAllAsync`, count, record (no save)         |
+| Example         | `IShoppingCartRepository`                       | `IEventPublicationLogStore`                     |
 
-Backoffice does **not** write to the log — the outbox owns the publications.
+Backoffice does **not** write to the log — the outbox owns the
+publications.
 `OutboxEventPublicationLogStore` is **read-only**.
 
 ---
@@ -158,7 +158,7 @@ Backoffice does **not** write to the log — the outbox owns the publications.
 
 ### EventPublicationLogStore (Output Port)
 
-**Definition:** Read port onto the shop's publication log.
+**Definition:** Read port onto the shop's event publication log.
 
 **Type:** Output Port (`IStore` marker)
 
@@ -215,6 +215,6 @@ The parts of the context's behaviour its people name; each groups what holds in 
 - Should the term **Event Publication** be promoted to the Shared Kernel
   glossary? (It will likely be relevant for other operational views as well.)
 - Planned extensions (retry, republish) — will these live in Backoffice or with
-  the outbox dispatcher that owns delivery?
+  the outbox dispatcher, which owns delivery?
 - Should Backoffice become its own Bounded Context in the long term, or remain
   classified as a Generic Subdomain?

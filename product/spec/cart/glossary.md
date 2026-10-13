@@ -186,7 +186,7 @@ via "clear cart").
 
 ### CartCompleted
 
-Legacy event name retained for the cart reconciliation notification. The current completion handler removes only captured units; it does not change an active cart to Completed. Replays with no intersection emit nothing. The handler, `CartCompletionEventConsumer`, hands the `EventId` of the `ICartCompletionTrigger` (an `IIntegrationEvent`) to `CompleteCart`, which skips an event `IProcessedEvents` has already recorded for its effect, `complete-cart`, and records it in the same transaction.
+Legacy event name retained for the cart reconciliation notification. The current completion handler removes only captured units; it does not change an active cart to Completed. Replays with no intersection emit nothing. The handler, `CartCompletionEventConsumer`, hands the `EventId` of the `ICartCompletionTrigger` (an `IIntegrationEvent`) to `CompleteCartUseCase`, which skips an event `IProcessedEvents` has already recorded for its effect, `complete-cart`, and records it in the same transaction.
 
 ### CartAbandoned
 
@@ -279,14 +279,14 @@ completeness of the article data.
 
 ### IArticlePriceResolver
 
-**Definition:** Interface through which the Cart context retrieves
-current prices and availabilities for a product — without direct coupling to
-Pricing or Inventory infrastructure. Used in the aggregate for
-`CalculateTotal(...)` and `ValidateForCheckout(...)`.
+**Definition:** Interface through which current prices and availabilities for a product are
+looked up — without direct coupling to Pricing or Inventory infrastructure. A legacy lookup
+abstraction: no aggregate accepts it, only tests implement it; `CartPricing` receives immutable
+line and `ArticlePrice` snapshots retrieved by the use case.
 
 **Type:** Concept (Domain Port)
 
-**Related terms:** `ArticlePrice`
+**Related terms:** `ArticlePrice`, `CartPricing`
 
 ## Concepts (no code artifact)
 
@@ -294,8 +294,8 @@ Pricing or Inventory infrastructure. Used in the aggregate for
 
 **Definition:** The price of a cart item frozen at the time it was added.
 Serves price-change detection and transparency toward the customer, but is
-NOT the price used for settlement at checkout time (that one is fetched fresh
-from the `IArticlePriceResolver`).
+NOT the price used for settlement at checkout time (that one is read fresh
+when the checkout is priced).
 
 **Type:** Concept
 

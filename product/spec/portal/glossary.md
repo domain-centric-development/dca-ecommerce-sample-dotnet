@@ -17,7 +17,7 @@ so it carries the thin shape the pattern-selection decision allows:
 - Navigation to Product Catalog, Shopping Cart, Checkout
 - No Aggregates, Entities, Value Objects, Events, or Domain Services
 - No application use cases (purely presentational)
-- It references no other context project — only `DcaShop.SharedKernel`
+- Allowed dependencies: `DcaShop.SharedKernel` — no other context
 
 **Classification:** a Bounded Context with a generic subdomain (UI composition).
 The boundary is a language boundary, not a model size: the Portal's terms —

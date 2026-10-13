@@ -15,7 +15,7 @@ models.
 ### Product
 
 **Definition:** An identifiable product listed in the catalog with descriptive
-master data (name, description, category, image) and a unique Sku. Source of
+master data (name, description, category, image) and a unique SKU. Source of
 truth for product identity and descriptive attributes.
 
 **Type:** Aggregate Root
@@ -125,7 +125,8 @@ yield an empty selection.
 
 **Notes:** "Has a price" means Pricing's answer contains the product.
 Out-of-stock products are offered as long as they have a price. Not a
-popularity ranking and not personalised.
+popularity ranking and not personalised. Read by the query use case
+`GetProductSelectionUseCase`.
 
 ## Domain Events
 

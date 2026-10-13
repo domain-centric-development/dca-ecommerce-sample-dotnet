@@ -1,7 +1,7 @@
 # Pricing Context — Ubiquitous Language Glossary
 
 > **Bootstrap note:** This glossary was initially derived from the existing
-> domain code (`pricing/domain/model` and `pricing/domain/event`). It reflects
+> domain code (`Pricing/Domain/Model` and `Pricing/Domain/Event`). It reflects
 > the **current state**, including known language and modeling conflicts
 > (see the "Open Issues" section). Terms are intended to be aligned
 > iteratively with the business. Update via `/ubiquitous-language`.
@@ -56,7 +56,7 @@ in a pure pricing model, `ProductId` suffices as a natural key.
 
 **Related terms:** `ProductPrice`
 
-**Operations:** `Generate()`, `Of(guid)`
+**Operations:** `Generate()`, `Of(value)`
 
 ---
 
@@ -193,7 +193,8 @@ business:
    - Extend the model into a **price history** in which each historical price
      entry has its own identity (then `PriceId` makes sense).
 
-2. **CRUD language `SetProductPrice`** in the use-case layer — should be
+2. **CRUD language `SetProductPrice`** in the use-case layer and
+   `PricingService.SetPriceAsync` in the Api — should be
    renamed to **`ProvisionInitialPrice`** (or similar business-meaningful name)
    to linguistically express the transition character ("a product is being
    priced for the first time"). In the aggregate this already corresponds to

@@ -34,7 +34,7 @@ open orders, and ensures that reservations never exceed the available quantity.
 - `Reserve(amount)` — Reserve stock for an order: the amount is earmarked out of the unreserved stock and stays in the available quantity
 - `Release(amount)` — Release previously reserved stock: the reservation shrinks, the available quantity is unchanged
 - `AdjustStockTo(quantity)` — Manual correction / stocktake (see Open Issues): the available quantity is set to the counted figure, a reservation above it is capped
-- `IsAvailable` — Says whether unreserved stock is available (a question; changes nothing)
+- `IsAvailable` — Checks whether unreserved stock is available (a question; changes nothing)
 
 **Notes:** Invariant: `reservedQuantity <= availableQuantity`. If the available
 stock drops below the reserved amount, the reservation is automatically
@@ -82,7 +82,7 @@ object.
 
 **Related terms:** `StockLevel`
 
-**Operations:** `Generate()`, `Of(guid)`
+**Operations:** `Generate()`, `Of(value)`
 
 ---
 
@@ -94,7 +94,7 @@ object.
 
 **Type:** Domain Event
 
-**Related terms:** `StockLevel.create`
+**Related terms:** `StockLevel.Create`
 
 **Notes:** Payload: `StockLevelId`, `ProductId`, `InitialQuantity`.
 
@@ -107,7 +107,7 @@ object.
 
 **Type:** Domain Event
 
-**Related terms:** `StockLevel.increaseStock`
+**Related terms:** `StockLevel.IncreaseStock`
 
 ---
 
@@ -118,7 +118,7 @@ object.
 
 **Type:** Domain Event
 
-**Related terms:** `StockLevel.decreaseStock`
+**Related terms:** `StockLevel.DecreaseStock`
 
 ---
 
@@ -129,7 +129,7 @@ order and is no longer available for further reservations.
 
 **Type:** Domain Event
 
-**Related terms:** `StockLevel.reserve`
+**Related terms:** `StockLevel.Reserve`
 
 ---
 
@@ -140,7 +140,7 @@ is reservable again.
 
 **Type:** Domain Event
 
-**Related terms:** `StockLevel.release`
+**Related terms:** `StockLevel.Release`
 
 ---
 
@@ -155,7 +155,7 @@ or stocktake (delta-agnostic).
 replaced by more business-precise events (`StockReconciled` for stocktake), or
 reduced entirely to `StockIncreased`/`StockDecreased`.
 
-**Related terms:** `StockLevel.adjustStockTo`
+**Related terms:** `StockLevel.AdjustStockTo`
 
 **Notes:** See Open Issues — "too generic".
 
@@ -184,7 +184,7 @@ given threshold — the stock level is *low*. The threshold itself is not low.
 
 **Type:** Specification
 
-**Related terms:** `StockQuantity`, Available quantity, Low stock, Stock
+**Related terms:** `StockQuantity`, Available quantity, Low stock, Low stock
 threshold
 
 **Notes:** Compares the quantity **held**; reservations do not enter the
@@ -197,7 +197,7 @@ predicate push-down without query technology entering the domain.
 ## Factories
 
 _No separate factories — construction via the static factory method
-`StockLevel.create(...)`._
+`StockLevel.Create(...)`._
 
 ---
 
@@ -234,7 +234,8 @@ whose stock must go down. Owned here and implemented by Checkout's `CheckoutConf
 lines and the event's `EventId` to the `ReduceStock` use case in one command (the contract extends
 `IIntegrationEvent`). The use case reduces the lines in one transaction, skips an event `IProcessedEvents` has
 already recorded for its effect, `reduce-stock`, and records it there — a redelivered order never reduces stock
-twice, while `set-stock-level` for the same event id is a different effect and still happens. Its `OrderLineItem` wording is an open issue — see below.
+twice, while `set-stock-level` for the same event id is a different effect and still happens. Its
+`OrderLineItems` wording is an open issue — see below.
 
 ---
 
@@ -247,7 +248,7 @@ regardless of whether parts of it are already reserved.
 
 **Type:** Concept
 
-**Related terms:** `StockQuantity`, `StockLevel.availableQuantity`
+**Related terms:** `StockQuantity`, `StockLevel.AvailableQuantity`
 
 ---
 
@@ -258,7 +259,7 @@ yet shipped and is no longer available for further reservations.
 
 **Type:** Concept
 
-**Related terms:** `StockQuantity`, `StockLevel.reservedQuantity`
+**Related terms:** `StockQuantity`, `StockLevel.ReservedQuantity`
 
 ---
 
@@ -275,33 +276,38 @@ still be reserved.
 
 ### Low stock
 
-**Definition:** State of a stock level whose available quantity is strictly
-below a threshold the asker gives — the state an operator must react to before
-the product runs out.
+**Definition:** A product whose available quantity is strictly below a threshold
+given with the question — the state an operator must react to before the
+product runs out. A property of the answer to that question, not a state stored
+on `StockLevel`.
 
 **Type:** Concept
 
-**Related terms:** `AvailableQuantityBelow`, Available quantity, Stock
+**Related terms:** `AvailableQuantityBelow`, `GetLowStockProductsQuery`,
+`GetLowStockProductsResult.LowStockProduct`, Available quantity, Low stock
 threshold
 
 **Notes:** Realised by `AvailableQuantityBelow`; asked for through the
 `GetLowStockProducts` use case, which answers a `LowStockProduct` per stock
-level with the quantity it holds.
+level with the quantity it holds. The comparison is strict — a product at
+exactly the threshold is not low. Reserved quantity does not enter the answer,
+so a product with everything on hand reserved is not reported as low (see Open
+Issues).
 
 ---
 
-### Stock threshold
+### Low stock threshold
 
-**Definition:** The quantity, supplied by the asker, at or above which a stock
-level is not low.
+**Definition:** The quantity asked about when looking for low stock; a product
+below it counts as low, a product at or above it does not.
 
 **Type:** Concept
 
-**Related terms:** Low stock, `AvailableQuantityBelow`
+**Related terms:** `GetLowStockProductsQuery.Threshold`, `AvailableQuantityBelow`,
+Low stock
 
-**Notes:** Not a property of a product: no stock level carries a reorder level
-of its own (see Open Issues). Carried per request by
-`GetLowStockProductsQuery.Threshold`.
+**Notes:** Per question, not per product — no stock level carries a reorder
+level of its own (see Open Issues). Negative thresholds are rejected.
 
 ---
 
@@ -324,7 +330,7 @@ business before the model is consolidated:
    - or a clean separation via `StockReserved` / `StockReleased` /
      `StockIncreased` / `StockDecreased`, which already exist anyway.
 
-3. **`IStockReductionTrigger.OrderLineItem`** is **Checkout language** and does
+3. **`IStockReductionTrigger.OrderLineItems`** is **Checkout language** and does
    not belong in the Inventory context. From an Inventory perspective, the
    trigger of a stock reduction should be generic (e.g. "shipment order",
    "reservation release") — correlation to the order ID happens via
@@ -339,7 +345,7 @@ business before the model is consolidated:
    unreserved quantity (available-to-promise) is unanswered; both readings are
    in this glossary.
 
-6. **Whose threshold?** One threshold is supplied per request. Whether a stock
+6. **Whose threshold?** One threshold is supplied per question. Whether a stock
    level should instead carry its own reorder level is unanswered.
 
 ---
@@ -353,7 +359,9 @@ own answer. A negative quantity is not among them — that is a malformed call a
 
 **Definition:** More stock would be taken out than the stock keeping unit holds.
 
-**Type:** Domain failure (`DomainException`) · **Related terms:** Available quantity, `StockLevel.DecreaseStock`
+**Type:** Domain failure (`DomainException`)
+
+**Related terms:** Available quantity, `StockLevel.DecreaseStock`
 
 ---
 
@@ -361,7 +369,9 @@ own answer. A negative quantity is not among them — that is a malformed call a
 
 **Definition:** More stock would be reserved than is still promisable.
 
-**Type:** Domain failure (`DomainException`) · **Related terms:** Unreserved quantity (available-to-promise), `StockLevel.Reserve`
+**Type:** Domain failure (`DomainException`)
+
+**Related terms:** Unreserved quantity (available-to-promise), `StockLevel.Reserve`
 
 ---
 
@@ -369,7 +379,9 @@ own answer. A negative quantity is not among them — that is a malformed call a
 
 **Definition:** More stock would be released than was ever reserved.
 
-**Type:** Domain failure (`DomainException`) · **Related terms:** Reserved quantity, `StockLevel.Release`
+**Type:** Domain failure (`DomainException`)
+
+**Related terms:** Reserved quantity, `StockLevel.Release`
 
 ## Features
 
