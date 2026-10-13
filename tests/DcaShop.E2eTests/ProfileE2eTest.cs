@@ -49,4 +49,24 @@ public sealed class ProfileE2eTest : BaseE2eTest
 
         Assert.Equal("Invalid email or password", await login.ErrorMessageTextAsync());
     }
+
+    [E2eFact(DisplayName = "Taken address is refused in the profile")]
+    public async Task AnAddressAnotherAccountHasIsRefusedAndStaysInTheField()
+    {
+        // The browser suite shares one shop, so both accounts carry a suffix of their own.
+        var run = Guid.NewGuid().ToString("N");
+        var annasEmail = $"anna.schmidt-{run}@example.com";
+        var bensEmail = $"ben.weber-{run}@example.com";
+        var ben = await RegisterPage.NavigateToAsync(Page);
+        await ben.RegisterAsync("Ben", "Weber", "1985-03-02", bensEmail, Password, Password);
+        await ClearCookiesAsync();
+        var anna = await RegisterPage.NavigateToAsync(Page);
+        await anna.RegisterAsync("Anna", "Schmidt", "1990-05-17", annasEmail, Password, Password);
+        var profile = await ProfilePage.NavigateToAsync(Page);
+
+        var refused = await (await profile.FillDetailsAsync(bensEmail, "1990-05-17")).SaveExpectingRefusalAsync();
+
+        Assert.Equal("This email address is already registered", await refused.ErrorMessageAsync());
+        Assert.Equal(bensEmail, await refused.EmailAsync());
+    }
 }

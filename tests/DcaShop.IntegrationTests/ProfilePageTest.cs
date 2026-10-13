@@ -100,6 +100,58 @@ public sealed class ProfilePageTest : IClassFixture<WebApplicationFactory<Progra
     }
 
     [Fact]
+    public async Task AnAddressWithoutADomainEndingIsRefused()
+    {
+        var client = Visitor(_factory.WithWebHostBuilder(_ => { }));
+        Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(client, Email)).StatusCode);
+
+        var refused = await SaveProfileAsync(client, "anna.meyer@example", "1990-05-17");
+
+        Assert.Equal(HttpStatusCode.OK, refused.Response.StatusCode);
+        Assert.Equal("Please enter a valid email address.", ErrorMessage(await refused.Response.Content.ReadAsStringAsync()));
+    }
+
+    [Fact]
+    public async Task AnEmptyDateOfBirthIsRefused()
+    {
+        var client = Visitor(_factory.WithWebHostBuilder(_ => { }));
+        Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(client, Email)).StatusCode);
+
+        var refused = await SaveProfileAsync(client, Email, string.Empty);
+
+        Assert.Equal(HttpStatusCode.OK, refused.Response.StatusCode);
+        Assert.Equal("Please enter a date like 1990-05-17", ErrorMessage(await refused.Response.Content.ReadAsStringAsync()));
+    }
+
+    [Fact]
+    public async Task ADateOfBirthInTheFutureIsRefused()
+    {
+        var client = Visitor(_factory.WithWebHostBuilder(_ => { }));
+        Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(client, Email)).StatusCode);
+
+        var refused = await SaveProfileAsync(client, Email, "2999-01-01");
+
+        Assert.Equal(HttpStatusCode.OK, refused.Response.StatusCode);
+        Assert.Equal(
+            "Please enter a date of birth that is not in the future.",
+            ErrorMessage(await refused.Response.Content.ReadAsStringAsync()));
+    }
+
+    [Fact]
+    public async Task ADateOfBirthThatIsNotADateIsRefusedAndStaysInTheField()
+    {
+        var client = Visitor(_factory.WithWebHostBuilder(_ => { }));
+        Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(client, Email)).StatusCode);
+
+        var refused = await SaveProfileAsync(client, Email, "17.05.1990");
+
+        var profile = await refused.Response.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.OK, refused.Response.StatusCode);
+        Assert.Equal("Please enter a date like 1990-05-17", ErrorMessage(profile));
+        Assert.Equal("17.05.1990", InputValue(profile, "profile-date-of-birth-input"));
+    }
+
+    [Fact]
     public async Task AVisitorWithoutCookiesIsSentFromTheProfileToTheLogin()
     {
         var client = Visitor(_factory);
@@ -207,6 +259,10 @@ public sealed class ProfilePageTest : IClassFixture<WebApplicationFactory<Progra
     /// <summary>The value the input carrying <paramref name="dataTest"/> is rendered with.</summary>
     private static string InputValue(string page, string dataTest) =>
         Text(page, $@"<input\b[^>]*\bvalue=""([^""]*)""[^>]*data-test=""{Regex.Escape(dataTest)}""");
+
+    /// <summary>The refusal the profile shows.</summary>
+    private static string ErrorMessage(string page) =>
+        Text(page, @"data-test=""profile-error-message"">([^<]*)</div>");
 
     private static string Text(string markup, string pattern)
     {
