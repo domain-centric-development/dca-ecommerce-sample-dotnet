@@ -53,4 +53,25 @@ public sealed class DeliveryPage : BasePage
     }
 
     public Task<bool> HasBackLinkAsync() => ExistsAsync(BackLink);
+
+    /// <summary>Chooses the shipping method shown under the given name.</summary>
+    public async Task<DeliveryPage> ChooseShippingMethodAsync(string name)
+    {
+        var option = Page.Locator("[data-test='delivery-shipping-option']").Filter(new LocatorFilterOptions { HasText = name });
+        await Assertions.Expect(option).ToBeVisibleAsync();
+        await option.Locator($"[data-test='{ShippingRadio}']").CheckAsync();
+        return this;
+    }
+
+    /// <summary>Submits the form and answers the path of whatever page the shop opens next, without expecting one.</summary>
+    public async Task<string> SubmitAndShowNextPathAsync()
+    {
+        var button = Page.Locator($"[data-test='{ContinueButton}']");
+        await Assertions.Expect(button).ToBeVisibleAsync();
+        await Page.RunAndWaitForRequestFinishedAsync(
+            () => button.ClickAsync(),
+            new PageRunAndWaitForRequestFinishedOptions { Predicate = request => request.IsNavigationRequest && request.Method == "GET" });
+        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+        return CurrentPath;
+    }
 }
