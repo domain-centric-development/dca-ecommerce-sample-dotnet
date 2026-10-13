@@ -29,6 +29,13 @@ public sealed class BuyerInfoPage : BasePage
         return buyer;
     }
 
+    /// <summary>The buyer step of the shop at <paramref name="shopUrl"/>, a shop other than the suite's own, once the browser shows it.</summary>
+    public static async Task<BuyerInfoPage> OpenAsync(IPage page, string shopUrl)
+    {
+        await page.WaitForURLAsync(shopUrl + UrlPattern);
+        return new BuyerInfoPage(page);
+    }
+
     public async Task<BuyerInfoPage> FillBuyerInfoAsync(string email, string firstName, string lastName, string phone)
     {
         await FillAsync("email", email);

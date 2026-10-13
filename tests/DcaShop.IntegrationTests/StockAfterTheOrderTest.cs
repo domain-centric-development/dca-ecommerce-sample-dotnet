@@ -81,6 +81,15 @@ internal static class GuestOrders
     /// <summary>Puts each product in the cart with its quantity, goes through the checkout and presses "Place Order".</summary>
     public static async Task PlaceOrderAsync(HttpClient guest, params (string ProductPath, int Quantity)[] lines)
     {
+        await GoToTheReviewAsync(guest, lines);
+        var confirmed = await guest.PostAsync("/checkout/confirm", Form(await guest.GetStringAsync("/checkout/review")));
+        Assert.Equal(HttpStatusCode.Redirect, confirmed.StatusCode);
+        Assert.Equal("/checkout/confirmation", confirmed.Headers.Location!.ToString());
+    }
+
+    /// <summary>Puts each product in the cart with its quantity and goes through the checkout up to the review.</summary>
+    public static async Task GoToTheReviewAsync(HttpClient guest, params (string ProductPath, int Quantity)[] lines)
+    {
         foreach (var (productPath, quantity) in lines)
         {
             var detail = await guest.GetStringAsync(productPath);
@@ -99,9 +108,6 @@ internal static class GuestOrders
         await StepAsync(guest, "/checkout/delivery", "/checkout/payment",
             ("street", "Hauptstrasse 1"), ("city", "Berlin"), ("postalCode", "10115"), ("country", "Germany"), ("shippingOptionId", "standard"));
         await StepAsync(guest, "/checkout/payment", "/checkout/review", ("providerId", "mock"));
-        var confirmed = await guest.PostAsync("/checkout/confirm", Form(await guest.GetStringAsync("/checkout/review")));
-        Assert.Equal(HttpStatusCode.Redirect, confirmed.StatusCode);
-        Assert.Equal("/checkout/confirmation", confirmed.Headers.Location!.ToString());
     }
 
     private static async Task StepAsync(HttpClient guest, string url, string expectedNext, params (string, string)[] fields)
@@ -111,7 +117,8 @@ internal static class GuestOrders
         Assert.Equal(expectedNext, response.Headers.Location!.ToString());
     }
 
-    private static FormUrlEncodedContent Form(string renderedPage, params (string Key, string Value)[] fields)
+    /// <summary>A form post carrying the given fields and the antiforgery token of <paramref name="renderedPage"/>.</summary>
+    public static FormUrlEncodedContent Form(string renderedPage, params (string Key, string Value)[] fields)
     {
         var token = Regex.Match(renderedPage, @"name=""__RequestVerificationToken"" type=""hidden"" value=""([^""]+)""").Groups[1].Value;
         Assert.NotEmpty(token);

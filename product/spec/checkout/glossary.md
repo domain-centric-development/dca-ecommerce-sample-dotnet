@@ -502,6 +502,8 @@ the per-item result.
 
 **Definition:** What the use case could not get hold of before a session exists, or could not address afterwards.
 Session and cart lookups are scoped to the caller, so "not yours" reads as "not found" (ADR-007).
+`CheckoutItemsUnavailable` is the start's refusal of a cart whose lines are unavailable or short of stock; it
+carries their product ids, in cart order.
 
 **Type:** Use-case failure (`UseCaseException`) · **Related terms:** `ICartDataPort`, `ICheckoutArticleDataPort`
 

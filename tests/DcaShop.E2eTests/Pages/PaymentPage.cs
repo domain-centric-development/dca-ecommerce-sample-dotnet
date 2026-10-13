@@ -20,6 +20,13 @@ public sealed class PaymentPage : BasePage
         return payment;
     }
 
+    /// <summary>The payment step of the shop at <paramref name="shopUrl"/>, a shop other than the suite's own, once the browser shows it.</summary>
+    public static async Task<PaymentPage> OpenAsync(IPage page, string shopUrl)
+    {
+        await page.WaitForURLAsync(shopUrl + UrlPattern);
+        return new PaymentPage(page);
+    }
+
     public async Task<PaymentPage> SelectFirstPaymentProviderAsync()
     {
         if (await ExistsAsync(ProviderRadio))

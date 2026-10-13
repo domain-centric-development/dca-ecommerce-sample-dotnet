@@ -6,6 +6,7 @@ public sealed class ReviewPage : BasePage
 {
     private const string UrlPattern = "/checkout/review";
     private const string PlaceOrderButton = "review-place-order-button";
+    private const string ErrorMessage = "review-error-message";
 
     private ReviewPage(IPage page) : base(page)
     {
@@ -17,6 +18,35 @@ public sealed class ReviewPage : BasePage
         await review.WaitForUrlAsync(UrlPattern);
         return review;
     }
+
+    /// <summary>The review of the shop at <paramref name="shopUrl"/>, a shop other than the suite's own, once the browser shows it.</summary>
+    public static async Task<ReviewPage> OpenAsync(IPage page, string shopUrl)
+    {
+        await page.WaitForURLAsync(shopUrl + UrlPattern);
+        return new ReviewPage(page);
+    }
+
+    /// <summary>Presses "Place Order" and waits until the shop has answered it, wherever that answer leads.</summary>
+    public async Task PressPlaceOrderAsync()
+    {
+        var button = Page.Locator($"[data-test='{PlaceOrderButton}']");
+        await Assertions.Expect(button).ToBeVisibleAsync();
+        await Page.RunAndWaitForResponseAsync(
+            () => button.ClickAsync(),
+            response => response.Request.Method == "POST" && new Uri(response.Url).AbsolutePath == "/checkout/confirm");
+        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+    }
+
+    /// <summary>The error the review shows, as written.</summary>
+    public async Task<string> ErrorMessageAsync()
+    {
+        var error = Page.Locator($"[data-test='{ErrorMessage}']");
+        await Assertions.Expect(error).ToBeVisibleAsync();
+        return (await error.InnerTextAsync()).Trim();
+    }
+
+    /// <summary>Whether the page shows the confirmation of a placed order.</summary>
+    public async Task<bool> ShowsConfirmationAsync() => await Page.Locator("[data-test='confirmation-title']").CountAsync() > 0;
 
     public bool IsOnPage => CurrentPath.StartsWith(UrlPattern, StringComparison.Ordinal);
 

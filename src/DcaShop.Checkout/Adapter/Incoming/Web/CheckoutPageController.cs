@@ -26,6 +26,12 @@ namespace DcaShop.Checkout.Adapter.Incoming.Web;
 [Route("checkout")]
 public sealed class CheckoutPageController : Controller
 {
+    /// <summary>
+    /// The refused "Place Order" carried to the review under a key of its own: only that refusal lets the review render
+    /// without asking for step access, never an error some other page left unread.
+    /// </summary>
+    private const string PlaceOrderRefusal = "PlaceOrderRefusal";
+
     private readonly IStartCheckoutInputPort _start;
     private readonly IGetActiveCheckoutSessionInputPort _active;
     private readonly IGetConfirmedCheckoutSessionInputPort _confirmed;
@@ -107,12 +113,43 @@ public sealed class CheckoutPageController : Controller
     public Task<IActionResult> SubmitPayment([FromForm] string providerId, CancellationToken cancellationToken) =>
         Submit(CheckoutStep.Payment, "/checkout/review", id => _submitPayment.ExecuteAsync(new SubmitPaymentCommand(id, CurrentCustomerId(), providerId), cancellationToken), cancellationToken);
 
+    /// <summary>The review; a refused "Place Order" redirected here carries its error over.</summary>
     [HttpGet("review")]
-    public Task<IActionResult> Review(CancellationToken cancellationToken) => Page(CheckoutStep.Review, cancellationToken);
+    public Task<IActionResult> Review(CancellationToken cancellationToken) =>
+        Page(CheckoutStep.Review, cancellationToken, TempData[PlaceOrderRefusal] as string);
 
+    /// <summary>A refused "Place Order" redirects to the review, so the browser stays at the review's own address.</summary>
     [HttpPost("confirm")]
-    public Task<IActionResult> Confirm(CancellationToken cancellationToken) =>
-        Submit(CheckoutStep.Review, "/checkout/confirmation", id => _confirm.ExecuteAsync(new ConfirmCheckoutCommand(id, CurrentCustomerId()), cancellationToken), cancellationToken);
+    public async Task<IActionResult> Confirm(CancellationToken cancellationToken)
+    {
+        var session = await ActiveSessionAsync(cancellationToken);
+        if (session is null)
+        {
+            return NoActiveSession();
+        }
+
+        try
+        {
+            await _confirm.ExecuteAsync(new ConfirmCheckoutCommand(session.SessionId.Value, CurrentCustomerId()), cancellationToken);
+            return Redirect(CheckoutRoutes.PathOf(CheckoutStep.Confirmation));
+        }
+        catch (DomainException e) when (e is CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException)
+        {
+            return await ToTheStepStillOpenAsync(CheckoutStep.Review, cancellationToken) ?? BackToTheReview(e);
+        }
+        catch (Exception e) when (e is UseCaseException or DomainException)
+        {
+            // The confirmation carries no field the customer typed, so only the checkout's own refusals arrive here.
+            return BackToTheReview(e);
+        }
+    }
+
+    /// <summary>The refused "Place Order" carried to the review, which renders it at its own address.</summary>
+    private RedirectResult BackToTheReview(Exception refusal)
+    {
+        TempData[PlaceOrderRefusal] = MessageFor(CheckoutStep.Review, refusal);
+        return Redirect(CheckoutRoutes.PathOf(CheckoutStep.Review));
+    }
 
     [HttpGet("confirmation")]
     public async Task<IActionResult> Confirmation(CancellationToken cancellationToken)
@@ -129,12 +166,12 @@ public sealed class CheckoutPageController : Controller
 
     private async Task<IActionResult> Page(CheckoutStep step, CancellationToken cancellationToken, string? error = null)
     {
-        // Re-rendering a step after a rejected submit keeps the page; otherwise the domain decides who may see it
+        // A step re-rendered with an error — a rejected submit, or a refused "Place Order" carried to the review — keeps
+        // the page; otherwise the domain decides who may see it
         var result = await _active.ExecuteAsync(new GetActiveCheckoutSessionQuery(CurrentCustomerId(), error is null ? step : null), cancellationToken);
         if (result.Session is not { } session)
         {
-            TempData["Error"] = "No active checkout session found";
-            return Redirect(CheckoutRoutes.Cart);
+            return NoActiveSession();
         }
 
         if (result.StepAccess is { Granted: false } access)
@@ -150,8 +187,7 @@ public sealed class CheckoutPageController : Controller
         var session = await ActiveSessionAsync(cancellationToken);
         if (session is null)
         {
-            TempData["Error"] = "No active checkout session found";
-            return Redirect(CheckoutRoutes.Cart);
+            return NoActiveSession();
         }
 
         try
@@ -161,14 +197,7 @@ public sealed class CheckoutPageController : Controller
         }
         catch (DomainException e) when (e is CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException)
         {
-            // Sent before the earlier steps are done: the step guard sends the customer to the step still open
-            var access = (await _active.ExecuteAsync(new GetActiveCheckoutSessionQuery(CurrentCustomerId(), step), cancellationToken)).StepAccess;
-            if (access is { Granted: false })
-            {
-                return Redirect(CheckoutRoutes.PathTo(access));
-            }
-
-            return await Page(step, cancellationToken, MessageFor(step, e));
+            return await ToTheStepStillOpenAsync(step, cancellationToken) ?? await Page(step, cancellationToken, MessageFor(step, e));
         }
         catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
         {
@@ -176,6 +205,23 @@ public sealed class CheckoutPageController : Controller
             // reaches a value object unvalidated.
             return await Page(step, cancellationToken, MessageFor(step, e));
         }
+    }
+
+    /// <summary>
+    /// Sent before the earlier steps are done: the step guard sends the customer to the step still open — none when it
+    /// grants <paramref name="step"/> after all.
+    /// </summary>
+    private async Task<RedirectResult?> ToTheStepStillOpenAsync(CheckoutStep step, CancellationToken cancellationToken)
+    {
+        var access = (await _active.ExecuteAsync(new GetActiveCheckoutSessionQuery(CurrentCustomerId(), step), cancellationToken)).StepAccess;
+        return access is { Granted: false } ? Redirect(CheckoutRoutes.PathTo(access)) : null;
+    }
+
+    /// <summary>Back to the cart, telling the customer there is no checkout to continue.</summary>
+    private RedirectResult NoActiveSession()
+    {
+        TempData["Error"] = "No active checkout session found";
+        return Redirect(CheckoutRoutes.Cart);
     }
 
     /// <summary>

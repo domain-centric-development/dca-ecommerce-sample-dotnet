@@ -62,7 +62,7 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
         var checkoutCart = _checkoutCartFactory.Create(cart.CartId, cart.CustomerId, lineItems, articles);
         if (!checkoutCart.IsValidForCheckout)
         {
-            throw new InvalidOperationException($"Cannot start checkout, {checkoutCart.InvalidItems().Count} item(s) unavailable or out of stock");
+            throw new CheckoutItemsUnavailableException(checkoutCart.InvalidItems().Select(i => i.LineItem.ProductId).ToList());
         }
 
         var subtotal = checkoutCart.CalculateCurrentSubtotal();
