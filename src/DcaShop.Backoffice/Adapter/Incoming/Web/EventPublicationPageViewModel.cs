@@ -34,8 +34,11 @@ public sealed record EventPublicationPageViewModel(
         string PublicationDate,
         string? CompletionDate,
         bool Completed,
-        string StatusLabel)
+        string StatusLabel,
+        bool Failed)
     {
+        private const string FailedStatus = "Failed";
+
         internal static Item From(EventPublicationSummary summary) =>
             new(
                 summary.Id.ToString(),
@@ -46,7 +49,8 @@ public sealed record EventPublicationPageViewModel(
                 Format(summary.PublicationDate)!,
                 Format(summary.CompletionDate),
                 summary.IsCompleted,
-                summary.IsCompleted ? "Completed" : summary.Status);
+                summary.IsCompleted ? "Completed" : "Incomplete",
+                summary.Status == FailedStatus);
 
         private static string? Format(DateTimeOffset? value) =>
             value?.LocalDateTime.ToString(DateFormat, CultureInfo.InvariantCulture);

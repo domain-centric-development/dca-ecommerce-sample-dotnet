@@ -64,7 +64,7 @@ else
 </div>
 }
 </div>
-@if (item.StatusLabel == "Failed")
+@if (item.Failed)
 {
 <form method="post" action="/backoffice/events/@item.Id/replay">
 @Html.AntiForgeryToken()

@@ -88,7 +88,9 @@ distinguish `EventPublicationSummary` (application layer) from
 
 **Definition:** Status of an event publication: **completed** when it has been
 delivered (`CompletionDate is not null`), otherwise **incomplete** — which covers
-both what is still queued and what failed and is being retried.
+both what is still queued and what failed and is being retried. The event log's
+badge shows exactly these two words; a **failed** publication is incomplete and is
+the one an operator can retry from the log.
 
 **Type:** Concept (derived attribute)
 
