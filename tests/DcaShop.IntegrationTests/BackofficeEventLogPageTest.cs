@@ -91,6 +91,23 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task EveryEntryOffersItsEventPayloadClosed()
+    {
+        var page = await EventLogAsync(Delivered, Staged, Pending, Failed);
+
+        var entries = Entries(page);
+        Assert.Equal(4, entries.Count);
+        Assert.All(entries, entry =>
+        {
+            var payload = Regex.Match(
+                entry, @"<details\b(?<attributes>[^>]*data-test=""event-payload""[^>]*)>\s*<summary\b[^>]*>(?<summary>[^<]*)</summary>");
+            Assert.True(payload.Success, "the entry offers its payload in a details element");
+            Assert.Equal("Event Payload", Rendered(payload.Groups["summary"].Value));
+            Assert.DoesNotMatch(@"\sopen(\s|=|$)", payload.Groups["attributes"].Value);
+        });
+    }
+
+    [Fact]
     public async Task TheBreadcrumbLeadsHomeFromTheEventPublicationLog()
     {
         var page = await EventLogAsync(Delivered, Failed);

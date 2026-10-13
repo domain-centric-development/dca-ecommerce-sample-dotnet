@@ -88,10 +88,19 @@ public sealed class BackofficeEventsPage : BasePage
     public async Task ExpandFirstEventPayloadAsync()
     {
         await WaitForAsync(EventPayload);
-        await ClickFirstAsync(EventPayload);
+        await Page.Locator($"[data-test='{EventPayload}']").First.Locator("summary").ClickAsync();
     }
 
-    public Task<string> FirstEventPayloadTextAsync() => TextAsync(EventPayload);
+    /// <summary>
+    /// Reads the payload content of the first entry as the browser shows it — the content alone, without the
+    /// "Event Payload" summary, and only once it is visible.
+    /// </summary>
+    public async Task<string> FirstEventPayloadTextAsync()
+    {
+        var content = Page.Locator($"[data-test='{EventPayload}']").First.Locator("pre");
+        await Assertions.Expect(content).ToBeVisibleAsync();
+        return (await content.InnerTextAsync()).Trim();
+    }
 
     /// <summary>
     /// Expands the "Event Payload" of the first entry of the given type that carries the badge "Completed" and reads the
