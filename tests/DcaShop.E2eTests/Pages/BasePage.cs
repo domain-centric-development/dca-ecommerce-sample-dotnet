@@ -120,6 +120,33 @@ public abstract class BasePage
     /// <summary>Whether the document marked by <see cref="MarkDocumentAsync"/> is still the one shown.</summary>
     public Task<bool> IsMarkedDocumentAsync() => Page.EvaluateAsync<bool>("() => window.__documentMark === true");
 
+    /// <summary>Whether this browser can animate the change from one page of the shop to the next.</summary>
+    public Task<bool> SupportsPageTransitionsAsync() => Page.EvaluateAsync<bool>("() => 'onpagereveal' in window");
+
+    /// <summary>
+    /// From the next page on, records the animations of the transition that reveals each page — every animation of a
+    /// view-transition part that lasts longer than nothing, once the transition is ready to run.
+    /// </summary>
+    public Task RecordPageTransitionsAsync() => Page.AddInitScriptAsync("""
+        addEventListener('pagereveal', async (event) => {
+          const transition = event.viewTransition;
+          if (transition) {
+            try { await transition.ready; } catch { }
+          }
+          window.__pageTransitionAnimations = document.getAnimations()
+            .filter(a => (a.effect?.pseudoElement ?? '').startsWith('::view-transition'))
+            .filter(a => a.effect.getComputedTiming().duration > 0)
+            .map(a => `${a.effect.pseudoElement} ${a.effect.getComputedTiming().duration} ms`);
+        });
+        """);
+
+    /// <summary>The animations recorded for the transition that revealed the shown page; empty when nothing moved.</summary>
+    public async Task<IReadOnlyList<string>> PageTransitionAnimationsAsync()
+    {
+        await Page.WaitForFunctionAsync("() => Array.isArray(window.__pageTransitionAnimations)");
+        return await Page.EvaluateAsync<string[]>("() => window.__pageTransitionAnimations");
+    }
+
     public sealed record HeaderBasketLine(string Name, string Quantity);
 
     public sealed record HeaderBasket(IReadOnlyList<HeaderBasketLine> Lines, string TotalLabel, string Total, string ViewCartText, string ViewCartTarget);

@@ -39,6 +39,16 @@ title and navigation elements for products, cart, and checkout.
 
 **Notes:** Currently the module's only endpoint.
 
+### Reduced motion (prefers-reduced-motion)
+
+**Definition:** The visitor's device preference for less motion; under it the
+shop changes pages without any animation.
+
+**Type:** Concept (part of the *Appearance* feature)
+
+**Notes:** Honoured by the `@media (prefers-reduced-motion: reduce)` block of
+`src/DcaShop.Web/wwwroot/css/main.css`, which stills every view-transition part.
+
 ---
 
 ## Referenced Terms (displayed from other contexts)
