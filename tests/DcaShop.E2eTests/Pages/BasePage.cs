@@ -53,6 +53,17 @@ public abstract class BasePage
     public async Task<bool> HeaderOffersRegisterAsync() =>
         await Page.Locator("[data-test='site-header'] [data-test='nav-register-link']").CountAsync() > 0;
 
+    /// <summary>Whether the site header offers the "Login" link.</summary>
+    public async Task<bool> HeaderOffersLoginAsync() =>
+        await Page.Locator("[data-test='site-header'] [data-test='nav-login-link']").CountAsync() > 0;
+
+    /// <summary>The label of the site header's logout button; empty when the header offers none.</summary>
+    public async Task<string> HeaderLogoutButtonAsync()
+    {
+        var logout = Page.Locator("[data-test='site-header'] [data-test='logout-button']");
+        return await logout.CountAsync() == 0 ? string.Empty : (await logout.InnerTextAsync()).Trim();
+    }
+
     protected string CurrentPath => Page.Url.Replace(BaseUrl, string.Empty, StringComparison.Ordinal);
 
     protected async Task<bool> PageContainsAsync(string text) => (await Page.Locator("body").TextContentAsync() ?? string.Empty).Contains(text, StringComparison.Ordinal);
