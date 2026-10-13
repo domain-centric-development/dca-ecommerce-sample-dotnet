@@ -27,7 +27,7 @@ public sealed class RestartedShop : IDisposable
 
     public static RestartedShop Start()
     {
-        // A port of its own, chosen by the system: the suite's shop already holds Kestrel's default one.
+        // A port of its own, chosen by the system, beside the suite's shop.
         var shop = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
             .UseSetting("Checkout:PaymentProvider:BaseUrl", PaymentProviderStub.Url)
             .ConfigureKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, 0)));

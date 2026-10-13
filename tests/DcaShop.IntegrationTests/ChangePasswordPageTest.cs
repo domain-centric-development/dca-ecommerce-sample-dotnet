@@ -121,6 +121,67 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
         Assert.Equal("/login?returnUrl=%2Faccount%2Fchange-password", response.Headers.Location!.ToString());
     }
 
+    [Fact]
+    public async Task AConfirmationThatDiffersIsNamedEvenWhenTheCurrentPasswordIsWrong()
+    {
+        var client = Visitor(_factory.WithWebHostBuilder(_ => { }));
+        Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(client, Email)).StatusCode);
+
+        var refused = await SubmitChangeAsync(client, "Wrong999", NewPassword, "Better457");
+
+        Assert.Equal(HttpStatusCode.OK, refused.StatusCode);
+        Assert.Equal("New password and confirmation do not match", ErrorMessage(await refused.Content.ReadAsStringAsync()));
+    }
+
+    [Fact]
+    public async Task AWrongCurrentPasswordIsRefusedWithItsOwnSentence()
+    {
+        var client = Visitor(_factory.WithWebHostBuilder(_ => { }));
+        Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(client, Email)).StatusCode);
+
+        var refused = await SubmitChangeAsync(client, "Wrong999", NewPassword, NewPassword);
+
+        Assert.Equal(HttpStatusCode.OK, refused.StatusCode);
+        Assert.Equal("Current password is not correct", ErrorMessage(await refused.Content.ReadAsStringAsync()));
+    }
+
+    [Fact]
+    public async Task AfterARefusedChangeTheOldPasswordStillLogsIn()
+    {
+        var shop = _factory.WithWebHostBuilder(_ => { });
+        var customer = Visitor(shop);
+        Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(customer, Email)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await SubmitChangeAsync(customer, "Wrong999", NewPassword, NewPassword)).StatusCode);
+        var client = Visitor(shop);
+        var page = await client.GetStringAsync("/login");
+
+        var loggedIn = await client.PostAsync(
+            "/login", Submission(Element(page, "login-form", "</form>"), ("email", Email), ("password", Password)));
+
+        var landing = await FollowRedirectsAsync(client, loggedIn);
+        Assert.Equal("/cart", landing.Path);
+        Assert.Equal(
+            $"Welcome, {Email}",
+            Text(await landing.Response.Content.ReadAsStringAsync(), @"data-test=""user-greeting"">([^<]*)</span>"));
+    }
+
+    /// <summary>Opens the change-password page and submits the three fields as typed.</summary>
+    private static async Task<HttpResponseMessage> SubmitChangeAsync(
+        HttpClient client, string current, string replacement, string confirmation)
+    {
+        var page = await client.GetStringAsync(ChangePasswordPath);
+        return await client.PostAsync(
+            ChangePasswordPath,
+            Submission(
+                Element(page, "change-password-form", "</form>"),
+                ("currentPassword", current),
+                ("newPassword", replacement),
+                ("confirmPassword", confirmation)));
+    }
+
+    private static string ErrorMessage(string page) =>
+        Text(page, @"data-test=""change-password-error-message"">([^<]*)</div>");
+
     /// <summary>Registers Anna in <paramref name="shop"/> and changes her password from the old one to the new one.</summary>
     private static async Task ChangedPasswordAsync(WebApplicationFactory<Program> shop)
     {

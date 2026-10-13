@@ -27,4 +27,18 @@ public sealed class ChangePasswordE2eTest : BaseE2eTest
         Assert.Equal([string.Empty, string.Empty, string.Empty], await answered.PasswordFieldValuesAsync());
         Assert.Equal($"Welcome, {email}", await answered.HeaderGreetingAsync());
     }
+
+    [E2eFact(DisplayName = "Differing confirmation is refused")]
+    public async Task AConfirmationThatDiffersFromTheNewPasswordIsRefusedOnAnEmptyForm()
+    {
+        var email = $"anna.schmidt-{Guid.NewGuid():N}@example.com";
+        var register = await RegisterPage.NavigateToAsync(Page);
+        await register.RegisterAsync("Anna", "Schmidt", "1990-05-17", email, Password, Password);
+        var changePassword = await ChangePasswordPage.NavigateToAsync(Page);
+
+        var refused = await changePassword.SubmitRefusedAsync(Password, "Better456", "Better457");
+
+        Assert.Equal("New password and confirmation do not match", await refused.ErrorMessageAsync());
+        Assert.Equal([string.Empty, string.Empty, string.Empty], await refused.PasswordFieldValuesAsync());
+    }
 }

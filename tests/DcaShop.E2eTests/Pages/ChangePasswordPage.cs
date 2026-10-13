@@ -9,6 +9,7 @@ public sealed class ChangePasswordPage : BasePage
     private const string Form = "change-password-form";
     private const string SubmitButton = "change-password-submit-button";
     private const string SuccessMessage = "change-password-success-message";
+    private const string ErrorMessage = "change-password-error-message";
 
     private static readonly string[] PasswordFields = ["currentPassword", "newPassword", "confirmPassword"];
 
@@ -43,6 +44,22 @@ public sealed class ChangePasswordPage : BasePage
         await WaitForAsync(SuccessMessage);
         return await OpenAsync(Page);
     }
+
+    /// <summary>Fills in the three password fields and submits them; waits for the page that answers with a refusal.</summary>
+    public async Task<ChangePasswordPage> SubmitRefusedAsync(string currentPassword, string newPassword, string confirmPassword)
+    {
+        await Assertions.Expect(Page.Locator($"[data-test='{Form}']")).ToBeVisibleAsync();
+        await FillAsync("currentPassword", currentPassword);
+        await FillAsync("newPassword", newPassword);
+        await FillAsync("confirmPassword", confirmPassword);
+        await ClickAsync(SubmitButton);
+        await WaitForAsync(ErrorMessage);
+        return await OpenAsync(Page);
+    }
+
+    /// <summary>The error message the page shows, as the browser renders it.</summary>
+    public async Task<string> ErrorMessageAsync() =>
+        (await Page.Locator($"[data-test='{ErrorMessage}']").InnerTextAsync()).Trim();
 
     /// <summary>The success message the page shows, as the browser renders it.</summary>
     public async Task<string> SuccessMessageAsync() =>
