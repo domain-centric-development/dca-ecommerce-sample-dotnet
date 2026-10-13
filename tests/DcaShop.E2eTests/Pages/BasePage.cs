@@ -64,6 +64,13 @@ public abstract class BasePage
         return await logout.CountAsync() == 0 ? string.Empty : (await logout.InnerTextAsync()).Trim();
     }
 
+    /// <summary>Follows the site header's "My Account" link.</summary>
+    public async Task<AccountPage> FollowMyAccountAsync()
+    {
+        await Page.Locator("[data-test='site-header'] [data-test='nav-my-account-link']").ClickAsync();
+        return await AccountPage.OpenAsync(Page);
+    }
+
     /// <summary>
     /// Hovers the cart entry in the site header and reads the dropdown it opens. The dropdown's lines and total carry no
     /// data-test; they are read by their place in it.
