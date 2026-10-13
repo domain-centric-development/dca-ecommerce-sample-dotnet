@@ -127,6 +127,47 @@ public sealed class BuyerInfoPage : BasePage
         return CurrentPath;
     }
 
+    /// <summary>
+    /// Sends a delivery form to the shop from this page, with this page's form token — what a second tab or a stale
+    /// page of the same browser would send — and answers the path of the page the shop shows in the end.
+    /// </summary>
+    public async Task<string> SendDeliveryFormAsync(string street, string city, string postalCode, string country, string shippingOptionId)
+    {
+        var form = Page.Locator("[data-test='buyer-form']");
+        await Assertions.Expect(form).ToBeVisibleAsync();
+        var fields = new Dictionary<string, string>
+        {
+            ["street"] = street,
+            ["streetLine2"] = string.Empty,
+            ["city"] = city,
+            ["state"] = string.Empty,
+            ["postalCode"] = postalCode,
+            ["country"] = country,
+            ["shippingOptionId"] = shippingOptionId,
+        };
+        await MarkDocumentAsync();
+        await Page.EvaluateAsync("""
+            fields => {
+              const token = document.querySelector("[data-test='buyer-form'] input[name='__RequestVerificationToken']").value;
+              const sent = document.createElement('form');
+              sent.method = 'post';
+              sent.action = '/checkout/delivery';
+              for (const [name, value] of Object.entries({ ...fields, __RequestVerificationToken: token })) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                sent.appendChild(input);
+              }
+              document.body.appendChild(sent);
+              sent.submit();
+            }
+            """, fields);
+        // The shop's answer replaces the marked document, wherever its redirects lead
+        await Page.WaitForFunctionAsync("() => window.__documentMark !== true && document.readyState !== 'loading'");
+        return CurrentPath;
+    }
+
     /// <summary>The names of the form's fields the browser's own checks refuse, in form order.</summary>
     public Task<string[]> FieldsTheBrowserRefusesAsync() =>
         Page.EvaluateAsync<string[]>("() => [...document.querySelectorAll('[data-test=\"buyer-form\"] input:not([type=hidden])')].filter(f => !f.checkValidity()).map(f => f.name)");

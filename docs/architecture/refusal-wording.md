@@ -135,6 +135,9 @@ Buyer, delivery and payment step:
 |---|---|
 | `CheckoutStepNotCompletedException`, `CheckoutStepOutOfOrderException` | Please complete the previous checkout steps first. |
 
+A step-order refusal shows its sentence only while step access still grants the submitted step; otherwise the
+page redirects, without a sentence, to the step still open — on every step, placing the order included.
+
 | Step | Argument exception | Any other refusal |
 |---|---|---|
 | buyer (`/checkout/buyer`) | Please check the details you entered. | Your details could not be saved. Please try again. |

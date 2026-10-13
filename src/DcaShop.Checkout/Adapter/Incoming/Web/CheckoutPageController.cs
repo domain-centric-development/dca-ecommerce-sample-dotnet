@@ -159,6 +159,17 @@ public sealed class CheckoutPageController : Controller
             await action(session.SessionId.Value);
             return Redirect(next);
         }
+        catch (DomainException e) when (e is CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException)
+        {
+            // Sent before the earlier steps are done: the step guard sends the customer to the step still open
+            var access = (await _active.ExecuteAsync(new GetActiveCheckoutSessionQuery(CurrentCustomerId(), step), cancellationToken)).StepAccess;
+            if (access is { Granted: false })
+            {
+                return Redirect(CheckoutRoutes.PathTo(access));
+            }
+
+            return await Page(step, cancellationToken, MessageFor(step, e));
+        }
         catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
         {
             // The two base types are the checkout's own refusals; the argument exception is the form field that

@@ -387,7 +387,10 @@ decides on the snapshot alone, so a read does not load the session aggregate.
 
 **Notes:** Decides on the `CheckoutCartSnapshot` read model and knows no routes. The `GetActiveCheckoutSession` query
 use case invokes it when a step is requested and delivers the `StepAccess` in its result; the web
-adapter (`CheckoutRoutes`) maps the decision to a redirect path.
+adapter (`CheckoutRoutes`) maps the decision to a redirect path. A step's form refused as sent too early
+(`CheckoutStepNotCompletedException`, `CheckoutStepOutOfOrderException`) asks step access for that step too, and a
+denied access sends the customer to the step still open.
+
 ### CheckoutArticlePriceResolver
 
 Legacy application/test lookup abstraction. CheckoutSession accepts supplied article facts; CheckoutPricing owns cross-article validation and calculation. No repository or remote callback enters the aggregate.
