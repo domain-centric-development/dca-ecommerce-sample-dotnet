@@ -221,7 +221,7 @@ and anonymous is still an identity — but not an authenticated one, so a staff 
 | `GET /api/products`, `GET /api/products/{id}` | anyone — the same assortment the shop pages show |
 | `POST /api/products` | staff role |
 | `GET /api/carts` (every cart in the shop) | staff role |
-| `POST /api/carts`, `GET /api/carts/{id}`, `POST /{id}/items`, `DELETE /{id}/items/{itemId}`, `POST /{id}/checkout` | the caller, on their own cart — a stranger's cart answers `404`, never `403` |
+| `POST /api/carts`, `GET /api/carts/{id}`, `POST /{id}/items`, `DELETE /{id}/items/{productId}`, `POST /{id}/checkout` | the caller, on their own cart — a stranger's cart answers `404`, never `403` |
 
 Ownership is enforced by the **use cases**, not by the resource: the caller is part of the command and the
 repository is asked a scoped question, so the web pages and any future adapter inherit the same rule. The staff

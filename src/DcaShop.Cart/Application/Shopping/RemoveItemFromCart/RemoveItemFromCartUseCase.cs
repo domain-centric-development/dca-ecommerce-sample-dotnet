@@ -1,5 +1,6 @@
 using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Domain.Model;
+using DcaShop.SharedKernel.Domain.Model;
 
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
@@ -29,7 +30,7 @@ public sealed class RemoveItemFromCartUseCase : IRemoveItemFromCartInputPort
                 var cart = await _carts.FindByIdForCustomerAsync(cartId, CustomerId.Of(command.CustomerId), ct).ConfigureAwait(false)
                            ?? throw new CartNotFoundException(cartId);
 
-                cart.RemoveItem(new CartItemId(command.ItemId));
+                cart.RemoveItemByProductId(new ProductId(command.ProductId));
 
                 await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);

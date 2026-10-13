@@ -1,5 +1,6 @@
 using DcaShop.Cart.Application.Operations.GetAllCarts;
 using DcaShop.Cart.Application.Shopping.AddItemToCart;
+using DcaShop.Cart.Application.Shopping.CreateCart;
 using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Cart.Application.Shopping.RemoveItemFromCart;
@@ -30,6 +31,7 @@ namespace DcaShop.Cart.Adapter.Incoming.Api;
 [Route("api/carts")]
 public sealed class ShoppingCartResource : ControllerBase
 {
+    private readonly ICreateCartInputPort _createCart;
     private readonly IGetOrCreateActiveCartInputPort _getOrCreateActiveCart;
     private readonly IGetAllCartsInputPort _getAllCarts;
     private readonly IGetCartByIdInputPort _getCartById;
@@ -39,6 +41,7 @@ public sealed class ShoppingCartResource : ControllerBase
     private readonly IIdentityProvider _identityProvider;
 
     public ShoppingCartResource(
+        ICreateCartInputPort createCart,
         IGetOrCreateActiveCartInputPort getOrCreateActiveCart,
         IGetAllCartsInputPort getAllCarts,
         IGetCartByIdInputPort getCartById,
@@ -47,6 +50,7 @@ public sealed class ShoppingCartResource : ControllerBase
         ShoppingCartDtoConverter converter,
         IIdentityProvider identityProvider)
     {
+        _createCart = createCart;
         _getOrCreateActiveCart = getOrCreateActiveCart;
         _getAllCarts = getAllCarts;
         _getCartById = getCartById;
@@ -56,12 +60,14 @@ public sealed class ShoppingCartResource : ControllerBase
         _identityProvider = identityProvider;
     }
 
-    /// <summary>Creates the caller's active cart, or returns the one they already have.</summary>
+    /// <summary>
+    /// Opens the caller's active cart. A caller who already has one is refused — the store's
+    /// <see cref="Application.Shared.ActiveCartAlreadyExistsException"/>, answered by <see cref="CartApiExceptionHandler"/>.
+    /// </summary>
     [HttpPost]
     public async Task<ActionResult<ShoppingCartDto>> CreateCart(CancellationToken cancellationToken)
     {
-        var result = await _getOrCreateActiveCart.ExecuteAsync(
-            new GetOrCreateActiveCartCommand(CurrentCustomerId), cancellationToken);
+        var result = await _createCart.ExecuteAsync(new CreateCartCommand(CurrentCustomerId), cancellationToken);
         var cart = await ReadAsync(result.CartId, cancellationToken);
         return StatusCode(StatusCodes.Status201Created, _converter.ToDto(cart!));
     }
@@ -118,20 +124,17 @@ public sealed class ShoppingCartResource : ControllerBase
         return Ok(_converter.ToDto((await ReadAsync(cartId, cancellationToken))!));
     }
 
-    /// <summary>
-    /// Removes one line. The path names the <b>cart item</b>, not the product: the use case removes a line by its
-    /// own id, and the Java sample's product-keyed route is the shape that would have to change here.
-    /// </summary>
-    [HttpDelete("{cartId:guid}/items/{itemId:guid}")]
+    /// <summary>Removes the line holding the product named in the path, whatever its quantity.</summary>
+    [HttpDelete("{cartId:guid}/items/{productId:guid}")]
     public async Task<ActionResult<ShoppingCartDto>> RemoveItemFromCart(
-        Guid cartId, Guid itemId, CancellationToken cancellationToken)
+        Guid cartId, Guid productId, CancellationToken cancellationToken)
     {
         if (await ReadOwnAsync(cartId, cancellationToken) is null)
         {
             return NotFound();
         }
 
-        await _removeItemFromCart.ExecuteAsync(new RemoveItemFromCartCommand(cartId, CurrentCustomerId, itemId), cancellationToken);
+        await _removeItemFromCart.ExecuteAsync(new RemoveItemFromCartCommand(cartId, CurrentCustomerId, productId), cancellationToken);
 
         return Ok(_converter.ToDto((await ReadAsync(cartId, cancellationToken))!));
     }

@@ -18,7 +18,7 @@ public sealed class ShoppingCartDtoConverter
             cart.CartId.Value.ToString(),
             cart.CustomerId.Value,
             cart.Items.Select(ToItemDto).ToList(),
-            cart.Status.ToString(),
+            cart.Status.ToString().ToUpperInvariant(),
             subtotal.Amount,
             subtotal.Currency,
             cart.ItemCount);
