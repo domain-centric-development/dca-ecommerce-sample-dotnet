@@ -99,6 +99,27 @@ public abstract class BasePage
             await viewCart.GetAttributeAsync("href") ?? string.Empty);
     }
 
+    /// <summary>Chooses a theme by its label in the footer's theme choice.</summary>
+    public async Task ChooseThemeAsync(string label)
+    {
+        var select = Page.Locator("[data-test='site-footer'] [data-test='theme-select']");
+        await Assertions.Expect(select).ToBeVisibleAsync();
+        await select.SelectOptionAsync(new SelectOptionValue { Label = label });
+    }
+
+    /// <summary>The label of the theme the footer's theme choice shows selected.</summary>
+    public async Task<string> SelectedThemeAsync() =>
+        (await Page.Locator("[data-test='site-footer'] [data-test='theme-select'] option:checked").InnerTextAsync()).Trim();
+
+    /// <summary>The theme the page is shown in, as the document carries it; null for the default theme.</summary>
+    public Task<string?> ShownThemeAsync() => Page.Locator("html").GetAttributeAsync("data-theme");
+
+    /// <summary>Marks the loaded document, so that a later check can tell whether the page was reloaded since.</summary>
+    public Task MarkDocumentAsync() => Page.EvaluateAsync("() => { window.__documentMark = true; }");
+
+    /// <summary>Whether the document marked by <see cref="MarkDocumentAsync"/> is still the one shown.</summary>
+    public Task<bool> IsMarkedDocumentAsync() => Page.EvaluateAsync<bool>("() => window.__documentMark === true");
+
     public sealed record HeaderBasketLine(string Name, string Quantity);
 
     public sealed record HeaderBasket(IReadOnlyList<HeaderBasketLine> Lines, string TotalLabel, string Total, string ViewCartText, string ViewCartTarget);

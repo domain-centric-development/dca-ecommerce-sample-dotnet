@@ -70,6 +70,12 @@ public abstract class BaseE2eTest : IClassFixture<BrowserFixture>, IAsyncLifetim
     /// </summary>
     protected Task ClearCookiesAsync() => _context!.ClearCookiesAsync();
 
+    /// <summary>A new tab in this browser — what a visitor opens after closing the shop and coming back.</summary>
+    protected Task<IPage> NewPageInThisBrowserAsync() => _context!.NewPageAsync();
+
+    /// <summary>A second browser with storage and cookies of its own; the caller disposes it.</summary>
+    protected Task<IBrowserContext> NewBrowserAsync() => _browser.Browser.NewContextAsync(ContextOptions);
+
     protected Task WaitForUrlAsync(string pattern) => Page.WaitForURLAsync(BaseUrl + pattern);
 
     protected string CurrentPath => Page.Url.Replace(BaseUrl, string.Empty, StringComparison.Ordinal);
