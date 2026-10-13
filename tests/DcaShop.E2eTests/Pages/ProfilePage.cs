@@ -30,6 +30,8 @@ public sealed class ProfilePage : BasePage
         return profile;
     }
 
+    public string ShownPath => CurrentPath;
+
     /// <summary>Fills both fields of the form; the date of birth as yyyy-MM-dd.</summary>
     public async Task<ProfilePage> FillDetailsAsync(string email, string dateOfBirth)
     {
@@ -46,6 +48,15 @@ public sealed class ProfilePage : BasePage
         await WaitForAsync(SuccessMessage);
         return await OpenAsync(Page);
     }
+
+    public async Task<string> SuccessMessageAsync() =>
+        (await Page.Locator($"[data-test='{SuccessMessage}']").InnerTextAsync()).Trim();
+
+    /// <summary>What the email field holds, as the browser has it.</summary>
+    public Task<string> EmailAsync() => Input(EmailInput).InputValueAsync();
+
+    /// <summary>What the date-of-birth field holds, as yyyy-MM-dd.</summary>
+    public Task<string> DateOfBirthAsync() => Input(DateOfBirthInput).InputValueAsync();
 
     private ILocator Input(string dataTest) => Page.Locator($"[data-test='{dataTest}']");
 }

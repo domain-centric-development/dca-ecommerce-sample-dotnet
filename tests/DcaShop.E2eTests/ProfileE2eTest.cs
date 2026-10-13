@@ -11,6 +11,26 @@ public sealed class ProfileE2eTest : BaseE2eTest
     {
     }
 
+    [E2eFact(DisplayName = "Saving the profile")]
+    public async Task SavedChangesAreConfirmedOnTheProfileAndTheHeaderGreetsTheNewAddress()
+    {
+        // The browser suite shares one shop, so both of Anna's addresses carry a suffix of their own.
+        var run = Guid.NewGuid().ToString("N");
+        var oldEmail = $"anna.schmidt-{run}@example.com";
+        var newEmail = $"anna.meyer-{run}@example.com";
+        var register = await RegisterPage.NavigateToAsync(Page);
+        await register.RegisterAsync("Anna", "Schmidt", "1990-05-17", oldEmail, Password, Password);
+        var profile = await ProfilePage.NavigateToAsync(Page);
+
+        var saved = await (await profile.FillDetailsAsync(newEmail, "1990-05-18")).SaveExpectingSuccessAsync();
+
+        Assert.Equal("/account/profile", saved.ShownPath);
+        Assert.Equal("Your profile has been updated.", await saved.SuccessMessageAsync());
+        Assert.Equal(newEmail, await saved.EmailAsync());
+        Assert.Equal("1990-05-18", await saved.DateOfBirthAsync());
+        Assert.Equal($"Welcome, {newEmail}", await saved.HeaderGreetingAsync());
+    }
+
     [E2eFact(DisplayName = "Old address no longer logs in")]
     public async Task AnAddressGivenUpOnTheProfileIsRefusedAtTheLogin()
     {
