@@ -7,6 +7,6 @@ public sealed record CreateProductRequest(
     [Required] string Name,
     string? Description,
     string? ImageUrl,
-    [Range(0.01, double.MaxValue)] decimal Price,
+    [Range(0d, double.MaxValue, MinimumIsExclusive = true)] decimal Price,
     [Required] string Category,
     [Range(0, int.MaxValue)] int Stock);

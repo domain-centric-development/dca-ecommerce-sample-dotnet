@@ -65,6 +65,23 @@ public sealed class CreateProductApiE2eTest : IDisposable
         Assert.False(problem.TryGetProperty("detail", out _));
     }
 
+    [E2eFact(DisplayName = "A price that rounds to zero is refused")]
+    public async Task APriceBelowACentIsRefusedAsAnUnacceptableValue()
+    {
+        var staff = Bearer(await StaffTokenAsync("tiny-mug-maker@example.com"));
+
+        var response = await staff.PostAsync("/api/products", new StringContent(
+            """{"sku":"TINY-001","name":"Tiny Mug","description":"","imageUrl":"","price":0.001,"category":"Desk & Office","stock":5}""",
+            System.Text.Encoding.UTF8,
+            "application/json"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Unacceptable value", problem.GetProperty("title").GetString());
+        Assert.False(problem.TryGetProperty("detail", out _));
+    }
+
     public void Dispose() => _shop.Dispose();
 
     private HttpClient Bearer(string token)
