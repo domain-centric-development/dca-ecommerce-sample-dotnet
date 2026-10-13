@@ -360,7 +360,9 @@ contract: only the store sees every cart at once.
 ### ArticleNotAvailable / InsufficientArticleStock
 
 **Definition:** The article facts a position needs are missing for a product, or do not cover the quantity asked
-for. Read through the cart's own port, so a statement about the request rather than about the cart.
+for. Read through the cart's own port, so a statement about the request rather than about the cart. A product
+reference that is not even shaped like a product id names no article either: ArticleNotAvailable carries the
+reference as the caller named it (`ProductReference`), not a product id.
 
 **Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IArticleDataPort`, `CartArticle`
 

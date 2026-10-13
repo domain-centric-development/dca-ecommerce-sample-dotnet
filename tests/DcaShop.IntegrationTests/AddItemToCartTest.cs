@@ -55,7 +55,7 @@ public sealed class AddItemToCartTest : IClassFixture<WebApplicationFactory<Prog
         var products = await scope.ServiceProvider.GetRequiredService<IGetAllProductsInputPort>().ExecuteAsync(new GetAllProductsQuery());
         var product = products.Products.Single(p => p.Name.Value == productName);
         await scope.ServiceProvider.GetRequiredService<IAddItemToCartInputPort>()
-            .ExecuteAsync(new AddItemToCartCommand(cartId, customer, product.ProductId.Value, 1));
+            .ExecuteAsync(new AddItemToCartCommand(cartId, customer, product.ProductId.Value.ToString(), 1));
     }
 
     /// <summary>The cart's lines as <c>name xquantity</c>, in the order the cart holds them.</summary>

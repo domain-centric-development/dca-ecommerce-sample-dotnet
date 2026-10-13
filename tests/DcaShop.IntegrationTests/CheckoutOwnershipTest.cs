@@ -93,7 +93,7 @@ public sealed class CheckoutOwnershipTest : IClassFixture<WebApplicationFactory<
 
         var cart = await carts.ExecuteAsync(new GetOrCreateActiveCartCommand(customerId));
         var product = (await products.ExecuteAsync(new GetAllProductsQuery())).Products[0];
-        await addItem.ExecuteAsync(new AddItemToCartCommand(cart.CartId, customerId, product.ProductId.Value, 1));
+        await addItem.ExecuteAsync(new AddItemToCartCommand(cart.CartId, customerId, product.ProductId.Value.ToString(), 1));
 
         return (await start.ExecuteAsync(new StartCheckoutCommand(cart.CartId, customerId))).SessionId;
     }

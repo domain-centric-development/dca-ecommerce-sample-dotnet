@@ -25,12 +25,12 @@ public sealed class AddItemToCartUseCase : IAddItemToCartInputPort
     public async Task<AddItemToCartResult> ExecuteAsync(AddItemToCartCommand command, CancellationToken cancellationToken = default)
     {
         var cartId = new CartId(command.CartId);
-        var productId = new ProductId(command.ProductId);
+        var productId = ProductIdNamedBy(command.ProductId);
         var quantity = Quantity.Of(command.Quantity);
 
         // Remote-capable read (Product Catalog via ACL) — outside the transaction
         var article = await _articles.GetArticleDataAsync(productId, cancellationToken).ConfigureAwait(false)
-                      ?? throw new ArticleNotAvailableException(productId);
+                      ?? throw new ArticleNotAvailableException(command.ProductId);
         if (!article.HasStockFor(quantity.Value))
         {
             throw new InsufficientArticleStockException(productId, quantity.Value);
@@ -51,4 +51,10 @@ public sealed class AddItemToCartUseCase : IAddItemToCartInputPort
             },
             cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>The product the caller named. A reference no product id can have names no article either.</summary>
+    private static ProductId ProductIdNamedBy(string productReference) =>
+        Guid.TryParse(productReference, out var value)
+            ? new ProductId(value)
+            : throw new ArticleNotAvailableException(productReference);
 }
