@@ -22,6 +22,10 @@ In-memory only, behind the same ports as in the Java sample. No database.
 One ASP.NET Core process on port 5080, started with `dotnet run --project src/DcaShop.Web` or as a
 container (`docker compose up`).
 
+It is built to run as several instances behind a load balancer without sticky sessions: nothing a later request
+needs lives in one instance's memory. A message for the page a redirect leads to travels with the redirect, never in
+a server session; what must outlast a request lives in the database or in a cookie every instance can read.
+
 ## Integrations
 
 A payment provider over REST, outbound. A payment is `POST /payments` with the body
