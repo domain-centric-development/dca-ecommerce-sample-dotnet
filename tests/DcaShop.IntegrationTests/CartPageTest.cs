@@ -61,6 +61,19 @@ public sealed class CartPageTest : IClassFixture<WebApplicationFactory<Program>>
         Assert.DoesNotContain("data-test=\"cart-tax-row\"", cartPage, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task ACartThatCanBeBoughtOffersTheCheckoutAndAWayBackToTheCatalogue()
+    {
+        var client = NewBrowser();
+        await AddOneUnitAsync(client, "Domain-Driven Design");
+
+        var cartPage = await client.GetStringAsync("/cart");
+
+        var actions = AvailabilityPages.Section(cartPage, "cart-checkout-form");
+        Assert.Equal("Proceed to Checkout", AvailabilityPages.Text(actions, @"<button [^>]*data-test=""cart-checkout-button"">([^<]*)</button>"));
+        Assert.Equal("/products", AvailabilityPages.Text(actions, @"<a href=""([^""]*)"">Continue Shopping</a>"));
+    }
+
     private HttpClient NewBrowser() =>
         _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
 

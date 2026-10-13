@@ -33,6 +33,18 @@ public sealed class CartPage : BasePage
         return await BuyerInfoPage.OpenAsync(Page);
     }
 
+    /// <summary>
+    /// Presses "Proceed to Checkout" and waits until the browser has left the cart, wherever the shop sends it. The page
+    /// it lands on is <see cref="ShownPath"/>.
+    /// </summary>
+    public async Task PressProceedToCheckoutAsync()
+    {
+        var button = Page.Locator($"[data-test='{CheckoutButton}']");
+        await Assertions.Expect(button).ToHaveTextAsync("Proceed to Checkout");
+        await button.ClickAsync();
+        await Page.WaitForURLAsync(url => new Uri(url).AbsolutePath != "/cart");
+    }
+
     public string ShownPath => CurrentPath;
 
     /// <summary>The success message the page shows after a product was added.</summary>
