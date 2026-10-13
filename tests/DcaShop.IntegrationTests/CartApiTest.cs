@@ -188,6 +188,75 @@ public sealed class CartApiTest : IDisposable
     }
 
     [Fact]
+    public async Task AddingMoreThanIsInStockIsAConflictAndLeavesTheCartEmpty()
+    {
+        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
+        var cartId = opened.GetProperty("cartId").GetString();
+        var hexagon = await ProductIdAsync("Wooden Hexagon Desk Model");
+
+        var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId = hexagon, quantity = 9 });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Not enough stock", problem.GetProperty("title").GetString());
+        Assert.Equal($"Requested 9 of product {hexagon}, more than is in stock.", problem.GetProperty("detail").GetString());
+        var cart = await client.GetFromJsonAsync<JsonElement>($"/api/carts/{cartId}");
+        Assert.Equal(0, cart.GetProperty("items").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task AddingExactlyWhatIsInStockIsAccepted()
+    {
+        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
+        var cartId = opened.GetProperty("cartId").GetString();
+        var hexagon = await ProductIdAsync("Wooden Hexagon Desk Model");
+
+        var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId = hexagon, quantity = 8 });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var cart = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var item = Assert.Single(cart.GetProperty("items").EnumerateArray());
+        Assert.Equal(hexagon, item.GetProperty("productId").GetString());
+        Assert.Equal(8, item.GetProperty("quantity").GetInt32());
+    }
+
+    [Fact]
+    public async Task AQuantityOfZeroIsABadRequestAndLeavesTheCartEmpty()
+    {
+        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
+        var cartId = opened.GetProperty("cartId").GetString();
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/carts/{cartId}/items", new { productId = await ProductIdAsync("Domain-Driven Design"), quantity = 0 });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var cart = await client.GetFromJsonAsync<JsonElement>($"/api/carts/{cartId}");
+        Assert.Equal(0, cart.GetProperty("items").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task RemovingAProductTheCartDoesNotHoldIsNotFound()
+    {
+        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
+        var cartId = opened.GetProperty("cartId").GetString();
+        await AddAsync(client, cartId!, await ProductIdAsync("Domain-Driven Design"), 1);
+        var teamTopologies = await ProductIdAsync("Team Topologies");
+
+        var response = await client.DeleteAsync($"/api/carts/{cartId}/items/{teamTopologies}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Position not in cart", problem.GetProperty("title").GetString());
+        Assert.Equal($"The cart holds no position for {teamTopologies}.", problem.GetProperty("detail").GetString());
+    }
+
+    [Fact]
     public async Task AddingToAnotherCustomersCartFindsNothingAndLeavesItsLinesAsTheyWere()
     {
         var ada = Bearer(await RegisterAsync("ada@example.com"));
