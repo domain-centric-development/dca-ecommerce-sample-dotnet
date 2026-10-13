@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using Microsoft.Playwright;
 
 namespace DcaShop.E2eTests.Pages;
@@ -137,6 +139,9 @@ public abstract class BasePage
             .filter(a => (a.effect?.pseudoElement ?? '').startsWith('::view-transition'))
             .filter(a => a.effect.getComputedTiming().duration > 0)
             .map(a => `${a.effect.pseudoElement} ${a.effect.getComputedTiming().duration} ms`);
+          window.__pageTransitionParts = JSON.stringify(document.getAnimations()
+            .filter(a => (a.effect?.pseudoElement ?? '').startsWith('::view-transition'))
+            .map(a => ({ part: a.effect.pseudoElement, frames: a.effect.getKeyframes() })));
         });
         """);
 
@@ -145,6 +150,43 @@ public abstract class BasePage
     {
         await Page.WaitForFunctionAsync("() => Array.isArray(window.__pageTransitionAnimations)");
         return await Page.EvaluateAsync<string[]>("() => window.__pageTransitionAnimations");
+    }
+
+    /// <summary>
+    /// The animated parts of the transition that revealed the shown page, each with the values of its first and its last
+    /// keyframe — what the part looked like, and where it stood, when the animation started and when it ended.
+    /// </summary>
+    public async Task<IReadOnlyList<PageTransitionPart>> PageTransitionPartsAsync()
+    {
+        await Page.WaitForFunctionAsync("() => typeof window.__pageTransitionParts === 'string'");
+        using var parts = JsonDocument.Parse(await Page.EvaluateAsync<string>("() => window.__pageTransitionParts"));
+        return parts.RootElement.EnumerateArray()
+            .Select(part =>
+            {
+                var frames = part.GetProperty("frames").EnumerateArray().Select(KeyframeValues).ToList();
+                return new PageTransitionPart(
+                    part.GetProperty("part").GetString() ?? string.Empty,
+                    frames.FirstOrDefault() ?? new Dictionary<string, string>(),
+                    frames.LastOrDefault() ?? new Dictionary<string, string>());
+            })
+            .ToList();
+    }
+
+    /// <summary>Waits until the transition that revealed the shown page has run to its end.</summary>
+    public Task WaitForPageTransitionToEndAsync() => Page.WaitForFunctionAsync("""
+        () => typeof window.__pageTransitionParts === 'string'
+          && !document.getAnimations().some(a => (a.effect?.pseudoElement ?? '').startsWith('::view-transition'))
+        """);
+
+    private static IReadOnlyDictionary<string, string> KeyframeValues(JsonElement keyframe) =>
+        keyframe.EnumerateObject().ToDictionary(property => property.Name, property => property.Value.ToString());
+
+    /// <summary>One animated part of a page transition, e.g. <c>::view-transition-group(site-header)</c>.</summary>
+    public sealed record PageTransitionPart(string Part, IReadOnlyDictionary<string, string> First, IReadOnlyDictionary<string, string> Last)
+    {
+        public string? FirstValue(string property) => First.GetValueOrDefault(property);
+
+        public string? LastValue(string property) => Last.GetValueOrDefault(property);
     }
 
     public sealed record HeaderBasketLine(string Name, string Quantity);
