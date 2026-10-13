@@ -41,6 +41,7 @@ public sealed class BackofficeE2eTest : BaseE2eTest
         Assert.True(total > 0, "Event log should contain events published during application startup");
         Assert.True(await events.EventCountAsync() > 0, "Event list should render at least one event item");
         Assert.False(string.IsNullOrWhiteSpace(await events.FirstEventTypeAsync()), "First event type label should not be empty");
+        Assert.All(await events.EventTypesAsync(), type => Assert.EndsWith("Event", type.Trim(), StringComparison.Ordinal));
 
         var completed = await events.CompletedCountAsync();
         var incomplete = await events.IncompleteCountAsync();

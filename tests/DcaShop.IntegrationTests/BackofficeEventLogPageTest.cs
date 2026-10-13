@@ -90,6 +90,48 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
         Assert.Contains($"action=\"/backoffice/events/{Failed.Id}/replay\"", retries[0], StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task TheBreadcrumbLeadsHomeFromTheEventPublicationLog()
+    {
+        var page = await EventLogAsync(Delivered, Failed);
+
+        var breadcrumb = Element(page, "breadcrumb", "</div>");
+        Assert.Equal("Home / Event Publication Log", Text(breadcrumb));
+        Assert.Equal("/", Regex.Match(breadcrumb, @"<a\b[^>]*href=""([^""]*)""[^>]*>\s*Home\s*</a>").Groups[1].Value);
+    }
+
+    [Fact]
+    public async Task RefreshLoadsTheLogAgainWithItsSummaryAndEntries()
+    {
+        var client = await SignedInAsync(Delivered, Staged, Pending, Failed);
+        var page = await client.GetStringAsync("/backoffice/events");
+        var refresh = Regex.Match(page, @"<a\b[^>]*data-test=""event-log-refresh""[^>]*>");
+        Assert.True(refresh.Success, "the page has a Refresh link");
+        var target = WebUtility.HtmlDecode(Regex.Match(refresh.Value, @"href=""([^""]*)""").Groups[1].Value);
+
+        var reloaded = await client.GetAsync(target);
+
+        Assert.Equal("/backoffice/events", target);
+        Assert.Equal(HttpStatusCode.OK, reloaded.StatusCode);
+        var again = await reloaded.Content.ReadAsStringAsync();
+        Assert.Equal(4, Number(again, "event-log-total"));
+        Assert.Equal(4, Entries(again).Count);
+    }
+
+    /// <summary>A client signed in as the operator, over a log that holds exactly <paramref name="entries"/>.</summary>
+    private async Task<HttpClient> SignedInAsync(params EventPublicationEntry[] entries)
+    {
+        var shop = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.AddSingleton<IGetEventPublicationsInputPort>(new AnsweredLog(entries))));
+        var client = shop.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        Assert.Equal(HttpStatusCode.Redirect, (await LogInAsync(client, "admin", "admin")).StatusCode);
+        return client;
+    }
+
+    /// <summary>The text a reader sees in <paramref name="markup"/>: tags dropped, whitespace collapsed.</summary>
+    private static string Text(string markup) =>
+        Regex.Replace(Rendered(Regex.Replace(markup.Substring(markup.IndexOf('>') + 1), "<[^>]*>", " ")), @"\s+", " ");
+
     /// <summary>The event log page, signed in as the operator, over a log that holds exactly <paramref name="entries"/>.</summary>
     private async Task<string> EventLogAsync(params EventPublicationEntry[] entries)
     {
