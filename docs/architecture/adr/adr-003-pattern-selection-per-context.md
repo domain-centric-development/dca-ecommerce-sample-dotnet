@@ -28,6 +28,10 @@ Pricing, Inventory, Account, Portal and Backoffice come later.
    `[Upstream("Inventory")]`, and the stand-in adapters are deleted — no port, use case or aggregate changes.
 3. **Customers are guests** (cookie-identified) until the Account context provides identities; `CustomerId` is
    already a context-local value object in Cart and Checkout, so nothing else moves.
+4. **Portal is a generic subdomain — UI composition — and takes the thin shape.** *(recorded 2026-10-13)* It has
+   no `Domain/` model of its own: its pages compose what the other contexts' Open Host Services answer, and it
+   references no other context project, only `DcaShop.SharedKernel`. The full tactical rule set does not apply;
+   the structural rules do.
 
 ## Consequences
 

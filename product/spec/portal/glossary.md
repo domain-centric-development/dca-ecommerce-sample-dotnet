@@ -11,7 +11,7 @@
 
 Portal is declared a **Bounded Context** by the `PortalContext` marker class
 (`[BoundedContext("Portal")]`). Its subdomain is generic — UI composition —
-so it carries the thin shape the pattern-selection decision allows:
+so it carries the thin shape the pattern-selection decision (ADR-003) allows:
 
 - A landing page (`HomePageController`, `GET /`)
 - Navigation to Product Catalog, Shopping Cart, Checkout
