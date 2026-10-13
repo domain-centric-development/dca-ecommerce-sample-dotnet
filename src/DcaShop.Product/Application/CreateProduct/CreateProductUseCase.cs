@@ -34,19 +34,20 @@ public sealed class CreateProductUseCase : ICreateProductInputPort
                     throw new DuplicateSkuException(sku);
                 }
 
+                var price = Price.Of(Money.Of(command.PriceAmount, command.PriceCurrency));
                 var product = _factory.Create(
                     sku,
                     ProductName.Of(command.Name),
                     ProductDescription.Of(command.Description),
                     Category.Of(command.Category),
                     ImageUrl.Of(command.ImageUrl),
-                    Price.Of(Money.Of(command.PriceAmount, command.PriceCurrency)),
+                    price,
                     command.StockQuantity);
 
                 await _products.SaveAsync(product, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(product, ct).ConfigureAwait(false);
 
-                return new CreateProductResult(product.Id.Value, product.Sku.Value, product.Name.Value);
+                return new CreateProductResult(product.Id.Value, product.Sku.Value, product.Name.Value, price.Value);
             },
             cancellationToken).ConfigureAwait(false);
     }

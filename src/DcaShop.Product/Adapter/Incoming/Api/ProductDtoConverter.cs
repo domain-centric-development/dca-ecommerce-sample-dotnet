@@ -10,8 +10,8 @@ namespace DcaShop.Product.Adapter.Incoming.Api;
 public sealed class ProductDtoConverter
 {
     /// <summary>
-    /// The answer to a create. Price and stock stay empty — they are owned by other contexts and are not known
-    /// yet at the moment the product comes into existence.
+    /// The answer to a create. It carries the price the product was created with; stock and availability stay
+    /// empty — Inventory owns them and has not answered yet at the moment the product comes into existence.
     /// </summary>
     public ProductDto ToDto(CreateProductResult result, CreateProductCommand command)
     {
@@ -23,8 +23,8 @@ public sealed class ProductDtoConverter
             result.Name,
             command.Description,
             command.ImageUrl,
-            null,
-            null,
+            result.Price.Amount,
+            result.Price.Currency,
             command.Category,
             null,
             null);

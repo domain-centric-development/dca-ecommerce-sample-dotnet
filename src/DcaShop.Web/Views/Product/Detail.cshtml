@@ -32,10 +32,7 @@ else
 </div>
 <div class="product-detail__info">
 <div class="product-detail__price"><span data-test="product-detail-price">@Model.Price</span><span class="product-detail__price-label">Retail Price</span></div>
-@if (!string.IsNullOrEmpty(Model.Description))
-{
-<div class="product-detail__description"><p>@Model.Description</p></div>
-}
+<div class="product-detail__description"><p>@(string.IsNullOrEmpty(Model.Description) ? "No description available." : Model.Description)</p></div>
 <div class="product-detail__meta">
 <div class="product-detail__meta-item"><span class="product-detail__meta-label">Category</span><span class="product-detail__meta-value">@Model.Category</span></div>
 <div class="product-detail__meta-item"><span class="product-detail__meta-label">Availability</span>
