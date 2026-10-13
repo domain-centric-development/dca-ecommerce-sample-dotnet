@@ -64,6 +64,38 @@ public abstract class BasePage
         return await logout.CountAsync() == 0 ? string.Empty : (await logout.InnerTextAsync()).Trim();
     }
 
+    /// <summary>
+    /// Hovers the cart entry in the site header and reads the dropdown it opens. The dropdown's lines and total carry no
+    /// data-test; they are read by their place in it.
+    /// </summary>
+    public async Task<HeaderBasket> HoverHeaderBasketAsync()
+    {
+        await Page.Locator("[data-test='site-header'] [data-test='mini-basket-trigger']").HoverAsync();
+        var dropdown = Page.Locator("[data-test='site-header'] [data-test='mini-basket-dropdown']");
+        await Assertions.Expect(dropdown).ToBeVisibleAsync();
+
+        var items = dropdown.Locator(".mini-basket__item");
+        var lines = new List<HeaderBasketLine>();
+        for (var i = 0; i < await items.CountAsync(); i++)
+        {
+            var spans = items.Nth(i).Locator("span");
+            lines.Add(new HeaderBasketLine((await spans.Nth(0).InnerTextAsync()).Trim(), (await spans.Nth(1).InnerTextAsync()).Trim()));
+        }
+
+        var total = dropdown.Locator(".mini-basket__total span");
+        var viewCart = dropdown.Locator("[data-test='mini-basket-view-cart-link']");
+        return new HeaderBasket(
+            lines,
+            (await total.Nth(0).InnerTextAsync()).Trim(),
+            (await total.Nth(1).InnerTextAsync()).Trim(),
+            (await viewCart.InnerTextAsync()).Trim(),
+            await viewCart.GetAttributeAsync("href") ?? string.Empty);
+    }
+
+    public sealed record HeaderBasketLine(string Name, string Quantity);
+
+    public sealed record HeaderBasket(IReadOnlyList<HeaderBasketLine> Lines, string TotalLabel, string Total, string ViewCartText, string ViewCartTarget);
+
     protected string CurrentPath => Page.Url.Replace(BaseUrl, string.Empty, StringComparison.Ordinal);
 
     protected async Task<bool> PageContainsAsync(string text) => (await Page.Locator("body").TextContentAsync() ?? string.Empty).Contains(text, StringComparison.Ordinal);
