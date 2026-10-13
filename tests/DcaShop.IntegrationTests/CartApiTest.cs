@@ -171,6 +171,84 @@ public sealed class CartApiTest : IDisposable
         Assert.Equal("EUR", cart.GetProperty("currency").GetString());
     }
 
+    [Fact]
+    public async Task AddingToAnotherCustomersCartFindsNothingAndLeavesItsLinesAsTheyWere()
+    {
+        var ada = Bearer(await RegisterAsync("ada@example.com"));
+        var cartId = await OpenCartHoldingTwoDomainDrivenDesignAsync(ada);
+        var grace = Bearer(await RegisterAsync("grace@example.com"));
+
+        var response = await grace.PostAsJsonAsync(
+            $"/api/carts/{cartId}/items", new { productId = await ProductIdAsync("Team Topologies"), quantity = 1 });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        await AssertHoldsOnlyTwoDomainDrivenDesignAsync(ada, cartId);
+    }
+
+    [Fact]
+    public async Task RemovingFromAnotherCustomersCartFindsNothingAndLeavesItsLinesAsTheyWere()
+    {
+        var ada = Bearer(await RegisterAsync("ada@example.com"));
+        var cartId = await OpenCartHoldingTwoDomainDrivenDesignAsync(ada);
+        var grace = Bearer(await RegisterAsync("grace@example.com"));
+
+        var response = await grace.DeleteAsync($"/api/carts/{cartId}/items/{await ProductIdAsync("Domain-Driven Design")}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        await AssertHoldsOnlyTwoDomainDrivenDesignAsync(ada, cartId);
+    }
+
+    [Fact]
+    public async Task AnotherCustomersActiveCartFindsNothing()
+    {
+        var ada = Bearer(await RegisterAsync("ada@example.com"));
+        var opened = await (await ada.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
+        var adasCustomerId = opened.GetProperty("customerId").GetString();
+        var grace = Bearer(await RegisterAsync("grace@example.com"));
+
+        var response = await grace.GetAsync($"/api/carts/customer/{adasCustomerId}/active");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ListingCartsWithoutATokenIsChallengedForABearerToken()
+    {
+        var response = await _factory.CreateClient().GetAsync("/api/carts");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("Bearer", response.Headers.WwwAuthenticate.ToString());
+    }
+
+    [Fact]
+    public async Task TwoCallsWithoutATokenOpenCartsForTwoDifferentCustomers()
+    {
+        var first = await _factory.CreateClient().PostAsync("/api/carts", Empty());
+        var second = await _factory.CreateClient().PostAsync("/api/carts", Empty());
+
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, second.StatusCode);
+        var firstCustomerId = (await first.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("customerId").GetString();
+        var secondCustomerId = (await second.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("customerId").GetString();
+        Assert.NotEqual(firstCustomerId, secondCustomerId);
+    }
+
+    private async Task<string> OpenCartHoldingTwoDomainDrivenDesignAsync(HttpClient owner)
+    {
+        var opened = await (await owner.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
+        var cartId = opened.GetProperty("cartId").GetString()!;
+        await AddAsync(owner, cartId, await ProductIdAsync("Domain-Driven Design"), 2);
+        return cartId;
+    }
+
+    private async Task AssertHoldsOnlyTwoDomainDrivenDesignAsync(HttpClient owner, string cartId)
+    {
+        var cart = await owner.GetFromJsonAsync<JsonElement>($"/api/carts/{cartId}");
+        var item = Assert.Single(cart.GetProperty("items").EnumerateArray());
+        Assert.Equal(await ProductIdAsync("Domain-Driven Design"), item.GetProperty("productId").GetString());
+        Assert.Equal(2, item.GetProperty("quantity").GetInt32());
+    }
+
     private async Task AddAsync(HttpClient client, string cartId, string productId, int quantity)
     {
         var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId, quantity });
