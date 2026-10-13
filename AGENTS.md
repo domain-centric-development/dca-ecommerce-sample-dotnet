@@ -206,9 +206,9 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   changes the state once, two effects of one event both happen.
 - Backoffice, the REST API and MCP arrived in stage 2c: the footer's Event Log link is live, `/api/**` carries
   the resources of Product, Cart and Account, and `/mcp` exposes the catalog as the tools `all-products` and
-  `product-by-id`. The event log is built from the **integration-event outbox**, not from a per-listener domain
-  event registry as in Java — the numbers mean the same thing to an operator but count different things, and the
-  README and `OutboxEventPublicationLogStore` both say so.
+  `product-by-id`. The event log is built from the **integration-event outbox**, not from a domain event registry
+  as in Java; like Java it lists one entry per event and listener, each with its own retry — the README and
+  `OutboxEventPublicationLogStore` both say so.
 - Account and Portal arrived in stage 2b: `GuestCustomer` and the `dcashop-customer` cookie are gone, the
   landing page moved out of the host into `DcaShop.Portal`, and after a login the Cart context decides for
   itself whether carts have to be merged (`/cart/merge`) or the guest cart simply recovered — Account never

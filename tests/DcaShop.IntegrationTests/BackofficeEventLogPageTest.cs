@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 
 using DcaShop.Backoffice.Application.GetEventPublications;
+using DcaShop.Backoffice.Application.ReplayFailedPublication;
 using DcaShop.Backoffice.Application.Shared;
 
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -91,6 +92,41 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task PressingRetryOnAFailedEntryRetriesItsListenerAndLeadsBackToTheLog()
+    {
+        var replay = new RecordedReplay(found: true);
+        var client = await SignedInAsync([Delivered, Failed], replay);
+
+        var response = await PressRetryAsync(client);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/backoffice/events", response.Headers.Location!.ToString());
+        Assert.Equal([new ReplayFailedPublicationCommand(Failed.Id, Failed.ListenerId)], replay.Commands);
+    }
+
+    [Fact]
+    public async Task ARetryOfADeliveryTheLogNoLongerHoldsAnswersNotFound()
+    {
+        var client = await SignedInAsync([Failed], new RecordedReplay(found: false));
+
+        var response = await PressRetryAsync(client);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ARetryWithoutItsListenerIsRefusedAsMalformed()
+    {
+        var replay = new RecordedReplay(found: true);
+        var client = await SignedInAsync([Failed], replay);
+
+        var response = await PressRetryAsync(client, omitted: "listener");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Empty(replay.Commands);
+    }
+
+    [Fact]
     public async Task EveryEntryOffersItsEventPayloadClosed()
     {
         var page = await EventLogAsync(Delivered, Staged, Pending, Failed);
@@ -120,7 +156,7 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
     [Fact]
     public async Task RefreshLoadsTheLogAgainWithItsSummaryAndEntries()
     {
-        var client = await SignedInAsync(Delivered, Staged, Pending, Failed);
+        var client = await SignedInAsync([Delivered, Staged, Pending, Failed]);
         var page = await client.GetStringAsync("/backoffice/events");
         var refresh = Regex.Match(page, @"<a\b[^>]*data-test=""event-log-refresh""[^>]*>");
         Assert.True(refresh.Success, "the page has a Refresh link");
@@ -135,15 +171,49 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
         Assert.Equal(4, Entries(again).Count);
     }
 
-    /// <summary>A client signed in as the operator, over a log that holds exactly <paramref name="entries"/>.</summary>
-    private async Task<HttpClient> SignedInAsync(params EventPublicationEntry[] entries)
+    /// <summary>
+    /// A client signed in as the operator, over a log that holds exactly <paramref name="entries"/> and, where given,
+    /// a <paramref name="replay"/> that answers the retry.
+    /// </summary>
+    private async Task<HttpClient> SignedInAsync(
+        EventPublicationEntry[] entries, IReplayFailedPublicationInputPort? replay = null)
     {
         var shop = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
-            services.AddSingleton<IGetEventPublicationsInputPort>(new AnsweredLog(entries))));
+        {
+            services.AddSingleton<IGetEventPublicationsInputPort>(new AnsweredLog(entries));
+            if (replay is not null)
+            {
+                services.AddSingleton(replay);
+            }
+        }));
         var client = shop.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
         Assert.Equal(HttpStatusCode.Redirect, (await LogInAsync(client, "admin", "admin")).StatusCode);
         return client;
     }
+
+    /// <summary>
+    /// Presses the retry of the one failed entry on the log: submits its form as rendered, hidden fields included —
+    /// all but <paramref name="omitted"/>.
+    /// </summary>
+    private static async Task<HttpResponseMessage> PressRetryAsync(HttpClient client, string? omitted = null)
+    {
+        var form = Regex.Match(
+            await client.GetStringAsync("/backoffice/events"),
+            @"<form\b[^>]*action=""(?<action>[^""]*/replay)""[^>]*>(?<fields>.*?)</form>",
+            RegexOptions.Singleline);
+        Assert.True(form.Success, "the failed entry has a retry form");
+
+        return await client.PostAsync(
+            form.Groups["action"].Value,
+            new FormUrlEncodedContent(HiddenFields(form.Groups["fields"].Value).Where(field => field.Key != omitted)));
+    }
+
+    /// <summary>The name and value of each hidden field in <paramref name="form"/>.</summary>
+    private static IEnumerable<KeyValuePair<string, string>> HiddenFields(string form) =>
+        Regex.Matches(form, @"<input\b[^>]*type=""hidden""[^>]*>")
+            .Select(input => new KeyValuePair<string, string>(
+                Regex.Match(input.Value, @"name=""([^""]+)""").Groups[1].Value,
+                WebUtility.HtmlDecode(Regex.Match(input.Value, @"value=""([^""]*)""").Groups[1].Value)));
 
     /// <summary>The text a reader sees in <paramref name="markup"/>: tags dropped, whitespace collapsed.</summary>
     private static string Text(string markup) =>
@@ -166,14 +236,10 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
     private static async Task<HttpResponseMessage> LogInAsync(HttpClient client, string username, string password)
     {
         var form = Element(await client.GetStringAsync("/backoffice/login"), "backoffice-login-form", "</form>");
-        var hidden = Regex.Matches(form, @"<input\b[^>]*type=""hidden""[^>]*>")
-            .Select(input => new KeyValuePair<string, string>(
-                Regex.Match(input.Value, @"name=""([^""]+)""").Groups[1].Value,
-                WebUtility.HtmlDecode(Regex.Match(input.Value, @"value=""([^""]*)""").Groups[1].Value)));
 
         return await client.PostAsync(
             "/backoffice/login",
-            new FormUrlEncodedContent(hidden.Concat(
+            new FormUrlEncodedContent(HiddenFields(form).Concat(
                 [new KeyValuePair<string, string>("username", username), new KeyValuePair<string, string>("password", password)])));
     }
 
@@ -217,5 +283,22 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
         public Task<GetEventPublicationsResult> ExecuteAsync(
             GetEventPublicationsQuery query, CancellationToken cancellationToken = default) =>
             Task.FromResult(GetEventPublicationsResult.From(_entries));
+    }
+
+    /// <summary>The retry's input port: records each command it is given and answers whether it found the delivery.</summary>
+    private sealed class RecordedReplay : IReplayFailedPublicationInputPort
+    {
+        private readonly bool _found;
+
+        public RecordedReplay(bool found) => _found = found;
+
+        public List<ReplayFailedPublicationCommand> Commands { get; } = [];
+
+        public Task<ReplayFailedPublicationResult> ExecuteAsync(
+            ReplayFailedPublicationCommand command, CancellationToken cancellationToken = default)
+        {
+            Commands.Add(command);
+            return Task.FromResult(new ReplayFailedPublicationResult(_found));
+        }
     }
 }

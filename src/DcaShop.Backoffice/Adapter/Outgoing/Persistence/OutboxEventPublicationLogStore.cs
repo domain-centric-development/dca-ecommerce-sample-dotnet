@@ -9,9 +9,9 @@ namespace DcaShop.Backoffice.Adapter.Outgoing.Persistence;
 /// Reads the publication log out of the integration-event outbox.
 /// </summary>
 /// <remarks>
-/// The outbox retains one immutable integration-event snapshot with per-consumer completion.
+/// The outbox retains one immutable integration-event snapshot with per-consumer completion; the log lists one entry
+/// per event and listener, each with that listener's own state, as Java's registry does with one row per listener.
 /// Staged records are visible to operators but not eligible for dispatch until commit.
-/// Java's registry uses one publication row per listener; either mechanism can carry integration contracts.
 /// </remarks>
 public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
 {
@@ -28,35 +28,42 @@ public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
     {
         var entries = _outbox.All()
             .OrderByDescending(publication => publication.RegisteredOn)
-            .Select(ToEntry)
+            .SelectMany(ToEntries)
             .ToList();
 
         return Task.FromResult<IReadOnlyList<EventPublicationEntry>>(entries);
     }
 
-    private static EventPublicationEntry ToEntry(IntegrationEventPublication publication) =>
+    private static IEnumerable<EventPublicationEntry> ToEntries(IntegrationEventPublication publication) =>
+        Deliveries(publication).Select(delivery => ToEntry(publication, delivery));
+
+    /// <summary>Each consumer's delivery; before any is known, the publication's own state under the placeholder.</summary>
+    private static IEnumerable<ConsumerDelivery> Deliveries(IntegrationEventPublication publication) =>
+        publication.Consumers.Count == 0
+            ? [new ConsumerDelivery(OutboxListener, publication.Status, publication.Attempts, publication.LastError, publication.CompletedOn, null)]
+            : publication.Consumers.Values.OrderBy(delivery => delivery.ConsumerId, StringComparer.Ordinal);
+
+    private static EventPublicationEntry ToEntry(IntegrationEventPublication publication, ConsumerDelivery delivery) =>
         new(
             publication.Id,
             publication.Event.GetType().FullName ?? publication.Event.GetType().Name,
-            Payload(publication),
-            publication.Consumers.Count == 0 ? OutboxListener : string.Join(", ", publication.Consumers.Keys),
+            Payload(publication, delivery),
+            delivery.ConsumerId,
             publication.RegisteredOn,
-            publication.CompletedOn, publication.Status.ToString());
+            delivery.CompletedOn, delivery.Status.ToString());
 
-    private static string Payload(IntegrationEventPublication publication)
+    private static string Payload(IntegrationEventPublication publication, ConsumerDelivery delivery)
     {
-        var progress = string.Join(Environment.NewLine, publication.Consumers.Values.Select(c =>
-            $"{c.ConsumerId}: {c.Status}, failed attempts {c.Attempts}, next {c.NextAttemptOn}, error {c.LastError}"));
-        var status = $"Status: {publication.Status.ToString().ToUpperInvariant()}, attempts: {Tries(publication)}";
-        var body = $"{status}{Environment.NewLine}{Serialize(publication.Event)}{Environment.NewLine}{progress}";
-        return publication.LastError is { } error
-            ? $"{body}{Environment.NewLine}{Environment.NewLine}Last error after {publication.Attempts} attempt(s): {error}"
+        var heading = $"Status: {delivery.Status.ToString().ToUpperInvariant()}, attempts: {Tries(delivery)}";
+        var body = $"{heading}{Environment.NewLine}{Serialize(publication.Event)}";
+        return delivery.LastError is { } error
+            ? $"{body}{Environment.NewLine}{Environment.NewLine}Last error after {delivery.Attempts} attempt(s): {error}"
             : body;
     }
 
     // The outbox counts failed deliveries; the operator reads every try, the successful one included.
-    private static int Tries(IntegrationEventPublication publication) =>
-        publication.Attempts + (publication.Status == PublicationStatus.Completed ? 1 : 0);
+    private static int Tries(ConsumerDelivery delivery) =>
+        delivery.Attempts + (delivery.Status == PublicationStatus.Completed ? 1 : 0);
 
     private static string Serialize(object @event)
     {

@@ -36,22 +36,29 @@ accessed via a **Store** (not via a Repository).
 
 ### EventPublicationEntry
 
-**Definition:** A single entry from the event publication log: an event
-published to a specific listener, with publication and completion timestamps
-and a serialized payload.
+**Definition:** A single entry from the event publication log: one delivery of a
+published event to one listener, with that listener's own status, publication and
+completion timestamps and a serialized payload. An event with two listeners has two
+entries.
 
 **Type:** Value Object (read schema of the Store)
 
-**Identity:** `Guid Id` (technical publication id, not a business identifier)
+**Key:** `Guid Id` (technical publication id, shared by the entries of one
+event's listeners) together with `ListenerId` — a technical key, not a business identifier
 
 **Related terms:** `EventPublicationLogStore`, `EventPublicationSummary`
 
 **Operations:**
-- `IsCompleted` — has the publication been delivered?
+- `IsCompleted` — has the delivery to this listener been made?
 - `ShortEventType` — type name of the event without its namespace
+- Retry failed listener (`ReplayFailed`) — delivers a failed entry's event once more
+  to that entry's listener alone; the other listeners' entries stay as they were
+  (use case `ReplayFailedPublication`)
 
 **Notes:** Belongs to the Store as its **read schema** and is deliberately
-decoupled from the use-case API (see `EventPublicationSummary`).
+decoupled from the use-case API (see `EventPublicationSummary`). The listener is
+what the integration-event outbox calls a *consumer*; the outgoing adapters
+translate between the two words.
 
 ---
 
@@ -101,8 +108,8 @@ the one an operator can retry from the log.
 
 ### Publication Status
 
-**Definition:** The outbox's own status of a publication — `STAGED`, `PENDING`,
-`FAILED` or `COMPLETED`. An entry's payload names it upper-case on its first line,
+**Definition:** The outbox's own status of a delivery to one listener — `STAGED`,
+`PENDING`, `FAILED` or `COMPLETED`. An entry's payload names it upper-case on its first line,
 `Status: <STATUS>, attempts: <number>`. The badge reduces it to the two words of
 the **Completion Status**: `COMPLETED` is completed, every other status is incomplete.
 
@@ -114,18 +121,18 @@ the **Completion Status**: `COMPLETED` is completed, every other status is incom
 
 ### Attempt
 
-**Definition:** One try at delivering a publication. The number on the payload's
-first line counts every try, including the successful one. A publication delivered
-at its first try reads `attempts: 1`. A pending or failed publication counts only
-its failed deliveries. The per-consumer line underneath reads `failed attempts`
-and counts only that consumer's failures.
+**Definition:** One try at delivering an event to one listener, counted per entry.
+The number on the payload's first line counts every try, including the successful
+one. A delivery made at its first try reads `attempts: 1`. A pending or failed
+delivery counts only its failed tries; a delivery that used up its attempts reads
+`Status: FAILED, attempts: 5`.
 
 **Type:** Concept
 
 **Related terms:** `Publication Status`, `EventPublicationEntry`
 
 **Notes:** The outbox records failed deliveries only. The store adds the
-successful try once the publication is completed
+successful try once the listener's delivery is completed
 (`OutboxEventPublicationLogStore.Tries`).
 
 ---
@@ -158,19 +165,18 @@ Backoffice does **not** write to the log — the outbox owns the publications.
 **Operations:** `FindAllAsync(): IReadOnlyList<EventPublicationEntry>`
 
 **Notes:** Implementation: `OutboxEventPublicationLogStore` (reads the
-integration-event outbox). One row per **integration** event, not one row per
-domain event per listener: this shop dispatches domain events in-process and keeps
-no registry of them. The counts answer the same operator question — how much is
-published, how much is through, how much is still owed — while counting different
-things.
+integration-event outbox). One row per **integration** event and listener, not per
+domain event and listener: this shop dispatches domain events in-process and keeps
+no registry of them. Before an event's listeners are known, it has one row under
+the outbox's placeholder listener.
 
 ---
 
 ### GetEventPublications (Use Case)
 
 **Definition:** Returns all event publications with delivery status and
-aggregated statistics (`TotalCount`, `CompletedCount`, `IncompleteCount`) for
-the Backoffice overview page.
+aggregated statistics (`TotalCount`, `CompletedCount`, `IncompleteCount`, each
+counting entries — deliveries to one listener) for the Backoffice overview page.
 
 **Type:** Use Case (Query)
 
@@ -210,8 +216,5 @@ The parts of the context's behaviour its people name; each groups what holds in 
   glossary? (It will likely be relevant for other operational views as well.)
 - Planned extensions (retry, republish) — will these live in Backoffice or with
   the outbox dispatcher that owns delivery?
-- What does an **Attempt** count when a publication has several consumers? Today
-  the failed deliveries of all consumers are added up, plus one for the success,
-  while the Java shop counts per listener row.
 - Should Backoffice become its own Bounded Context in the long term, or remain
   classified as a Generic Subdomain?

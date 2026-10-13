@@ -68,7 +68,8 @@ else
 {
 <form method="post" action="/backoffice/events/@item.Id/replay">
 @Html.AntiForgeryToken()
-<button type="submit">Retry failed consumers</button>
+<input type="hidden" name="listener" value="@item.ListenerId" />
+<button type="submit" data-test="event-retry">Retry failed listener</button>
 </form>
 }
 <details class="event-log__payload" data-test="event-payload">

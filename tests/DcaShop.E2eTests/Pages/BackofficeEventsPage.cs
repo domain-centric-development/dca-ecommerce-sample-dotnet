@@ -22,6 +22,7 @@ public sealed class BackofficeEventsPage : BasePage
     private const string EventType = "event-type";
     private const string EventStatus = "event-status";
     private const string EventPayload = "event-payload";
+    private const string EventRetry = "event-retry";
     private const string EventLogRefresh = "event-log-refresh";
     private const string EventLogLogout = "event-log-logout";
 
@@ -35,10 +36,11 @@ public sealed class BackofficeEventsPage : BasePage
         return await OpenAsync(page);
     }
 
+    /// <summary>Waits for the log on whichever shop the browser is on — the suite's own or one beside it.</summary>
     public static async Task<BackofficeEventsPage> OpenAsync(IPage page)
     {
         var events = new BackofficeEventsPage(page);
-        await events.WaitForUrlAsync(UrlPattern);
+        await page.WaitForURLAsync("**" + UrlPattern);
         return events;
     }
 
@@ -120,6 +122,23 @@ public sealed class BackofficeEventsPage : BasePage
         await Assertions.Expect(content).ToBeVisibleAsync();
 
         return (await content.InnerTextAsync()).Split('\n').Select(line => line.TrimEnd('\r')).ToList();
+    }
+
+    /// <summary>
+    /// The label of the retry button on the first entry of the given type that carries the badge "Incomplete", once it is
+    /// visible.
+    /// </summary>
+    public async Task<string> RetryButtonOfAsync(string eventType)
+    {
+        var entry = Page.Locator($"[data-test='{EventLogItem}']")
+            .Filter(new() { Has = Page.Locator($"[data-test='{EventType}']", new() { HasTextString = eventType }) })
+            .Filter(new() { Has = Page.Locator($"[data-test='{EventStatus}']", new() { HasTextString = "Incomplete" }) })
+            .First;
+        await Assertions.Expect(entry).ToBeVisibleAsync();
+
+        var retry = entry.Locator($"[data-test='{EventRetry}']");
+        await Assertions.Expect(retry).ToBeVisibleAsync();
+        return (await retry.InnerTextAsync()).Trim();
     }
 
     private async Task<int> NumberAsync(string dataTest) =>

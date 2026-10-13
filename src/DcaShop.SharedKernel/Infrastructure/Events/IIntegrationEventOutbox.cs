@@ -16,5 +16,7 @@ public interface IIntegrationEventOutbox
     void Requeue(Guid publicationId);
     /// <summary>Retries failed consumers only, retaining their keys and the original event payload.</summary>
     void ReplayFailed(Guid publicationId);
+    /// <summary>Retries one failed consumer only; the others keep their state.</summary>
+    void ReplayFailed(Guid publicationId, string consumer);
     IReadOnlyList<IntegrationEventPublication> All();
 }

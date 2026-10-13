@@ -27,6 +27,15 @@ public sealed class BackofficeLoginPage : BasePage
         return login;
     }
 
+    /// <summary>Opens the login of the shop at <paramref name="shopUrl"/>, a shop other than the suite's own.</summary>
+    public static async Task<BackofficeLoginPage> NavigateToAsync(IPage page, string shopUrl)
+    {
+        await page.GotoAsync(shopUrl + "/backoffice/login");
+        var login = new BackofficeLoginPage(page);
+        await login.WaitForAsync(SubmitButton);
+        return login;
+    }
+
     /// <summary>Creates the page object without waiting — for a page that may not have loaded yet.</summary>
     public static BackofficeLoginPage On(IPage page) => new(page);
 

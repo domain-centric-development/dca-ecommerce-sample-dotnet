@@ -273,9 +273,11 @@ are not marked `Secure`.
 > **What the event log actually shows.** The Java sample reads Spring Modulith's `EVENT_PUBLICATION` table: one
 > row per *domain* event per listener, completed when that listener returned. This shop has no such registry — its
 > domain events are dispatched in-process and leave no record. What it does keep is the **integration-event
-> outbox**: one row per integration event, with a status, an attempt count and the last error. The page shows the
-> same three numbers (total / completed / incomplete) and the same `data-test` hooks, so the Java browser suite
-> passes against it, but the underlying record is not the same one.
+> outbox**: one row per integration event, with each listener's status, attempt count and last error. The page
+> lists one entry per event and listener, as Java does — each with its own badge, completion date and, when it
+> failed, its own "Retry failed listener" button (`data-test="event-retry"`). It shows the same three numbers
+> (total / completed / incomplete, counted per entry) and the same `data-test` hooks, so the Java browser suite
+> passes against it, but the underlying record is not the same one: integration events here, domain events there.
 
 ## Context map
 

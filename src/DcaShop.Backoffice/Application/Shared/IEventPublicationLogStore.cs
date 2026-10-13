@@ -11,7 +11,10 @@ public interface IEventPublicationLogStore : IStore
     Task<IReadOnlyList<EventPublicationEntry>> FindAllAsync(CancellationToken cancellationToken = default);
 }
 
-/// <summary>One published event, as the operator sees it.</summary>
+/// <summary>
+/// One delivery of a published event to one listener, as the operator sees it; <see cref="Id"/> is the publication's,
+/// shared by its listeners' entries.
+/// </summary>
 public sealed record EventPublicationEntry(
     Guid Id,
     string EventType,

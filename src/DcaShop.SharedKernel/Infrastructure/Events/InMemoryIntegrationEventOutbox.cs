@@ -104,12 +104,17 @@ public sealed class InMemoryIntegrationEventOutbox : IIntegrationEventOutbox
         };
     }
 
-    public void ReplayFailed(Guid id)
+    public void ReplayFailed(Guid id) => Replay(id, _ => true);
+
+    public void ReplayFailed(Guid id, string consumer) => Replay(id, c => c.ConsumerId == consumer);
+
+    private void Replay(Guid id, Func<ConsumerDelivery, bool> chosen)
     {
-        Update(id, p => !p.Consumers.Values.Any(c => c.Status == PublicationStatus.Failed) ? p : Progress(p with
+        static bool Failed(ConsumerDelivery c) => c.Status == PublicationStatus.Failed;
+        Update(id, p => !p.Consumers.Values.Any(c => Failed(c) && chosen(c)) ? p : Progress(p with
         {
             Consumers = p.Consumers.ToImmutableDictionary(e => e.Key,
-            e => e.Value.Status == PublicationStatus.Failed ? e.Value with { Status = PublicationStatus.Pending, Attempts = 0, NextAttemptOn = null } : e.Value)
+            e => Failed(e.Value) && chosen(e.Value) ? e.Value with { Status = PublicationStatus.Pending, Attempts = 0, NextAttemptOn = null } : e.Value)
         }));
         Release(id);
     }

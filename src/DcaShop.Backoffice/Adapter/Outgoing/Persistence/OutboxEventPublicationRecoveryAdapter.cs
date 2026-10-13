@@ -4,12 +4,12 @@ namespace DcaShop.Backoffice.Adapter.Outgoing.Persistence;
 
 public sealed class OutboxEventPublicationRecoveryAdapter(IIntegrationEventOutbox outbox) : IEventPublicationRecoveryPort
 {
-    public Task<bool> ReplayFailedAsync(Guid publicationId, CancellationToken cancellationToken = default)
+    public Task<bool> ReplayFailedAsync(Guid publicationId, string listenerId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var publication = outbox.All().SingleOrDefault(p => p.Id == publicationId);
-        if (publication is null) return Task.FromResult(false);
-        outbox.ReplayFailed(publicationId);
+        if (publication is null || !publication.Consumers.ContainsKey(listenerId)) return Task.FromResult(false);
+        outbox.ReplayFailed(publicationId, listenerId);
         return Task.FromResult(true);
     }
 }

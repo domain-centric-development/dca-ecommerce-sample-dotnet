@@ -75,9 +75,14 @@ public sealed class EventPublicationPageController : Controller
 
     [HttpPost("events/{id:guid}/replay")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ReplayFailed(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ReplayFailed(Guid id, [FromForm] string? listener, CancellationToken cancellationToken)
     {
-        var result = await _replay.ExecuteAsync(new ReplayFailedPublicationCommand(id), cancellationToken);
+        if (string.IsNullOrEmpty(listener))
+        {
+            return BadRequest();
+        }
+
+        var result = await _replay.ExecuteAsync(new ReplayFailedPublicationCommand(id, listener), cancellationToken);
         return result.Found ? Redirect("/backoffice/events") : NotFound();
     }
 
