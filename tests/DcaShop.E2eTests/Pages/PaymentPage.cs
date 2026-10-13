@@ -38,4 +38,28 @@ public sealed class PaymentPage : BasePage
         await ClickAsync(ContinueButton);
         return await ReviewPage.OpenAsync(Page);
     }
+
+    /// <summary>
+    /// Chooses the one way to pay the shop offers — its name depends on the provider the shop is wired to (the mock,
+    /// or the provider stub the embedded suite starts), so the choice is made by being the only one.
+    /// </summary>
+    public async Task<PaymentPage> ChooseTheOfferedPaymentProviderAsync()
+    {
+        var radio = Page.Locator($"[data-test='{ProviderRadio}']");
+        await Assertions.Expect(radio).ToHaveCountAsync(1);
+        await radio.CheckAsync();
+        return this;
+    }
+
+    /// <summary>Submits the form and answers the path of whatever page the shop opens next, without expecting one.</summary>
+    public async Task<string> SubmitAndShowNextPathAsync()
+    {
+        var button = Page.Locator($"[data-test='{ContinueButton}']");
+        await Assertions.Expect(button).ToBeVisibleAsync();
+        await Page.RunAndWaitForRequestFinishedAsync(
+            () => button.ClickAsync(),
+            new PageRunAndWaitForRequestFinishedOptions { Predicate = request => request.IsNavigationRequest && request.Method == "GET" });
+        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+        return CurrentPath;
+    }
 }
