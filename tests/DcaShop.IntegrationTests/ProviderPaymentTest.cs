@@ -21,6 +21,15 @@ public sealed class ProviderPaymentTest : IClassFixture<WebApplicationFactory<Pr
     private const string RefusalText = "The payment was refused. Please choose another way to pay.";
     private const string UnavailableText = "The payment provider is not available right now. Please try again later.";
 
+    /// <summary>
+    /// How long the shop waits for the provider in every case but the slow one: generous, so an answer the stub gives
+    /// at once still arrives in time when the machine is busy running every suite.
+    /// </summary>
+    private const string GenerousTimeout = "00:00:30";
+
+    /// <summary>The shop's own timeout, for the case that is about the timeout.</summary>
+    private const string ShortTimeout = "00:00:02";
+
     private readonly WebApplicationFactory<Program> _factory;
     private readonly WireMockServer _provider = WireMockServer.Start();
 
@@ -41,7 +50,7 @@ public sealed class ProviderPaymentTest : IClassFixture<WebApplicationFactory<Pr
     public async Task AProviderThatAnswersOnlyAfterFiveSecondsCountsAsUnavailable()
     {
         ProviderAnswers(Response.Create().WithStatusCode(201).WithBodyAsJson(new { reference = "late" }).WithDelay(TimeSpan.FromSeconds(5)));
-        var client = await ClientAtThePaymentStepAsync();
+        var client = await ClientAtThePaymentStepAsync(ShortTimeout);
 
         var watch = Stopwatch.StartNew();
         var response = await PayAsync(client);
@@ -105,17 +114,19 @@ public sealed class ProviderPaymentTest : IClassFixture<WebApplicationFactory<Pr
     private void ProviderAnswers(IResponseBuilder answer) =>
         _provider.Given(Request.Create().WithPath("/payments").UsingPost()).RespondWith(answer);
 
-    /// <summary>The shop as it runs with a payment provider configured — this test's stub.</summary>
-    private WebApplicationFactory<Program> ShopWithTheProvider() =>
-        _factory.WithWebHostBuilder(builder => builder.UseSetting("Checkout:PaymentProvider:BaseUrl", _provider.Url));
+    /// <summary>The shop as it runs with a payment provider configured — this test's stub, awaited at most <paramref name="timeout"/>.</summary>
+    private WebApplicationFactory<Program> ShopWithTheProvider(string timeout) =>
+        _factory.WithWebHostBuilder(builder => builder
+            .UseSetting("Checkout:PaymentProvider:BaseUrl", _provider.Url)
+            .UseSetting("Checkout:PaymentProvider:Timeout", timeout));
 
     /// <summary>
     /// A visitor whose checkout is at the payment step: one Hexagon Sticker Sheet (9.99 EUR) with Free Shipping,
     /// so the session total is 9.99 EUR.
     /// </summary>
-    private async Task<HttpClient> ClientAtThePaymentStepAsync()
+    private async Task<HttpClient> ClientAtThePaymentStepAsync(string providerTimeout = GenerousTimeout)
     {
-        var client = ShopWithTheProvider().CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
+        var client = ShopWithTheProvider(providerTimeout).CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
 
         var products = await client.GetFromJsonAsync<JsonElement>("/api/products");
         var productId = products.EnumerateArray().First(p => p.GetProperty("sku").GetString() == "STICKER-001").GetProperty("id").GetString()!;

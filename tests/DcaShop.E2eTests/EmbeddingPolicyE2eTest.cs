@@ -71,8 +71,9 @@ public sealed class EmbeddingPolicyE2eTest : BaseE2eTest, IDisposable
     }
 
     /// <summary>
-    /// Opens the first product inside the frame and presses "Add to Cart", returning once the shop has answered the
-    /// add with a page — whichever it is. A navigation started before that answer would cancel the add.
+    /// Opens the first product inside the frame and presses "Add to Cart", returning once the frame shows the page the
+    /// shop answered the add with — whichever it is. A navigation started before that would cancel the add or be
+    /// interrupted by it.
     /// </summary>
     /// <returns>The product's name, as its page shows it.</returns>
     private async Task<string> PressAddToCartOnTheFirstProductInTheFrameAsync()
@@ -86,11 +87,15 @@ public sealed class EmbeddingPolicyE2eTest : BaseE2eTest, IDisposable
         await Assertions.Expect(title).ToBeVisibleAsync();
         var product = (await title.TextContentAsync() ?? string.Empty).Trim();
 
-        await Page.RunAndWaitForResponseAsync(
+        var answer = await Page.RunAndWaitForResponseAsync(
             () => shop.Locator("[data-test='product-add-to-cart-button']").ClickAsync(),
             response => response.Request.IsNavigationRequest
                 && new Uri(response.Url).AbsolutePath.StartsWith("/cart", StringComparison.Ordinal)
                 && response.Status is < 300 or >= 400);
+
+        // The answer has arrived, but the frame shows it only once the navigation has committed and loaded; a
+        // navigation started in between would be interrupted by this one.
+        await ShopFrame().WaitForURLAsync(answer.Url);
         return product;
     }
 
@@ -100,9 +105,11 @@ public sealed class EmbeddingPolicyE2eTest : BaseE2eTest, IDisposable
     /// </summary>
     private async Task ShowInTheFrameAsync(string url)
     {
-        var frame = Page.Frame("shop") ?? throw new InvalidOperationException("the embedding page has no frame named shop");
-        await frame.GotoAsync(url);
+        await ShopFrame().GotoAsync(url);
     }
+
+    private IFrame ShopFrame() =>
+        Page.Frame("shop") ?? throw new InvalidOperationException("the embedding page has no frame named shop");
 
     /// <summary>
     /// A shop of this test's own, on a free port of this host, reached as <c>localhost</c>. Over TLS where its cookies
