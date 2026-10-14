@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A run of the browser suite that ran no test is a setup error, not a pass: a filter that matches nothing, or a build
+  that lost the tests, ends with a failing exit code instead of a green one.
+-->
+<RunSettings>
+  <RunConfiguration>
+    <TreatNoTestsAsError>true</TreatNoTestsAsError>
+  </RunConfiguration>
+</RunSettings>

@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- a run that executed no browser test fails -->
+    <RunSettingsFilePath>$(MSBuildProjectDirectory)/e2e.runsettings</RunSettingsFilePath>
+  </PropertyGroup>
   <ItemGroup>
     <!-- Same Playwright release as the Java sample's suite, so both drive the same browser builds. -->
     <PackageReference Include="Microsoft.Playwright" Version="1.62.0" />
