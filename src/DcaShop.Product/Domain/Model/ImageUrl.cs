@@ -5,12 +5,15 @@ namespace DcaShop.Product.Domain.Model;
 /// <summary>URL of the product's display image, at most 2000 characters; empty for products without an image.</summary>
 public sealed record ImageUrl : IValue
 {
+    /// <summary>The longest address the shop keeps.</summary>
+    public const int MaxLength = 2000;
+
     public ImageUrl(string value)
     {
         value ??= string.Empty;
-        if (value.Length > 2000)
+        if (value.Length > MaxLength)
         {
-            throw new ArgumentException("Image URL cannot exceed 2000 characters", nameof(value));
+            throw new ArgumentException($"Image URL cannot exceed {MaxLength} characters", nameof(value));
         }
 
         Value = value;

@@ -9,5 +9,5 @@ The judge's confirmed defects that did not block the story, kept for a later sto
 
 | # | Perspective | File:line | Severity | Defect | Fix | Status |
 |---|---|---|---|---|---|---|
-| 1 | dca | tests/DcaShop.UnitTests/Product/ImageUrlTest.cs:8 | minor | Only the refusing side (2001) is tested; `>` turned into `>=` stays green | Add a fact that a value of exactly 2000 characters is accepted | open |
-| 2 | clean-code | src/DcaShop.Product/Domain/Model/ImageUrl.cs:11 | minor | The limit 2000 is a bare literal in guard and message, as in `ProductDescription.cs:11` | Name it (`MaxLength`) on both value objects in one change | open |
+| 1 | dca | tests/DcaShop.UnitTests/Product/ImageUrlTest.cs:8 | minor | Only the refusing side (2001) is tested; `>` turned into `>=` stays green | Add a fact that a value of exactly 2000 characters is accepted | done |
+| 2 | clean-code | src/DcaShop.Product/Domain/Model/ImageUrl.cs:11 | minor | The limit 2000 is a bare literal in guard and message, as in `ProductDescription.cs:11` | Name it (`MaxLength`) on both value objects in one change | done |

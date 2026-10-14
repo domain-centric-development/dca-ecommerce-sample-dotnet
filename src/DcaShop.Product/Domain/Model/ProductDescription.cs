@@ -5,12 +5,15 @@ namespace DcaShop.Product.Domain.Model;
 /// <summary>Marketing and detail text, at most 2000 characters, may be empty.</summary>
 public sealed record ProductDescription : IValue
 {
+    /// <summary>The longest text the shop keeps.</summary>
+    public const int MaxLength = 2000;
+
     public ProductDescription(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        if (value.Length > 2000)
+        if (value.Length > MaxLength)
         {
-            throw new ArgumentException("Product description cannot exceed 2000 characters", nameof(value));
+            throw new ArgumentException($"Product description cannot exceed {MaxLength} characters", nameof(value));
         }
 
         Value = value;
