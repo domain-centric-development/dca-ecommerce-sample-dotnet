@@ -25,9 +25,11 @@ public sealed class RegistrationE2eTest : BaseE2eTest
     [E2eFact(DisplayName = "Registration says the account was created")]
     public async Task TheHomePageARegistrationLeadsToSaysTheAccountWasCreated()
     {
+        // The browser suite shares one shop, and the test above registers Anna's plain address already.
+        var email = $"anna.schmidt-{Guid.NewGuid():N}@example.com";
         var register = await RegisterPage.NavigateToAsync(Page);
 
-        await register.RegisterAsync("Anna", "Schmidt", "1990-05-17", "anna.schmidt@example.com", "Secret123", "Secret123");
+        await register.RegisterAsync("Anna", "Schmidt", "1990-05-17", email, "Secret123", "Secret123");
 
         Assert.Equal("/", CurrentPath);
         var home = await HomePage.OpenAsync(Page);
