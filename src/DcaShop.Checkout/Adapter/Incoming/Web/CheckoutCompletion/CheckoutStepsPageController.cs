@@ -5,6 +5,7 @@ using DcaShop.Checkout.Application.CheckoutCompletion.SubmitBuyerInfo;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
 using DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
+using DcaShop.Checkout.Application.Session.GetCheckoutSession;
 using DcaShop.Checkout.Application.Session.GetConfirmedCheckoutSession;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
@@ -33,6 +34,7 @@ public sealed class CheckoutStepsPageController : Controller
     private const string PlaceOrderRefusal = "PlaceOrderRefusal";
 
     private readonly IGetActiveCheckoutSessionInputPort _active;
+    private readonly IGetCheckoutSessionInputPort _session;
     private readonly IGetConfirmedCheckoutSessionInputPort _confirmed;
     private readonly ISubmitBuyerInfoInputPort _submitBuyerInfo;
     private readonly ISubmitDeliveryInputPort _submitDelivery;
@@ -44,6 +46,7 @@ public sealed class CheckoutStepsPageController : Controller
 
     public CheckoutStepsPageController(
         IGetActiveCheckoutSessionInputPort active,
+        IGetCheckoutSessionInputPort session,
         IGetConfirmedCheckoutSessionInputPort confirmed,
         ISubmitBuyerInfoInputPort submitBuyerInfo,
         ISubmitDeliveryInputPort submitDelivery,
@@ -54,6 +57,7 @@ public sealed class CheckoutStepsPageController : Controller
         IIdentityProvider identityProvider)
     {
         _active = active;
+        _session = session;
         _confirmed = confirmed;
         _submitBuyerInfo = submitBuyerInfo;
         _submitDelivery = submitDelivery;
@@ -147,17 +151,24 @@ public sealed class CheckoutStepsPageController : Controller
     /// </summary>
     private async Task<IActionResult> Page(CheckoutStep step, CancellationToken cancellationToken, string? error = null, CheckoutStepNotice? notice = null)
     {
-        // A step re-rendered with an error — a rejected submit, or a refused "Place Order" carried to the review — keeps
-        // the page; otherwise the domain decides who may see it
-        var result = await _active.ExecuteAsync(new GetActiveCheckoutSessionQuery(CurrentCustomerId(), error is null ? step : null), cancellationToken);
-        if (result.Session is not { } session)
+        var session = await ActiveSessionAsync(cancellationToken);
+        if (session is null)
         {
             return NoActiveSession();
         }
 
-        if (result.StepAccess is { Granted: false } access)
+        // A step re-rendered with an error — a rejected submit, or a refused "Place Order" carried to the review — keeps
+        // the page; otherwise the domain decides who may see it
+        if (error is null)
         {
-            return Redirect(CheckoutRoutes.PathTo(access));
+            var result = await _session.ExecuteAsync(
+                GetCheckoutSessionQuery.ForStep(session.SessionId.Value, CurrentCustomerId(), step), cancellationToken);
+            if (result.StepAccess is { Granted: false } access)
+            {
+                return Redirect(CheckoutRoutes.PathTo(access));
+            }
+
+            session = result.Session!;
         }
 
         return View($"~/Views/Checkout/{step}.cshtml", await ViewModelAsync(session, error ?? notice?.Sentence(), cancellationToken));
@@ -209,7 +220,10 @@ public sealed class CheckoutStepsPageController : Controller
     /// </summary>
     private async Task<RedirectResult?> ToTheStepStillOpenAsync(CheckoutStep step, CancellationToken cancellationToken)
     {
-        var access = (await _active.ExecuteAsync(new GetActiveCheckoutSessionQuery(CurrentCustomerId(), step), cancellationToken)).StepAccess;
+        var access = await ActiveSessionAsync(cancellationToken) is { } session
+            ? (await _session.ExecuteAsync(
+                GetCheckoutSessionQuery.ForStep(session.SessionId.Value, CurrentCustomerId(), step), cancellationToken)).StepAccess
+            : StepAccess.BackToCart();
         return access is { Granted: false } ? Redirect(CheckoutRoutes.PathTo(access, CheckoutStepNotice.EarlierStepsFirst)) : null;
     }
 

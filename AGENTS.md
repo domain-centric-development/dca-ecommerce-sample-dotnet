@@ -101,8 +101,8 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   `<Name>Query` (reads), `<Name>Result` — values only, never an aggregate root or entity (`DCA-USE-015`); part records
   named by content (`CartItemSummary`), nested in the result; command results small (the checkout wizard's
   `Submit*`/`ConfirmCheckout` answer `(SessionId, CurrentStep, Status)`, the queries return the
-  `CheckoutCartSnapshot`); Cart results carry `Money`; step access is decided by the `GetActiveCheckoutSession`
-  query and delivered as a `StepAccess` value that the web adapter maps to a route — no `IDomainService` in an
+  `CheckoutCartSnapshot`); Cart results carry `Money`; step access is decided by the `GetCheckoutSession`
+  query for a session and a step (`GetCheckoutSessionQuery.ForStep`) and delivered as a `StepAccess` value that the web adapter maps to a route — no `IDomainService` in an
   incoming adapter (`DCA-HEX-012`); repositories `I<Aggregate>Repository` / `InMemory<Aggregate>Repository`;
   web adapters `*PageController` + `*PageViewModel`; REST adapters `*Resource` (`[ApiController]`,
   `Adapter/Incoming/Api/`) — the layout's `RestControllerSuffix` is set to `Resource` in `ArchitectureRulesTest`

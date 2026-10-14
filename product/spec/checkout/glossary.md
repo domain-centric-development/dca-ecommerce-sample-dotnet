@@ -378,7 +378,7 @@ purposes.
 instead: terminal and confirmed sessions only reach the confirmation, and a step whose prerequisites are
 unfulfilled sends them to the step they are actually on. Going back to a completed step is allowed. A
 session that is not there at all sends them back to the cart — the one part the model cannot answer,
-because there is no snapshot to ask; the `GetActiveCheckoutSession` use case answers that.
+because there is no snapshot to ask; the `GetCheckoutSession` use case answers that.
 
 **Type:** Behaviour of `CheckoutCartSnapshot`
 
@@ -389,8 +389,8 @@ It decides on the snapshot alone, so a read does not load the session aggregate.
 
 **Operations:** `AccessTo(targetStep)` — answers with a `StepAccess`.
 
-**Notes:** Decides on the `CheckoutCartSnapshot` read model and knows no routes. The `GetActiveCheckoutSession` query
-use case invokes it when a step is requested and delivers the `StepAccess` in its result; the web
+**Notes:** Decides on the `CheckoutCartSnapshot` read model and knows no routes. The `GetCheckoutSession` query
+use case invokes it when a step is requested (`GetCheckoutSessionQuery.ForStep`) and delivers the `StepAccess` in its result; the web
 adapter (`CheckoutRoutes`) maps the decision to a redirect path. A step's form refused as sent too early
 (`CheckoutStepNotCompletedException`, `CheckoutStepOutOfOrderException`) asks step access for that step too, and a
 denied access sends the customer to the step still open, which says that the earlier steps come first.
