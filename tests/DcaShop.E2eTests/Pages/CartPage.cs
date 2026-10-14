@@ -52,7 +52,7 @@ public sealed class CartPage : BasePage
         var button = Page.Locator($"[data-test='{CheckoutButton}']");
         await Assertions.Expect(button).ToHaveTextAsync("Proceed to Checkout");
         await button.ClickAsync();
-        await Page.WaitForURLAsync(url => new Uri(url).AbsolutePath != "/cart");
+        await Page.WaitForLoadedUrlAsync(url => new Uri(url).AbsolutePath != "/cart");
     }
 
     public string ShownPath => CurrentPath;

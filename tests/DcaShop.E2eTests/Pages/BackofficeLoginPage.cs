@@ -49,7 +49,7 @@ public sealed class BackofficeLoginPage : BasePage
     public async Task<BackofficeEventsPage> SubmitAsync()
     {
         await ClickAsync(SubmitButton);
-        await Page.WaitForURLAsync(url => !url.Contains("/login", StringComparison.Ordinal));
+        await Page.WaitForLoadedUrlAsync(url => !url.Contains("/login", StringComparison.Ordinal));
         return await BackofficeEventsPage.OpenAsync(Page);
     }
 

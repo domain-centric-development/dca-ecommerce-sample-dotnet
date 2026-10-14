@@ -41,7 +41,7 @@ public sealed class BackofficeEventsPage : BasePage
     public static async Task<BackofficeEventsPage> OpenAsync(IPage page)
     {
         var events = new BackofficeEventsPage(page);
-        await page.WaitForURLAsync("**" + UrlPattern);
+        await page.WaitForLoadedUrlAsync("**" + UrlPattern);
         return events;
     }
 

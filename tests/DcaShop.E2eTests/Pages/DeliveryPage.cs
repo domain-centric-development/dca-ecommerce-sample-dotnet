@@ -23,7 +23,7 @@ public sealed class DeliveryPage : BasePage
     /// <summary>The delivery step of the shop at <paramref name="shopUrl"/>, a shop other than the suite's own, once the browser shows it.</summary>
     public static async Task<DeliveryPage> OpenAsync(IPage page, string shopUrl)
     {
-        await page.WaitForURLAsync(shopUrl + UrlPattern);
+        await page.WaitForLoadedUrlAsync(shopUrl + UrlPattern);
         return new DeliveryPage(page);
     }
 

@@ -1,3 +1,5 @@
+using DcaShop.E2eTests.Pages;
+
 using Microsoft.Playwright;
 
 namespace DcaShop.E2eTests;
@@ -76,7 +78,7 @@ public abstract class BaseE2eTest : IClassFixture<BrowserFixture>, IAsyncLifetim
     /// <summary>A second browser with storage and cookies of its own; the caller disposes it.</summary>
     protected Task<IBrowserContext> NewBrowserAsync() => _browser.Browser.NewContextAsync(ContextOptions);
 
-    protected Task WaitForUrlAsync(string pattern) => Page.WaitForURLAsync(BaseUrl + pattern);
+    protected Task WaitForUrlAsync(string pattern) => Page.WaitForLoadedUrlAsync(BaseUrl + pattern);
 
     protected string CurrentPath => Page.Url.Replace(BaseUrl, string.Empty, StringComparison.Ordinal);
 }

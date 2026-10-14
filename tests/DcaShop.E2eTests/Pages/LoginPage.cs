@@ -35,7 +35,7 @@ public sealed class LoginPage : BasePage
         await ClickAsync(SubmitButton);
 
         // Login always leaves /login — either onto the merge page or straight back to the shop.
-        await Page.WaitForURLAsync(url => !url.Contains("/login", StringComparison.Ordinal));
+        await Page.WaitForLoadedUrlAsync(url => !url.Contains("/login", StringComparison.Ordinal));
     }
 
     /// <summary>Submits the form with credentials the shop refuses: the login page answers again, with its message.</summary>

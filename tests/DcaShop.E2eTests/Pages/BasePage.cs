@@ -16,7 +16,7 @@ public abstract class BasePage
 
     protected IPage Page { get; }
 
-    protected Task WaitForUrlAsync(string pattern) => Page.WaitForURLAsync(BaseUrl + pattern);
+    protected Task WaitForUrlAsync(string pattern) => Page.WaitForLoadedUrlAsync(BaseUrl + pattern);
 
     protected Task ClickAsync(string dataTest) => Page.Locator($"[data-test='{dataTest}']").ClickAsync();
 

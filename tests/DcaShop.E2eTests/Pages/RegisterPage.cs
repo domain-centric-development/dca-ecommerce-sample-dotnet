@@ -42,7 +42,7 @@ public sealed class RegisterPage : BasePage
         await FillAsync("password", password);
         await FillAsync("confirmPassword", confirmPassword);
         await ClickAsync(SubmitButton);
-        await Page.WaitForURLAsync(url => !url.Contains("/register", StringComparison.Ordinal));
+        await Page.WaitForLoadedUrlAsync(url => !url.Contains("/register", StringComparison.Ordinal));
     }
 
     /// <summary>Fills in every field of the form as given and submits it; expects to stay here with the page's refusal.</summary>
@@ -87,6 +87,6 @@ public sealed class RegisterPage : BasePage
         await FillAsync("password", password);
         await FillAsync("confirmPassword", password);
         await ClickAsync(SubmitButton);
-        await Page.WaitForURLAsync(url => !url.Contains("/register", StringComparison.Ordinal));
+        await Page.WaitForLoadedUrlAsync(url => !url.Contains("/register", StringComparison.Ordinal));
     }
 }

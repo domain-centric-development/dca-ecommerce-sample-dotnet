@@ -22,7 +22,7 @@ public sealed class ReviewPage : BasePage
     /// <summary>The review of the shop at <paramref name="shopUrl"/>, a shop other than the suite's own, once the browser shows it.</summary>
     public static async Task<ReviewPage> OpenAsync(IPage page, string shopUrl)
     {
-        await page.WaitForURLAsync(shopUrl + UrlPattern);
+        await page.WaitForLoadedUrlAsync(shopUrl + UrlPattern);
         return new ReviewPage(page);
     }
 

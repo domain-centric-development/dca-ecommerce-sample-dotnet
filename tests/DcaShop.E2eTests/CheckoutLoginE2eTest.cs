@@ -87,7 +87,7 @@ public sealed class CheckoutLoginE2eTest : BaseE2eTest
             await register.RegisterAsync(UniqueEmail("redirect"), TestPassword);
         }
 
-        await Page.WaitForURLAsync(url =>
+        await Page.WaitForLoadedUrlAsync(url =>
             url.Contains("/checkout", StringComparison.Ordinal) || url.Contains("/cart", StringComparison.Ordinal));
 
         Assert.True(
