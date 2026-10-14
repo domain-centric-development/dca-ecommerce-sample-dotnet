@@ -9,4 +9,4 @@ The judge's confirmed defects that did not block the story, kept for a later sto
 
 | # | Perspective | File:line | Severity | Defect | Fix | Status |
 |---|---|---|---|---|---|---|
-| 1 | plan | tests/DcaShop.E2eTests/LoginE2eTest.cs:20 | minor | The title "Login opens the cart" is not in the shared specification's `scenarios.md`, so `SharedScenariosTest` fails when run with `-p:SpecificationPath` (the plan's open assumption) | Add the scenario to the specification and give the Java suite a test with the same title | open |
+| 1 | plan | tests/DcaShop.E2eTests/LoginE2eTest.cs:20 | minor | The title "Login opens the cart" is not in the shared specification's `scenarios.md`, so `SharedScenariosTest` fails when run with `-p:SpecificationPath` (the plan's open assumption) | Add the scenario to the specification and give the Java suite a test with the same title | done |

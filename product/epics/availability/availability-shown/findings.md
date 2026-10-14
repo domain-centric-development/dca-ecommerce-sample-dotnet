@@ -9,4 +9,4 @@ The judge's confirmed defects that did not block the story, kept for a later sto
 
 | # | Perspective | File:line | Severity | Defect | Fix | Status |
 |---|---|---|---|---|---|---|
-| 1 | plan | tests/DcaShop.E2eTests/ProductAvailabilityE2eTest.cs:43 | minor | DisplayName "Product page shows units available" has no scenario in the shared specification; `SharedScenariosTest` fails once run with `-p:SpecificationPath` | Add the scenario to the specification's `scenarios.md` and the Java suite under the same title | open |
+| 1 | plan | tests/DcaShop.E2eTests/ProductAvailabilityE2eTest.cs:43 | minor | DisplayName "Product page shows units available" has no scenario in the shared specification; `SharedScenariosTest` fails once run with `-p:SpecificationPath` | Add the scenario to the specification's `scenarios.md` and the Java suite under the same title | done |

@@ -9,4 +9,4 @@ The judge's confirmed defects that did not block the story, kept for a later sto
 
 | # | Perspective | File:line | Severity | Defect | Fix | Status |
 |---|---|---|---|---|---|---|
-| 1 | test | tests/DcaShop.E2eTests/RegistrationKeepsTheCartE2eTest.cs:15 | minor | DisplayName "Registering keeps the guest cart" has no scenario in the shared specification, so `SharedScenariosTest` fails with `-p:SpecificationPath` | add the scenario to the specification's `scenarios.md` and the Java suite under the same title | open |
+| 1 | test | tests/DcaShop.E2eTests/RegistrationKeepsTheCartE2eTest.cs:15 | minor | DisplayName "Registering keeps the guest cart" has no scenario in the shared specification, so `SharedScenariosTest` fails with `-p:SpecificationPath` | add the scenario to the specification's `scenarios.md` and the Java suite under the same title | done |
