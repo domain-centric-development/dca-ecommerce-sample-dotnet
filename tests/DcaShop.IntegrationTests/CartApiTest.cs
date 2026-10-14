@@ -29,7 +29,7 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task OpeningACartAnswersCreatedWithAnEmptyActiveCartOfTheCaller()
     {
-        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var client = await _factory.CustomerClientAsync("ada@example.com");
 
         var response = await client.PostAsync("/api/carts", Empty());
 
@@ -45,7 +45,7 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task OpeningASecondCartWhileOneIsOpenIsAConflict()
     {
-        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var client = await _factory.CustomerClientAsync("ada@example.com");
         Assert.Equal(HttpStatusCode.Created, (await client.PostAsync("/api/carts", Empty())).StatusCode);
 
         var response = await client.PostAsync("/api/carts", Empty());
@@ -59,7 +59,7 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task TheActiveCartIsReadByTheCustomerIdTheOpeningReturned()
     {
-        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var client = await _factory.CustomerClientAsync("ada@example.com");
         var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var cartId = opened.GetProperty("cartId").GetString();
         var customerId = opened.GetProperty("customerId").GetString();
@@ -75,10 +75,10 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task AddingAProductAnswersWithTheCartHoldingItsLineAndTotal()
     {
-        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var client = await _factory.CustomerClientAsync("ada@example.com");
         var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var cartId = opened.GetProperty("cartId").GetString();
-        var domainDrivenDesign = await ProductIdAsync("Domain-Driven Design");
+        var domainDrivenDesign = await _factory.ProductIdAsync("Domain-Driven Design");
 
         var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId = domainDrivenDesign, quantity = 2 });
 
@@ -95,10 +95,10 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task AddingAProductTheCartHoldsRaisesItsLineInsteadOfAddingOne()
     {
-        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var client = await _factory.CustomerClientAsync("ada@example.com");
         var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var cartId = opened.GetProperty("cartId").GetString();
-        var domainDrivenDesign = await ProductIdAsync("Domain-Driven Design");
+        var domainDrivenDesign = await _factory.ProductIdAsync("Domain-Driven Design");
         await AddAsync(client, cartId!, domainDrivenDesign, 2);
 
         var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId = domainDrivenDesign, quantity = 1 });
@@ -112,11 +112,11 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task ReadingTheOwnCartAnswersItsLinesTotalAndLineCount()
     {
-        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var client = await _factory.CustomerClientAsync("ada@example.com");
         var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var cartId = opened.GetProperty("cartId").GetString();
-        await AddAsync(client, cartId!, await ProductIdAsync("Domain-Driven Design"), 2);
-        await AddAsync(client, cartId!, await ProductIdAsync("Team Topologies"), 1);
+        await AddAsync(client, cartId!, await _factory.ProductIdAsync("Domain-Driven Design"), 2);
+        await AddAsync(client, cartId!, await _factory.ProductIdAsync("Team Topologies"), 1);
 
         var response = await client.GetAsync($"/api/carts/{cartId}");
 
@@ -131,11 +131,11 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task RemovingAProductByItsIdTakesItsWholeLineOut()
     {
-        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var client = await _factory.CustomerClientAsync("ada@example.com");
         var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var cartId = opened.GetProperty("cartId").GetString();
-        var domainDrivenDesign = await ProductIdAsync("Domain-Driven Design");
-        var teamTopologies = await ProductIdAsync("Team Topologies");
+        var domainDrivenDesign = await _factory.ProductIdAsync("Domain-Driven Design");
+        var teamTopologies = await _factory.ProductIdAsync("Team Topologies");
         await AddAsync(client, cartId!, domainDrivenDesign, 3);
         await AddAsync(client, cartId!, teamTopologies, 1);
 
@@ -152,12 +152,12 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task TheStaffListSpellsACartsStatusAsTheSingleCartsAnswerDoes()
     {
-        var ada = Bearer(await RegisterAsync("ada@example.com"));
+        var ada = await _factory.CustomerClientAsync("ada@example.com");
         var opened = await (await ada.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var cartId = opened.GetProperty("cartId").GetString();
         var customerId = opened.GetProperty("customerId").GetString();
-        await AddAsync(ada, cartId!, await ProductIdAsync("Domain-Driven Design"), 2);
-        var staff = Bearer(StaffToken(SubjectOf(await RegisterAsync("operator@example.com")), "operator@example.com"));
+        await AddAsync(ada, cartId!, await _factory.ProductIdAsync("Domain-Driven Design"), 2);
+        var staff = await _factory.StaffClientAsync("operator@example.com");
 
         var response = await staff.GetAsync("/api/carts");
 
@@ -174,7 +174,7 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task AProductIdNoProductHasIsAnArticleThatIsNotAvailable()
     {
-        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var client = await _factory.CustomerClientAsync("ada@example.com");
         var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var cartId = opened.GetProperty("cartId").GetString();
 
@@ -190,10 +190,10 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task AddingMoreThanIsInStockIsAConflictAndLeavesTheCartEmpty()
     {
-        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var client = await _factory.CustomerClientAsync("ada@example.com");
         var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var cartId = opened.GetProperty("cartId").GetString();
-        var hexagon = await ProductIdAsync("Wooden Hexagon Desk Model");
+        var hexagon = await _factory.ProductIdAsync("Wooden Hexagon Desk Model");
 
         var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId = hexagon, quantity = 9 });
 
@@ -209,10 +209,10 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task AddingExactlyWhatIsInStockIsAccepted()
     {
-        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var client = await _factory.CustomerClientAsync("ada@example.com");
         var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var cartId = opened.GetProperty("cartId").GetString();
-        var hexagon = await ProductIdAsync("Wooden Hexagon Desk Model");
+        var hexagon = await _factory.ProductIdAsync("Wooden Hexagon Desk Model");
 
         var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId = hexagon, quantity = 8 });
 
@@ -226,12 +226,12 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task AQuantityOfZeroIsABadRequestAndLeavesTheCartEmpty()
     {
-        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var client = await _factory.CustomerClientAsync("ada@example.com");
         var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var cartId = opened.GetProperty("cartId").GetString();
 
         var response = await client.PostAsJsonAsync(
-            $"/api/carts/{cartId}/items", new { productId = await ProductIdAsync("Domain-Driven Design"), quantity = 0 });
+            $"/api/carts/{cartId}/items", new { productId = await _factory.ProductIdAsync("Domain-Driven Design"), quantity = 0 });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var cart = await client.GetFromJsonAsync<JsonElement>($"/api/carts/{cartId}");
@@ -241,11 +241,11 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task RemovingAProductTheCartDoesNotHoldIsNotFound()
     {
-        var client = Bearer(await RegisterAsync("ada@example.com"));
+        var client = await _factory.CustomerClientAsync("ada@example.com");
         var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var cartId = opened.GetProperty("cartId").GetString();
-        await AddAsync(client, cartId!, await ProductIdAsync("Domain-Driven Design"), 1);
-        var teamTopologies = await ProductIdAsync("Team Topologies");
+        await AddAsync(client, cartId!, await _factory.ProductIdAsync("Domain-Driven Design"), 1);
+        var teamTopologies = await _factory.ProductIdAsync("Team Topologies");
 
         var response = await client.DeleteAsync($"/api/carts/{cartId}/items/{teamTopologies}");
 
@@ -259,12 +259,12 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task AddingToAnotherCustomersCartFindsNothingAndLeavesItsLinesAsTheyWere()
     {
-        var ada = Bearer(await RegisterAsync("ada@example.com"));
+        var ada = await _factory.CustomerClientAsync("ada@example.com");
         var cartId = await OpenCartHoldingTwoDomainDrivenDesignAsync(ada);
-        var grace = Bearer(await RegisterAsync("grace@example.com"));
+        var grace = await _factory.CustomerClientAsync("grace@example.com");
 
         var response = await grace.PostAsJsonAsync(
-            $"/api/carts/{cartId}/items", new { productId = await ProductIdAsync("Team Topologies"), quantity = 1 });
+            $"/api/carts/{cartId}/items", new { productId = await _factory.ProductIdAsync("Team Topologies"), quantity = 1 });
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         await AssertHoldsOnlyTwoDomainDrivenDesignAsync(ada, cartId);
@@ -273,11 +273,11 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task RemovingFromAnotherCustomersCartFindsNothingAndLeavesItsLinesAsTheyWere()
     {
-        var ada = Bearer(await RegisterAsync("ada@example.com"));
+        var ada = await _factory.CustomerClientAsync("ada@example.com");
         var cartId = await OpenCartHoldingTwoDomainDrivenDesignAsync(ada);
-        var grace = Bearer(await RegisterAsync("grace@example.com"));
+        var grace = await _factory.CustomerClientAsync("grace@example.com");
 
-        var response = await grace.DeleteAsync($"/api/carts/{cartId}/items/{await ProductIdAsync("Domain-Driven Design")}");
+        var response = await grace.DeleteAsync($"/api/carts/{cartId}/items/{await _factory.ProductIdAsync("Domain-Driven Design")}");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         await AssertHoldsOnlyTwoDomainDrivenDesignAsync(ada, cartId);
@@ -286,10 +286,10 @@ public sealed class CartApiTest : IDisposable
     [Fact]
     public async Task AnotherCustomersActiveCartFindsNothing()
     {
-        var ada = Bearer(await RegisterAsync("ada@example.com"));
+        var ada = await _factory.CustomerClientAsync("ada@example.com");
         var opened = await (await ada.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var adasCustomerId = opened.GetProperty("customerId").GetString();
-        var grace = Bearer(await RegisterAsync("grace@example.com"));
+        var grace = await _factory.CustomerClientAsync("grace@example.com");
 
         var response = await grace.GetAsync($"/api/carts/customer/{adasCustomerId}/active");
 
@@ -322,7 +322,7 @@ public sealed class CartApiTest : IDisposable
     {
         var opened = await (await owner.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var cartId = opened.GetProperty("cartId").GetString()!;
-        await AddAsync(owner, cartId, await ProductIdAsync("Domain-Driven Design"), 2);
+        await AddAsync(owner, cartId, await _factory.ProductIdAsync("Domain-Driven Design"), 2);
         return cartId;
     }
 
@@ -330,7 +330,7 @@ public sealed class CartApiTest : IDisposable
     {
         var cart = await owner.GetFromJsonAsync<JsonElement>($"/api/carts/{cartId}");
         var item = Assert.Single(cart.GetProperty("items").EnumerateArray());
-        Assert.Equal(await ProductIdAsync("Domain-Driven Design"), item.GetProperty("productId").GetString());
+        Assert.Equal(await _factory.ProductIdAsync("Domain-Driven Design"), item.GetProperty("productId").GetString());
         Assert.Equal(2, item.GetProperty("quantity").GetInt32());
     }
 
@@ -338,57 +338,6 @@ public sealed class CartApiTest : IDisposable
     {
         var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId, quantity });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    }
-
-    private async Task<string> ProductIdAsync(string name)
-    {
-        var products = await _factory.CreateClient().GetFromJsonAsync<JsonElement>("/api/products");
-        return products.EnumerateArray()
-            .Single(p => p.GetProperty("name").GetString() == name)
-            .GetProperty("id").GetString()!;
-    }
-
-    private HttpClient Bearer(string token)
-    {
-        var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
-
-    private async Task<string> RegisterAsync(string email)
-    {
-        var response = await _factory.CreateClient().PostAsJsonAsync("/api/auth/register", new
-        {
-            email,
-            password = "Secret123",
-            firstName = "Ada",
-            lastName = "Lovelace",
-            dateOfBirth = "1815-12-10",
-        });
-
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
-    }
-
-    /// <summary>
-    /// A staff token for an existing account. No registration path hands the role out, so the test mints the
-    /// token the way an operator provisioning tool would.
-    /// </summary>
-    private string StaffToken(string userId, string email)
-    {
-        using var scope = _factory.Services.CreateScope();
-        return scope.ServiceProvider.GetRequiredService<JwtTokenService>().GenerateRegisteredToken(
-            UserId.Of(userId),
-            email,
-            new HashSet<Role> { Role.Customer, Role.Staff });
-    }
-
-    private static string SubjectOf(string jwt)
-    {
-        var payload = jwt.Split('.')[1];
-        var padded = payload.PadRight(payload.Length + ((4 - (payload.Length % 4)) % 4), '=');
-        var json = JsonDocument.Parse(Convert.FromBase64String(padded.Replace('-', '+').Replace('_', '/')));
-        return json.RootElement.GetProperty("sub").GetString()!;
     }
 
     private static StringContent Empty() => new(string.Empty, Encoding.UTF8, "application/json");

@@ -28,7 +28,7 @@ public sealed class ProductPriceAndStockRulesTest
     public async Task APriceOfZeroIsRefusedAndTheCatalogueKeepsItsProducts()
     {
         using var shop = new WebApplicationFactory<Program>();
-        var staff = await StaffClientAsync(shop, "free-mug@example.com");
+        var staff = await shop.StaffClientAsync("free-mug@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(
             """{"sku":"FREE-001","name":"Free Mug","description":"","imageUrl":"","price":0,"category":"Desk & Office","stock":5}"""));
@@ -41,7 +41,7 @@ public sealed class ProductPriceAndStockRulesTest
     public async Task APriceThatRoundsToZeroIsAnUnacceptableValue()
     {
         using var shop = new WebApplicationFactory<Program>();
-        var staff = await StaffClientAsync(shop, "tiny-mug@example.com");
+        var staff = await shop.StaffClientAsync("tiny-mug@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(
             """{"sku":"TINY-001","name":"Tiny Mug","description":"","imageUrl":"","price":0.001,"category":"Desk & Office","stock":5}"""));
@@ -57,7 +57,7 @@ public sealed class ProductPriceAndStockRulesTest
     public async Task TheHighestPriceIsAcceptedAndShownOnTheCard()
     {
         using var shop = new WebApplicationFactory<Program>();
-        var staff = await StaffClientAsync(shop, "priceless@example.com");
+        var staff = await shop.StaffClientAsync("priceless@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(
             """{"sku":"MAX-001","name":"Priceless Model","description":"","imageUrl":"","price":999999999999.99,"category":"Modeling","stock":1}"""));
@@ -71,7 +71,7 @@ public sealed class ProductPriceAndStockRulesTest
     public async Task APriceAboveTheHighestIsAnUnacceptableValue()
     {
         using var shop = new WebApplicationFactory<Program>();
-        var staff = await StaffClientAsync(shop, "too-precious@example.com");
+        var staff = await shop.StaffClientAsync("too-precious@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(
             """{"sku":"MAX-002","name":"Too Precious Model","description":"","imageUrl":"","price":1000000000000.00,"category":"Modeling","stock":1}"""));
@@ -87,7 +87,7 @@ public sealed class ProductPriceAndStockRulesTest
     public async Task AnInitialStockOfZeroIsAcceptedAndTheCardShowsItOutOfStock()
     {
         using var shop = new WebApplicationFactory<Program>();
-        var staff = await StaffClientAsync(shop, "sold-out-pin@example.com");
+        var staff = await shop.StaffClientAsync("sold-out-pin@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(
             """{"sku":"PIN-002","name":"Sold Out Pin","description":"","imageUrl":"","price":12.99,"category":"Stickers & Pins","stock":0}"""));
@@ -102,7 +102,7 @@ public sealed class ProductPriceAndStockRulesTest
     public async Task ANegativeInitialStockIsRefusedAndTheCatalogueKeepsItsProducts()
     {
         using var shop = new WebApplicationFactory<Program>();
-        var staff = await StaffClientAsync(shop, "owed-pin@example.com");
+        var staff = await shop.StaffClientAsync("owed-pin@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(
             """{"sku":"PIN-003","name":"Owed Pin","description":"","imageUrl":"","price":12.99,"category":"Stickers & Pins","stock":-1}"""));
@@ -149,36 +149,6 @@ public sealed class ProductPriceAndStockRulesTest
         return WebUtility.HtmlDecode(match.Groups[1].Value).Trim();
     }
 
-    private static async Task<HttpClient> StaffClientAsync(WebApplicationFactory<Program> shop, string email)
-    {
-        var registered = await shop.CreateClient().PostAsJsonAsync("/api/auth/register", new
-        {
-            email,
-            password = "Secret123",
-            firstName = "Ada",
-            lastName = "Lovelace",
-            dateOfBirth = "1815-12-10",
-        });
-        Assert.Equal(HttpStatusCode.Created, registered.StatusCode);
-        var token = (await registered.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
-
-        using var scope = shop.Services.CreateScope();
-        var staffToken = scope.ServiceProvider.GetRequiredService<JwtTokenService>().GenerateRegisteredToken(
-            UserId.Of(SubjectOf(token)),
-            email,
-            new HashSet<Role> { Role.Customer, Role.Staff });
-        var client = shop.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", staffToken);
-        return client;
-    }
-
     private static StringContent Json(string body) => new(body, Encoding.UTF8, "application/json");
 
-    private static string SubjectOf(string jwt)
-    {
-        var payload = jwt.Split('.')[1];
-        var padded = payload.PadRight(payload.Length + ((4 - (payload.Length % 4)) % 4), '=');
-        var json = JsonDocument.Parse(Convert.FromBase64String(padded.Replace('-', '+').Replace('_', '/')));
-        return json.RootElement.GetProperty("sub").GetString()!;
-    }
 }

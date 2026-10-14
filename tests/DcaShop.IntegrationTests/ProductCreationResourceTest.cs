@@ -33,8 +33,8 @@ public sealed class ProductCreationResourceTest : IClassFixture<WebApplicationFa
     [Fact]
     public async Task AProductCreatedWithoutDescriptionAndImageAnswersBothAsEmpty()
     {
-        var (_, staffUserId) = await RegisterAsync("tote-maker@example.com");
-        var staff = Bearer(StaffToken(staffUserId, "tote-maker@example.com"));
+        var (_, staffUserId) = await _factory.RegisterThroughTheApiAsync("tote-maker@example.com");
+        var staff = _factory.Bearer(_factory.StaffToken(staffUserId, "tote-maker@example.com"));
 
         var response = await staff.PostAsync("/api/products", Json(
             """{"sku":"TOTE-001","name":"Bounded Context Tote","price":19.99,"category":"Apparel","stock":10}"""));
@@ -48,9 +48,9 @@ public sealed class ProductCreationResourceTest : IClassFixture<WebApplicationFa
     [Fact]
     public async Task ACustomerCreatingAProductIsForbiddenWithAProblemDocument()
     {
-        var (customerToken, _) = await RegisterAsync("ada@example.com");
+        var (customerToken, _) = await _factory.RegisterThroughTheApiAsync("ada@example.com");
 
-        var response = await Bearer(customerToken).PostAsync("/api/products", Json(
+        var response = await _factory.Bearer(customerToken).PostAsync("/api/products", Json(
             """{"sku":"MUG-003","name":"Forbidden Mug","description":"","imageUrl":"","price":9.99,"category":"Desk & Office","stock":1}"""));
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
@@ -60,49 +60,7 @@ public sealed class ProductCreationResourceTest : IClassFixture<WebApplicationFa
         Assert.DoesNotContain(_createProduct.Commands, command => command.Sku == "MUG-003");
     }
 
-    private HttpClient Bearer(string token)
-    {
-        var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
-
-    /// <summary>Registers an account through the API and returns its token and user id.</summary>
-    private async Task<(string Token, string UserId)> RegisterAsync(string email)
-    {
-        var response = await _factory.CreateClient().PostAsJsonAsync("/api/auth/register", new
-        {
-            email,
-            password = "Secret123",
-            firstName = "Ada",
-            lastName = "Lovelace",
-            dateOfBirth = "1815-12-10",
-        });
-
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var token = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
-        return (token, SubjectOf(token));
-    }
-
-    /// <summary>A staff token for an existing account, minted the way an operator provisioning tool would.</summary>
-    private string StaffToken(string userId, string email)
-    {
-        using var scope = _factory.Services.CreateScope();
-        return scope.ServiceProvider.GetRequiredService<JwtTokenService>().GenerateRegisteredToken(
-            UserId.Of(userId),
-            email,
-            new HashSet<Role> { Role.Customer, Role.Staff });
-    }
-
     private static StringContent Json(string body) => new(body, Encoding.UTF8, "application/json");
-
-    private static string SubjectOf(string jwt)
-    {
-        var payload = jwt.Split('.')[1];
-        var padded = payload.PadRight(payload.Length + ((4 - (payload.Length % 4)) % 4), '=');
-        var json = JsonDocument.Parse(Convert.FromBase64String(padded.Replace('-', '+').Replace('_', '/')));
-        return json.RootElement.GetProperty("sub").GetString()!;
-    }
 
     /// <summary>Answers every create — the seeded catalogue's included — with the product it was asked for, priced as given.</summary>
     private sealed class RecordingCreateProduct : ICreateProductInputPort

@@ -32,7 +32,7 @@ public sealed class ApiProblemDetailTest : IClassFixture<WebApplicationFactory<P
     [Fact]
     public async Task ADuplicateStockKeepingUnitIsAConflict()
     {
-        var staff = await StaffClientAsync("api-problem-staff@example.com");
+        var staff = await _factory.StaffClientAsync("api-problem-staff@example.com");
         var sku = $"API-DUP-{Guid.NewGuid():N}".ToUpperInvariant()[..12];
 
         Assert.Equal(HttpStatusCode.Created, (await staff.PostAsync("/api/products", ProductWith(sku))).StatusCode);
@@ -50,7 +50,7 @@ public sealed class ApiProblemDetailTest : IClassFixture<WebApplicationFactory<P
     [Fact]
     public async Task AValueTheModelRefusesIsABadRequest()
     {
-        var staff = await StaffClientAsync("api-problem-staff-2@example.com");
+        var staff = await _factory.StaffClientAsync("api-problem-staff-2@example.com");
 
         var rejected = await staff.PostAsync("/api/products", ProductWith("lower case sku"));
 
@@ -62,9 +62,9 @@ public sealed class ApiProblemDetailTest : IClassFixture<WebApplicationFactory<P
     [Fact]
     public async Task AnAddressAnotherAccountHoldsIsAConflict()
     {
-        await RegisterAsync("api-problem-taken@example.com");
+        await _factory.RegisterThroughTheApiAsync("api-problem-taken@example.com");
 
-        var again = await _factory.CreateClient().PostAsJsonAsync("/api/auth/register", Registration("api-problem-taken@example.com"));
+        var again = await _factory.CreateClient().PostAsJsonAsync("/api/auth/register", ApiCallers.Registration("api-problem-taken@example.com"));
 
         Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
         Assert.Equal("application/problem+json", again.Content.Headers.ContentType?.MediaType);
@@ -74,8 +74,8 @@ public sealed class ApiProblemDetailTest : IClassFixture<WebApplicationFactory<P
     [Fact]
     public async Task AnArticleTheAssortmentDoesNotCarryIsNotFound()
     {
-        var (token, _) = await RegisterAsync("api-problem-shopper@example.com");
-        var client = Bearer(token);
+        var (token, _) = await _factory.RegisterThroughTheApiAsync("api-problem-shopper@example.com");
+        var client = _factory.Bearer(token);
 
         var created = await client.PostAsync("/api/carts", Empty());
         var cartId = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("cartId").GetString()!;
@@ -85,53 +85,6 @@ public sealed class ApiProblemDetailTest : IClassFixture<WebApplicationFactory<P
         Assert.Equal(HttpStatusCode.NotFound, refused.StatusCode);
         Assert.Equal("application/problem+json", refused.Content.Headers.ContentType?.MediaType);
         Assert.Equal("Article not available", (await refused.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("title").GetString());
-    }
-
-    private HttpClient Bearer(string token)
-    {
-        var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
-
-    private async Task<HttpClient> StaffClientAsync(string email)
-    {
-        var (_, userId) = await RegisterAsync(email);
-        return Bearer(StaffToken(userId, email));
-    }
-
-    private async Task<(string Token, string UserId)> RegisterAsync(string email)
-    {
-        var response = await _factory.CreateClient().PostAsJsonAsync("/api/auth/register", Registration(email));
-
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var token = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
-        return (token, SubjectOf(token));
-    }
-
-    private string StaffToken(string userId, string email)
-    {
-        using var scope = _factory.Services.CreateScope();
-        return scope.ServiceProvider.GetRequiredService<JwtTokenService>().GenerateRegisteredToken(
-            UserId.Of(userId),
-            email,
-            new HashSet<Role> { Role.Customer, Role.Staff });
-    }
-
-    private static object Registration(string email) => new
-    {
-        email,
-        password = "Secret123",
-        firstName = "Ada",
-        lastName = "Lovelace",
-        dateOfBirth = "1815-12-10",
-    };
-
-    private static string SubjectOf(string jwt)
-    {
-        var payload = jwt.Split('.')[1].Replace('-', '+').Replace('_', '/');
-        var claims = JsonSerializer.Deserialize<JsonElement>(Convert.FromBase64String(payload.PadRight((payload.Length + 3) / 4 * 4, '=')));
-        return claims.GetProperty("sub").GetString()!;
     }
 
     private static StringContent ProductWith(string sku) => new(

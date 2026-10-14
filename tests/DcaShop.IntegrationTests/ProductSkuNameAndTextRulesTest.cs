@@ -24,7 +24,7 @@ public sealed class ProductSkuNameAndTextRulesTest
     public async Task ALowerCaseSkuIsAnUnacceptableValue()
     {
         using var shop = new WebApplicationFactory<Program>();
-        var staff = await StaffClientAsync(shop, "lower-case-mug@example.com");
+        var staff = await shop.StaffClientAsync("lower-case-mug@example.com");
 
         var response = await staff.PostAsJsonAsync("/api/products", new
         {
@@ -48,7 +48,7 @@ public sealed class ProductSkuNameAndTextRulesTest
     public async Task ANameOf256CharactersIsAnUnacceptableValue()
     {
         using var shop = new WebApplicationFactory<Program>();
-        var staff = await StaffClientAsync(shop, "long-name@example.com");
+        var staff = await shop.StaffClientAsync("long-name@example.com");
 
         var response = await staff.PostAsJsonAsync("/api/products", ProductWith("LONG-001", new string('A', 256)));
 
@@ -63,7 +63,7 @@ public sealed class ProductSkuNameAndTextRulesTest
     public async Task ANameOf255CharactersIsAccepted()
     {
         using var shop = new WebApplicationFactory<Program>();
-        var staff = await StaffClientAsync(shop, "longest-name@example.com");
+        var staff = await shop.StaffClientAsync("longest-name@example.com");
 
         var response = await staff.PostAsJsonAsync("/api/products", ProductWith("LONG-002", new string('A', 255)));
 
@@ -74,7 +74,7 @@ public sealed class ProductSkuNameAndTextRulesTest
     public async Task ABlankNameIsRefusedAndTheCatalogueKeepsItsProducts()
     {
         using var shop = new WebApplicationFactory<Program>();
-        var staff = await StaffClientAsync(shop, "blank-name@example.com");
+        var staff = await shop.StaffClientAsync("blank-name@example.com");
 
         var response = await staff.PostAsJsonAsync("/api/products", ProductWith("BLANK-001", "   "));
 
@@ -86,7 +86,7 @@ public sealed class ProductSkuNameAndTextRulesTest
     public async Task ADescriptionOf2001CharactersIsAnUnacceptableValue()
     {
         using var shop = new WebApplicationFactory<Program>();
-        var staff = await StaffClientAsync(shop, "long-story@example.com");
+        var staff = await shop.StaffClientAsync("long-story@example.com");
 
         var response = await staff.PostAsJsonAsync("/api/products", new
         {
@@ -110,7 +110,7 @@ public sealed class ProductSkuNameAndTextRulesTest
     public async Task AnImageUrlOf2001CharactersIsAnUnacceptableValue()
     {
         using var shop = new WebApplicationFactory<Program>();
-        var staff = await StaffClientAsync(shop, "big-picture@example.com");
+        var staff = await shop.StaffClientAsync("big-picture@example.com");
         var imageUrl = "https://images.example.com/" + new string('a', 2001 - "https://images.example.com/".Length);
 
         var response = await staff.PostAsJsonAsync("/api/products", new
@@ -149,34 +149,4 @@ public sealed class ProductSkuNameAndTextRulesTest
         return catalogue.Products.Count;
     }
 
-    private static async Task<HttpClient> StaffClientAsync(WebApplicationFactory<Program> shop, string email)
-    {
-        var registered = await shop.CreateClient().PostAsJsonAsync("/api/auth/register", new
-        {
-            email,
-            password = "Secret123",
-            firstName = "Ada",
-            lastName = "Lovelace",
-            dateOfBirth = "1815-12-10",
-        });
-        Assert.Equal(HttpStatusCode.Created, registered.StatusCode);
-        var token = (await registered.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
-
-        using var scope = shop.Services.CreateScope();
-        var staffToken = scope.ServiceProvider.GetRequiredService<JwtTokenService>().GenerateRegisteredToken(
-            UserId.Of(SubjectOf(token)),
-            email,
-            new HashSet<Role> { Role.Customer, Role.Staff });
-        var client = shop.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", staffToken);
-        return client;
-    }
-
-    private static string SubjectOf(string jwt)
-    {
-        var payload = jwt.Split('.')[1];
-        var padded = payload.PadRight(payload.Length + ((4 - (payload.Length % 4)) % 4), '=');
-        var json = JsonDocument.Parse(Convert.FromBase64String(padded.Replace('-', '+').Replace('_', '/')));
-        return json.RootElement.GetProperty("sub").GetString()!;
-    }
 }

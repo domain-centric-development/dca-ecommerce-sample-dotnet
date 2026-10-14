@@ -41,12 +41,12 @@ public sealed class ApiFlowTest : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
         Assert.Equal("Bearer", anonymous.Headers.WwwAuthenticate.ToString());
 
-        var (customer, _) = await RegisterAsync("catalog-customer@example.com");
-        var asCustomer = await Bearer(customer).PostAsync("/api/products", NewProduct());
+        var (customer, _) = await _factory.RegisterThroughTheApiAsync("catalog-customer@example.com");
+        var asCustomer = await _factory.Bearer(customer).PostAsync("/api/products", NewProduct());
         Assert.Equal(HttpStatusCode.Forbidden, asCustomer.StatusCode);
 
-        var (_, staffUserId) = await RegisterAsync("catalog-staff@example.com");
-        var created = await Bearer(StaffToken(staffUserId, "catalog-staff@example.com")).PostAsync("/api/products", NewProduct());
+        var (_, staffUserId) = await _factory.RegisterThroughTheApiAsync("catalog-staff@example.com");
+        var created = await _factory.Bearer(_factory.StaffToken(staffUserId, "catalog-staff@example.com")).PostAsync("/api/products", NewProduct());
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
     }
 
@@ -62,30 +62,33 @@ public sealed class ApiFlowTest : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task ACartRouteOnlyEverAnswersWithTheCallersOwnCart()
     {
-        var (mine, _) = await RegisterAsync("cart-owner@example.com");
-        var (theirs, _) = await RegisterAsync("cart-stranger@example.com");
+        var (mine, _) = await _factory.RegisterThroughTheApiAsync("cart-owner@example.com");
+        var (theirs, _) = await _factory.RegisterThroughTheApiAsync("cart-stranger@example.com");
 
-        var created = await Bearer(mine).PostAsync("/api/carts", Empty());
+        var created = await _factory.Bearer(mine).PostAsync("/api/carts", Empty());
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var cartId = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("cartId").GetString()!;
+        var filled = await _factory.Bearer(mine).PostAsJsonAsync(
+            $"/api/carts/{cartId}/items", new { productId = await _factory.ProductIdAsync("Domain-Driven Design"), quantity = 2 });
+        Assert.Equal(HttpStatusCode.OK, filled.StatusCode);
 
-        var own = await Bearer(mine).GetAsync($"/api/carts/{cartId}");
+        var own = await _factory.Bearer(mine).GetAsync($"/api/carts/{cartId}");
         Assert.Equal(HttpStatusCode.OK, own.StatusCode);
 
         // Not 403: telling a stranger they are forbidden confirms the id exists.
-        Assert.Equal(HttpStatusCode.NotFound, (await Bearer(theirs).GetAsync($"/api/carts/{cartId}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await Bearer(theirs).DeleteAsync($"/api/carts/{cartId}/items/{Guid.NewGuid()}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await _factory.Bearer(theirs).GetAsync($"/api/carts/{cartId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await _factory.Bearer(theirs).DeleteAsync($"/api/carts/{cartId}/items/{Guid.NewGuid()}")).StatusCode);
     }
 
     [Fact]
     public async Task ListingEveryCartNeedsStaff()
     {
-        var (customer, _) = await RegisterAsync("cart-lister@example.com");
+        var (customer, _) = await _factory.RegisterThroughTheApiAsync("cart-lister@example.com");
         Assert.Equal(HttpStatusCode.Unauthorized, (await _factory.CreateClient().GetAsync("/api/carts")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await Bearer(customer).GetAsync("/api/carts")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await _factory.Bearer(customer).GetAsync("/api/carts")).StatusCode);
 
-        var (_, staffUserId) = await RegisterAsync("cart-operator@example.com");
-        var listed = await Bearer(StaffToken(staffUserId, "cart-operator@example.com")).GetAsync("/api/carts");
+        var (_, staffUserId) = await _factory.RegisterThroughTheApiAsync("cart-operator@example.com");
+        var listed = await _factory.Bearer(_factory.StaffToken(staffUserId, "cart-operator@example.com")).GetAsync("/api/carts");
         Assert.Equal(HttpStatusCode.OK, listed.StatusCode);
         Assert.True((await listed.Content.ReadFromJsonAsync<JsonElement>()).TryGetProperty("carts", out _));
     }
@@ -116,43 +119,6 @@ public sealed class ApiFlowTest : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 
-    private HttpClient Bearer(string token)
-    {
-        var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
-
-    /// <summary>Registers an account through the API and returns its token and user id.</summary>
-    private async Task<(string Token, string UserId)> RegisterAsync(string email)
-    {
-        var response = await _factory.CreateClient().PostAsJsonAsync("/api/auth/register", new
-        {
-            email,
-            password = "Secret123",
-            firstName = "Ada",
-            lastName = "Lovelace",
-            dateOfBirth = "1815-12-10",
-        });
-
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var token = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
-        return (token, SubjectOf(token));
-    }
-
-    /// <summary>
-    /// A staff token for an existing account. No registration path hands the role out, so the test mints the
-    /// token the way an operator provisioning tool would.
-    /// </summary>
-    private string StaffToken(string userId, string email)
-    {
-        using var scope = _factory.Services.CreateScope();
-        return scope.ServiceProvider.GetRequiredService<JwtTokenService>().GenerateRegisteredToken(
-            UserId.Of(userId),
-            email,
-            new HashSet<Role> { Role.Customer, Role.Staff });
-    }
-
     private static StringContent NewProduct() => new(
         JsonSerializer.Serialize(new
         {
@@ -169,11 +135,4 @@ public sealed class ApiFlowTest : IClassFixture<WebApplicationFactory<Program>>
 
     private static StringContent Empty() => new(string.Empty, Encoding.UTF8, "application/json");
 
-    private static string SubjectOf(string jwt)
-    {
-        var payload = jwt.Split('.')[1];
-        var padded = payload.PadRight(payload.Length + ((4 - (payload.Length % 4)) % 4), '=');
-        var json = JsonDocument.Parse(Convert.FromBase64String(padded.Replace('-', '+').Replace('_', '/')));
-        return json.RootElement.GetProperty("sub").GetString()!;
-    }
 }
