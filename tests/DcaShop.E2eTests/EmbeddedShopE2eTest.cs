@@ -66,12 +66,13 @@ public sealed class EmbeddedShopE2eTest : BaseE2eTest, IDisposable
         var firstProduct = shop.Locator("[data-test='view-product']").First;
         await firstProduct.WaitForAsync();
         await firstProduct.ClickAsync();
+        var title = shop.Locator("[data-test='product-detail-title']");
+        await Assertions.Expect(title).ToBeVisibleAsync();
+        var product = (await title.TextContentAsync() ?? string.Empty).Trim();
 
         await shop.Locator("[data-test='product-add-to-cart-button']").ClickAsync();
 
-        var cartItems = shop.Locator("[data-test='cart-item']");
-        await cartItems.First.WaitForAsync();
-        Assert.True(await cartItems.CountAsync() >= 1, "the product reached the cart of the framed shop");
+        await Assertions.Expect(shop.Locator("[data-test='cart-item-name']")).ToHaveTextAsync([product]);
     }
 
     /// <summary>A throwaway server on a free port of this host, serving nothing but the embedding page.</summary>

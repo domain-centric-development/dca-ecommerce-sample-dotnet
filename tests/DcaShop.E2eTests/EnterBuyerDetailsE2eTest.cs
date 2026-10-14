@@ -1,5 +1,7 @@
 using DcaShop.E2eTests.Pages;
 
+using Microsoft.Playwright;
+
 namespace DcaShop.E2eTests;
 
 /// <summary>A guest tells the checkout who they are and how to reach them.</summary>
@@ -34,6 +36,8 @@ public sealed class EnterBuyerDetailsE2eTest : BaseE2eTest
         };
 
         await buyer.PressContinueToDeliveryAsync();
+        // An absent navigation is only seen once the browser has had the chance to start one.
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         Assert.True(buyer.IsOnPage, "the buyer step stays open");
         Assert.Equal(new[] { "email", "phone" }, await buyer.FieldsTheBrowserRefusesAsync());
