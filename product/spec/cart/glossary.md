@@ -95,7 +95,7 @@ further contexts reference it?
 ### Quantity
 
 **Definition:** Positive item count of a cart item (`> 0`). Carries
-arithmetic operations (`Increase`, `Decrease`, `Add`) with
+arithmetic operations (`Increase`, `Decrease`, `Add`, `Subtract`) with
 protection against values ≤ 0.
 
 **Type:** Value Object

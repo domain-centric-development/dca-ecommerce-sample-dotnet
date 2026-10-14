@@ -25,5 +25,16 @@ public readonly record struct Quantity : IValue
 
     public Quantity Add(Quantity other) => new(Value + other.Value);
 
+    /// <summary>The quantity left after taking <paramref name="other"/> away; at least one item must remain.</summary>
+    public Quantity Subtract(Quantity other)
+    {
+        if (Value - other.Value <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(other), "Resulting quantity must be greater than zero");
+        }
+
+        return new Quantity(Value - other.Value);
+    }
+
     public override string ToString() => Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
 }
