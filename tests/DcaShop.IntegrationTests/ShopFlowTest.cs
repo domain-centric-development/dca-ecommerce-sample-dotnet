@@ -38,7 +38,7 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
         var added = await client.PostAsync("/cart/add-product", Form(detail, ("productId", productId), ("quantity", "2")));
         Assert.Equal(HttpStatusCode.Redirect, added.StatusCode);
 
-        var cartPage = await client.GetStringAsync("/cart");
+        var cartPage = await client.GetStringAsync(added.Headers.Location);
         Assert.Contains("data-test=\"cart-success-message\"", cartPage, StringComparison.Ordinal);
         Assert.Contains("data-test=\"cart-item\"", cartPage, StringComparison.Ordinal);
         Assert.Contains("data-test=\"mini-basket-count\">2<", cartPage, StringComparison.Ordinal);

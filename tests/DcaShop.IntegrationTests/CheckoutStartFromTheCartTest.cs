@@ -47,10 +47,10 @@ public sealed class CheckoutStartFromTheCartTest
         var started = await guest.PostAsync("/checkout/start", GuestOrders.Form(oldCartPage, ("cartId", cartId)));
 
         Assert.Equal(HttpStatusCode.Redirect, started.StatusCode);
-        Assert.Equal("/cart", started.Headers.Location!.ToString());
+        Assert.Equal("/cart?notice=empty-cart", started.Headers.Location!.ToString());
         Assert.Equal(
             "Cannot check out an empty cart.",
-            AvailabilityPages.Text(await guest.GetStringAsync("/cart"), @"data-test=""cart-error-message"">([^<]*)</div>"));
+            AvailabilityPages.Text(await guest.GetStringAsync(started.Headers.Location), @"data-test=""cart-error-message"">([^<]*)</div>"));
     }
 
     private static async Task AddAsync(HttpClient guest, string productPath, int quantity)

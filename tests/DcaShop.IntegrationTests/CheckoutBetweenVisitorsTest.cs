@@ -30,8 +30,8 @@ public sealed class CheckoutBetweenVisitorsTest : IClassFixture<WebApplicationFa
 
         var started = await stranger.PostAsync("/checkout/start", Form(strangersPage, ("cartId", ownersCartId)));
 
-        Assert.Equal("/cart", started.Headers.Location!.ToString());
-        Assert.Equal("Your cart could not be found.", await CartErrorAsync(stranger));
+        Assert.Equal("/cart?notice=cart-not-found", started.Headers.Location!.ToString());
+        Assert.Equal("Your cart could not be found.", await CartErrorAsync(stranger, started.Headers.Location!));
         var ownersBuyerStep = await owner.GetStringAsync("/checkout/buyer");
         Assert.Equal(new[] { "Domain-Driven Design x1" }, SummaryItems(ownersBuyerStep));
         Assert.Equal("jane@example.com", AvailabilityPages.Text(ownersBuyerStep, @"value=""([^""]*)"" data-test=""buyer-email-input"""));
@@ -41,8 +41,8 @@ public sealed class CheckoutBetweenVisitorsTest : IClassFixture<WebApplicationFa
         _factory.CreateDefaultClient(new CookieContainerHandler(cookies));
 
     /// <summary>The error the cart page shows next, where the redirect leads.</summary>
-    private static async Task<string> CartErrorAsync(HttpClient client) =>
-        AvailabilityPages.Text(await client.GetStringAsync("/cart"), @"data-test=""cart-error-message"">([^<]*)</div>");
+    private static async Task<string> CartErrorAsync(HttpClient client, Uri location) =>
+        AvailabilityPages.Text(await client.GetStringAsync(location), @"data-test=""cart-error-message"">([^<]*)</div>");
 
     /// <summary>
     /// Puts "Domain-Driven Design" into the cart, starts the checkout and submits the buyer step with

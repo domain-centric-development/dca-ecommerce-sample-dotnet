@@ -16,7 +16,6 @@ namespace DcaShop.Account.Adapter.Incoming.Web;
 [Authorize]
 public sealed class ProfilePageController : Controller
 {
-    internal const string ProfileUpdated = "Your profile has been updated.";
     internal const string EmailAlreadyInUse = "This email address is already registered";
     internal const string EmailInvalid = "Please enter a valid email address.";
     internal const string DateOfBirthInvalid = "Please enter a date of birth that is not in the future.";
@@ -44,13 +43,14 @@ public sealed class ProfilePageController : Controller
     }
 
     [HttpGet("")]
-    public async Task<IActionResult> Show(CancellationToken cancellationToken)
+    public async Task<IActionResult> Show(
+        [FromQuery(Name = AccountPageNotices.Parameter)] string? notice, CancellationToken cancellationToken)
     {
         var identity = _identityProvider.GetCurrentIdentity();
         var stored = await StoredProfileAsync(identity.UserId.Value, cancellationToken);
         return stored is null
             ? LoginRedirect()
-            : View(ViewName, ProfilePageViewModel.Of(stored, TempData["Message"] as string));
+            : View(ViewName, ProfilePageViewModel.Of(stored, AccountPageNotices.FromCode(notice)?.Sentence()));
     }
 
     [HttpPost("")]
@@ -73,8 +73,7 @@ public sealed class ProfilePageController : Controller
                 // to be re-issued — otherwise the session would keep naming the old one.
                 _identitySession.SetRegisteredIdentity(
                     _tokenService.GenerateRegisteredToken(identity.UserId, result.Profile!.Email, identity.Roles));
-                TempData["Message"] = ProfileUpdated;
-                return Redirect(AccountRoutes.Profile);
+                return Redirect(AccountPageNotices.PathWith(AccountRoutes.Profile, AccountPageNotice.ProfileUpdated));
 
             case ChangeProfileOutcome.AccountNotAccessible:
                 return LoginRedirect();

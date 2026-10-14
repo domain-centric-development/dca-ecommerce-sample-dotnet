@@ -22,7 +22,7 @@ public sealed class ChangePasswordE2eTest : BaseE2eTest
 
         var answered = await changePassword.ChangeAsync(Password, "Better456", "Better456");
 
-        Assert.Equal("/account/change-password", answered.ShownPath);
+        Assert.Equal("/account/change-password?notice=password-changed", answered.ShownPath);
         Assert.Equal("Your password has been changed.", await answered.SuccessMessageAsync());
         Assert.Equal([string.Empty, string.Empty, string.Empty], await answered.PasswordFieldValuesAsync());
         Assert.Equal($"Welcome, {email}", await answered.HeaderGreetingAsync());

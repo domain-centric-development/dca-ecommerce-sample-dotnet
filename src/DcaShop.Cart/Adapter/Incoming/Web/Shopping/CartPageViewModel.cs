@@ -15,6 +15,12 @@ public sealed record CartPageViewModel(
     /// <summary>The page of a customer who has no active cart: the empty state, nothing to check out.</summary>
     public static CartPageViewModel Empty { get; } = new(Guid.Empty, "Active", [], 0, 0, string.Empty, string.Empty, false, false);
 
+    /// <summary>The success a redirect's notice reported, if any.</summary>
+    public string? SuccessMessage { get; init; }
+
+    /// <summary>The refusal a redirect's notice reported, if any.</summary>
+    public string? ErrorMessage { get; init; }
+
     public sealed record Line(
         Guid ItemId,
         Guid ProductId,

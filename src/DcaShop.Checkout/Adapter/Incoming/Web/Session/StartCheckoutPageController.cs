@@ -42,23 +42,22 @@ public sealed class StartCheckoutPageController : Controller
             // The two base types are the checkout's own refusals. ArgumentException is still here because a form
             // field the customer typed reaches a value object unvalidated; each field moved into request
             // validation is one reason less to catch it.
-            TempData["Error"] = MessageFor(e);
-            return Redirect(CheckoutRoutes.Cart);
+            return Redirect(e is CheckoutItemsUnavailableException unavailable
+                ? CheckoutRoutes.CartWith(CartNotice.ItemsUnavailable, unavailable.ProductIds.Count)
+                : CheckoutRoutes.CartWith(NoticeFor(e)));
         }
     }
 
     /// <summary>
-    /// What the customer is told when a checkout cannot start, worded from the failure's type and values — the
+    /// What the cart page tells the customer when a checkout cannot start, chosen from the failure's type — the
     /// exception's message is for the log, never for the page.
     /// </summary>
-    private static string MessageFor(Exception failure) => failure switch
+    private static CartNotice NoticeFor(Exception failure) => failure switch
     {
-        CartNotAvailableException => "Your cart could not be found.",
-        CartNotActiveException => "This cart can no longer be checked out.",
-        EmptyCartException or EmptyCheckoutException => "Cannot check out an empty cart.",
-        ArticleNotAvailableException => "A product in your cart is no longer available.",
-        CheckoutItemsUnavailableException unavailable =>
-            $"Cannot start checkout, {unavailable.ProductIds.Count} item(s) unavailable or out of stock.",
-        _ => "The checkout could not be started. Please try again.",
+        CartNotAvailableException => CartNotice.CartNotFound,
+        CartNotActiveException => CartNotice.CartNotCheckable,
+        EmptyCartException or EmptyCheckoutException => CartNotice.EmptyCart,
+        ArticleNotAvailableException => CartNotice.CartProductUnavailable,
+        _ => CartNotice.CheckoutNotStarted,
     };
 }

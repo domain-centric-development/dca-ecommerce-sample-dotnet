@@ -7,10 +7,6 @@
 {
 <div class="alert alert--success" data-test="logout-success-message">You have been successfully logged out.</div>
 }
-@if (TempData["Message"] is string message)
-{
-<div class="alert alert--success" data-test="login-success-message">@message</div>
-}
 @if (Model.ErrorMessage is { } error)
 {
 <div class="alert alert--error" data-test="login-error-message">@error</div>

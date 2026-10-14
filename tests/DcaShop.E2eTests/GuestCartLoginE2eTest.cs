@@ -28,7 +28,7 @@ public sealed class GuestCartLoginE2eTest : BaseE2eTest
         await login.LoginAsync(email, Password);
 
         var cart = await CartPage.OpenAsync(Page);
-        Assert.Equal("/cart", cart.ShownPath);
+        Assert.Equal("/cart?notice=welcome-back", cart.ShownPath);
         Assert.Equal("Welcome back!", await cart.SuccessMessageAsync());
         Assert.Equal([$"{Mug} x1"], await cart.LineItemsAsync());
     }

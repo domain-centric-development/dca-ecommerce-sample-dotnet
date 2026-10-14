@@ -82,7 +82,6 @@ public sealed class RegisterPageController : Controller
             _identitySession.SetRegisteredIdentity(
                 _tokenService.GenerateRegisteredToken(UserId.Of(result.UserId), result.Email, result.Roles));
 
-            TempData["Message"] = "Account created successfully! Welcome!";
             return Redirect(string.IsNullOrWhiteSpace(returnUrl) ? "/" : returnUrl);
         }
         catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)

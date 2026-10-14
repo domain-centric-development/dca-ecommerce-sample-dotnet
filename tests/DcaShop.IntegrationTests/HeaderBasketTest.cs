@@ -52,7 +52,7 @@ public sealed class HeaderBasketTest : IClassFixture<WebApplicationFactory<Progr
 
         var added = await AddOneUnitAsync(client, "Domain-Driven Design");
 
-        Assert.Equal("/cart", added.Headers.Location!.ToString());
+        Assert.Equal("/cart?notice=product-added", added.Headers.Location!.ToString());
         Assert.Equal("2", Badge(await client.GetStringAsync("/cart")));
     }
 

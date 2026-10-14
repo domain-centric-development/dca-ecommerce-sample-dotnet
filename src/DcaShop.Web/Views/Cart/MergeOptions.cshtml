@@ -3,7 +3,7 @@
 <div class="merge-options">
 <h2 class="merge-options__title">Your Cart Has Items</h2>
 <p class="merge-options__intro">You have items in both your current browsing session and your account. How would you like to proceed?</p>
-@if (TempData["Error"] is string error)
+@if (Model.ErrorMessage is string error)
 {
 <div class="alert alert--error" data-test="merge-error-message">@error</div>
 }

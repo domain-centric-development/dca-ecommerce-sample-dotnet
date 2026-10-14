@@ -33,8 +33,8 @@ public sealed class StepSentTooEarlyTest : IClassFixture<WebApplicationFactory<P
         var payment = await guest.GetStringAsync(landed);
         Assert.Equal("Please complete the previous checkout steps first.", AvailabilityPages.Text(payment, @"data-test=""payment-error-message"">([^<]*)</div>"));
         var confirmation = await guest.GetAsync("/checkout/confirmation");
-        Assert.Equal("/cart", confirmation.Headers.Location!.ToString());
-        var cart = await guest.GetStringAsync("/cart");
+        Assert.Equal("/cart?notice=no-confirmed-order", confirmation.Headers.Location!.ToString());
+        var cart = await guest.GetStringAsync(confirmation.Headers.Location);
         Assert.Equal("No confirmed order found", AvailabilityPages.Text(cart, @"data-test=""cart-error-message"">([^<]*)</div>"));
     }
 

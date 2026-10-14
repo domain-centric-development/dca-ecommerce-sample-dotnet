@@ -17,6 +17,8 @@ namespace DcaShop.Cart.Adapter.Incoming.Web.Shopping;
 [Route("cart")]
 public sealed class CartPageController : Controller
 {
+    private const string CartPage = "/cart";
+
     private readonly IGetOrCreateActiveCartInputPort _getOrCreateActiveCart;
     private readonly IGetActiveCartInputPort _getActiveCart;
     private readonly IAddItemToCartInputPort _addItemToCart;
@@ -36,11 +38,14 @@ public sealed class CartPageController : Controller
 
     /// <summary>The customer's active cart; a customer without one sees the empty cart — reading opens none.</summary>
     [HttpGet("")]
-    public async Task<IActionResult> Show(CancellationToken cancellationToken)
+    public async Task<IActionResult> Show(
+        [FromQuery(Name = CartPageNotices.Parameter)] string? notice,
+        [FromQuery(Name = CartPageNotices.CountParameter)] int? count,
+        CancellationToken cancellationToken)
     {
         var result = await _getActiveCart.ExecuteAsync(new GetActiveCartQuery(CurrentCustomerId), cancellationToken);
         var viewModel = result is { Cart: { } cart, Totals: { } totals } ? ToViewModel(cart, totals) : CartPageViewModel.Empty;
-        return View("~/Views/Cart/View.cshtml", viewModel);
+        return View("~/Views/Cart/View.cshtml", WithNotice(viewModel, CartPageNotices.FromCode(notice), count));
     }
 
     [HttpPost("add-product")]
@@ -50,32 +55,36 @@ public sealed class CartPageController : Controller
         try
         {
             await _addItemToCart.ExecuteAsync(new AddItemToCartCommand(cartId, CurrentCustomerId, productId, quantity), cancellationToken);
-            TempData["Message"] = "Product added to cart!";
+            return Redirect(CartPageNotices.PathWith(CartPage, CartPageNotice.ProductAdded));
         }
         catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
         {
             // The context's own refusals, plus the argument exception a form field still reaches a value object
             // with.
-            TempData["Error"] = MessageFor(e);
+            return Redirect(e is InsufficientArticleStockException insufficient
+                ? CartPageNotices.PathWith(CartPage, CartPageNotice.NotEnoughStock, insufficient.Requested)
+                : CartPageNotices.PathWith(CartPage, NoticeFor(e)));
         }
-
-        return RedirectToAction(nameof(Show));
     }
 
     /// <summary>
-    /// What the page tells the customer, worded from the failure's type and values — the exception's message is
-    /// for the log, never for the page.
+    /// What the page tells the customer, chosen from the failure's type — the exception's message is for the log,
+    /// never for the page.
     /// </summary>
-    private static string MessageFor(Exception failure) => failure switch
+    private static CartPageNotice NoticeFor(Exception failure) => failure switch
     {
-        InsufficientArticleStockException insufficient =>
-            $"There is not enough stock to add {insufficient.Requested} of this product.",
-        ArticleNotAvailableException => "This product is no longer available.",
-        CartNotFoundException => "Your cart could not be found.",
-        CartNotModifiableException => "This cart can no longer be changed.",
-        ArgumentException => "Please enter a valid quantity.",
-        _ => "The product could not be added to the cart. Please try again.",
+        ArticleNotAvailableException => CartPageNotice.ProductUnavailable,
+        CartNotFoundException => CartPageNotice.CartNotFound,
+        CartNotModifiableException => CartPageNotice.CartNotModifiable,
+        ArgumentException => CartPageNotice.InvalidQuantity,
+        _ => CartPageNotice.ProductNotAdded,
     };
+
+    /// <summary>The page with the sentence a redirect's notice names, in the slot of its kind.</summary>
+    private static CartPageViewModel WithNotice(CartPageViewModel page, CartPageNotice? notice, int? count) =>
+        notice is not { } named || named.Sentence(count) is not { } sentence
+            ? page
+            : named.IsSuccess() ? page with { SuccessMessage = sentence } : page with { ErrorMessage = sentence };
 
     private string CurrentCustomerId => _identityProvider.GetCurrentIdentity().UserId.Value;
 

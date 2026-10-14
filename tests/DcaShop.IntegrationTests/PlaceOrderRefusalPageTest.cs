@@ -30,8 +30,8 @@ public sealed class PlaceOrderRefusalPageTest : IClassFixture<WebApplicationFact
         var placed = await guest.PostAsync("/checkout/confirm", GuestOrders.Form(await guest.GetStringAsync("/checkout/review")));
 
         Assert.Equal(HttpStatusCode.Redirect, placed.StatusCode);
-        Assert.Equal("/checkout/review", placed.Headers.Location!.ToString());
-        var review = await guest.GetStringAsync("/checkout/review");
+        Assert.Equal("/checkout/review?notice=items-unavailable&count=1", placed.Headers.Location!.ToString());
+        var review = await guest.GetStringAsync(placed.Headers.Location);
         Assert.Equal(
             "Cannot place the order, 1 item(s) unavailable or out of stock.",
             AvailabilityPages.Text(review, @"data-test=""review-error-message"">([^<]*)</div>"));

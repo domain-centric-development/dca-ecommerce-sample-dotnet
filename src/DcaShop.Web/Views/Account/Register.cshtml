@@ -3,10 +3,6 @@
 <div class="auth">
 <div class="auth__card">
 <h2 class="auth__title">Create Account</h2>
-@if (TempData["Message"] is string message)
-{
-<div class="alert alert--success" data-test="register-success-message">@message</div>
-}
 @if (Model.ErrorMessage is { } error)
 {
 <div class="alert alert--error" data-test="register-error-message">@error</div>

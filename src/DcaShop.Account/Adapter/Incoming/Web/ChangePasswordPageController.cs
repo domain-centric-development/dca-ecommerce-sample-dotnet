@@ -14,7 +14,6 @@ namespace DcaShop.Account.Adapter.Incoming.Web;
 public sealed class ChangePasswordPageController : Controller
 {
     internal const string ConfirmationMismatch = "New password and confirmation do not match";
-    internal const string PasswordChanged = "Your password has been changed.";
     internal const string CurrentPasswordInvalid = "Current password is not correct";
 
     private const string ViewName = "~/Views/Account/ChangePassword.cshtml";
@@ -34,7 +33,8 @@ public sealed class ChangePasswordPageController : Controller
     }
 
     [HttpGet("")]
-    public async Task<IActionResult> Show(CancellationToken cancellationToken)
+    public async Task<IActionResult> Show(
+        [FromQuery(Name = AccountPageNotices.Parameter)] string? notice, CancellationToken cancellationToken)
     {
         var identity = _identityProvider.GetCurrentIdentity();
         var accessible = (await _getAccountOverview.ExecuteAsync(
@@ -45,7 +45,7 @@ public sealed class ChangePasswordPageController : Controller
             return LoginRedirect();
         }
 
-        return View(ViewName, ChangePasswordPageViewModel.Blank(TempData["Message"] as string));
+        return View(ViewName, ChangePasswordPageViewModel.Blank(AccountPageNotices.FromCode(notice)?.Sentence()));
     }
 
     [HttpPost("")]
@@ -88,11 +88,8 @@ public sealed class ChangePasswordPageController : Controller
         _ => throw new ArgumentOutOfRangeException(nameof(rule), rule, null),
     };
 
-    private IActionResult ChangedRedirect()
-    {
-        TempData["Message"] = PasswordChanged;
-        return Redirect(AccountRoutes.ChangePassword);
-    }
+    private IActionResult ChangedRedirect() =>
+        Redirect(AccountPageNotices.PathWith(AccountRoutes.ChangePassword, AccountPageNotice.PasswordChanged));
 
     private IActionResult LoginRedirect() =>
         Redirect(AccountRoutes.ToLoginWithReturnUrl(AccountRoutes.ChangePassword));

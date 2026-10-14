@@ -24,7 +24,7 @@ public sealed class ProfileE2eTest : BaseE2eTest
 
         var saved = await (await profile.FillDetailsAsync(newEmail, "1990-05-18")).SaveExpectingSuccessAsync();
 
-        Assert.Equal("/account/profile", saved.ShownPath);
+        Assert.Equal("/account/profile?notice=profile-updated", saved.ShownPath);
         Assert.Equal("Your profile has been updated.", await saved.SuccessMessageAsync());
         Assert.Equal(newEmail, await saved.EmailAsync());
         Assert.Equal("1990-05-18", await saved.DateOfBirthAsync());

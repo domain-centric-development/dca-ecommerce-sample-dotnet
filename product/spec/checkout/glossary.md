@@ -22,7 +22,8 @@ The Checkout context groups its use cases into three features — domain-named n
 
 `Application/Shared/` stays context-wide. The web adapter mirrors the features: `Adapter/Incoming/Web/Session/`
 holds `StartCheckoutPageController`, `Adapter/Incoming/Web/CheckoutCompletion/` the `CheckoutStepsPageController`
-that serves all five steps; `CheckoutRoutes` and `CheckoutStepNotice` stay beside them, shared. The event consumer
+that serves all five steps; `CheckoutRoutes`, `CheckoutStepNotice` and `CartNotice` (the codes the cart page knows) stay
+beside them, shared. The event consumer
 sits in `Adapter/Incoming/Event/CartSync/`.
 
 ---

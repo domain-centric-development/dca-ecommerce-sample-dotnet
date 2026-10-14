@@ -51,14 +51,6 @@ else
 </header>
 <main class="site-main">
 <div class="container">
-@if (TempData["SuccessMessage"] is string successMessage)
-{
-<div class="alert alert--success" data-test="success-message">@successMessage</div>
-}
-@if (TempData["ErrorMessage"] is string errorMessage)
-{
-<div class="alert alert--error" data-test="error-message">@errorMessage</div>
-}
 @RenderBody()
 </div>
 </main>

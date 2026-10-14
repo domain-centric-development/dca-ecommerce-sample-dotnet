@@ -27,12 +27,6 @@ namespace DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion;
 [Route("checkout")]
 public sealed class CheckoutStepsPageController : Controller
 {
-    /// <summary>
-    /// The refused "Place Order" carried to the review under a key of its own: only that refusal lets the review render
-    /// without asking for step access, never an error some other page left unread.
-    /// </summary>
-    private const string PlaceOrderRefusal = "PlaceOrderRefusal";
-
     private readonly IGetActiveCheckoutSessionInputPort _active;
     private readonly IGetCheckoutSessionInputPort _session;
     private readonly IGetConfirmedCheckoutSessionInputPort _confirmed;
@@ -98,10 +92,16 @@ public sealed class CheckoutStepsPageController : Controller
     public Task<IActionResult> SubmitPayment([FromForm] string providerId, CancellationToken cancellationToken) =>
         Submit(CheckoutStep.Payment, "/checkout/review", id => _submitPayment.ExecuteAsync(new SubmitPaymentCommand(id, CurrentCustomerId(), providerId), cancellationToken), cancellationToken);
 
-    /// <summary>The review; a refused "Place Order" redirected here carries its error over.</summary>
+    /// <summary>
+    /// The review; a refused "Place Order" redirected here names its refusal in the address, and the review shows it at
+    /// its own address.
+    /// </summary>
     [HttpGet("review")]
-    public Task<IActionResult> Review(CancellationToken cancellationToken) =>
-        Page(CheckoutStep.Review, cancellationToken, TempData[PlaceOrderRefusal] as string);
+    public Task<IActionResult> Review(
+        [FromQuery(Name = CheckoutRoutes.Notice)] string? notice,
+        [FromQuery(Name = CheckoutStepNotices.CountParameter)] int? count,
+        CancellationToken cancellationToken) =>
+        Page(CheckoutStep.Review, cancellationToken, CheckoutStepNotices.FromCode(notice)?.Sentence(count));
 
     /// <summary>A refused "Place Order" redirects to the review, so the browser stays at the review's own address.</summary>
     [HttpPost("confirm")]
@@ -126,11 +126,23 @@ public sealed class CheckoutStepsPageController : Controller
     }
 
     /// <summary>The refused "Place Order" carried to the review, which renders it at its own address.</summary>
-    private RedirectResult BackToTheReview(Exception refusal)
+    private RedirectResult BackToTheReview(Exception refusal) =>
+        Redirect(refusal is CheckoutValidationException invalid
+            ? CheckoutRoutes.PathWith(CheckoutStep.Review, CheckoutStepNotice.ItemsUnavailable, invalid.Validation.Errors.Count)
+            : CheckoutRoutes.PathWith(CheckoutStep.Review, ReviewNoticeFor(refusal)));
+
+    /// <summary>
+    /// What the review tells the customer when "Place Order" was refused, chosen from the failure's type — the
+    /// exception's message is for the log, never for the page.
+    /// </summary>
+    private static CheckoutStepNotice ReviewNoticeFor(Exception refusal) => refusal switch
     {
-        TempData[PlaceOrderRefusal] = MessageFor(CheckoutStep.Review, refusal);
-        return Redirect(CheckoutRoutes.PathOf(CheckoutStep.Review));
-    }
+        CheckoutSessionNotFoundException => CheckoutStepNotice.SessionNotFound,
+        CheckoutNotModifiableException => CheckoutStepNotice.CheckoutNotModifiable,
+        CheckoutStepNotCompletedException => CheckoutStepNotice.EarlierStepsFirst,
+        CheckoutStepOutOfOrderException => CheckoutStepNotice.ReviewFirst,
+        _ => CheckoutStepNotice.OrderNotPlaced,
+    };
 
     [HttpGet("confirmation")]
     public async Task<IActionResult> Confirmation(CancellationToken cancellationToken)
@@ -138,8 +150,7 @@ public sealed class CheckoutStepsPageController : Controller
         var result = await _confirmed.ExecuteAsync(new GetConfirmedCheckoutSessionQuery(CurrentCustomerId()), cancellationToken);
         if (result?.Session is not { } session)
         {
-            TempData["Error"] = "No confirmed order found";
-            return Redirect(CheckoutRoutes.Cart);
+            return Redirect(CheckoutRoutes.CartWith(CartNotice.NoConfirmedOrder));
         }
 
         return View("~/Views/Checkout/Confirmation.cshtml", await ViewModelAsync(session, null, cancellationToken));
@@ -228,11 +239,7 @@ public sealed class CheckoutStepsPageController : Controller
     }
 
     /// <summary>Back to the cart, telling the customer there is no checkout to continue.</summary>
-    private RedirectResult NoActiveSession()
-    {
-        TempData["Error"] = "No active checkout session found";
-        return Redirect(CheckoutRoutes.Cart);
-    }
+    private RedirectResult NoActiveSession() => Redirect(CheckoutRoutes.CartWith(CartNotice.NoActiveCheckout));
 
     /// <summary>
     /// What the customer is told when a step refuses a submission, worded from the step and the failure's type and
@@ -241,8 +248,8 @@ public sealed class CheckoutStepsPageController : Controller
     /// </summary>
     private static string MessageFor(CheckoutStep step, Exception failure) => (step, failure) switch
     {
-        (_, CheckoutSessionNotFoundException) => "Checkout session not found",
-        (_, CheckoutNotModifiableException) => "This checkout can no longer be changed.",
+        (_, CheckoutSessionNotFoundException) => CheckoutStepNotice.SessionNotFound.Sentence()!,
+        (_, CheckoutNotModifiableException) => CheckoutStepNotice.CheckoutNotModifiable.Sentence()!,
         (CheckoutStep.Payment, PaymentInitiationFailedException) =>
             "The payment was refused. Please choose another way to pay.",
         (CheckoutStep.Payment, PaymentProviderUnavailableException) =>
@@ -250,12 +257,7 @@ public sealed class CheckoutStepsPageController : Controller
         (CheckoutStep.Payment, PaymentProviderNotFoundException) =>
             "This way to pay is not offered. Please choose another one.",
         (CheckoutStep.Payment, NothingToPayException) => "There is nothing to pay for this order.",
-        (CheckoutStep.Review, CheckoutValidationException invalid) =>
-            $"Cannot place the order, {invalid.Validation.Errors.Count} item(s) unavailable or out of stock.",
-        (CheckoutStep.Review, CheckoutStepNotCompletedException) => CheckoutStepNotice.EarlierStepsFirst.Sentence(),
-        (CheckoutStep.Review, CheckoutStepOutOfOrderException) => "Please review your order before placing it.",
-        (CheckoutStep.Review, _) => "Your order could not be placed. Please try again.",
-        (_, CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException) => CheckoutStepNotice.EarlierStepsFirst.Sentence(),
+        (_, CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException) => CheckoutStepNotice.EarlierStepsFirst.Sentence()!,
         (CheckoutStep.BuyerInfo, ArgumentException) => "Please check the details you entered.",
         (CheckoutStep.Delivery, ArgumentException) => "Please check the delivery address you entered.",
         (CheckoutStep.Payment, ArgumentException) => "Please choose a way to pay.",

@@ -26,6 +26,8 @@ namespace DcaShop.Cart.Adapter.Incoming.Web.CartRecovery;
 [Route("cart/merge")]
 public sealed class CartMergePageController : Controller
 {
+    private const string CartPage = "/cart";
+
     private readonly IGetCartMergeOptionsInputPort _getMergeOptions;
     private readonly IMergeCartsInputPort _mergeCarts;
     private readonly IRecoverCartInputPort _recoverCart;
@@ -45,7 +47,10 @@ public sealed class CartMergePageController : Controller
 
     [HttpGet("")]
     public async Task<IActionResult> Show(
-        [FromQuery] string anonymousUserId, [FromQuery] string? returnUrl, CancellationToken cancellationToken)
+        [FromQuery] string anonymousUserId,
+        [FromQuery] string? returnUrl,
+        [FromQuery(Name = CartPageNotices.Parameter)] string? notice,
+        CancellationToken cancellationToken)
     {
         var registeredUserId = _identityProvider.GetCurrentIdentity().UserId.Value;
         var options = await _getMergeOptions.ExecuteAsync(
@@ -58,13 +63,18 @@ public sealed class CartMergePageController : Controller
             await _recoverCart.ExecuteAsync(
                 new RecoverCartCommand(anonymousUserId, registeredUserId), cancellationToken);
 
-            TempData["Message"] = "Welcome back!";
-            return Redirect(Destination(returnUrl));
+            return Redirect(WithNoticeForTheCart(Destination(returnUrl), CartPageNotice.WelcomeBack));
         }
 
         return View(
             "~/Views/Cart/MergeOptions.cshtml",
-            CartMergePageViewModel.FromResult(options, anonymousUserId, returnUrl));
+            CartMergePageViewModel.FromResult(options, anonymousUserId, returnUrl) with
+            {
+                // The one notice this page says; any other code is not its own and shows nothing.
+                ErrorMessage = CartPageNotices.FromCode(notice) is CartPageNotice.InvalidMergeOption
+                    ? CartPageNotice.InvalidMergeOption.Sentence()
+                    : null,
+            });
     }
 
     [HttpPost("")]
@@ -76,27 +86,31 @@ public sealed class CartMergePageController : Controller
     {
         if (CartMergeStrategySubmission.Parse(strategy) is not { } chosen)
         {
-            TempData["Error"] = "Invalid merge option selected";
             var back = $"/cart/merge?anonymousUserId={WebUtility.UrlEncode(anonymousUserId)}";
-            return Redirect(string.IsNullOrWhiteSpace(returnUrl)
-                ? back
-                : $"{back}&returnUrl={WebUtility.UrlEncode(returnUrl)}");
+            return Redirect(CartPageNotices.PathWith(
+                string.IsNullOrWhiteSpace(returnUrl) ? back : $"{back}&returnUrl={WebUtility.UrlEncode(returnUrl)}",
+                CartPageNotice.InvalidMergeOption));
         }
 
         await _mergeCarts.ExecuteAsync(
             new MergeCartsCommand(anonymousUserId, _identityProvider.GetCurrentIdentity().UserId.Value, chosen),
             cancellationToken);
 
-        TempData["Message"] = chosen switch
+        return Redirect(WithNoticeForTheCart(Destination(returnUrl), chosen switch
         {
-            CartMergeStrategy.MergeBoth => "Carts merged successfully!",
-            CartMergeStrategy.UseAccountCart => "Using your account cart.",
-            _ => "Using your recent cart.",
-        };
-
-        return Redirect(Destination(returnUrl));
+            CartMergeStrategy.MergeBoth => CartPageNotice.CartsMerged,
+            CartMergeStrategy.UseAccountCart => CartPageNotice.AccountCartUsed,
+            _ => CartPageNotice.RecentCartUsed,
+        }));
     }
 
     private static string Destination(string? returnUrl) =>
-        string.IsNullOrWhiteSpace(returnUrl) ? "/cart" : returnUrl;
+        string.IsNullOrWhiteSpace(returnUrl) ? CartPage : returnUrl;
+
+    /// <summary>
+    /// The destination, carrying the notice when it is the cart page — the one page that says it; any other page the
+    /// visitor was headed to opens at its own address.
+    /// </summary>
+    private static string WithNoticeForTheCart(string destination, CartPageNotice notice) =>
+        destination == CartPage ? CartPageNotices.PathWith(destination, notice) : destination;
 }

@@ -12,6 +12,9 @@ public sealed record CartMergePageViewModel(
     string AnonymousUserId,
     string? ReturnUrl)
 {
+    /// <summary>The refusal a redirect's notice reported, if any.</summary>
+    public string? ErrorMessage { get; init; }
+
     public static CartMergePageViewModel FromResult(
         GetCartMergeOptionsResult result, string anonymousUserId, string? returnUrl)
     {

@@ -61,7 +61,7 @@ public sealed class ProductDetailPage : BasePage
         var button = Page.Locator($"[data-test='{AddToCartButton}']");
         await Assertions.Expect(button).ToBeVisibleAsync();
         await button.ClickAsync();
-        await Assertions.Expect(Page).ToHaveURLAsync(new Regex("^https?://[^/]+/cart$"));
+        await Assertions.Expect(Page).ToHaveURLAsync(new Regex(@"^https?://[^/]+/cart(\?.*)?$"));
     }
 
     public string ShownPath => CurrentPath;

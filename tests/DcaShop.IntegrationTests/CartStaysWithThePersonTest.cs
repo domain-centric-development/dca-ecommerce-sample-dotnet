@@ -64,7 +64,7 @@ public sealed class CartStaysWithThePersonTest : IClassFixture<WebApplicationFac
 
         var landing = await LogInAsync(browser, email);
 
-        Assert.Equal("/cart", landing);
+        Assert.Equal("/cart?notice=welcome-back", landing);
         Assert.Equal([$"{DomainDrivenDesign} x1"], CartLines(await browser.GetStringAsync("/cart")));
     }
 

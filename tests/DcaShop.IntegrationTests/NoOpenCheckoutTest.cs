@@ -27,8 +27,8 @@ public sealed class NoOpenCheckoutTest : IClassFixture<WebApplicationFactory<Pro
 
         var response = await visitor.GetAsync("/checkout/review");
 
-        Assert.Equal("/cart", response.Headers.Location!.ToString());
-        Assert.Equal("No active checkout session found", await CartErrorAsync(visitor));
+        Assert.Equal("/cart?notice=no-active-checkout", response.Headers.Location!.ToString());
+        Assert.Equal("No active checkout session found", await CartErrorAsync(visitor, response.Headers.Location!));
     }
 
     [Fact]
@@ -41,8 +41,8 @@ public sealed class NoOpenCheckoutTest : IClassFixture<WebApplicationFactory<Pro
 
         var response = await guest.GetAsync("/checkout/buyer");
 
-        Assert.Equal("/cart", response.Headers.Location!.ToString());
-        Assert.Equal("No active checkout session found", await CartErrorAsync(guest));
+        Assert.Equal("/cart?notice=no-active-checkout", response.Headers.Location!.ToString());
+        Assert.Equal("No active checkout session found", await CartErrorAsync(guest, response.Headers.Location!));
     }
 
     [Fact]
@@ -56,8 +56,8 @@ public sealed class NoOpenCheckoutTest : IClassFixture<WebApplicationFactory<Pro
 
         var response = await afterRestart.GetAsync("/checkout/delivery");
 
-        Assert.Equal("/cart", response.Headers.Location!.ToString());
-        Assert.Equal("No active checkout session found", await CartErrorAsync(afterRestart));
+        Assert.Equal("/cart?notice=no-active-checkout", response.Headers.Location!.ToString());
+        Assert.Equal("No active checkout session found", await CartErrorAsync(afterRestart, response.Headers.Location!));
     }
 
     [Fact]
@@ -82,16 +82,16 @@ public sealed class NoOpenCheckoutTest : IClassFixture<WebApplicationFactory<Pro
 
         var response = await visitor.GetAsync("/checkout/confirmation");
 
-        Assert.Equal("/cart", response.Headers.Location!.ToString());
-        Assert.Equal("No confirmed order found", await CartErrorAsync(visitor));
+        Assert.Equal("/cart?notice=no-confirmed-order", response.Headers.Location!.ToString());
+        Assert.Equal("No confirmed order found", await CartErrorAsync(visitor, response.Headers.Location!));
     }
 
     private static HttpClient Browser(WebApplicationFactory<Program> shop, CookieContainer cookies) =>
         shop.CreateDefaultClient(new CookieContainerHandler(cookies));
 
     /// <summary>The error the cart page shows next, where the redirect leads.</summary>
-    private static async Task<string> CartErrorAsync(HttpClient client) =>
-        AvailabilityPages.Text(await client.GetStringAsync("/cart"), @"data-test=""cart-error-message"">([^<]*)</div>");
+    private static async Task<string> CartErrorAsync(HttpClient client, Uri location) =>
+        AvailabilityPages.Text(await client.GetStringAsync(location), @"data-test=""cart-error-message"">([^<]*)</div>");
 
     /// <summary>Puts "Domain-Driven Design" into the cart, starts the checkout and submits the buyer's details.</summary>
     private static async Task GuestOnTheDeliveryStepAsync(HttpClient client)

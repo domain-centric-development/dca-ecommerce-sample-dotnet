@@ -15,7 +15,7 @@ public sealed class NoOpenCheckoutE2eTest : BaseE2eTest
         await NavigateToAsync("/checkout/buyer");
 
         var cart = await CartPage.OpenAsync(Page);
-        Assert.Equal("/cart", cart.ShownPath);
+        Assert.Equal("/cart?notice=no-active-checkout", cart.ShownPath);
         Assert.Equal("No active checkout session found", await cart.ErrorMessageAsync());
     }
 }
