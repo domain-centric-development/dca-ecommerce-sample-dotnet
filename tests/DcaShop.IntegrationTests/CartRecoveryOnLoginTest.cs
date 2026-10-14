@@ -1,7 +1,12 @@
 using System.Net;
 using System.Text.RegularExpressions;
 
+using DcaShop.Account.Application.AuthenticateAccount;
+using DcaShop.Cart.Application.Shopping.GetActiveCart;
+using DcaShop.Cart.Domain.Model;
+
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DcaShop.IntegrationTests;
 
@@ -66,7 +71,7 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         await AddOneUnitAsync(guest, DomainDrivenDesign);
         Assert.Equal("/checkout/buyer", await StartCheckoutAsync(guest));
 
-        var landing = await LogInAsync(guest, email, loginPage: "/login?returnUrl=/checkout/buyer");
+        var landing = await LogInTakingTheCartOverAsync(guest, email, loginPage: "/login?returnUrl=/checkout/buyer");
         var buyerStep = await guest.GetAsync(landing);
 
         Assert.Equal("/checkout/buyer", landing);
@@ -74,6 +79,22 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         var cartPage = await guest.GetStringAsync(buyerStep.Headers.Location);
         Assert.Equal("No active checkout session found", AvailabilityPages.Text(cartPage, @"data-test=""cart-error-message"">([^<]*)</div>"));
         Assert.Equal([$"{DomainDrivenDesign} x1"], CartLines(cartPage));
+    }
+
+    [Fact]
+    public async Task OpeningThePageAfterTheLoginLeavesTheAccountsCartEmpty()
+    {
+        var email = UniqueEmail();
+        await RegisterAsync(NewBrowser(), email);
+        var guest = NewBrowser();
+        await AddOneUnitAsync(guest, Mug);
+        var page = await guest.GetStringAsync("/login");
+        var loggedIn = await guest.PostAsync(
+            "/login", Form(page, ("email", email), ("password", Password), ("returnUrl", string.Empty)));
+
+        await guest.GetAsync(loggedIn.Headers.Location);
+
+        Assert.Empty(await AccountCartLinesAsync(email));
     }
 
     [Fact]
@@ -277,6 +298,37 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         var merged = await browser.GetAsync(loggedIn.Headers.Location);
         Assert.Equal(HttpStatusCode.Redirect, merged.StatusCode);
         return merged.Headers.Location!.ToString();
+    }
+
+    /// <summary>
+    /// Logs in from <paramref name="loginPage"/> with a guest cart the account takes over: the page after the login
+    /// opens, its form is sent, and the answer is where the login lands.
+    /// </summary>
+    private static async Task<string> LogInTakingTheCartOverAsync(HttpClient browser, string email, string loginPage)
+    {
+        var page = await browser.GetStringAsync(loginPage);
+        var returnUrl = WebUtility.HtmlDecode(
+            Regex.Match(page, @"<input type=""hidden"" name=""returnUrl"" value=""([^""]*)"">").Groups[1].Value);
+        var loggedIn = await browser.PostAsync(
+            "/login", Form(page, ("email", email), ("password", Password), ("returnUrl", returnUrl)));
+        Assert.Equal(HttpStatusCode.Redirect, loggedIn.StatusCode);
+
+        var takeOverPage = await browser.GetAsync(loggedIn.Headers.Location);
+        Assert.Equal(HttpStatusCode.OK, takeOverPage.StatusCode);
+        var takenOver = await TakeOverForm.SendAsync(browser, await takeOverPage.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.Redirect, takenOver.StatusCode);
+        return takenOver.Headers.Location!.ToString();
+    }
+
+    /// <summary>The lines of the cart of the account <paramref name="email"/> holds, read through the Cart's own query.</summary>
+    private async Task<IReadOnlyList<EnrichedCartItem>> AccountCartLinesAsync(string email)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var account = await scope.ServiceProvider.GetRequiredService<IAuthenticateAccountInputPort>()
+            .ExecuteAsync(new AuthenticateAccountCommand(email, Password));
+        var cart = await scope.ServiceProvider.GetRequiredService<IGetActiveCartInputPort>()
+            .ExecuteAsync(new GetActiveCartQuery(account.UserId!));
+        return cart.Cart?.Items ?? [];
     }
 
     private static async Task AddOneUnitAsync(HttpClient browser, string productName)

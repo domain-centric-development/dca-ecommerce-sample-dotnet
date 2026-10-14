@@ -4,7 +4,7 @@ namespace DcaShop.E2eTests.Pages;
 
 public sealed class CartPage : BasePage
 {
-    private const string UrlPattern = "/cart**";
+    private const string CartPath = "/cart";
     private const string CartItem = "cart-item";
     private const string CheckoutButton = "cart-checkout-button";
     private const string SuccessMessage = "cart-success-message";
@@ -30,11 +30,14 @@ public sealed class CartPage : BasePage
         return cart;
     }
 
+    /// <summary>
+    /// Waits for the cart page itself, never a page below it: the page after a login sits at <c>/cart/merge</c> and
+    /// may still be sending itself on.
+    /// </summary>
     public static async Task<CartPage> OpenAsync(IPage page)
     {
-        var cart = new CartPage(page);
-        await cart.WaitForUrlAsync(UrlPattern);
-        return cart;
+        await page.WaitForLoadedUrlAsync(url => new Uri(url).AbsolutePath == CartPath);
+        return new CartPage(page);
     }
 
     public async Task<BuyerInfoPage> ProceedToCheckoutAsync()

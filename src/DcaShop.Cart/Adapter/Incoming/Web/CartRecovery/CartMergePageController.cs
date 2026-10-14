@@ -10,8 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace DcaShop.Cart.Adapter.Incoming.Web.CartRecovery;
 
 /// <summary>
-/// Driving adapter for the cart merge page — where a visitor who just logged in decides what happens to the cart
-/// they filled as a guest.
+/// Driving adapter for the pages after a login — where the cart a visitor filled as a guest is taken over into the
+/// account, or where they decide what happens to it when the account holds a cart of its own.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -56,13 +56,16 @@ public sealed class CartMergePageController : Controller
         var options = await _getMergeOptions.ExecuteAsync(
             new GetCartMergeOptionsQuery(anonymousUserId, registeredUserId), cancellationToken);
 
+        if (options.TakeOverRequired)
+        {
+            // Nothing to decide does not mean nothing to do: when only the guest cart holds items, they still have
+            // to follow the visitor into their account. Opening a page moves no cart, so the page sends the take-over
+            // as a form — by itself where the browser runs scripts, with its button where it does not.
+            return View("~/Views/Cart/TakeOver.cshtml", new CartTakeOverPageViewModel(anonymousUserId, returnUrl));
+        }
+
         if (!options.MergeRequired)
         {
-            // Nothing to decide does not mean nothing to do: when only the guest cart holds items, they still
-            // have to follow the visitor into their account, or logging in would silently empty the cart.
-            await _recoverCart.ExecuteAsync(
-                new RecoverCartCommand(anonymousUserId, registeredUserId), cancellationToken);
-
             return RedirectWithNoticeForTheCart(Destination(returnUrl), CartPageNotice.WelcomeBack);
         }
 
@@ -102,6 +105,19 @@ public sealed class CartMergePageController : Controller
             CartMergeStrategy.UseAccountCart => CartPageNotice.AccountCartUsed,
             _ => CartPageNotice.RecentCartUsed,
         });
+    }
+
+    [HttpPost("take-over")]
+    public async Task<IActionResult> TakeOver(
+        [FromForm] string anonymousUserId,
+        [FromForm] string? returnUrl,
+        CancellationToken cancellationToken)
+    {
+        await _recoverCart.ExecuteAsync(
+            new RecoverCartCommand(anonymousUserId, _identityProvider.GetCurrentIdentity().UserId.Value),
+            cancellationToken);
+
+        return RedirectWithNoticeForTheCart(Destination(returnUrl), CartPageNotice.WelcomeBack);
     }
 
     private static string Destination(string? returnUrl) =>

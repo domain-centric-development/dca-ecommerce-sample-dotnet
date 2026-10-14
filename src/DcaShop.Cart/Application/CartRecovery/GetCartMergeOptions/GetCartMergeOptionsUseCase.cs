@@ -6,7 +6,8 @@ namespace DcaShop.Cart.Application.CartRecovery.GetCartMergeOptions;
 
 /// <summary>
 /// Decides whether the visitor has a choice to make. They have one only when both carts hold items and the two
-/// identities really differ — after a registration the identity is preserved, so there is only ever one cart.
+/// identities really differ — after a registration the identity is preserved, so there is only ever one cart. When
+/// only the guest cart holds items there is no choice, but a take-over to send.
 /// </summary>
 public sealed class GetCartMergeOptionsUseCase : IGetCartMergeOptionsInputPort
 {
@@ -35,9 +36,14 @@ public sealed class GetCartMergeOptionsUseCase : IGetCartMergeOptionsInputPort
         var accountCart = await _carts.FindActiveByCustomerAsync(registeredCustomerId, cancellationToken)
             .ConfigureAwait(false);
 
-        if (anonymousCart is not { IsEmpty: false } || accountCart is not { IsEmpty: false })
+        if (anonymousCart is not { IsEmpty: false })
         {
             return GetCartMergeOptionsResult.NoMergeRequired();
+        }
+
+        if (accountCart is not { IsEmpty: false })
+        {
+            return GetCartMergeOptionsResult.TakeOver();
         }
 
         var productIds = anonymousCart.Items

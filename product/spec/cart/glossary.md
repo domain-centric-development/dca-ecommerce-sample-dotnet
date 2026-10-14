@@ -18,7 +18,7 @@ The Cart context groups its use cases into four features — domain-named naviga
 | Feature | Meaning | Use cases |
 |---------|---------|-----------|
 | `Shopping` | Filling and reading the shopping cart while the customer shops | `CreateCart`, `GetOrCreateActiveCart`, `GetActiveCart`, `GetCartById`, `AddItemToCart`, `RemoveItemFromCart`, `RemoveCartItem` |
-| `CartRecovery` | Recovering a guest cart on login — offering and applying a merge | `RecoverCart`, `GetCartMergeOptions`, `MergeCarts` |
+| `CartRecovery` | Recovering a guest cart on login — taking it over, or offering and applying a merge | `RecoverCart`, `GetCartMergeOptions`, `MergeCarts` |
 | `CartCheckout` | Reconciling the cart once Checkout confirms an order — the purchased units leave the cart (`CompleteCart`) | `CompleteCart` |
 | `Operations` | Operating the shop — staff-only views across all carts | `GetAllCarts` |
 
@@ -43,6 +43,9 @@ An editable collection of stable positions. Checkout copies a snapshot through t
   (the cart page's "Remove"); `RemoveItemFromCart` names the item by its product in a cart named by its `CartId` (the cart API)
 - `UpdateItemQuantity` — sets a position's quantity; `IncreaseItemQuantity` / `DecreaseItemQuantity` change it by one
 - `Merge` — the positions of another cart are added to this one; the source cart is left untouched
+- Take over the guest cart (`RecoverCart`) — the Cart recovery use case that moves the guest cart's lines into the
+  account's cart when only the guest cart holds items; sent by the form of the page after the login
+  (`POST /cart/merge/take-over`), never on opening that page. `GetCartMergeOptions` answers when the take-over is due
 - `Clear` — every position is gone; the cart itself stays, active
 - `ReconcileCheckout` — the units a checkout bought are taken out of their positions, positions left without units are gone; the cart stays active and editable
 - `Abandon` — the cart is kept with status abandoned and rejects edits; it is not deleted

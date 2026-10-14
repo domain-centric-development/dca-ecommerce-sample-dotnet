@@ -58,10 +58,13 @@ public sealed class AccountFlowTest : IClassFixture<WebApplicationFactory<Progra
         Assert.Equal(HttpStatusCode.Redirect, loggedIn.StatusCode);
         Assert.StartsWith("/cart/merge", loggedIn.Headers.Location!.ToString(), StringComparison.Ordinal);
 
-        // Nothing to decide — but the items still have to arrive, or logging in would silently empty the cart.
-        var merge = await guest.GetAsync(loggedIn.Headers.Location);
-        Assert.Equal(HttpStatusCode.Redirect, merge.StatusCode);
-        Assert.Equal("/cart", merge.Headers.Location!.ToString());
+        // Nothing to decide — but the items still have to arrive, or logging in would silently empty the cart. They
+        // arrive with the form the page after the login sends, never with opening it.
+        var takeOverPage = await guest.GetAsync(loggedIn.Headers.Location);
+        Assert.Equal(HttpStatusCode.OK, takeOverPage.StatusCode);
+        var takenOver = await TakeOverForm.SendAsync(guest, await takeOverPage.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.Redirect, takenOver.StatusCode);
+        Assert.Equal("/cart", takenOver.Headers.Location!.ToString());
 
         var cart = await guest.GetStringAsync("/cart");
         Assert.Contains("data-test=\"cart-item\"", cart, StringComparison.Ordinal);

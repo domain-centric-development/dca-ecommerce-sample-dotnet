@@ -14,7 +14,6 @@ namespace DcaShop.E2eTests.Pages;
 public static class PageLoad
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
-    private static readonly PageWaitForFunctionOptions EveryTenthOfASecond = new() { PollingInterval = 100 };
 
     /// <summary>Waits until the browser shows <paramref name="url"/> (a glob) and that page has loaded.</summary>
     public static Task WaitForLoadedUrlAsync(this IPage page, string url)
@@ -40,7 +39,30 @@ public static class PageLoad
             await Task.Delay(50);
         }
 
-        await page.WaitForFunctionAsync("() => document.readyState === 'complete'", null, EveryTenthOfASecond);
+        // Polled from here, not with a function the page polls: a browser that runs no script runs no timer of the
+        // page's either, while an evaluation still answers.
+        while (!await HasLoadedAsync(page))
+        {
+            if (DateTime.UtcNow > deadline)
+            {
+                throw new TimeoutException($"The page at {page.Url} did not finish loading within {Patience.TotalSeconds} seconds.");
+            }
+
+            await Task.Delay(100);
+        }
+    }
+
+    /// <summary>Whether the shown document has loaded; a page that sends itself on may replace it while it is asked.</summary>
+    private static async Task<bool> HasLoadedAsync(IPage page)
+    {
+        try
+        {
+            return await page.EvaluateAsync<string>("() => document.readyState") == "complete";
+        }
+        catch (PlaywrightException e) when (e.Message.Contains("Execution context was destroyed", StringComparison.Ordinal))
+        {
+            return false;
+        }
     }
 
     /// <summary>Playwright's URL glob: <c>**</c> matches anything, <c>*</c> anything but a slash.</summary>

@@ -3,14 +3,18 @@ namespace DcaShop.Cart.Application.CartRecovery.GetCartMergeOptions;
 
 /// <summary>
 /// The two carts, when and only when the visitor has to choose between them. A merge is required only if both
-/// carts hold items — with one of them empty there is nothing to decide.
+/// carts hold items — with one of them empty there is nothing to decide. A take-over is required when only the guest
+/// cart holds items: there is nothing to decide either, but the guest's lines still have to move into the account.
 /// </summary>
 public sealed record GetCartMergeOptionsResult(
     bool MergeRequired,
     GetCartMergeOptionsResult.CartSummary? AnonymousCart,
-    GetCartMergeOptionsResult.CartSummary? AccountCart)
+    GetCartMergeOptionsResult.CartSummary? AccountCart,
+    bool TakeOverRequired = false)
 {
     public static GetCartMergeOptionsResult NoMergeRequired() => new(false, null, null);
+
+    public static GetCartMergeOptionsResult TakeOver() => new(false, null, null, TakeOverRequired: true);
 
     public static GetCartMergeOptionsResult Required(CartSummary anonymousCart, CartSummary accountCart) =>
         new(true, anonymousCart, accountCart);

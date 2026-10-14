@@ -1,0 +1,21 @@
+@model DcaShop.Cart.Adapter.Incoming.Web.CartRecovery.CartTakeOverPageViewModel
+@{ ViewData["Title"] = "Bringing Your Cart Along"; }
+<div class="merge-options">
+<p class="merge-options__intro" data-test="take-over-message">Bringing your cart along.</p>
+<form method="POST" action="/cart/merge/take-over" data-test="take-over-form">
+@Html.AntiForgeryToken()
+<input type="hidden" name="anonymousUserId" value="@Model.AnonymousUserId">
+@if (!string.IsNullOrWhiteSpace(Model.ReturnUrl))
+{
+<input type="hidden" name="returnUrl" value="@Model.ReturnUrl">
+}
+<div class="form__actions">
+<button class="btn btn--primary btn--lg" type="submit" data-test="take-over-continue-button">Continue</button>
+</div>
+</form>
+</div>
+@section Scripts {
+<script>
+document.querySelector('[data-test="take-over-form"]').submit();
+</script>
+}

@@ -88,7 +88,7 @@ public sealed class CartStaysWithThePersonTest : IClassFixture<WebApplicationFac
         await RegisterAsync(NewBrowser().Browser, email, returnUrl: null);
         var (browser, cookies) = NewBrowser();
         await AddOneUnitAsync(browser, Mug);
-        await LogInAsync(browser, email);
+        await LogInTakingTheCartOverAsync(browser, email);
 
         // The session cookie aged out after its 7 days; the identity cookie, good for 30, is all the browser still sends.
         var lapsed = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = false });
@@ -140,6 +140,22 @@ public sealed class CartStaysWithThePersonTest : IClassFixture<WebApplicationFac
         var merged = await browser.GetAsync(loggedIn.Headers.Location);
         Assert.Equal(HttpStatusCode.Redirect, merged.StatusCode);
         return merged.Headers.Location!.ToString();
+    }
+
+    /// <summary>
+    /// Logs in on the login page with a guest cart the account takes over: the page after the login opens and its form
+    /// is sent.
+    /// </summary>
+    private static async Task LogInTakingTheCartOverAsync(HttpClient browser, string email)
+    {
+        var page = await browser.GetStringAsync("/login");
+        var loggedIn = await browser.PostAsync("/login", Form(page, ("email", email), ("password", Password)));
+        Assert.Equal(HttpStatusCode.Redirect, loggedIn.StatusCode);
+
+        var takeOverPage = await browser.GetAsync(loggedIn.Headers.Location);
+        Assert.Equal(HttpStatusCode.OK, takeOverPage.StatusCode);
+        var takenOver = await TakeOverForm.SendAsync(browser, await takeOverPage.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.Redirect, takenOver.StatusCode);
     }
 
     /// <summary>Presses "Logout" in the header of the cart page.</summary>
