@@ -21,6 +21,7 @@ public sealed class BackofficeEventsPage : BasePage
     private const string EventLogItem = "event-log-item";
     private const string EventType = "event-type";
     private const string EventStatus = "event-status";
+    private const string EventListener = "event-listener";
     private const string EventPayload = "event-payload";
     private const string EventRetry = "event-retry";
     private const string EventCompletionDate = "event-completion-date";
@@ -115,6 +116,25 @@ public sealed class BackofficeEventsPage : BasePage
             .Filter(new() { Has = Page.Locator($"[data-test='{EventType}']", new() { HasTextString = eventType }) })
             .Filter(new() { Has = Page.Locator($"[data-test='{EventStatus}']", new() { HasTextString = "Completed" }) })
             .First;
+        await Assertions.Expect(entry).ToBeVisibleAsync();
+
+        var payload = entry.Locator($"[data-test='{EventPayload}']");
+        await payload.Locator("summary").ClickAsync();
+        var content = payload.Locator("pre");
+        await Assertions.Expect(content).ToBeVisibleAsync();
+
+        return (await content.InnerTextAsync()).Split('\n').Select(line => line.TrimEnd('\r')).ToList();
+    }
+
+    /// <summary>
+    /// The lines of the "Event Payload" of the entry of the given type whose listener is the given one, as the browser
+    /// shows them once the payload is expanded.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> PayloadLinesOfAsync(string eventType, string listener)
+    {
+        var entry = Page.Locator($"[data-test='{EventLogItem}']")
+            .Filter(new() { Has = Page.Locator($"[data-test='{EventType}']", new() { HasTextString = eventType }) })
+            .Filter(new() { Has = Page.Locator($"[data-test='{EventListener}']", new() { HasTextString = listener }) });
         await Assertions.Expect(entry).ToBeVisibleAsync();
 
         var payload = entry.Locator($"[data-test='{EventPayload}']");
