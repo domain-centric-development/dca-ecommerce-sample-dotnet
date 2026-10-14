@@ -56,6 +56,14 @@ else if (!item.HasSufficientStock)
 <div class="stock-alert stock-alert--warning" data-test="stock-alert">Insufficient stock available</div>
 }
 </div>
+@if (Model.Status == "Active")
+{
+<form class="cart__item-remove" method="post" action="/cart/remove-item" data-test="cart-item-remove-form">
+@Html.AntiForgeryToken()
+<input type="hidden" name="cartItemId" value="@item.ItemId">
+<button class="btn btn--secondary btn--sm" type="submit" data-test="cart-item-remove">Remove</button>
+</form>
+}
 </div>
 }
 </div>

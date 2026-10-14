@@ -3,6 +3,7 @@ using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.GetActiveCart;
 using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
+using DcaShop.Cart.Application.Shopping.RemoveCartItem;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Application.Shared;
 
@@ -22,17 +23,20 @@ public sealed class CartPageController : Controller
     private readonly IGetOrCreateActiveCartInputPort _getOrCreateActiveCart;
     private readonly IGetActiveCartInputPort _getActiveCart;
     private readonly IAddItemToCartInputPort _addItemToCart;
+    private readonly IRemoveCartItemInputPort _removeCartItem;
     private readonly IIdentityProvider _identityProvider;
 
     public CartPageController(
         IGetOrCreateActiveCartInputPort getOrCreateActiveCart,
         IGetActiveCartInputPort getActiveCart,
         IAddItemToCartInputPort addItemToCart,
+        IRemoveCartItemInputPort removeCartItem,
         IIdentityProvider identityProvider)
     {
         _getOrCreateActiveCart = getOrCreateActiveCart;
         _getActiveCart = getActiveCart;
         _addItemToCart = addItemToCart;
+        _removeCartItem = removeCartItem;
         _identityProvider = identityProvider;
     }
 
@@ -71,6 +75,30 @@ public sealed class CartPageController : Controller
 
             return Redirect(CartPage);
         }
+    }
+
+    /// <summary>
+    /// "Remove" on a cart item: the item goes, whatever its quantity. An id that is no item id, or names an item the
+    /// visitor's cart does not hold, changes nothing — the page shows the cart as it is, without a notice.
+    /// </summary>
+    [HttpPost("remove-item")]
+    public async Task<IActionResult> RemoveItem([FromForm] string? cartItemId, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(cartItemId, out var itemId))
+        {
+            return Redirect(CartPage);
+        }
+
+        try
+        {
+            await _removeCartItem.ExecuteAsync(new RemoveCartItemCommand(CurrentCustomerId, itemId), cancellationToken);
+        }
+        catch (DomainException e) when (e is CartItemNotFoundException or CartNotModifiableException)
+        {
+            // Nothing to take out of this cart: the page it lands on already shows that.
+        }
+
+        return Redirect(CartPage);
     }
 
     /// <summary>

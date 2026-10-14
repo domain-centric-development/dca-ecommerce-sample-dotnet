@@ -17,7 +17,7 @@ The Cart context groups its use cases into four features — domain-named naviga
 
 | Feature | Meaning | Use cases |
 |---------|---------|-----------|
-| `Shopping` | Filling and reading the shopping cart while the customer shops | `CreateCart`, `GetOrCreateActiveCart`, `GetActiveCart`, `GetCartById`, `AddItemToCart`, `RemoveItemFromCart` |
+| `Shopping` | Filling and reading the shopping cart while the customer shops | `CreateCart`, `GetOrCreateActiveCart`, `GetActiveCart`, `GetCartById`, `AddItemToCart`, `RemoveItemFromCart`, `RemoveCartItem` |
 | `CartRecovery` | Recovering a guest cart on login — offering and applying a merge | `RecoverCart`, `GetCartMergeOptions`, `MergeCarts` |
 | `CartCheckout` | Reconciling the cart once Checkout confirms an order — the purchased units leave the cart (`CompleteCart`) | `CompleteCart` |
 | `Operations` | Operating the shop — staff-only views across all carts | `GetAllCarts` |
@@ -38,7 +38,9 @@ An editable collection of stable positions. Checkout copies a snapshot through t
 - `Create` — the cart comes into existence, active and empty
 - `Reconstitute` — restores a stored cart; no rule re-evaluated, no event
 - `AddItem` — a product goes into the cart as a new position, or the position already holding it grows by the quantity
-- `RemoveItem`, `RemoveItemByProductId` — the position is gone from the cart
+- `RemoveItem`, `RemoveItemByProductId` — the position is gone from the cart, whatever its quantity. Remove cart item
+  (`RemoveCartItem`) is the Shopping use case that takes one item out of the caller's active cart by its `CartItemId`
+  (the cart page's "Remove"); `RemoveItemFromCart` names the item by its product in a cart named by its `CartId` (the cart API)
 - `UpdateItemQuantity` — sets a position's quantity; `IncreaseItemQuantity` / `DecreaseItemQuantity` change it by one
 - `Merge` — the positions of another cart are added to this one; the source cart is left untouched
 - `Clear` — every position is gone; the cart itself stays, active

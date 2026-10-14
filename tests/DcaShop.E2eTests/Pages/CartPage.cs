@@ -9,6 +9,7 @@ public sealed class CartPage : BasePage
     private const string CheckoutButton = "cart-checkout-button";
     private const string SuccessMessage = "cart-success-message";
     private const string ErrorMessage = "cart-error-message";
+    private const string RemoveButton = "cart-item-remove";
 
     private CartPage(IPage page) : base(page)
     {
@@ -102,6 +103,22 @@ public sealed class CartPage : BasePage
             .Filter(new LocatorFilterOptions { Has = Page.Locator("[data-test='cart-item-name']", new PageLocatorOptions { HasTextString = productName }) });
         await Assertions.Expect(item).ToHaveCountAsync(1);
         return (await item.Locator("[data-test='stock-alert']").AllInnerTextsAsync()).Select(t => t.Trim()).ToList();
+    }
+
+    /// <summary>
+    /// Presses "Remove" on the line of the named product and waits until the cart page the shop answers with has loaded
+    /// — the same address, a new document.
+    /// </summary>
+    public async Task RemoveAsync(string productName)
+    {
+        var item = Page.Locator($"[data-test='{CartItem}']")
+            .Filter(new LocatorFilterOptions { Has = Page.Locator("[data-test='cart-item-name']", new PageLocatorOptions { HasTextString = productName }) });
+        await Assertions.Expect(item).ToHaveCountAsync(1);
+        var remove = item.Locator($"[data-test='{RemoveButton}']");
+        await Assertions.Expect(remove).ToHaveTextAsync("Remove");
+        await Page.EvaluateAsync("() => { window.__beforeRemove = true; }");
+        await remove.ClickAsync();
+        await Page.WaitForFunctionAsync("() => window.__beforeRemove !== true && document.readyState === 'complete'");
     }
 
     /// <summary>The value shown beside a label in a line. The markup carries no data-test for it.</summary>

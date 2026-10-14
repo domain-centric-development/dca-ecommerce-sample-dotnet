@@ -92,6 +92,13 @@ public abstract class BasePage
         return await AccountPage.OpenAsync(Page);
     }
 
+    /// <summary>The badge on the site header's cart entry, as written; empty when the entry carries none.</summary>
+    public async Task<string> HeaderCartBadgeAsync()
+    {
+        var badge = Page.Locator("[data-test='site-header'] [data-test='mini-basket-count']");
+        return await badge.CountAsync() == 0 ? string.Empty : (await badge.InnerTextAsync()).Trim();
+    }
+
     /// <summary>
     /// Hovers the cart entry in the site header and reads the dropdown it opens. The dropdown's lines and total carry no
     /// data-test; they are read by their place in it.
