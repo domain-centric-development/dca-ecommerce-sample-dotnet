@@ -134,7 +134,7 @@ public sealed class ShoppingCartResource : ControllerBase
         return Ok(_converter.ToDto((await ReadAsync(cartId, cancellationToken))!));
     }
 
-    /// <summary>Removes the line holding the product named in the path, whatever its quantity.</summary>
+    /// <summary>Removes the item holding the product named in the path, whatever its quantity.</summary>
     [HttpDelete("{cartId:guid}/items/{productId:guid}")]
     public async Task<ActionResult<ShoppingCartDto>> RemoveItemFromCart(
         Guid cartId, Guid productId, CancellationToken cancellationToken)

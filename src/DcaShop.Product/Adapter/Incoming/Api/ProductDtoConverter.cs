@@ -23,8 +23,8 @@ public sealed class ProductDtoConverter
             result.Name,
             command.Description,
             command.ImageUrl,
-            result.Price.Amount,
-            result.Price.Currency,
+            result.InitialPrice.Amount,
+            result.InitialPrice.Currency,
             command.Category,
             null,
             null);

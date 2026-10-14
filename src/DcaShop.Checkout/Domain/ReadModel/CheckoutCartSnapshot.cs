@@ -69,7 +69,7 @@ public sealed record CheckoutCartSnapshot(
 
     public bool IsCompleted => Status == CheckoutSessionStatus.Completed;
 
-    /// <summary>True once the step's data is on the session — the step guard's prerequisite check.</summary>
+    /// <summary>True once the step's data is on the session — the prerequisite step access checks.</summary>
     public bool IsStepCompleted(CheckoutStep step) => step switch
     {
         CheckoutStep.BuyerInfo => HasBuyerInfo,

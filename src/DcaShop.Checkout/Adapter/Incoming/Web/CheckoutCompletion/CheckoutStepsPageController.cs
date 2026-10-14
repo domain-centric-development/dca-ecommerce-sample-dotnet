@@ -157,7 +157,7 @@ public sealed class CheckoutStepsPageController : Controller
     }
 
     /// <summary>
-    /// A step's page; the <paramref name="notice"/> a redirect carried is shown only once the step guard granted the
+    /// A step's page; the <paramref name="notice"/> a redirect carried is shown only once step access granted the
     /// page.
     /// </summary>
     private async Task<IActionResult> Page(CheckoutStep step, CancellationToken cancellationToken, string? error = null, CheckoutStepNotice? notice = null)
@@ -226,7 +226,7 @@ public sealed class CheckoutStepsPageController : Controller
     }
 
     /// <summary>
-    /// Sent before the earlier steps are done: the step guard sends the customer to the step still open — none when it
+    /// Sent before the earlier steps are done: step access sends the customer to the step still open — none when it
     /// grants <paramref name="step"/> after all. That step says why.
     /// </summary>
     private async Task<RedirectResult?> ToTheStepStillOpenAsync(CheckoutStep step, CancellationToken cancellationToken)
