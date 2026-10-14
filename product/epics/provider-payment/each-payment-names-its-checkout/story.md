@@ -1,7 +1,9 @@
 ---
 id: each-payment-names-its-checkout
 epic: provider-payment
-status: approved
+status: delivered
+delivered: 2026-10-14T21:34:03Z
+delivered_by: gate
 context: checkout
 feature: payment
 title: Each payment request names the checkout it pays for
