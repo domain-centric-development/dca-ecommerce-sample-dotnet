@@ -384,3 +384,18 @@ Test: DcaShop.IntegrationTests.CartItemRemovalTest#ARemoveNamingAMalformedItemId
 - Then the first guest's cart still shows `"Ubiquitous Language" Mug` with quantity 1
 - And the second guest's cart page still shows "Team Topologies"
 Test: DcaShop.IntegrationTests.CartItemRemovalTest#ARemoveNamingAnotherVisitorsLineChangesNeitherCart
+
+### Rule: Reading the active cart opens none; a customer without one is answered 404
+
+#### no-active-cart-is-not-found
+- Given a client holding the token of the customer "grace@example.com", who has no cart yet, and her `customerId`
+- When it sends `GET /api/carts/customer/<her customerId>/active` with her token
+- Then the shop answers 404
+Test: DcaShop.E2eTests.CartApiE2eTest#ReadingTheActiveCartOfACustomerWithoutOneIsNotFound
+
+#### a-read-leaves-no-cart-behind
+- Given the client of "grace@example.com" has just been answered 404 for her active cart
+- When it sends `POST /api/carts` with her token
+- Then the shop answers 201
+- And the body has `items` [], `status` "ACTIVE" and `itemCount` 0
+Test: DcaShop.IntegrationTests.CartApiTest#ReadingTheActiveCartLeavesNoCartBehindSoOpeningOneIsCreated

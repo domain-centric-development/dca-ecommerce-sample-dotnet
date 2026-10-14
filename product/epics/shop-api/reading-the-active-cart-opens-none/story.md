@@ -1,7 +1,9 @@
 ---
 id: reading-the-active-cart-opens-none
 epic: shop-api
-status: approved
+status: delivered
+delivered: 2026-10-14T21:50:38Z
+delivered_by: gate
 context: cart
 feature: shopping
 title: Reading a customer's active cart opens none
@@ -46,3 +48,4 @@ so that a read never leaves a cart behind and opening a cart stays the one way t
 - answered: SharedScenariosTest also knows the titles of the stories not yet delivered (their `####` criteria, title = Title line else the key in words); the spec stays the only source for the Test-line and duplicate checks. Fixed on main in 2ea4aaa; nothing changes in this story — run the stage again as it is. (reading-the-active-cart-opens-none-01)
 - answered: Bring the sibling story's delivered scenario into `product/spec` on main (the merge its delivering gate should have (reading-the-active-cart-opens-none-02)
 - answered: a — the delivered stories' scenarios are committed on main now (6a8d286); merge main into the branch and run the build again as it is. (reading-the-active-cart-opens-none-03)
+- answered: a — the test stage records both merged tests red against the code before this story, then build and tidy run again; the code needs no change. (reading-the-active-cart-opens-none-04)
