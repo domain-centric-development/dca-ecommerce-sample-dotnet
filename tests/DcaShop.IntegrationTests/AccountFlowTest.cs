@@ -94,8 +94,9 @@ public sealed class AccountFlowTest : IClassFixture<WebApplicationFactory<Progra
         var response = await client.PostAsync(
             "/login", Form(loginPage, ("email", "nobody@example.com"), ("password", "Secret123")));
 
-        var body = await response.Content.ReadAsStringAsync();
-        Assert.Contains("Invalid email or password", body, StringComparison.Ordinal);
+        Assert.Equal(
+            "Invalid email or password",
+            AvailabilityPages.Text(await response.Content.ReadAsStringAsync(), @"data-test=""login-error-message"">([^<]*)</div>"));
     }
 
     [Fact]

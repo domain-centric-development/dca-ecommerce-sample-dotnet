@@ -9,4 +9,4 @@ The judge's confirmed defects that did not block the story, kept for a later sto
 
 | # | Perspective | File:line | Severity | Defect | Fix | Status |
 |---|---|---|---|---|---|---|
-| 1 | test | tests/DcaShop.IntegrationTests/AccountFlowTest.cs:98 | minor | The unknown-address test looks for the message anywhere in the body, not in `login-error-message` the way `LoginPageTest.cs:88` reads it | Read the text of `data-test="login-error-message"` and compare it with Equal | open |
+| 1 | test | tests/DcaShop.IntegrationTests/AccountFlowTest.cs:98 | minor | The unknown-address test looks for the message anywhere in the body, not in `login-error-message` the way `LoginPageTest.cs:88` reads it | Read the text of `data-test="login-error-message"` and compare it with Equal | done |

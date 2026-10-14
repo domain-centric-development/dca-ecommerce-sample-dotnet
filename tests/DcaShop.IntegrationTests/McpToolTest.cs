@@ -34,7 +34,22 @@ public sealed class McpToolTest : IClassFixture<WebApplicationFactory<Program>>
         var result = await CallProductByIdAsync(assistant, "no-such-product");
 
         Assert.NotEqual(true, result.IsError);
-        Assert.True(AnswersNull(result), "expected the answer null, was: " + Text(result));
+        AssertAnswersNull(result);
+        Assert.Empty(port.Queries);
+    }
+
+    [Fact]
+    public async Task AProductIdNoProductHasAnswersNull()
+    {
+        var port = new NoProducts();
+        await using var assistant = await AssistantAsync(port);
+        var unknown = Guid.NewGuid();
+
+        var result = await CallProductByIdAsync(assistant, unknown.ToString());
+
+        Assert.NotEqual(true, result.IsError);
+        AssertAnswersNull(result);
+        Assert.Equal(unknown, Assert.Single(port.Queries).ProductId);
     }
 
     [Fact]
@@ -99,10 +114,12 @@ public sealed class McpToolTest : IClassFixture<WebApplicationFactory<Program>>
     private static string Text(CallToolResult result) =>
         string.Concat(result.Content.OfType<TextContentBlock>().Select(block => block.Text));
 
-    /// <summary>A null answer: no product in the content, and no structured product beside it.</summary>
-    private static bool AnswersNull(CallToolResult result) =>
-        (result.Content.Count == 0 || Text(result).Trim() == "null")
-        && (result.StructuredContent is null || result.StructuredContent.Value.ValueKind == JsonValueKind.Null);
+    /// <summary>A null answer, as the tool gives it: no content at all, and no structured product beside it.</summary>
+    private static void AssertAnswersNull(CallToolResult result)
+    {
+        Assert.Empty(result.Content);
+        Assert.Null(result.StructuredContent);
+    }
 
     /// <summary>The input port of a catalogue without products; it records what it was asked.</summary>
     private sealed class NoProducts : IGetProductByIdInputPort

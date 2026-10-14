@@ -51,7 +51,7 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         await AddOneUnitAsync(otherBrowser, CleanArchitecture);
         var browser = NewBrowser();
 
-        var landing = await LogInAsync(browser, email, returnUrl: null);
+        var landing = await LogInAsync(browser, email);
 
         Assert.Equal("/cart", landing);
         Assert.Equal([$"{CleanArchitecture} x1"], CartLines(await browser.GetStringAsync("/cart")));
@@ -65,9 +65,8 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         var guest = NewBrowser();
         await AddOneUnitAsync(guest, DomainDrivenDesign);
         Assert.Equal("/checkout/buyer", await StartCheckoutAsync(guest));
-        await guest.GetStringAsync("/login?returnUrl=/checkout/buyer");
 
-        var landing = await LogInAsync(guest, email, returnUrl: "/checkout/buyer");
+        var landing = await LogInAsync(guest, email, loginPage: "/login?returnUrl=/checkout/buyer");
         var buyerStep = await guest.GetAsync(landing);
 
         Assert.Equal("/checkout/buyer", landing);
@@ -83,7 +82,7 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         var email = UniqueEmail();
         await RegisterAsync(NewBrowser(), email);
         var browser = NewBrowser();
-        await LogInAsync(browser, email, returnUrl: null);
+        await LogInAsync(browser, email);
         await AddOneUnitAsync(browser, DomainDrivenDesign);
 
         var next = await StartCheckoutAsync(browser);
@@ -261,11 +260,17 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
     }
 
     /// <summary>Logs in on the login page and follows the cart's merge page; answers where the visitor lands.</summary>
-    private static async Task<string> LogInAsync(HttpClient browser, string email, string? returnUrl)
+    /// <summary>
+    /// Logs in from <paramref name="loginPage"/> with the form as that page renders it — its token and the return
+    /// address it carries — and follows the merge decision to where the login lands.
+    /// </summary>
+    private static async Task<string> LogInAsync(HttpClient browser, string email, string loginPage = "/login")
     {
-        var page = await browser.GetStringAsync("/login");
+        var page = await browser.GetStringAsync(loginPage);
+        var returnUrl = WebUtility.HtmlDecode(
+            Regex.Match(page, @"<input type=""hidden"" name=""returnUrl"" value=""([^""]*)"">").Groups[1].Value);
         var loggedIn = await browser.PostAsync(
-            "/login", Form(page, ("email", email), ("password", Password), ("returnUrl", returnUrl ?? string.Empty)));
+            "/login", Form(page, ("email", email), ("password", Password), ("returnUrl", returnUrl)));
         Assert.Equal(HttpStatusCode.Redirect, loggedIn.StatusCode);
         Assert.StartsWith("/cart/merge", loggedIn.Headers.Location!.ToString(), StringComparison.Ordinal);
 
