@@ -26,6 +26,6 @@ public sealed record CheckoutConfirmedEvent(
     public sealed record LineItemInfo(ProductId ProductId, int Quantity, string PositionSnapshot = "");
 
     /// <summary>The confirmed lines, in the shape Inventory defined for its stock reduction.</summary>
-    public IReadOnlyList<StockReductionLineItem> OrderLineItems =>
+    public IReadOnlyList<StockReductionLineItem> LineItems =>
         Items.Select(item => new StockReductionLineItem(item.ProductId, item.Quantity)).ToList();
 }

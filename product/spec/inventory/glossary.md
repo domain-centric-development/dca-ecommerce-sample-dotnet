@@ -234,8 +234,8 @@ whose stock must go down. Owned here and implemented by Checkout's `CheckoutConf
 lines and the event's `EventId` to the `ReduceStock` use case in one command (the contract extends
 `IIntegrationEvent`). The use case reduces the lines in one transaction, skips an event `IProcessedEvents` has
 already recorded for its effect, `reduce-stock`, and records it there — a redelivered order never reduces stock
-twice, while `set-stock-level` for the same event id is a different effect and still happens. Its
-`OrderLineItems` wording is an open issue — see below.
+twice, while `set-stock-level` for the same event id is a different effect and still happens. The lines are
+`LineItems` in Inventory's own words — the contract borrows no order vocabulary from Checkout.
 
 ---
 
@@ -330,9 +330,9 @@ business before the model is consolidated:
    - or a clean separation via `StockReserved` / `StockReleased` /
      `StockIncreased` / `StockDecreased`, which already exist anyway.
 
-3. **`IStockReductionTrigger.OrderLineItems`** is **Checkout language** and does
-   not belong in the Inventory context. From an Inventory perspective, the
-   trigger of a stock reduction should be generic (e.g. "shipment order",
+3. **`IStockReductionTrigger`** names its lines `LineItems`, no longer the
+   Checkout term `OrderLineItems`. Still open: from an Inventory perspective,
+   the trigger of a stock reduction should be generic (e.g. "shipment order",
    "reservation release") — correlation to the order ID happens via
    integration events, not via borrowed terms.
 

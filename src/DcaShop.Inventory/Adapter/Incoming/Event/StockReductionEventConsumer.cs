@@ -25,8 +25,8 @@ public sealed class StockReductionEventConsumer : EventListener<IStockReductionT
 
     protected override async Task OnAsync(IStockReductionTrigger @event, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Reducing stock for {LineItemCount} line items after checkout confirmation", @event.OrderLineItems.Count);
-        var lines = @event.OrderLineItems.Select(item => new ReduceStockCommand.Line(item.ProductId.Value, item.Quantity)).ToList();
+        _logger.LogInformation("Reducing stock for {LineItemCount} line items after checkout confirmation", @event.LineItems.Count);
+        var lines = @event.LineItems.Select(item => new ReduceStockCommand.Line(item.ProductId.Value, item.Quantity)).ToList();
         var result = await _reduceStock.ExecuteAsync(new ReduceStockCommand(lines, @event.EventId), cancellationToken).ConfigureAwait(false);
         foreach (var failed in result.Lines.Where(line => !line.Success))
         {

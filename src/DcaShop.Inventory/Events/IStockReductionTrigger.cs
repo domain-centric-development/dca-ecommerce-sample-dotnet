@@ -12,7 +12,7 @@ namespace DcaShop.Inventory.Events;
 /// </summary>
 public interface IStockReductionTrigger : IIntegrationEvent
 {
-    IReadOnlyList<StockReductionLineItem> OrderLineItems { get; }
+    IReadOnlyList<StockReductionLineItem> LineItems { get; }
 }
 
 /// <summary>One line of a confirmed order: how much of which product left the shop.</summary>
