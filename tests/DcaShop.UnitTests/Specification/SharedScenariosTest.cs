@@ -5,17 +5,24 @@ namespace DcaShop.UnitTests.Specification;
 
 /// <summary>
 /// The end-user suite implements the scenarios of this shop's specification (<c>product/spec/**/scenarios.md</c>):
-/// every browser test carries a scenario's title as its display name, no title names two tests, and every scenario
-/// whose <c>Test:</c> line names a browser test names one that exists. A scenario's title is its <c>Title:</c> line,
-/// else its key in words. Checked against the sources of <c>tests/DcaShop.E2eTests</c>, so it holds without a running
-/// shop or a browser.
+/// every browser test carries a known scenario's title as its display name, no title names two tests, and every
+/// scenario whose <c>Test:</c> line names a browser test names one that exists. A scenario's title is its <c>Title:</c>
+/// line, else its key in words. A known title is a scenario's of the specification or an acceptance criterion's of a
+/// story not yet delivered (<c>product/epics/**/story.md</c>, <c>status:</c> neither <c>delivered</c> nor
+/// <c>superseded</c>): its scenario reaches the specification only when the gate delivers the story, and its browser
+/// test exists before that. The uniqueness of titles and the <c>Test:</c> lines are checked on the specification alone.
+/// Checked against the sources of <c>tests/DcaShop.E2eTests</c>, so it holds without a running shop or a browser.
 /// </summary>
 public sealed class SharedScenariosTest
 {
     private static readonly Regex TestAttribute = new(@"\[(\w+Fact|\w+Theory)\b", RegexOptions.Compiled);
     private static readonly Regex DisplayName = new(@"DisplayName\s*=\s*""((?:[^""\\]|\\.)*)""", RegexOptions.Compiled);
     private static readonly Regex ClassDeclaration = new(@"\bclass\s+(\w+)", RegexOptions.Compiled);
+    private static readonly Regex HappyPath = new(@"\s+\(happy path\)\s*$", RegexOptions.Compiled);
     private static readonly Regex MethodDeclaration = new(@"\bpublic\s+(?:async\s+)?[\w<>]+\s+(\w+)\s*\(", RegexOptions.Compiled);
+
+    /// <summary>The states of a story whose criteria are no title to come: delivered, or replaced by another story.</summary>
+    private static readonly HashSet<string> Settled = new(["delivered", "superseded"], StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Browser tests still titled after the shared specification's scenarios, which this shop's specification describes
@@ -29,6 +36,7 @@ public sealed class SharedScenariosTest
     {
         var titles = Scenarios().Select(s => s.Title).ToHashSet(StringComparer.Ordinal);
         Assert.NotEmpty(titles);
+        var known = titles.Concat(StoryTitles()).ToHashSet(StringComparer.Ordinal);
 
         var bound = new List<string>();
         var tests = 0;
@@ -40,9 +48,24 @@ public sealed class SharedScenariosTest
         }
         Assert.True(tests == bound.Count, "every browser test names its scenario with DisplayName");
 
-        Assert.Empty(bound.Where(t => !titles.Contains(t) && !TitledAfterTheSharedSpecification.Contains(t)).Order());
+        Assert.Empty(bound.Where(t => !known.Contains(t) && !TitledAfterTheSharedSpecification.Contains(t)).Order());
         Assert.Empty(bound.GroupBy(t => t).Where(g => g.Count() > 1).Select(g => g.Key).Order());
         Assert.Empty(TitledAfterTheSharedSpecification.Where(t => titles.Contains(t) || !bound.Contains(t)).Order());
+    }
+
+    [Fact]
+    public void AStoryNotYetDeliveredNamesItsCriteriaAsScenarios()
+    {
+        string[] story =
+        [
+            "---", "id: a-story", "status: approved", "---", "", "# A story", "", "## Acceptance criteria", "",
+            "### Rule: one rule", "", "#### takes-the-line-out (happy path)", "- Given a cart", "",
+            "#### keeps-the-order", "Title: The other lines keep their order", "- Given a cart", "",
+            "## Out of scope", "", "#### not-a-criterion",
+        ];
+
+        Assert.Equal("approved", Status(story));
+        Assert.Equal(["Takes the line out", "The other lines keep their order"], StoryScenariosIn(story).Select(s => s.Title));
     }
 
     [Fact]
@@ -58,38 +81,86 @@ public sealed class SharedScenariosTest
 
     /// <summary>
     /// Each scenario's title with the tests its <c>Test:</c> lines name, read from every <c>scenarios.md</c> below
-    /// <c>product/spec</c>: a <c>#### key</c> heading, an optional Title line, the Test lines. Two contexts may hold a
-    /// scenario of the same title; only a browser test's title has to be unique.
+    /// <c>product/spec</c>. Two contexts may hold a scenario of the same title; only a browser test's title has to be
+    /// unique.
     /// </summary>
-    private static List<(string Title, List<string> Tests)> Scenarios()
+    private static List<(string Title, List<string> Tests)> Scenarios() =>
+        Directory.GetFiles(Path.Combine(RepositoryRoot(), "product", "spec"), "scenarios.md", SearchOption.AllDirectories)
+            .SelectMany(file => ScenariosIn(File.ReadAllLines(file)))
+            .ToList();
+
+    /// <summary>
+    /// The titles of the acceptance criteria of every story below <c>product/epics</c> that is not delivered yet:
+    /// the scenarios the gate will add to the specification when it delivers the story.
+    /// </summary>
+    private static IEnumerable<string> StoryTitles() =>
+        Directory.GetFiles(Path.Combine(RepositoryRoot(), "product", "epics"), "story.md", SearchOption.AllDirectories)
+            .Select(File.ReadAllLines)
+            .Where(lines => !Settled.Contains(Status(lines)))
+            .SelectMany(lines => StoryScenariosIn(lines).Select(s => s.Title));
+
+    /// <summary>A story's <c>status:</c> from its front matter, empty without one.</summary>
+    private static string Status(IReadOnlyList<string> lines)
+    {
+        if (lines.Count == 0 || lines[0].Trim() != "---")
+        {
+            return "";
+        }
+
+        foreach (var line in lines.Skip(1).TakeWhile(l => l.Trim() != "---"))
+        {
+            if (line.StartsWith("status:", StringComparison.Ordinal))
+            {
+                return line[7..].Trim();
+            }
+        }
+
+        return "";
+    }
+
+    /// <summary>
+    /// The scenarios of a story's <c>## Acceptance criteria</c> section, read like a <c>scenarios.md</c>; a key's
+    /// trailing <c>(happy path)</c> marker is not part of it.
+    /// </summary>
+    private static List<(string Title, List<string> Tests)> StoryScenariosIn(IEnumerable<string> lines) =>
+        ScenariosIn(lines
+            .SkipWhile(line => !line.StartsWith("## Acceptance criteria", StringComparison.Ordinal))
+            .Skip(1)
+            .TakeWhile(line => !line.StartsWith("## ", StringComparison.Ordinal))
+            .Select(line => line.StartsWith("#### ", StringComparison.Ordinal)
+                ? HappyPath.Replace(line, "")
+                : line));
+
+    /// <summary>
+    /// The scenarios of one document: a <c>#### key</c> heading, an optional Title line, the Test lines; a
+    /// <c>###</c> heading ends a scenario.
+    /// </summary>
+    private static List<(string Title, List<string> Tests)> ScenariosIn(IEnumerable<string> lines)
     {
         var scenarios = new List<(string Title, List<string> Tests)>();
-        foreach (var file in Directory.GetFiles(Path.Combine(RepositoryRoot(), "product", "spec"), "scenarios.md", SearchOption.AllDirectories))
+        string? key = null;
+        string? title = null;
+        var tests = new List<string>();
+        foreach (var line in lines.Append("#### "))
         {
-            string? key = null;
-            string? title = null;
-            var tests = new List<string>();
-            foreach (var line in File.ReadAllLines(file).Append("#### "))
+            if (line.StartsWith("#### ", StringComparison.Ordinal) || line.StartsWith("### ", StringComparison.Ordinal))
             {
-                if (line.StartsWith("#### ", StringComparison.Ordinal) || line.StartsWith("### ", StringComparison.Ordinal))
+                if (key is not null)
                 {
-                    if (key is not null)
-                    {
-                        scenarios.Add((title ?? InWords(key), tests));
-                    }
+                    scenarios.Add((title ?? InWords(key), tests));
+                }
 
-                    key = line.StartsWith("#### ", StringComparison.Ordinal) && line.Length > 5 ? line[5..].Trim() : null;
-                    title = null;
-                    tests = [];
-                }
-                else if (key is not null && line.StartsWith("Title:", StringComparison.Ordinal))
-                {
-                    title = line[6..].Trim();
-                }
-                else if (key is not null && line.StartsWith("Test:", StringComparison.Ordinal))
-                {
-                    tests.AddRange(line[5..].Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries));
-                }
+                key = line.StartsWith("#### ", StringComparison.Ordinal) && line.Length > 5 ? line[5..].Trim() : null;
+                title = null;
+                tests = [];
+            }
+            else if (key is not null && line.StartsWith("Title:", StringComparison.Ordinal))
+            {
+                title = line[6..].Trim();
+            }
+            else if (key is not null && line.StartsWith("Test:", StringComparison.Ordinal))
+            {
+                tests.AddRange(line[5..].Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries));
             }
         }
 
