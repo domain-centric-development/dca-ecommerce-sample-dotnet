@@ -6,7 +6,6 @@ using DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
 using DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
 using DcaShop.Checkout.Application.Session.GetConfirmedCheckoutSession;
-using DcaShop.Checkout.Application.Session.StartCheckout;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.ReadModel;
@@ -17,14 +16,15 @@ using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 using Microsoft.AspNetCore.Mvc;
 
-namespace DcaShop.Checkout.Adapter.Incoming.Web;
+namespace DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion;
 
 /// <summary>
-/// Driving adapter for the five-step checkout. Routes mirror the Java sample: the current session is resolved from
-/// the customer, not from the URL (<c>/checkout/buyer</c>, <c>/checkout/delivery</c>, …).
+/// Driving adapter for the steps that complete a checkout — buyer information, delivery, payment, review and
+/// confirmation. Routes mirror the Java sample: the current session is resolved from the customer, not from the URL
+/// (<c>/checkout/buyer</c>, <c>/checkout/delivery</c>, …). Starting a checkout is the session feature's page.
 /// </summary>
 [Route("checkout")]
-public sealed class CheckoutPageController : Controller
+public sealed class CheckoutStepsPageController : Controller
 {
     /// <summary>
     /// The refused "Place Order" carried to the review under a key of its own: only that refusal lets the review render
@@ -32,7 +32,6 @@ public sealed class CheckoutPageController : Controller
     /// </summary>
     private const string PlaceOrderRefusal = "PlaceOrderRefusal";
 
-    private readonly IStartCheckoutInputPort _start;
     private readonly IGetActiveCheckoutSessionInputPort _active;
     private readonly IGetConfirmedCheckoutSessionInputPort _confirmed;
     private readonly ISubmitBuyerInfoInputPort _submitBuyerInfo;
@@ -43,8 +42,7 @@ public sealed class CheckoutPageController : Controller
     private readonly IConfirmCheckoutInputPort _confirm;
     private readonly IIdentityProvider _identityProvider;
 
-    public CheckoutPageController(
-        IStartCheckoutInputPort start,
+    public CheckoutStepsPageController(
         IGetActiveCheckoutSessionInputPort active,
         IGetConfirmedCheckoutSessionInputPort confirmed,
         ISubmitBuyerInfoInputPort submitBuyerInfo,
@@ -55,7 +53,6 @@ public sealed class CheckoutPageController : Controller
         IConfirmCheckoutInputPort confirm,
         IIdentityProvider identityProvider)
     {
-        _start = start;
         _active = active;
         _confirmed = confirmed;
         _submitBuyerInfo = submitBuyerInfo;
@@ -72,25 +69,6 @@ public sealed class CheckoutPageController : Controller
     /// mid-checkout keeps the session they started.
     /// </summary>
     private string CurrentCustomerId() => _identityProvider.GetCurrentIdentity().UserId.Value;
-
-    /// <summary>POST: starting a checkout creates a session — never reachable through a link.</summary>
-    [HttpPost("start")]
-    public async Task<IActionResult> Start([FromForm] Guid cartId, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _start.ExecuteAsync(new StartCheckoutCommand(cartId, CurrentCustomerId()), cancellationToken);
-            return Redirect("/checkout/buyer");
-        }
-        catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
-        {
-            // The two base types are the checkout's own refusals. ArgumentException is still here because a form
-            // field the customer typed reaches a value object unvalidated; each field moved into request
-            // validation is one reason less to catch it.
-            TempData["Error"] = StartMessageFor(e);
-            return Redirect(CheckoutRoutes.Cart);
-        }
-    }
 
     [HttpGet("buyer")]
     public Task<IActionResult> Buyer([FromQuery(Name = CheckoutRoutes.Notice)] string? notice, CancellationToken cancellationToken) =>
@@ -241,21 +219,6 @@ public sealed class CheckoutPageController : Controller
         TempData["Error"] = "No active checkout session found";
         return Redirect(CheckoutRoutes.Cart);
     }
-
-    /// <summary>
-    /// What the customer is told when a checkout cannot start, worded from the failure's type and values — the
-    /// exception's message is for the log, never for the page.
-    /// </summary>
-    private static string StartMessageFor(Exception failure) => failure switch
-    {
-        CartNotAvailableException => "Your cart could not be found.",
-        CartNotActiveException => "This cart can no longer be checked out.",
-        EmptyCartException or EmptyCheckoutException => "Cannot check out an empty cart.",
-        ArticleNotAvailableException => "A product in your cart is no longer available.",
-        CheckoutItemsUnavailableException unavailable =>
-            $"Cannot start checkout, {unavailable.ProductIds.Count} item(s) unavailable or out of stock.",
-        _ => "The checkout could not be started. Please try again.",
-    };
 
     /// <summary>
     /// What the customer is told when a step refuses a submission, worded from the step and the failure's type and

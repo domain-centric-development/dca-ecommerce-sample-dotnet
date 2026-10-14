@@ -1,7 +1,7 @@
 using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.ReadModel;
 
-namespace DcaShop.Checkout.Adapter.Incoming.Web;
+namespace DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion;
 
 /// <summary>View model shared by all checkout pages; the markup mirrors the Java sample's checkout views.</summary>
 public sealed record CheckoutPageViewModel(

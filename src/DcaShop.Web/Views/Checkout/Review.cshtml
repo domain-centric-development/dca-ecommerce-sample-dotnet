@@ -1,4 +1,4 @@
-@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.CheckoutPageViewModel
 @{ ViewData["Title"] = "Checkout - Review"; var s = Model.Session; ViewData["WithTotals"] = true; ViewData["SummaryTitle"] = "Order Items"; }
 <div class="checkout">
 @await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 4)

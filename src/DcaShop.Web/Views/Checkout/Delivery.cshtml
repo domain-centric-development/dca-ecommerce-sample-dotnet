@@ -1,4 +1,4 @@
-@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.CheckoutPageViewModel
 @{ ViewData["Title"] = "Checkout - Delivery"; var a = Model.Session.DeliveryAddress; var selectedId = Model.Session.ShippingOption?.Id; }
 <div class="checkout">
 @await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 2)

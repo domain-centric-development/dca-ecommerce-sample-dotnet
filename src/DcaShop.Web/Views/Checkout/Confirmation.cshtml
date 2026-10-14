@@ -1,4 +1,4 @@
-@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.CheckoutPageViewModel
 @{ ViewData["Title"] = "Order Confirmed"; var s = Model.Session; }
 <div class="confirmation">
 @await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 5)

@@ -1,4 +1,4 @@
-@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.CheckoutPageViewModel
 @{ ViewData["Title"] = "Checkout - Payment"; var selectedId = Model.Session.PaymentSelection?.ProviderId.Value; ViewData["WithTotals"] = true; }
 <div class="checkout">
 @await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 3)

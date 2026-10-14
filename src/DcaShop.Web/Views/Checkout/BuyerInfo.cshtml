@@ -1,4 +1,4 @@
-@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutPageViewModel
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.CheckoutPageViewModel
 @{ ViewData["Title"] = "Checkout - Buyer Information"; var b = Model.Session.BuyerInfo; var email = b?.Email ?? (Model.IsAnonymous ? string.Empty : Model.IdentityEmail); }
 <div class="checkout">
 @await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 1)
