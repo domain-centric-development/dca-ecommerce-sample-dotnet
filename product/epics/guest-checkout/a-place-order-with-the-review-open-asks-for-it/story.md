@@ -1,7 +1,9 @@
 ---
 id: a-place-order-with-the-review-open-asks-for-it
 epic: guest-checkout
-status: approved
+status: delivered
+delivered: 2026-10-14T20:11:34Z
+delivered_by: gate
 context: checkout
 feature: steps
 title: A Place Order sent while the review is open asks for the review

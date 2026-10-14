@@ -157,3 +157,13 @@ Test: DcaShop.IntegrationTests.NoOpenCheckoutTest#TheConfirmationCanBeReopenedAf
 - When the visitor opens `/checkout/confirmation` directly
 - Then the cart page opens with the error "No confirmed order found"
 Test: DcaShop.IntegrationTests.NoOpenCheckoutTest#TheConfirmationWithoutAnOrderLeadsToTheCartWithAMessage
+
+### Rule: A "Place Order" that is refused while the review is open to the guest leads to the review
+
+#### place-order-with-the-review-open-asks-for-the-review
+- Given a guest whose review step is open to them, but who has not placed the order from it
+- When a "Place Order" is sent to the shop from another step page than the review
+- Then the guest ends on the review step at `/checkout/review`
+- And the page says "Please review your order before placing it."
+- And no confirmation is shown: the order is not placed
+Test: DcaShop.E2eTests.PlaceOrderWithTheReviewOpenE2eTest#APlaceOrderSentFromThePaymentStepEndsOnTheReviewWhichAsksToReviewTheOrder
