@@ -24,7 +24,7 @@ public sealed class PlaceOrderRefusalPageTest : IClassFixture<WebApplicationFact
         await GuestOrders.GoToTheReviewAsync(guest, (hexagon, 2));
         await GuestOrders.AnotherGuestHasBoughtAsync(_factory, Guid.Parse(hexagon["/products/".Length..]), 8);
 
-        var placed = await guest.PostAsync("/checkout/confirm", GuestOrders.Form(await guest.GetStringAsync("/checkout/review")));
+        var placed = await guest.PostAsync("/checkout/confirm", GuestOrders.Form(await guest.GetStringAsync("/checkout/review"), ("placedFrom", "review")));
 
         Assert.Equal(HttpStatusCode.Redirect, placed.StatusCode);
         Assert.Equal("/checkout/review", placed.Headers.Location!.ToString());

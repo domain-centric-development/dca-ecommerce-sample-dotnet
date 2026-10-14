@@ -138,7 +138,7 @@ public sealed class BuyerStepIdentityTest : IClassFixture<WebApplicationFactory<
     /// <summary>Presses "Place Order" on the review step; answers the confirmation page.</summary>
     private static async Task<string> PlaceTheOrderAsync(HttpClient browser)
     {
-        await Step(browser, await browser.GetStringAsync("/checkout/review"), "/checkout/confirm", "/checkout/confirmation");
+        await Step(browser, await browser.GetStringAsync("/checkout/review"), "/checkout/confirm", "/checkout/confirmation", ("placedFrom", "review"));
         return await browser.GetStringAsync("/checkout/confirmation");
     }
 

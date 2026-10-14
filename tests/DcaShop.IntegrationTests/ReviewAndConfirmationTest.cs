@@ -108,7 +108,7 @@ public sealed class ReviewAndConfirmationTest : IClassFixture<WebApplicationFact
 
     private static async Task<string> PlaceTheOrderAsync(HttpClient client)
     {
-        await Step(client, "/checkout/review", "/checkout/confirmation", url: "/checkout/confirm");
+        await Step(client, "/checkout/review", "/checkout/confirmation", "/checkout/confirm", ("placedFrom", "review"));
         return await client.GetStringAsync("/checkout/confirmation");
     }
 

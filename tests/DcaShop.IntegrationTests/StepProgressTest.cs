@@ -43,7 +43,7 @@ public sealed class StepProgressTest : IClassFixture<WebApplicationFactory<Progr
         await SubmitBuyerAndDeliveryAsync(guest);
         await Step(guest, "/checkout/payment", "/checkout/review", "/checkout/payment", ("providerId", "mock"));
 
-        await Step(guest, "/checkout/review", "/checkout/confirmation", "/checkout/confirm");
+        await Step(guest, "/checkout/review", "/checkout/confirmation", "/checkout/confirm", ("placedFrom", "review"));
 
         var progress = Progress(await guest.GetStringAsync("/checkout/confirmation"));
         Assert.Equal(new[] { "Buyer Info done", "Delivery done", "Payment done", "Confirmed done" }, progress.Select(s => $"{s.Label} {s.State}"));

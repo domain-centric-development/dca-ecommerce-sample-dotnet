@@ -14,6 +14,9 @@ namespace DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion;
 [Route("checkout")]
 public sealed class ConfirmationPageController : Controller
 {
+    /// <summary>What the review's "Place Order" form sends as <c>placedFrom</c>.</summary>
+    private const string FromTheReview = "review";
+
     private readonly IGetConfirmedCheckoutSessionInputPort _confirmed;
     private readonly IConfirmCheckoutInputPort _confirm;
     private readonly CheckoutStepPage _page;
@@ -30,10 +33,14 @@ public sealed class ConfirmationPageController : Controller
         _page = new CheckoutStepPage(this, active, session, identityProvider);
     }
 
-    /// <summary>A refused "Place Order" redirects to the review, so the browser stays at the review's own address.</summary>
+    /// <summary>
+    /// A refused "Place Order" redirects to the review, so the browser stays at the review's own address. Only the
+    /// review's form says it was sent from there; a "Place Order" sent from any other page places nothing.
+    /// </summary>
     [HttpPost("confirm")]
-    public Task<IActionResult> Confirm(CancellationToken cancellationToken) =>
+    public Task<IActionResult> Confirm([FromForm] string? placedFrom, CancellationToken cancellationToken) =>
         _page.PlacingTheOrderAsync(
+            placedFrom == FromTheReview,
             id => _confirm.ExecuteAsync(new ConfirmCheckoutCommand(id, _page.CurrentCustomerId()), cancellationToken),
             cancellationToken);
 

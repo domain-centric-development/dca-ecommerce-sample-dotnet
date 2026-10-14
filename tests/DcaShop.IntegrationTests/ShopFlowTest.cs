@@ -63,7 +63,7 @@ public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
         Assert.Contains("Express Shipping", review, StringComparison.Ordinal);
         Assert.Contains("data-test=\"review-place-order-button\"", review, StringComparison.Ordinal);
 
-        await Step(client, "/checkout/confirm", "/checkout/confirmation", tokenFrom: review);
+        await Step(client, "/checkout/confirm", "/checkout/confirmation", review, ("placedFrom", "review"));
 
         var confirmation = await client.GetStringAsync("/checkout/confirmation");
         Assert.Contains("data-test=\"confirmation-title\"", confirmation, StringComparison.Ordinal);

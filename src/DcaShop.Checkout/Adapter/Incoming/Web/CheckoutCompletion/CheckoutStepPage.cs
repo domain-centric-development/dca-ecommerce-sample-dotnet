@@ -85,17 +85,21 @@ internal sealed class CheckoutStepPage(
 
     /// <summary>
     /// Places the order and redirects to the confirmation. A refused "Place Order" redirects to the review, so the
-    /// browser stays at the review's own address.
+    /// browser stays at the review's own address. One not sent <paramref name="fromTheReview"/> places nothing: it
+    /// leads to the review, which asks for a look at the order first — or, while the review is closed, to the step
+    /// still open.
     /// </summary>
-    public Task<IActionResult> PlacingTheOrderAsync(Func<Guid, Task> placing, CancellationToken cancellationToken) =>
-        SubmitAsync(
-            CheckoutStep.Review,
-            CheckoutRoutes.PathOf(CheckoutStep.Confirmation),
-            placing,
-            // The confirmation carries no field the customer typed, so only the checkout's own refusals arrive here.
-            refusal => refusal is UseCaseException or DomainException,
-            refusal => Task.FromResult<IActionResult>(BackToTheReview(refusal)),
-            cancellationToken);
+    public Task<IActionResult> PlacingTheOrderAsync(bool fromTheReview, Func<Guid, Task> placing, CancellationToken cancellationToken) =>
+        fromTheReview
+            ? SubmitAsync(
+                CheckoutStep.Review,
+                CheckoutRoutes.PathOf(CheckoutStep.Confirmation),
+                placing,
+                // The confirmation carries no field the customer typed, so only the checkout's own refusals arrive here.
+                refusal => refusal is UseCaseException or DomainException,
+                refusal => Task.FromResult<IActionResult>(BackToTheReview(refusal)),
+                cancellationToken)
+            : ToTheReviewFirstAsync(cancellationToken);
 
     /// <summary>Back to the cart, leaving the cart page the notice that says why.</summary>
     public RedirectResult ToTheCart(CartNotice notice)
@@ -148,11 +152,33 @@ internal sealed class CheckoutStepPage(
         var access = await ActiveSessionAsync(cancellationToken) is { } current
             ? (await ForStepAsync(current, step, cancellationToken)).StepAccess
             : StepAccess.BackToCart();
-        if (access is not { Granted: false })
+        return access is { Granted: false } ? ToTheStepStillOpen(access) : null;
+    }
+
+    /// <summary>
+    /// A "Place Order" sent from another page than the review: the review, once open, asks for a look at the order
+    /// first; before that the step still open says why.
+    /// </summary>
+    private async Task<IActionResult> ToTheReviewFirstAsync(CancellationToken cancellationToken)
+    {
+        var current = await ActiveSessionAsync(cancellationToken);
+        if (current is null)
         {
-            return null;
+            return NoActiveSession();
         }
 
+        if ((await ForStepAsync(current, CheckoutStep.Review, cancellationToken)).StepAccess is { Granted: false } access)
+        {
+            return ToTheStepStillOpen(access);
+        }
+
+        page.TempData.Leave(CheckoutStep.Review, CheckoutStepNotice.ReviewFirst);
+        return page.Redirect(CheckoutRoutes.PathOf(CheckoutStep.Review));
+    }
+
+    /// <summary>To the step <paramref name="access"/> denies in favour of, which says that earlier steps come first.</summary>
+    private RedirectResult ToTheStepStillOpen(StepAccess access)
+    {
         // The cart reads no notice of the steps, so a customer sent there goes without one.
         if (access.RedirectStep is { } stillOpen)
         {

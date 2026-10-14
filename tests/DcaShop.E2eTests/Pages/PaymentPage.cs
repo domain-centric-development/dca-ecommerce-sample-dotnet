@@ -69,4 +69,32 @@ public sealed class PaymentPage : BasePage
         await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
         return CurrentPath;
     }
+
+    /// <summary>
+    /// Sends a "Place Order" to the shop from this page, with this page's form token — what a second tab or a stale
+    /// page of the same browser would send — and answers the path of the page the shop shows in the end.
+    /// </summary>
+    public async Task<string> SendPlaceOrderAsync()
+    {
+        await Assertions.Expect(Page.Locator("[data-test='payment-form']")).ToBeVisibleAsync();
+        await MarkDocumentAsync();
+        await Page.EvaluateAsync("""
+            () => {
+              const token = document.querySelector("[data-test='payment-form'] input[name='__RequestVerificationToken']").value;
+              const sent = document.createElement('form');
+              sent.method = 'post';
+              sent.action = '/checkout/confirm';
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = '__RequestVerificationToken';
+              input.value = token;
+              sent.appendChild(input);
+              document.body.appendChild(sent);
+              sent.submit();
+            }
+            """);
+        // The shop's answer replaces the marked document, wherever its redirects lead
+        await Page.WaitForFunctionAsync("() => window.__documentMark !== true && document.readyState !== 'loading'");
+        return new Uri(Page.Url).AbsolutePath;
+    }
 }

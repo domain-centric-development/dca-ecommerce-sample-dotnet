@@ -96,7 +96,7 @@ internal static class GuestOrders
     public static async Task PlaceOrderAsync(HttpClient guest, params (string ProductPath, int Quantity)[] lines)
     {
         await GoToTheReviewAsync(guest, lines);
-        var confirmed = await guest.PostAsync("/checkout/confirm", Form(await guest.GetStringAsync("/checkout/review")));
+        var confirmed = await guest.PostAsync("/checkout/confirm", Form(await guest.GetStringAsync("/checkout/review"), ("placedFrom", "review")));
         Assert.Equal(HttpStatusCode.Redirect, confirmed.StatusCode);
         Assert.Equal("/checkout/confirmation", confirmed.Headers.Location!.ToString());
     }

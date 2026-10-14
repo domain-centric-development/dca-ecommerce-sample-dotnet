@@ -93,7 +93,7 @@ public sealed class CartAfterTheOrderTest : IClassFixture<WebApplicationFactory<
             ("street", "123 Main Street"), ("city", "Springfield"), ("postalCode", "12345"), ("country", "United States"), ("shippingOptionId", "express"));
         await StepAsync(client, "/checkout/payment", "/checkout/review", ("providerId", "mock"));
         var review = await client.GetStringAsync("/checkout/review");
-        var placed = await client.PostAsync("/checkout/confirm", Form(review));
+        var placed = await client.PostAsync("/checkout/confirm", Form(review, ("placedFrom", "review")));
         Assert.Equal("/checkout/confirmation", placed.Headers.Location!.ToString());
     }
 

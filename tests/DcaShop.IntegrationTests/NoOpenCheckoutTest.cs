@@ -113,7 +113,7 @@ public sealed class NoOpenCheckoutTest : IClassFixture<WebApplicationFactory<Pro
             ("street", "Hauptstrasse 1"), ("streetLine2", string.Empty), ("city", "Berlin"), ("state", string.Empty),
             ("postalCode", "10115"), ("country", "Germany"), ("shippingOptionId", "standard"));
         await Step(client, "/checkout/payment", "/checkout/review", "/checkout/payment", ("providerId", "mock"));
-        await Step(client, "/checkout/review", "/checkout/confirmation", "/checkout/confirm");
+        await Step(client, "/checkout/review", "/checkout/confirmation", "/checkout/confirm", ("placedFrom", "review"));
     }
 
     private static async Task Step(HttpClient client, string page, string expectedNext, string url, params (string, string)[] fields)

@@ -165,7 +165,12 @@ Placing the order (`/checkout/confirm`):
 | `CheckoutValidationException` | Cannot place the order, {count} item(s) unavailable or out of stock. |
 | `CheckoutStepNotCompletedException` | Please complete the previous checkout steps first. |
 | `CheckoutStepOutOfOrderException` | Please review your order before placing it. |
+| not sent from the review, the review open (checked by the page) | Please review your order before placing it. |
 | any other refusal | Your order could not be placed. Please try again. |
+
+Only the review's own form sends `placedFrom=review`. A "Place Order" without it places nothing: with the review
+open it redirects to `/checkout/review` with the code `review-first` (`CheckoutStepNotice.ReviewFirst`), with the
+review still closed to the step still open, as every step-order refusal does.
 
 Confirmation (`/checkout/confirmation`):
 
