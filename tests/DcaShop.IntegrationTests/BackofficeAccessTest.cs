@@ -50,6 +50,21 @@ public sealed class BackofficeAccessTest : IClassFixture<WebApplicationFactory<P
         Assert.Equal("Event Publication Log", Text(page, @"<h1>([^<]*)</h1>"));
     }
 
+    [Theory]
+    [InlineData("POST", "/backoffice/settings")]
+    [InlineData("PUT", "/backoffice/settings")]
+    [InlineData("DELETE", "/backoffice/settings")]
+    [InlineData("PATCH", "/backoffice/settings")]
+    [InlineData("POST", "/backoffice/events")]
+    [InlineData("DELETE", "/backoffice/events")]
+    public async Task EveryVerbOnAnAddressBelowTheBackofficeSendsAVisitorToTheLogin(string verb, string address)
+    {
+        var response = await Browser().SendAsync(new HttpRequestMessage(new HttpMethod(verb), address));
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/backoffice/login", PathOf(response));
+    }
+
     [Fact]
     public async Task LoggingOutOpensTheLoginPageWithTheConfirmation()
     {

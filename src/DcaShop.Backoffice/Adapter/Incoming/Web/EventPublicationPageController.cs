@@ -87,10 +87,11 @@ public sealed class EventPublicationPageController : Controller
     }
 
     /// <summary>
-    /// Any other address below the backoffice: not found — but only to the operator. Without this route an unknown
-    /// address would never reach the class's <see cref="AuthorizeAttribute"/> and answer a visitor unguarded.
+    /// Any other address below the backoffice, with any verb: not found — but only to the operator. Without this route
+    /// an unknown address, or a known one with a verb it does not answer, would never reach the class's
+    /// <see cref="AuthorizeAttribute"/> and answer a visitor unguarded. The prefix is guarded, not the handler.
     /// </summary>
-    [HttpGet("{**address}")]
+    [Route("{**address}")]
     public IActionResult ShowUnknownAddress() => NotFound();
 
     /// <summary>
