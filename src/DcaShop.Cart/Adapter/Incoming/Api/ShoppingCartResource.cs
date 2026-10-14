@@ -118,13 +118,9 @@ public sealed class ShoppingCartResource : ControllerBase
             return NotFound();
         }
 
-        // A product id that does not even parse is answered here, at the edge, as the product nobody carries.
         if (!ProductId.TryOf(request.ProductId, out var productId))
         {
-            return Problem(
-                statusCode: StatusCodes.Status404NotFound,
-                title: "Article not available",
-                detail: $"There is no article for product {request.ProductId}.");
+            return MalformedProductId();
         }
 
         // Each refusal travels as its own type; CartApiExceptionHandler decides what the caller is told.
@@ -135,19 +131,32 @@ public sealed class ShoppingCartResource : ControllerBase
     }
 
     /// <summary>Removes the item holding the product named in the path, whatever its quantity.</summary>
-    [HttpDelete("{cartId:guid}/items/{productId:guid}")]
+    [HttpDelete("{cartId:guid}/items/{productId}")]
     public async Task<ActionResult<ShoppingCartDto>> RemoveItemFromCart(
-        Guid cartId, Guid productId, CancellationToken cancellationToken)
+        Guid cartId, string productId, CancellationToken cancellationToken)
     {
         if (await ReadOwnAsync(cartId, cancellationToken) is null)
         {
             return NotFound();
         }
 
-        await _removeItemFromCart.ExecuteAsync(new RemoveItemFromCartCommand(cartId, CurrentCustomerId, productId), cancellationToken);
+        if (!ProductId.TryOf(productId, out var product))
+        {
+            return MalformedProductId();
+        }
+
+        await _removeItemFromCart.ExecuteAsync(
+            new RemoveItemFromCartCommand(cartId, CurrentCustomerId, product.Value), cancellationToken);
 
         return Ok(_converter.ToDto((await ReadAsync(cartId, cancellationToken))!));
     }
+
+    /// <summary>
+    /// A product id that does not even parse is a malformed call, answered here at the edge: the use case never sees
+    /// the caller's text, and the answer carries none of it back.
+    /// </summary>
+    private ObjectResult MalformedProductId() =>
+        Problem(statusCode: StatusCodes.Status400BadRequest, title: "Unacceptable value");
 
     private string CurrentCustomerId => _identityProvider.GetCurrentIdentity().UserId.Value;
 

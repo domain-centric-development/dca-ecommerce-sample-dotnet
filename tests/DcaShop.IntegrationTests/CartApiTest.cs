@@ -174,13 +174,13 @@ public sealed class CartApiTest : IDisposable
         var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
         var cartId = opened.GetProperty("cartId").GetString();
 
-        var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId = "no-such-product", quantity = 1 });
+        var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId = "00000000-0000-4000-8000-000000000001", quantity = 1 });
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("Article not available", problem.GetProperty("title").GetString());
-        Assert.Equal("There is no article for product no-such-product.", problem.GetProperty("detail").GetString());
+        Assert.Equal("There is no article for product 00000000-0000-4000-8000-000000000001.", problem.GetProperty("detail").GetString());
     }
 
     [Fact]
