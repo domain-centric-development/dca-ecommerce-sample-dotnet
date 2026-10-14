@@ -40,7 +40,7 @@
 <span class="event-log__event-type" data-test="event-type">@item.ShortEventType</span>
 @if (item.Completed)
 {
-<span class="event-log__badge event-log__badge--completed" data-test="event-status">Completed</span>
+<span class="event-log__badge event-log__badge--completed" data-test="event-status">@item.StatusLabel</span>
 }
 else
 {
