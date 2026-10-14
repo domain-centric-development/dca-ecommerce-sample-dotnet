@@ -43,6 +43,13 @@ just stub slow                       # only the stub — another answer while th
 Without `just`: `PAYMENT_STUB=refuse docker compose --profile provider-stub up -d payment-provider`, then
 `Checkout__PaymentProvider__BaseUrl=http://localhost:8089 dotnet run --project src/DcaShop.Web`.
 
+The shop runs as several instances behind one load balancer, without sticky sessions, once they share a key ring:
+the cookies it seals — the notice a redirect leaves for the next page (TempData), the antiforgery token, the
+backoffice session — open on every instance that holds the same keys. Point `DataProtection:KeysDirectory`
+(environment: `DataProtection__KeysDirectory`) at a directory every instance reads, a mounted volume for instance;
+`DataProtection:ApplicationName` (default `dca-shop`) must be the same on all of them. Left empty, as in development,
+the keys go to `dca-shop-dotnet/data-protection-keys` in the system's temp directory.
+
 > Architecture tests must run on **Debug** builds — ArchUnitNET drops the async state machines of optimized
 > builds and would miss dependencies inside `async` method bodies. `dotnet test` defaults to Debug.
 

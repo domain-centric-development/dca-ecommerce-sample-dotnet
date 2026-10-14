@@ -2,9 +2,11 @@ using DcaShop.Account.Adapter.Incoming.Security;
 using DcaShop.Infrastructure;
 using DcaShop.Web;
 
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +51,29 @@ builder.Services.AddAntiforgery(options =>
     // The framing decision is made once, by the middleware below, and for every response rather than only for the
     // pages that happen to render a token -- which is all ASP.NET Core's own header would cover.
     options.SuppressXFrameOptionsHeader = true;
+});
+
+// The shop runs as several instances behind a load balancer without sticky sessions, so every cookie an instance seals —
+// the notice for the next page (TempData), the antiforgery token, the backoffice session — must open on every other
+// one: one application name and one key ring, kept in a directory every instance reads (DataProtection:KeysDirectory;
+// a mounted volume in a deployment). Without it each process would generate keys of its own.
+var keysDirectory = builder.Configuration[$"{DataProtectionSection}:KeysDirectory"] is { Length: > 0 } configured
+    ? configured
+    : Path.Combine(Path.GetTempPath(), "dca-shop-dotnet", "data-protection-keys");
+builder.Services
+    .AddDataProtection()
+    .SetApplicationName(builder.Configuration[$"{DataProtectionSection}:ApplicationName"] ?? "dca-shop")
+    .PersistKeysToFileSystem(new DirectoryInfo(keysDirectory));
+
+// The notice a redirect leaves for the next page lives in TempData, whose default provider is a cookie sealed by Data
+// Protection: it holds the notice's code and a number, never the sentence. Its cookie follows the identity cookie's
+// policy, like the antiforgery cookie, so a notice reaches the page inside a foreign frame as well; it is kept a few
+// minutes at most -- a notice its page never read does not wait for a later visit.
+builder.Services.Configure<CookieTempDataProviderOptions>(options =>
+{
+    options.Cookie.SameSite = crossSiteCookies ? SameSiteMode.None : SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = secureCookies ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.None;
+    options.Cookie.Expiration = TimeSpan.FromMinutes(3);
 });
 
 var app = builder.Build();
@@ -115,4 +140,6 @@ app.Run();
 /// <summary>Entry point marker for <c>WebApplicationFactory</c>.</summary>
 public partial class Program
 {
+    /// <summary>The configuration section of the shared key ring: <c>ApplicationName</c> and <c>KeysDirectory</c>.</summary>
+    private const string DataProtectionSection = "DataProtection";
 }
