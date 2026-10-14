@@ -137,7 +137,7 @@ Buyer, delivery and payment step:
 
 A step-order refusal shows its sentence only while step access still grants the submitted step; otherwise the
 page redirects to the step still open — on every step, placing the order included — with the code
-`?notice=earlier-steps-first` in the address (`CheckoutRoutes.Notice`, `CheckoutNotice.EarlierStepsFirst`). The
+`?notice=earlier-steps-first` in the address (`CheckoutRoutes.Notice`, `CheckoutStepNotice.EarlierStepsFirst`). The
 buyer, delivery and payment pages turn that code into "Please complete the previous checkout steps first." once
 step access granted them, and show nothing for any other code; the address never carries the sentence.
 

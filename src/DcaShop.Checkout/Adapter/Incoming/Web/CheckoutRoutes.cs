@@ -7,7 +7,7 @@ internal static class CheckoutRoutes
 {
     public const string Cart = "/cart";
 
-    /// <summary>The query parameter that carries a <see cref="CheckoutNotice"/>'s code to the page a redirect leads to.</summary>
+    /// <summary>The query parameter that carries a <see cref="CheckoutStepNotice"/>'s code to the page a redirect leads to.</summary>
     public const string Notice = "notice";
 
     public static string PathOf(CheckoutStep step) => step switch
@@ -28,6 +28,6 @@ internal static class CheckoutRoutes
     /// Where a denied <see cref="StepAccess"/> sends the customer, a step carrying the notice it shows; the cart reads
     /// no notice, so its path stays plain.
     /// </summary>
-    public static string PathTo(StepAccess access, CheckoutNotice notice) =>
+    public static string PathTo(StepAccess access, CheckoutStepNotice notice) =>
         access.RedirectStep is { } step ? $"{PathOf(step)}?{Notice}={notice.Code()}" : Cart;
 }

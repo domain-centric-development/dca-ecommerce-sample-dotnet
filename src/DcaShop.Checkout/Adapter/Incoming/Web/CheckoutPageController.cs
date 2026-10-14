@@ -94,7 +94,7 @@ public sealed class CheckoutPageController : Controller
 
     [HttpGet("buyer")]
     public Task<IActionResult> Buyer([FromQuery(Name = CheckoutRoutes.Notice)] string? notice, CancellationToken cancellationToken) =>
-        Page(CheckoutStep.BuyerInfo, cancellationToken, notice: CheckoutNotices.FromCode(notice));
+        Page(CheckoutStep.BuyerInfo, cancellationToken, notice: CheckoutStepNotices.FromCode(notice));
 
     [HttpPost("buyer")]
     public Task<IActionResult> SubmitBuyer([FromForm] string email, [FromForm] string firstName, [FromForm] string lastName, [FromForm] string phone, CancellationToken cancellationToken) =>
@@ -102,7 +102,7 @@ public sealed class CheckoutPageController : Controller
 
     [HttpGet("delivery")]
     public Task<IActionResult> Delivery([FromQuery(Name = CheckoutRoutes.Notice)] string? notice, CancellationToken cancellationToken) =>
-        Page(CheckoutStep.Delivery, cancellationToken, notice: CheckoutNotices.FromCode(notice));
+        Page(CheckoutStep.Delivery, cancellationToken, notice: CheckoutStepNotices.FromCode(notice));
 
     [HttpPost("delivery")]
     public Task<IActionResult> SubmitDelivery([FromForm] string street, [FromForm] string? streetLine2, [FromForm] string city, [FromForm] string postalCode, [FromForm] string country, [FromForm] string? state, [FromForm] string shippingOptionId, CancellationToken cancellationToken) =>
@@ -110,7 +110,7 @@ public sealed class CheckoutPageController : Controller
 
     [HttpGet("payment")]
     public Task<IActionResult> Payment([FromQuery(Name = CheckoutRoutes.Notice)] string? notice, CancellationToken cancellationToken) =>
-        Page(CheckoutStep.Payment, cancellationToken, notice: CheckoutNotices.FromCode(notice));
+        Page(CheckoutStep.Payment, cancellationToken, notice: CheckoutStepNotices.FromCode(notice));
 
     [HttpPost("payment")]
     public Task<IActionResult> SubmitPayment([FromForm] string providerId, CancellationToken cancellationToken) =>
@@ -171,7 +171,7 @@ public sealed class CheckoutPageController : Controller
     /// A step's page; the <paramref name="notice"/> a redirect carried is shown only once the step guard granted the
     /// page.
     /// </summary>
-    private async Task<IActionResult> Page(CheckoutStep step, CancellationToken cancellationToken, string? error = null, CheckoutNotice? notice = null)
+    private async Task<IActionResult> Page(CheckoutStep step, CancellationToken cancellationToken, string? error = null, CheckoutStepNotice? notice = null)
     {
         // A step re-rendered with an error — a rejected submit, or a refused "Place Order" carried to the review — keeps
         // the page; otherwise the domain decides who may see it
@@ -221,7 +221,7 @@ public sealed class CheckoutPageController : Controller
     private async Task<RedirectResult?> ToTheStepStillOpenAsync(CheckoutStep step, CancellationToken cancellationToken)
     {
         var access = (await _active.ExecuteAsync(new GetActiveCheckoutSessionQuery(CurrentCustomerId(), step), cancellationToken)).StepAccess;
-        return access is { Granted: false } ? Redirect(CheckoutRoutes.PathTo(access, CheckoutNotice.EarlierStepsFirst)) : null;
+        return access is { Granted: false } ? Redirect(CheckoutRoutes.PathTo(access, CheckoutStepNotice.EarlierStepsFirst)) : null;
     }
 
     /// <summary>Back to the cart, telling the customer there is no checkout to continue.</summary>
@@ -264,10 +264,10 @@ public sealed class CheckoutPageController : Controller
         (CheckoutStep.Payment, NothingToPayException) => "There is nothing to pay for this order.",
         (CheckoutStep.Review, CheckoutValidationException invalid) =>
             $"Cannot place the order, {invalid.Validation.Errors.Count} item(s) unavailable or out of stock.",
-        (CheckoutStep.Review, CheckoutStepNotCompletedException) => CheckoutNotice.EarlierStepsFirst.Sentence(),
+        (CheckoutStep.Review, CheckoutStepNotCompletedException) => CheckoutStepNotice.EarlierStepsFirst.Sentence(),
         (CheckoutStep.Review, CheckoutStepOutOfOrderException) => "Please review your order before placing it.",
         (CheckoutStep.Review, _) => "Your order could not be placed. Please try again.",
-        (_, CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException) => CheckoutNotice.EarlierStepsFirst.Sentence(),
+        (_, CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException) => CheckoutStepNotice.EarlierStepsFirst.Sentence(),
         (CheckoutStep.BuyerInfo, ArgumentException) => "Please check the details you entered.",
         (CheckoutStep.Delivery, ArgumentException) => "Please check the delivery address you entered.",
         (CheckoutStep.Payment, ArgumentException) => "Please choose a way to pay.",
