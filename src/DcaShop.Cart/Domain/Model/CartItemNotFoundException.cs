@@ -12,20 +12,24 @@ namespace DcaShop.Cart.Domain.Model;
 /// </remarks>
 public sealed class CartItemNotFoundException : DomainException
 {
-    private CartItemNotFoundException(string message, string reference)
+    private CartItemNotFoundException(string message, CartItemId? itemId, ProductId? productId)
         : base(message)
     {
-        Reference = reference;
+        ItemId = itemId;
+        ProductId = productId;
     }
 
-    /// <summary>The identity the caller used — a position identity or a product identity.</summary>
-    public string Reference { get; }
+    /// <summary>The position identity the caller used, when the position was named by it.</summary>
+    public CartItemId? ItemId { get; }
+
+    /// <summary>The product the caller used, when the position was named by the product it holds.</summary>
+    public ProductId? ProductId { get; }
 
     /// <summary>The position was named by its own identity.</summary>
     public static CartItemNotFoundException ForItem(CartItemId itemId) =>
-        new($"Cart item not found: {itemId.Value}", itemId.Value.ToString());
+        new($"Cart item not found: {itemId.Value}", itemId, null);
 
     /// <summary>The position was named by the product it holds.</summary>
     public static CartItemNotFoundException ForProduct(ProductId productId) =>
-        new($"Product not found in cart: {productId.Value}", productId.Value.ToString());
+        new($"Product not found in cart: {productId.Value}", null, productId);
 }

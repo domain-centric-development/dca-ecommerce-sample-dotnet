@@ -118,9 +118,18 @@ public sealed class ShoppingCartResource : ControllerBase
             return NotFound();
         }
 
+        // A product id that does not even parse is answered here, at the edge, as the product nobody carries.
+        if (!ProductId.TryOf(request.ProductId, out var productId))
+        {
+            return Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Article not available",
+                detail: $"There is no article for product {request.ProductId}.");
+        }
+
         // Each refusal travels as its own type; CartApiExceptionHandler decides what the caller is told.
         await _addItemToCart.ExecuteAsync(
-            new AddItemToCartCommand(cartId, CurrentCustomerId, request.ProductId, request.Quantity), cancellationToken);
+            new AddItemToCartCommand(cartId, CurrentCustomerId, productId.Value, request.Quantity), cancellationToken);
 
         return Ok(_converter.ToDto((await ReadAsync(cartId, cancellationToken))!));
     }

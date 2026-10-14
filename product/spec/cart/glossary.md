@@ -333,7 +333,8 @@ the use case or by the store that sees every cart of a customer.
 
 ### CartItemNotFound
 
-**Definition:** A position the caller names — by position identity or by product — is not in this cart.
+**Definition:** A position the caller names — by position identity or by product — is not in this cart. It carries
+the identity the caller used: the `CartItemId` or the `ProductId`.
 
 **Type:** Domain failure (`DomainException`) · **Related terms:** `CartItem`, `ShoppingCart.RemoveItem`
 
@@ -360,9 +361,9 @@ contract: only the store sees every cart at once.
 ### ArticleNotAvailable / InsufficientArticleStock
 
 **Definition:** The article facts a position needs are missing for a product, or do not cover the quantity asked
-for. Read through the cart's own port, so a statement about the request rather than about the cart. A product
-reference that is not even shaped like a product id names no article either: ArticleNotAvailable carries the
-reference as the caller named it (`ProductReference`), not a product id.
+for. Read through the cart's own port, so a statement about the request rather than about the cart. Both carry
+the `ProductId`, never the caller's text: a reference that does not even parse into a product id is answered by
+the adapter that received it (`ProductId.TryOf`) and never reaches the use case.
 
 **Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IArticleDataPort`, `CartArticle`
 

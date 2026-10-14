@@ -36,7 +36,7 @@ public sealed class OutdatedCartStartTest : IClassFixture<WebApplicationFactory<
         Assert.Equal(8, hexagon.Article.AvailableStock);
         var cart = await scope.ServiceProvider.GetRequiredService<IGetOrCreateActiveCartInputPort>().ExecuteAsync(new GetOrCreateActiveCartCommand(guest));
         await scope.ServiceProvider.GetRequiredService<IAddItemToCartInputPort>()
-            .ExecuteAsync(new AddItemToCartCommand(cart.CartId, guest, hexagon.ProductId.Value.ToString(), 5));
+            .ExecuteAsync(new AddItemToCartCommand(cart.CartId, guest, hexagon.ProductId.Value, 5));
         await scope.ServiceProvider.GetRequiredService<IReduceStockInputPort>()
             .ExecuteAsync(new ReduceStockCommand([new ReduceStockCommand.Line(hexagon.ProductId.Value, 5)], Guid.NewGuid()));
         var start = scope.ServiceProvider.GetRequiredService<IStartCheckoutInputPort>();

@@ -102,7 +102,7 @@ public sealed class GuestCartTest : IClassFixture<WebApplicationFactory<Program>
         var products = await scope.ServiceProvider.GetRequiredService<IGetAllProductsInputPort>().ExecuteAsync(new GetAllProductsQuery());
         var product = products.Products.Single(p => p.Name.Value == productName);
         await scope.ServiceProvider.GetRequiredService<IAddItemToCartInputPort>()
-            .ExecuteAsync(new AddItemToCartCommand(cart.CartId, customer, product.ProductId.Value.ToString(), 1));
+            .ExecuteAsync(new AddItemToCartCommand(cart.CartId, customer, product.ProductId.Value, 1));
     }
 
     /// <summary>The lines of the customer's active cart as <c>name xquantity</c>, in the order the cart holds them.</summary>

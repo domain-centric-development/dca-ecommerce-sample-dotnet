@@ -47,7 +47,7 @@ public sealed class CartPageController : Controller
         var cartId = await ActiveCartIdAsync(cancellationToken);
         try
         {
-            await _addItemToCart.ExecuteAsync(new AddItemToCartCommand(cartId, CurrentCustomerId, productId.ToString(), quantity), cancellationToken);
+            await _addItemToCart.ExecuteAsync(new AddItemToCartCommand(cartId, CurrentCustomerId, productId, quantity), cancellationToken);
             TempData["Message"] = "Product added to cart!";
         }
         catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
