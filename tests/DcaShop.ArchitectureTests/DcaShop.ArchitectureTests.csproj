@@ -2,6 +2,9 @@
   <ItemGroup>
     <ProjectReference Include="../../src/DcaShop.Infrastructure/DcaShop.Infrastructure.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="dca-archunit.properties" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
   <ItemGroup Condition="'$(UseLocalDcaDotnet)' == 'true'">
     <ProjectReference Include="$(DcaDotnetDir)DomainCentric.ArchRules.Xunit/DomainCentric.ArchRules.Xunit.csproj" />
   </ItemGroup>

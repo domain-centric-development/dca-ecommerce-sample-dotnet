@@ -11,7 +11,8 @@ namespace DcaShop.ArchitectureTests;
 /// </summary>
 /// <remarks>
 /// The reference implementation runs the catalog unabridged — every rule at
-/// <see cref="DcaSeverity.Error"/>. A project adopting DCA on an existing code base rarely can, and
+/// <see cref="DcaSeverity.Error"/>, the experimental rules included (<c>dca.rules.experimental = true</c>
+/// in <c>dca-archunit.properties</c>); the file turns off only DCA-HEX-015, which the libraries retire. A project adopting DCA on an existing code base rarely can, and
 /// does not have to: <see cref="DcaRuleSelection"/> narrows the run, lowers a rule to a warning, or
 /// tolerates a documented exception. Configure it in <c>dca-archunit.properties</c> next to the test
 /// assembly, in <c>AdditionalSelection</c>, or both — the file is the base, the property is applied
