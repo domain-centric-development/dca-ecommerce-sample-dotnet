@@ -182,7 +182,7 @@ public sealed class CheckoutStepsPageController : Controller
             session = result.Session!;
         }
 
-        return View($"~/Views/Checkout/{step}.cshtml", await ViewModelAsync(session, error ?? notice?.Sentence(), cancellationToken));
+        return View(ViewOf(step), await ViewModelAsync(session, error ?? notice?.Sentence(), cancellationToken));
     }
 
     private async Task<IActionResult> Submit(CheckoutStep step, string next, Func<Guid, Task> action, CancellationToken cancellationToken)
@@ -265,6 +265,17 @@ public sealed class CheckoutStepsPageController : Controller
         (CheckoutStep.Delivery, _) => "Your delivery details could not be saved. Please try again.",
         (CheckoutStep.Payment, _) => "Your payment selection could not be saved. Please try again.",
         _ => "The checkout could not continue. Please try again.",
+    };
+
+    /// <summary>The view of a step's page, written out per step.</summary>
+    private static string ViewOf(CheckoutStep step) => step switch
+    {
+        CheckoutStep.BuyerInfo => "~/Views/Checkout/BuyerInfo.cshtml",
+        CheckoutStep.Delivery => "~/Views/Checkout/Delivery.cshtml",
+        CheckoutStep.Payment => "~/Views/Checkout/Payment.cshtml",
+        CheckoutStep.Review => "~/Views/Checkout/Review.cshtml",
+        CheckoutStep.Confirmation => "~/Views/Checkout/Confirmation.cshtml",
+        _ => throw new ArgumentOutOfRangeException(nameof(step), step, null),
     };
 
     private async Task<CheckoutCartSnapshot?> ActiveSessionAsync(CancellationToken cancellationToken)

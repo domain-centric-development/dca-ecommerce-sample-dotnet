@@ -97,7 +97,7 @@ public sealed class CartPageController : Controller
     private static CartPageViewModel ToViewModel(EnrichedCart cart, CartTotals totals) =>
         new(
             cart.CartId.Value,
-            cart.Status.ToString(),
+            StatusOf(cart.Status),
             cart.Items.Select(ToLine).ToList(),
             cart.ItemCount,
             cart.TotalQuantity,
@@ -105,6 +105,15 @@ public sealed class CartPageController : Controller
             totals.ContainedTax.ToString(),
             cart.HasAnyPriceChanges,
             cart.IsValidForCheckout);
+
+    /// <summary>The status as the cart view names it, written out per value.</summary>
+    private static string StatusOf(CartStatus status) => status switch
+    {
+        CartStatus.Active => "Active",
+        CartStatus.Completed => "Completed",
+        CartStatus.Abandoned => "Abandoned",
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+    };
 
     private static CartPageViewModel.Line ToLine(EnrichedCartItem i) =>
         new(

@@ -14,12 +14,12 @@ public sealed record CartContentsChangedEvent(
     Guid CartId,
     CartContentsChangedEvent.ChangeType Change) : IIntegrationEvent
 {
-    /// <summary>What happened to the cart's contents.</summary>
+    /// <summary>What happened to the cart's contents. Published by number, so each value is written out.</summary>
     public enum ChangeType
     {
-        ItemAdded,
-        ItemRemoved,
-        QuantityChanged,
-        CartCleared,
+        ItemAdded = 0,
+        ItemRemoved = 1,
+        QuantityChanged = 2,
+        CartCleared = 3,
     }
 }

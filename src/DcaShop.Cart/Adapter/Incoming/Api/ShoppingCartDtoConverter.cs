@@ -39,8 +39,17 @@ public sealed class ShoppingCartDtoConverter
                 .ToList());
     }
 
-    /// <summary>Every answer spells a cart's status the same way: upper-case, as the reference API does.</summary>
-    private static string Spell(CartStatus status) => status.ToString().ToUpperInvariant();
+    /// <summary>
+    /// Every answer spells a cart's status the same way, upper-case as the reference API does. Each value's spelling is
+    /// written out, so renaming a member never changes what a client reads.
+    /// </summary>
+    private static string Spell(CartStatus status) => status switch
+    {
+        CartStatus.Active => "ACTIVE",
+        CartStatus.Completed => "COMPLETED",
+        CartStatus.Abandoned => "ABANDONED",
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+    };
 
     private static CartItemDto ToItemDto(EnrichedCartItem item) =>
         new(

@@ -50,16 +50,29 @@ public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
             Payload(publication, delivery),
             delivery.ConsumerId,
             publication.RegisteredOn,
-            delivery.CompletedOn, delivery.Status.ToString());
+            delivery.CompletedOn, Spell(delivery.Status));
 
     private static string Payload(IntegrationEventPublication publication, ConsumerDelivery delivery)
     {
-        var heading = $"Status: {delivery.Status.ToString().ToUpperInvariant()}, attempts: {Tries(delivery)}";
+        var heading = $"Status: {Spell(delivery.Status).ToUpperInvariant()}, attempts: {Tries(delivery)}";
         var body = $"{heading}{Environment.NewLine}{Serialize(publication.Event)}";
         return delivery.LastError is { } error
             ? $"{body}{Environment.NewLine}{Environment.NewLine}Last error after {delivery.Attempts} attempt(s): {error}"
             : body;
     }
+
+    /// <summary>
+    /// A delivery's status as the event log publishes it, written out per value — renaming a member never changes what
+    /// the log shows.
+    /// </summary>
+    private static string Spell(PublicationStatus status) => status switch
+    {
+        PublicationStatus.Staged => "Staged",
+        PublicationStatus.Pending => "Pending",
+        PublicationStatus.Completed => "Completed",
+        PublicationStatus.Failed => "Failed",
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+    };
 
     // The outbox counts failed deliveries; the operator reads every try, the successful one included.
     private static int Tries(ConsumerDelivery delivery) =>
