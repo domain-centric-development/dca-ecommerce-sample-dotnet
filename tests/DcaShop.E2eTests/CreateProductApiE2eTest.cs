@@ -33,6 +33,21 @@ public sealed class CreateProductApiE2eTest : IDisposable
         Assert.Equal("Desk & Office", body.GetProperty("category").GetString());
     }
 
+    [E2eFact(DisplayName = "The answer carries the rounded price")]
+    public async Task TheAnswerCarriesThePriceRoundedHalfUpToCents()
+    {
+        var staff = Bearer(await StaffTokenAsync("rounding-mug-maker@example.com"));
+
+        var response = await staff.PostAsync("/api/products", new StringContent(
+            """{"sku":"ROUND-001","name":"Rounding Mug","description":"","imageUrl":"","price":14.995,"category":"Desk & Office","stock":5}""",
+            System.Text.Encoding.UTF8,
+            "application/json"));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("15.00", body.GetProperty("price").GetRawText());
+    }
+
     [E2eFact(DisplayName = "An overlong image url is refused")]
     public async Task AnImageUrlLongerThan2000CharactersIsRefusedAsAnUnacceptableValue()
     {
