@@ -6,13 +6,13 @@ namespace DcaShop.E2eTests;
 /// Checkout snapshot policy through the browser: a checkout session is a copy of the submitted cart positions,
 /// cart edits leave it untouched, a second checkout supersedes the open session, and a completed checkout
 /// reconciles only the purchased snapshot — later additions survive. Same scenario, page objects and
-/// <c>data-test</c> selectors as the Java sample's <c>CheckoutSnapshotE2ETest</c>. The completed checkout buys
-/// products of the test's own, so the seeded stock stays as other tests count it.
+/// <c>data-test</c> selectors as the Java sample's <c>CheckoutSnapshotE2ETest</c>.
 /// </summary>
 public sealed class CheckoutSnapshotE2eTest : BaseE2eTest
 {
     private const int ProductA = 0;
     private const int ProductB = 1;
+    private const int ProductC = 2;
 
     public CheckoutSnapshotE2eTest(BrowserFixture browser) : base(browser)
     {
@@ -50,16 +50,13 @@ public sealed class CheckoutSnapshotE2eTest : BaseE2eTest
     [E2eFact(DisplayName = "Completing a checkout removes only the purchased snapshot from the cart")]
     public async Task CompletionReconcilesOnlyThePurchasedSnapshot()
     {
-        var productA = await Staff.CreateProductAsync("Snapshot Mug A", 14.99m, 10);
-        var productB = await Staff.CreateProductAsync("Snapshot Mug B", 14.99m, 10);
-        var productC = await Staff.CreateProductAsync("Snapshot Mug C", 14.99m, 10);
-        await AddToCartAsync(productA, 2);
-        await AddToCartAsync(productB, 1);
+        await AddToCartAsync(ProductA, 2);
+        await AddToCartAsync(ProductB, 1);
         var buyer = await (await CartPage.NavigateToAsync(Page)).ProceedToCheckoutAsync();
         Assert.Equal(2, (await buyer.SummaryItemsAsync()).Count);
 
         // A later addition that is not part of the snapshot
-        await AddToCartAsync(productC, 1);
+        await AddToCartAsync(ProductC, 1);
         var before = await (await CartPage.NavigateToAsync(Page)).LineItemsAsync();
         Assert.Equal(3, before.Count);
         var lineC = before[2];
@@ -78,7 +75,7 @@ public sealed class CheckoutSnapshotE2eTest : BaseE2eTest
         Assert.Equal(new[] { lineC }, remaining);
 
         // The cart stays editable after the purchase
-        await AddToCartAsync(productB, 1);
+        await AddToCartAsync(ProductB, 1);
         Assert.Equal(2, await (await CartPage.NavigateToAsync(Page)).ItemCountAsync());
     }
 
@@ -87,14 +84,6 @@ public sealed class CheckoutSnapshotE2eTest : BaseE2eTest
         for (var i = 0; i < times; i++)
         {
             await (await (await ProductCatalogPage.NavigateToAsync(Page)).ViewProductAsync(productIndex)).AddToCartAsync();
-        }
-    }
-
-    private async Task AddToCartAsync(OwnProduct product, int times)
-    {
-        for (var i = 0; i < times; i++)
-        {
-            await (await ProductDetailPage.NavigateToAsync(Page, product.Path)).AddToCartAsync();
         }
     }
 
