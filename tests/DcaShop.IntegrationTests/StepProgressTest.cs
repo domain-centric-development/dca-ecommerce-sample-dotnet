@@ -80,7 +80,7 @@ public sealed class StepProgressTest : IClassFixture<WebApplicationFactory<Progr
 
         var sent = await guest.PostAsync("/checkout/delivery", Form(await guest.GetStringAsync("/checkout/buyer"), DeliveryFields));
 
-        Assert.Equal("/checkout/buyer", sent.Headers.Location!.ToString());
+        Assert.Equal("/checkout/buyer", sent.Headers.Location!.OriginalString.Split('?')[0]);
         var review = await guest.GetAsync("/checkout/review");
         Assert.Equal("/checkout/buyer", review.Headers.Location!.ToString());
     }

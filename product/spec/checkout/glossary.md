@@ -391,7 +391,7 @@ It decides on the snapshot alone, so a read does not load the session aggregate.
 use case invokes it when a step is requested and delivers the `StepAccess` in its result; the web
 adapter (`CheckoutRoutes`) maps the decision to a redirect path. A step's form refused as sent too early
 (`CheckoutStepNotCompletedException`, `CheckoutStepOutOfOrderException`) asks step access for that step too, and a
-denied access sends the customer to the step still open.
+denied access sends the customer to the step still open, which says that the earlier steps come first.
 
 ### CheckoutArticlePriceResolver
 

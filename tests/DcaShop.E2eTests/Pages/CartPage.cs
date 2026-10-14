@@ -61,12 +61,7 @@ public sealed class CartPage : BasePage
     public async Task<string> SuccessMessageAsync() => (await Page.Locator($"[data-test='{SuccessMessage}']").InnerTextAsync()).Trim();
 
     /// <summary>The error message the page shows, waited for until it is visible.</summary>
-    public async Task<string> ErrorMessageAsync()
-    {
-        var error = Page.Locator($"[data-test='{ErrorMessage}']");
-        await Assertions.Expect(error).ToBeVisibleAsync();
-        return (await error.InnerTextAsync()).Trim();
-    }
+    public Task<string> ErrorMessageAsync() => VisibleTextAsync(ErrorMessage);
 
     public Task<bool> HasItemsAsync() => ExistsAsync(CartItem);
 

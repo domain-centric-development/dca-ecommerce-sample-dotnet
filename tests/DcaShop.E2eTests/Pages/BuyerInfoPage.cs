@@ -66,6 +66,9 @@ public sealed class BuyerInfoPage : BasePage
         || await PageContainsAsync("error")
         || await HasHtml5ValidationErrorsAsync();
 
+    /// <summary>The error the buyer step shows, as written.</summary>
+    public Task<string> ErrorMessageAsync() => VisibleTextAsync(ErrorMessage);
+
     private async Task<bool> HasHtml5ValidationErrorsAsync() =>
         await Page.EvaluateAsync<bool>("() => { const form = document.querySelector('[data-test=\"buyer-form\"]'); return form != null && !form.checkValidity(); }");
 
@@ -136,7 +139,8 @@ public sealed class BuyerInfoPage : BasePage
 
     /// <summary>
     /// Sends a delivery form to the shop from this page, with this page's form token — what a second tab or a stale
-    /// page of the same browser would send — and answers the path of the page the shop shows in the end.
+    /// page of the same browser would send — and answers the path of the page the shop shows in the end, without the
+    /// query the shop's redirect may carry along.
     /// </summary>
     public async Task<string> SendDeliveryFormAsync(string street, string city, string postalCode, string country, string shippingOptionId)
     {
@@ -172,7 +176,7 @@ public sealed class BuyerInfoPage : BasePage
             """, fields);
         // The shop's answer replaces the marked document, wherever its redirects lead
         await Page.WaitForFunctionAsync("() => window.__documentMark !== true && document.readyState !== 'loading'");
-        return CurrentPath;
+        return new Uri(Page.Url).AbsolutePath;
     }
 
     /// <summary>The names of the form's fields the browser's own checks refuse, in form order.</summary>

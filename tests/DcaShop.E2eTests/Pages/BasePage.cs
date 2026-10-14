@@ -30,6 +30,14 @@ public abstract class BasePage
 
     protected Task SelectFirstRadioAsync(string dataTest) => Page.Locator($"[data-test='{dataTest}']").First.CheckAsync();
 
+    /// <summary>The text of the element, waited for until it is visible, as the browser renders it.</summary>
+    protected async Task<string> VisibleTextAsync(string dataTest)
+    {
+        var element = Page.Locator($"[data-test='{dataTest}']");
+        await Assertions.Expect(element).ToBeVisibleAsync();
+        return (await element.InnerTextAsync()).Trim();
+    }
+
     /// <summary>True when nothing on the page reaches past the viewport, i.e. the document cannot scroll sideways.</summary>
     public Task<bool> FitsViewportAsync() =>
         Page.EvaluateAsync<bool>("() => document.documentElement.scrollWidth <= document.documentElement.clientWidth");

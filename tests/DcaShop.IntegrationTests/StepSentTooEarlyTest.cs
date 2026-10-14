@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Mvc.Testing.Handlers;
 namespace DcaShop.IntegrationTests;
 
 /// <summary>
-/// A step's form sent before the earlier steps are done leads to the step that is still open and changes nothing —
-/// through the real HTTP pipeline. One cookie jar is one browser; redirects are not followed, each one is an assertion.
+/// A step's form sent before the earlier steps are done leads to the step that is still open, which says why, and
+/// changes nothing — through the real HTTP pipeline. One cookie jar is one browser; redirects are not followed, each one is an assertion.
 /// </summary>
 public sealed class StepSentTooEarlyTest : IClassFixture<WebApplicationFactory<Program>>
 {
@@ -28,7 +28,10 @@ public sealed class StepSentTooEarlyTest : IClassFixture<WebApplicationFactory<P
         var placed = await guest.PostAsync("/checkout/confirm", Form(await guest.GetStringAsync("/checkout/payment")));
 
         Assert.Equal(HttpStatusCode.Redirect, placed.StatusCode);
-        Assert.Equal("/checkout/payment", placed.Headers.Location!.ToString());
+        var landed = placed.Headers.Location!.OriginalString;
+        Assert.Equal("/checkout/payment?notice=earlier-steps-first", landed);
+        var payment = await guest.GetStringAsync(landed);
+        Assert.Equal("Please complete the previous checkout steps first.", AvailabilityPages.Text(payment, @"data-test=""payment-error-message"">([^<]*)</div>"));
         var confirmation = await guest.GetAsync("/checkout/confirmation");
         Assert.Equal("/cart", confirmation.Headers.Location!.ToString());
         var cart = await guest.GetStringAsync("/cart");

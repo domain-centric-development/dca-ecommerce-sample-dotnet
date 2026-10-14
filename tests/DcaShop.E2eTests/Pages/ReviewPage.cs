@@ -38,12 +38,7 @@ public sealed class ReviewPage : BasePage
     }
 
     /// <summary>The error the review shows, as written.</summary>
-    public async Task<string> ErrorMessageAsync()
-    {
-        var error = Page.Locator($"[data-test='{ErrorMessage}']");
-        await Assertions.Expect(error).ToBeVisibleAsync();
-        return (await error.InnerTextAsync()).Trim();
-    }
+    public Task<string> ErrorMessageAsync() => VisibleTextAsync(ErrorMessage);
 
     /// <summary>Whether the page shows the confirmation of a placed order.</summary>
     public async Task<bool> ShowsConfirmationAsync() => await Page.Locator("[data-test='confirmation-title']").CountAsync() > 0;

@@ -93,21 +93,24 @@ public sealed class CheckoutPageController : Controller
     }
 
     [HttpGet("buyer")]
-    public Task<IActionResult> Buyer(CancellationToken cancellationToken) => Page(CheckoutStep.BuyerInfo, cancellationToken);
+    public Task<IActionResult> Buyer([FromQuery(Name = CheckoutRoutes.Notice)] string? notice, CancellationToken cancellationToken) =>
+        Page(CheckoutStep.BuyerInfo, cancellationToken, notice: CheckoutNotices.FromCode(notice));
 
     [HttpPost("buyer")]
     public Task<IActionResult> SubmitBuyer([FromForm] string email, [FromForm] string firstName, [FromForm] string lastName, [FromForm] string phone, CancellationToken cancellationToken) =>
         Submit(CheckoutStep.BuyerInfo, "/checkout/delivery", id => _submitBuyerInfo.ExecuteAsync(new SubmitBuyerInfoCommand(id, CurrentCustomerId(), email, firstName, lastName, phone), cancellationToken), cancellationToken);
 
     [HttpGet("delivery")]
-    public Task<IActionResult> Delivery(CancellationToken cancellationToken) => Page(CheckoutStep.Delivery, cancellationToken);
+    public Task<IActionResult> Delivery([FromQuery(Name = CheckoutRoutes.Notice)] string? notice, CancellationToken cancellationToken) =>
+        Page(CheckoutStep.Delivery, cancellationToken, notice: CheckoutNotices.FromCode(notice));
 
     [HttpPost("delivery")]
     public Task<IActionResult> SubmitDelivery([FromForm] string street, [FromForm] string? streetLine2, [FromForm] string city, [FromForm] string postalCode, [FromForm] string country, [FromForm] string? state, [FromForm] string shippingOptionId, CancellationToken cancellationToken) =>
         Submit(CheckoutStep.Delivery, "/checkout/payment", id => _submitDelivery.ExecuteAsync(new SubmitDeliveryCommand(id, CurrentCustomerId(), street, streetLine2, city, postalCode, country, state, shippingOptionId), cancellationToken), cancellationToken);
 
     [HttpGet("payment")]
-    public Task<IActionResult> Payment(CancellationToken cancellationToken) => Page(CheckoutStep.Payment, cancellationToken);
+    public Task<IActionResult> Payment([FromQuery(Name = CheckoutRoutes.Notice)] string? notice, CancellationToken cancellationToken) =>
+        Page(CheckoutStep.Payment, cancellationToken, notice: CheckoutNotices.FromCode(notice));
 
     [HttpPost("payment")]
     public Task<IActionResult> SubmitPayment([FromForm] string providerId, CancellationToken cancellationToken) =>
@@ -164,7 +167,11 @@ public sealed class CheckoutPageController : Controller
         return View("~/Views/Checkout/Confirmation.cshtml", await ViewModelAsync(session, null, cancellationToken));
     }
 
-    private async Task<IActionResult> Page(CheckoutStep step, CancellationToken cancellationToken, string? error = null)
+    /// <summary>
+    /// A step's page; the <paramref name="notice"/> a redirect carried is shown only once the step guard granted the
+    /// page.
+    /// </summary>
+    private async Task<IActionResult> Page(CheckoutStep step, CancellationToken cancellationToken, string? error = null, CheckoutNotice? notice = null)
     {
         // A step re-rendered with an error — a rejected submit, or a refused "Place Order" carried to the review — keeps
         // the page; otherwise the domain decides who may see it
@@ -179,7 +186,7 @@ public sealed class CheckoutPageController : Controller
             return Redirect(CheckoutRoutes.PathTo(access));
         }
 
-        return View($"~/Views/Checkout/{step}.cshtml", await ViewModelAsync(session, error, cancellationToken));
+        return View($"~/Views/Checkout/{step}.cshtml", await ViewModelAsync(session, error ?? notice?.Sentence(), cancellationToken));
     }
 
     private async Task<IActionResult> Submit(CheckoutStep step, string next, Func<Guid, Task> action, CancellationToken cancellationToken)
@@ -209,12 +216,12 @@ public sealed class CheckoutPageController : Controller
 
     /// <summary>
     /// Sent before the earlier steps are done: the step guard sends the customer to the step still open — none when it
-    /// grants <paramref name="step"/> after all.
+    /// grants <paramref name="step"/> after all. That step says why.
     /// </summary>
     private async Task<RedirectResult?> ToTheStepStillOpenAsync(CheckoutStep step, CancellationToken cancellationToken)
     {
         var access = (await _active.ExecuteAsync(new GetActiveCheckoutSessionQuery(CurrentCustomerId(), step), cancellationToken)).StepAccess;
-        return access is { Granted: false } ? Redirect(CheckoutRoutes.PathTo(access)) : null;
+        return access is { Granted: false } ? Redirect(CheckoutRoutes.PathTo(access, CheckoutNotice.EarlierStepsFirst)) : null;
     }
 
     /// <summary>Back to the cart, telling the customer there is no checkout to continue.</summary>
@@ -257,11 +264,10 @@ public sealed class CheckoutPageController : Controller
         (CheckoutStep.Payment, NothingToPayException) => "There is nothing to pay for this order.",
         (CheckoutStep.Review, CheckoutValidationException invalid) =>
             $"Cannot place the order, {invalid.Validation.Errors.Count} item(s) unavailable or out of stock.",
-        (CheckoutStep.Review, CheckoutStepNotCompletedException) => "Please complete the previous checkout steps first.",
+        (CheckoutStep.Review, CheckoutStepNotCompletedException) => CheckoutNotice.EarlierStepsFirst.Sentence(),
         (CheckoutStep.Review, CheckoutStepOutOfOrderException) => "Please review your order before placing it.",
         (CheckoutStep.Review, _) => "Your order could not be placed. Please try again.",
-        (_, CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException) =>
-            "Please complete the previous checkout steps first.",
+        (_, CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException) => CheckoutNotice.EarlierStepsFirst.Sentence(),
         (CheckoutStep.BuyerInfo, ArgumentException) => "Please check the details you entered.",
         (CheckoutStep.Delivery, ArgumentException) => "Please check the delivery address you entered.",
         (CheckoutStep.Payment, ArgumentException) => "Please choose a way to pay.",
