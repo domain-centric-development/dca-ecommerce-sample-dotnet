@@ -27,15 +27,10 @@ public sealed class ReviewPage : BasePage
     }
 
     /// <summary>Presses "Place Order" and waits until the shop has answered it, wherever that answer leads.</summary>
-    public async Task PressPlaceOrderAsync()
-    {
-        var button = Page.Locator($"[data-test='{PlaceOrderButton}']");
-        await Assertions.Expect(button).ToBeVisibleAsync();
-        await Page.RunAndWaitForResponseAsync(
+    public Task PlaceOrderAndAwaitTheAnswerAsync() =>
+        PressPlaceOrderAsync(button => Page.RunAndWaitForResponseAsync(
             () => button.ClickAsync(),
-            response => response.Request.Method == "POST" && new Uri(response.Url).AbsolutePath == "/checkout/confirm");
-        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
-    }
+            response => response.Request.Method == "POST" && new Uri(response.Url).AbsolutePath == "/checkout/confirm"));
 
     /// <summary>The error the review shows, as written.</summary>
     public Task<string> ErrorMessageAsync() => VisibleTextAsync(ErrorMessage);
@@ -80,12 +75,21 @@ public sealed class ReviewPage : BasePage
     /// <summary>Presses "Place Order" and answers the path of whatever page the shop opens next, without expecting one.</summary>
     public async Task<string> PlaceOrderAndShowNextPathAsync()
     {
+        await PressPlaceOrderAsync(button => Page.RunAndWaitForRequestFinishedAsync(
+            () => button.ClickAsync(),
+            new PageRunAndWaitForRequestFinishedOptions { Predicate = request => request.IsNavigationRequest && request.Method == "GET" }));
+        return CurrentPath;
+    }
+
+    /// <summary>
+    /// Presses "Place Order" once it shows, through <paramref name="clickAndWait"/> — the click and the wait for what the
+    /// caller needs to have happened — and then lets the page that is shown load.
+    /// </summary>
+    private async Task PressPlaceOrderAsync(Func<ILocator, Task> clickAndWait)
+    {
         var button = Page.Locator($"[data-test='{PlaceOrderButton}']");
         await Assertions.Expect(button).ToBeVisibleAsync();
-        await Page.RunAndWaitForRequestFinishedAsync(
-            () => button.ClickAsync(),
-            new PageRunAndWaitForRequestFinishedOptions { Predicate = request => request.IsNavigationRequest && request.Method == "GET" });
+        await clickAndWait(button);
         await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
-        return CurrentPath;
     }
 }

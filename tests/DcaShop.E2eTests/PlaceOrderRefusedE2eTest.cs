@@ -30,7 +30,7 @@ public sealed class PlaceOrderRefusedE2eTest : BaseE2eTest
         var review = await GuestFromTheCartToTheReviewAsync(shop.BaseUrl);
         await shop.AnotherGuestHasBoughtAsync(hexagon, 5);
 
-        await review.PressPlaceOrderAsync();
+        await review.PlaceOrderAndAwaitTheAnswerAsync();
 
         await Assertions.Expect(Page).ToHaveURLAsync(shop.BaseUrl + "/checkout/review");
         Assert.NotEmpty(await review.ErrorMessageAsync());

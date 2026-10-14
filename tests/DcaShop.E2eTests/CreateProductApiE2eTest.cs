@@ -19,7 +19,7 @@ namespace DcaShop.E2eTests;
 /// </summary>
 public sealed class CreateProductApiE2eTest : IDisposable
 {
-    private readonly SideShop _shop = RestartedShop.Start();
+    private readonly SideShop _shop = SideShop.Start();
 
     [E2eFact(DisplayName = "Staff create a product")]
     public async Task AStaffMemberCreatesAProductAndTheAnswerCarriesItsPriceInEuros()
