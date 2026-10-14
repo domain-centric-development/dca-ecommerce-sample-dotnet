@@ -122,6 +122,12 @@ Test: DcaShop.IntegrationTests.ProductSkuNameAndTextRulesTest#AnImageUrlOf2001Ch
 - And the catalogue card "Rounding Mug" shows "15.00 EUR"
 Test: DcaShop.E2eTests.CreatedProductPriceE2eTest#APriceWithAHalfCentIsRoundedUpOnTheAnswerAndTheCard
 
+#### the-answer-carries-the-rounded-price
+- Given a client holding a staff token
+- When it creates "Rounding Mug" with SKU "ROUND-001", price 14.995, category "Desk & Office" and stock 5
+- Then the shop answers 201 with `price` 15.00
+Test: DcaShop.E2eTests.CreateProductApiE2eTest#TheAnswerCarriesThePriceRoundedHalfUpToCents
+
 ### Rule: A price is greater than zero
 
 #### a-price-of-zero-is-refused

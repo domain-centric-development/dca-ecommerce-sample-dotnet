@@ -1,7 +1,9 @@
 ---
 id: created-product-answers-with-its-rounded-price
 epic: shop-api
-status: adopted
+status: delivered
+delivered: 2026-10-14T17:00:56Z
+delivered_by: gate
 context: product
 feature: assortment
 title: A created product answers with its price rounded to cents
@@ -29,3 +31,7 @@ rounded half up — so that no fraction of a cent reaches anyone, the answer inc
 - Adopted 2026-10-14 (WP-108): this shop already answers with the rounded price; the Java twin delivered the story as
   a change, so both specs hold the criterion.
 - A price is a decimal with two places and rounds by the commercial rule (half up), as `Money` already does.
+
+## Assumptions
+
+- answered: SharedScenariosTest also knows the titles of the stories not yet delivered (their `####` criteria, title = Title line else the key in words); the spec stays the only source for the Test-line and duplicate checks. Fixed on main in 2ea4aaa; nothing changes in this story — run the stage again as it is. (created-product-answers-with-its-rounded-price-01)

@@ -1,7 +1,9 @@
 ---
 id: a-malformed-product-id-is-a-bad-request
 epic: shop-api
-status: approved
+status: delivered
+delivered: 2026-10-14T17:18:05Z
+delivered_by: gate
 context: cart
 feature: shopping
 title: The cart API answers a malformed product id as a malformed call
@@ -53,3 +55,7 @@ product has, so that a bug in my request reads as a bad request and not as a pro
 - Decided by the user 2026-10-14 (triage Gruppe 9): input that does not parse into the id is a malformed call, not
   the failure of an unknown product — the guide's rule for named failures. The adapter that receives the request
   parses the id; the failure of an unknown product carries the product id, never the caller's text.
+
+## Assumptions
+
+- answered: SharedScenariosTest also knows the titles of the stories not yet delivered (their `####` criteria, title = Title line else the key in words); the spec stays the only source for the Test-line and duplicate checks. Fixed on main in 2ea4aaa; nothing changes in this story — run the stage again as it is. (a-malformed-product-id-is-a-bad-request-01)

@@ -67,3 +67,7 @@ on into the checkout.
 - Decided by the user 2026-10-14 (triage C13): the cart already removes a line by the line's own id, and nothing
   reaches it; removing a line by its own id becomes a use case of its own, reached from the cart page — the page
   knows the line, not only the product. The API's removal by product stays as it is.
+
+## Assumptions
+
+- answered: SharedScenariosTest also knows the titles of the stories not yet delivered (their `####` criteria, title = Title line else the key in words); the spec stays the only source for the Test-line and duplicate checks. Fixed on main in 2ea4aaa; nothing changes in this story — run the stage again as it is. (remove-a-line-from-the-cart-01)
