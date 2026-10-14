@@ -71,3 +71,4 @@ on into the checkout.
 ## Assumptions
 
 - answered: SharedScenariosTest also knows the titles of the stories not yet delivered (their `####` criteria, title = Title line else the key in words); the spec stays the only source for the Test-line and duplicate checks. Fixed on main in 2ea4aaa; nothing changes in this story — run the stage again as it is. (remove-a-line-from-the-cart-01)
+- answered: Fix both flakes on main by hand, then run this story's tidy stage again as it is. (remove-a-line-from-the-cart-02)

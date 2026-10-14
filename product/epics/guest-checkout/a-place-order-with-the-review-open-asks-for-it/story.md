@@ -39,6 +39,7 @@ review and say so, so that I place an order only after I have seen it.
   (user, 2026-10-14)
 - answered: SharedScenariosTest also knows the titles of the stories not yet delivered (their `####` criteria, title = Title line else the key in words); the spec stays the only source for the Test-line and duplicate checks. Fixed on main in 2ea4aaa; nothing changes in this story — run the stage again as it is. (a-place-order-with-the-review-open-asks-for-it-01)
 - answered: Commit the two delivered scenarios on main as answered in taking-over-the-guest-cart-is-a-step-of-its-own-02, merge main into this branch, and run the build again as it is. (a-place-order-with-the-review-open-asks-for-it-02)
+- answered: a — the delivered stories' scenarios are committed on main now (6a8d286); merge main into the branch and run the build again as it is. (a-place-order-with-the-review-open-asks-for-it-03)
 
 ## Notes
 
