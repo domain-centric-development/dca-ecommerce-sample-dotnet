@@ -5,9 +5,9 @@ contract: 22
 
 compile: dotnet build
 # `dotnet test` takes one project per invocation — two paths in one call is an MSBuild error
-# (MSB1008). `test` runs the whole solution; the other levels name their project, so the gate can
-# select a single test in it.
-test: dotnet test --logger trx
+# (MSB1008). Each level names its own project, so the gate can select a single test in it and no
+# suite runs twice: `test` is the unit project only, not the whole solution.
+test: dotnet test tests/DcaShop.UnitTests --logger trx
 test.integration: dotnet test tests/DcaShop.IntegrationTests --logger trx
 http.stub: wiremock-net
 e2eTest: dotnet test tests/DcaShop.E2eTests/DcaShop.E2eTests.csproj --logger trx
