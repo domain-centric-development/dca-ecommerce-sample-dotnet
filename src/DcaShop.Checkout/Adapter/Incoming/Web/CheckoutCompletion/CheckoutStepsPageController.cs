@@ -69,39 +69,36 @@ public sealed class CheckoutStepsPageController : Controller
     private string CurrentCustomerId() => _identityProvider.GetCurrentIdentity().UserId.Value;
 
     [HttpGet("buyer")]
-    public Task<IActionResult> Buyer([FromQuery(Name = CheckoutRoutes.Notice)] string? notice, CancellationToken cancellationToken) =>
-        Page(CheckoutStep.BuyerInfo, cancellationToken, notice: CheckoutStepNotices.FromCode(notice));
+    public Task<IActionResult> Buyer(CancellationToken cancellationToken) =>
+        Page(CheckoutStep.BuyerInfo, cancellationToken);
 
     [HttpPost("buyer")]
     public Task<IActionResult> SubmitBuyer([FromForm] string email, [FromForm] string firstName, [FromForm] string lastName, [FromForm] string phone, CancellationToken cancellationToken) =>
         Submit(CheckoutStep.BuyerInfo, "/checkout/delivery", id => _submitBuyerInfo.ExecuteAsync(new SubmitBuyerInfoCommand(id, CurrentCustomerId(), email, firstName, lastName, phone), cancellationToken), cancellationToken);
 
     [HttpGet("delivery")]
-    public Task<IActionResult> Delivery([FromQuery(Name = CheckoutRoutes.Notice)] string? notice, CancellationToken cancellationToken) =>
-        Page(CheckoutStep.Delivery, cancellationToken, notice: CheckoutStepNotices.FromCode(notice));
+    public Task<IActionResult> Delivery(CancellationToken cancellationToken) =>
+        Page(CheckoutStep.Delivery, cancellationToken);
 
     [HttpPost("delivery")]
     public Task<IActionResult> SubmitDelivery([FromForm] string street, [FromForm] string? streetLine2, [FromForm] string city, [FromForm] string postalCode, [FromForm] string country, [FromForm] string? state, [FromForm] string shippingOptionId, CancellationToken cancellationToken) =>
         Submit(CheckoutStep.Delivery, "/checkout/payment", id => _submitDelivery.ExecuteAsync(new SubmitDeliveryCommand(id, CurrentCustomerId(), street, streetLine2, city, postalCode, country, state, shippingOptionId), cancellationToken), cancellationToken);
 
     [HttpGet("payment")]
-    public Task<IActionResult> Payment([FromQuery(Name = CheckoutRoutes.Notice)] string? notice, CancellationToken cancellationToken) =>
-        Page(CheckoutStep.Payment, cancellationToken, notice: CheckoutStepNotices.FromCode(notice));
+    public Task<IActionResult> Payment(CancellationToken cancellationToken) =>
+        Page(CheckoutStep.Payment, cancellationToken);
 
     [HttpPost("payment")]
     public Task<IActionResult> SubmitPayment([FromForm] string providerId, CancellationToken cancellationToken) =>
         Submit(CheckoutStep.Payment, "/checkout/review", id => _submitPayment.ExecuteAsync(new SubmitPaymentCommand(id, CurrentCustomerId(), providerId), cancellationToken), cancellationToken);
 
     /// <summary>
-    /// The review; a refused "Place Order" redirected here names its refusal in the address, and the review shows it at
-    /// its own address.
+    /// The review; a refused "Place Order" redirected here leaves its refusal as the review's notice, and the review
+    /// shows it at its own address.
     /// </summary>
     [HttpGet("review")]
-    public Task<IActionResult> Review(
-        [FromQuery(Name = CheckoutRoutes.Notice)] string? notice,
-        [FromQuery(Name = CheckoutStepNotices.CountParameter)] int? count,
-        CancellationToken cancellationToken) =>
-        Page(CheckoutStep.Review, cancellationToken, CheckoutStepNotices.FromCode(notice)?.Sentence(count));
+    public Task<IActionResult> Review(CancellationToken cancellationToken) =>
+        Page(CheckoutStep.Review, cancellationToken);
 
     /// <summary>A refused "Place Order" redirects to the review, so the browser stays at the review's own address.</summary>
     [HttpPost("confirm")]
@@ -126,10 +123,19 @@ public sealed class CheckoutStepsPageController : Controller
     }
 
     /// <summary>The refused "Place Order" carried to the review, which renders it at its own address.</summary>
-    private RedirectResult BackToTheReview(Exception refusal) =>
-        Redirect(refusal is CheckoutValidationException invalid
-            ? CheckoutRoutes.PathWith(CheckoutStep.Review, CheckoutStepNotice.ItemsUnavailable, invalid.Validation.Errors.Count)
-            : CheckoutRoutes.PathWith(CheckoutStep.Review, ReviewNoticeFor(refusal)));
+    private RedirectResult BackToTheReview(Exception refusal)
+    {
+        if (refusal is CheckoutValidationException invalid)
+        {
+            TempData.Leave(CheckoutStep.Review, CheckoutStepNotice.ItemsUnavailable, invalid.Validation.Errors.Count);
+        }
+        else
+        {
+            TempData.Leave(CheckoutStep.Review, ReviewNoticeFor(refusal));
+        }
+
+        return Redirect(CheckoutRoutes.PathOf(CheckoutStep.Review));
+    }
 
     /// <summary>
     /// What the review tells the customer when "Place Order" was refused, chosen from the failure's type — the
@@ -150,22 +156,29 @@ public sealed class CheckoutStepsPageController : Controller
         var result = await _confirmed.ExecuteAsync(new GetConfirmedCheckoutSessionQuery(CurrentCustomerId()), cancellationToken);
         if (result?.Session is not { } session)
         {
-            return Redirect(CheckoutRoutes.CartWith(CartNotice.NoConfirmedOrder));
+            return ToTheCart(CartNotice.NoConfirmedOrder);
         }
 
         return View("~/Views/Checkout/Confirmation.cshtml", await ViewModelAsync(session, null, cancellationToken));
     }
 
     /// <summary>
-    /// A step's page; the <paramref name="notice"/> a redirect carried is shown only once step access granted the
-    /// page.
+    /// A step's page. The notice a redirect left for it is read — and so removed — whatever the page answers: a step
+    /// that is denied and redirects passes no earlier notice on, only its own refusal applies. A step's notice is shown
+    /// only once step access granted the page; the review's, a refused "Place Order", keeps the review like an error.
     /// </summary>
-    private async Task<IActionResult> Page(CheckoutStep step, CancellationToken cancellationToken, string? error = null, CheckoutStepNotice? notice = null)
+    private async Task<IActionResult> Page(CheckoutStep step, CancellationToken cancellationToken, string? error = null)
     {
+        var (notice, count) = TempData.TakeCheckoutStepNotice(step);
         var session = await ActiveSessionAsync(cancellationToken);
         if (session is null)
         {
             return NoActiveSession();
+        }
+
+        if (step == CheckoutStep.Review)
+        {
+            error ??= notice?.Sentence(count);
         }
 
         // A step re-rendered with an error — a rejected submit, or a refused "Place Order" carried to the review — keeps
@@ -182,7 +195,7 @@ public sealed class CheckoutStepsPageController : Controller
             session = result.Session!;
         }
 
-        return View(ViewOf(step), await ViewModelAsync(session, error ?? notice?.Sentence(), cancellationToken));
+        return View(ViewOf(step), await ViewModelAsync(session, error ?? notice?.Sentence(count), cancellationToken));
     }
 
     private async Task<IActionResult> Submit(CheckoutStep step, string next, Func<Guid, Task> action, CancellationToken cancellationToken)
@@ -235,11 +248,29 @@ public sealed class CheckoutStepsPageController : Controller
             ? (await _session.ExecuteAsync(
                 GetCheckoutSessionQuery.ForStep(session.SessionId.Value, CurrentCustomerId(), step), cancellationToken)).StepAccess
             : StepAccess.BackToCart();
-        return access is { Granted: false } ? Redirect(CheckoutRoutes.PathTo(access, CheckoutStepNotice.EarlierStepsFirst)) : null;
+        if (access is not { Granted: false })
+        {
+            return null;
+        }
+
+        // The cart reads no notice of the steps, so a customer sent there goes without one.
+        if (access.RedirectStep is { } stillOpen)
+        {
+            TempData.Leave(stillOpen, CheckoutStepNotice.EarlierStepsFirst);
+        }
+
+        return Redirect(CheckoutRoutes.PathTo(access));
     }
 
     /// <summary>Back to the cart, telling the customer there is no checkout to continue.</summary>
-    private RedirectResult NoActiveSession() => Redirect(CheckoutRoutes.CartWith(CartNotice.NoActiveCheckout));
+    private RedirectResult NoActiveSession() => ToTheCart(CartNotice.NoActiveCheckout);
+
+    /// <summary>Back to the cart, leaving the cart page the notice that says why.</summary>
+    private RedirectResult ToTheCart(CartNotice notice)
+    {
+        TempData.LeaveForTheCart(notice);
+        return Redirect(CheckoutRoutes.Cart);
+    }
 
     /// <summary>
     /// What the customer is told when a step refuses a submission, worded from the step and the failure's type and

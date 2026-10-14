@@ -21,7 +21,7 @@ public sealed class CheckoutBetweenVisitorsE2eTest : BaseE2eTest
         await stranger.GotoAsync(BaseUrl + "/checkout/buyer");
 
         var cart = await CartPage.OpenAsync(stranger);
-        Assert.Equal("/cart?notice=no-active-checkout", cart.ShownPath);
+        Assert.Equal("/cart", cart.ShownPath);
         Assert.Equal("No active checkout session found", await cart.ErrorMessageAsync());
         Assert.Equal(0, await cart.ItemCountAsync());
         Assert.Equal(0, await stranger.GetByText("jane@example.com").CountAsync());

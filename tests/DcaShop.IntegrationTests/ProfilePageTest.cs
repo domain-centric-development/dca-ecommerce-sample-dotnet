@@ -93,7 +93,7 @@ public sealed class ProfilePageTest : IClassFixture<WebApplicationFactory<Progra
         var loggedIn = await LoginAsync(client, NewEmail);
 
         var landing = await FollowRedirectsAsync(client, loggedIn);
-        Assert.Equal("/cart?notice=welcome-back", landing.Path);
+        Assert.Equal("/cart", landing.Path);
         Assert.Equal(
             $"Welcome, {NewEmail}",
             Text(await landing.Response.Content.ReadAsStringAsync(), @"data-test=""user-greeting"">([^<]*)</span>"));

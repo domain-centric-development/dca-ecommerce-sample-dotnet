@@ -1,17 +1,16 @@
-using System.Globalization;
-
-using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace DcaShop.Cart.Adapter.Incoming.Web;
 
 /// <summary>
-/// The notices a redirect carries to a cart page, as a fixed code in its address (<c>?notice=&lt;code&gt;</c>) —
-/// never the sentence and never in a server session, so any instance that answers the next request shows it. A notice
-/// that names a number carries it beside the code (<c>&amp;count=&lt;n&gt;</c>); the page words the sentence.
+/// The notices a redirect leaves for a cart page. A notice travels in TempData — a cookie sealed with the key ring every
+/// instance shares — as its fixed code, never the sentence and never in a server session, so any instance that answers
+/// the next request shows it. A notice that names a number carries it beside the code; the page words the sentence. It
+/// is addressed to one page: only that page reads it, and reading removes it.
 /// </summary>
 /// <remarks>
-/// The checkout sends the customer back to the cart with some of these codes; it knows them as the cart page's address,
-/// the sentences stay here.
+/// The checkout sends the customer back to the cart with some of these codes; it knows them, and the cart page's key,
+/// as part of the cart page's address — the sentences stay here.
 /// </remarks>
 internal enum CartPageNotice
 {
@@ -36,14 +35,20 @@ internal enum CartPageNotice
     CheckoutNotStarted = 19,
 }
 
-/// <summary>Each notice's code in the address, whether it reports a success, and the sentence its page shows.</summary>
+/// <summary>
+/// Each notice's code, whether it reports a success, the sentence its page shows, and where a page finds the notice
+/// left for it.
+/// </summary>
 internal static class CartPageNotices
 {
-    /// <summary>The query parameter that carries a notice's code.</summary>
-    public const string Parameter = "notice";
+    /// <summary>The TempData key of the notice addressed to the cart page.</summary>
+    public const string CartPage = "notice.cart";
 
-    /// <summary>The query parameter that carries the number a notice names.</summary>
-    public const string CountParameter = "count";
+    /// <summary>The TempData key of the notice addressed to the cart merge page.</summary>
+    public const string MergePage = "notice.cart.merge";
+
+    /// <summary>Beside a page's key, the key of the number its notice names.</summary>
+    private const string CountSuffix = ".count";
 
     public static string Code(this CartPageNotice notice) => notice switch
     {
@@ -75,7 +80,7 @@ internal static class CartPageNotices
         or CartPageNotice.RecentCartUsed;
 
     /// <summary>
-    /// The sentence the page shows; none for a notice that names a number the address did not carry.
+    /// The sentence the page shows; none for a notice that names a number it was not left with.
     /// </summary>
     public static string? Sentence(this CartPageNotice notice, int? count = null) => notice switch
     {
@@ -105,16 +110,25 @@ internal static class CartPageNotices
         _ => throw new ArgumentOutOfRangeException(nameof(notice)),
     };
 
-    /// <summary>The notice an address names by its code; none for a code the shop does not know.</summary>
+    /// <summary>The notice a code names; none for a code the shop does not know.</summary>
     public static CartPageNotice? FromCode(string? code) =>
         Enum.GetValues<CartPageNotice>().Cast<CartPageNotice?>().FirstOrDefault(notice => notice?.Code() == code);
 
-    /// <summary>The address carrying the notice — and the number it names — after whatever query it has.</summary>
-    public static string PathWith(string path, CartPageNotice notice, int? count = null)
+    /// <summary>Leaves the notice's code — and the number it names — for the page the redirect leads to.</summary>
+    public static void Leave(this ITempDataDictionary tempData, string page, CartPageNotice notice, int? count = null)
     {
-        var withNotice = QueryHelpers.AddQueryString(path, Parameter, notice.Code());
-        return count is { } number
-            ? QueryHelpers.AddQueryString(withNotice, CountParameter, number.ToString(CultureInfo.InvariantCulture))
-            : withNotice;
+        tempData[page] = notice.Code();
+        if (count is { } number)
+        {
+            tempData[page + CountSuffix] = number;
+        }
+        else
+        {
+            tempData.Remove(page + CountSuffix);
+        }
     }
+
+    /// <summary>The notice left for this page and the number it names, if any — reading them removes them.</summary>
+    public static (CartPageNotice? Notice, int? Count) TakeCartPageNotice(this ITempDataDictionary tempData, string page) =>
+        (FromCode(tempData[page] as string), tempData[page + CountSuffix] as int?);
 }

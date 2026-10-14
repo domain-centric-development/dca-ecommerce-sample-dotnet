@@ -37,7 +37,7 @@ public sealed class CartOwnershipTest : IClassFixture<WebApplicationFactory<Prog
 
         // Refused, and refused as "no such cart" — the stranger learns nothing about the id
         Assert.Equal(HttpStatusCode.Redirect, started.StatusCode);
-        Assert.Equal("/cart?notice=cart-not-found", started.Headers.Location!.ToString());
+        Assert.Equal("/cart", started.Headers.Location!.ToString());
 
         // and no session was created on the victim's cart
         using var scope = _factory.Services.CreateScope();

@@ -35,7 +35,7 @@ public sealed class CartMergeChoiceE2eTest : BaseE2eTest
 
         var cart = await merge.MergeBothCartsAsync();
 
-        Assert.Equal("/cart?notice=carts-merged", cart.ShownPath);
+        Assert.Equal("/cart", cart.ShownPath);
         Assert.Equal("Carts merged successfully!", await cart.SuccessMessageAsync());
         Assert.Equal([$"{CleanArchitecture} x3", $"{Mug} x1"], await cart.LineItemsAsync());
     }

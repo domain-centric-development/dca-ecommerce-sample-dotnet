@@ -19,7 +19,6 @@ public sealed class StepSentTooEarlyE2eTest : BaseE2eTest
         var shownPath = await buyer.SendDeliveryFormAsync("Hauptstrasse 1", "Berlin", "10115", "Germany", "standard");
 
         Assert.Equal("/checkout/buyer", shownPath);
-        Assert.Equal("/checkout/buyer?notice=earlier-steps-first", buyer.ShownPath);
         Assert.Equal("Please complete the previous checkout steps first.", await buyer.ErrorMessageAsync());
         await NavigateToAsync("/checkout/review");
         var reopened = await BuyerInfoPage.OpenAsync(Page);

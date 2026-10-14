@@ -27,7 +27,7 @@ public sealed class NoOpenCheckoutTest : IClassFixture<WebApplicationFactory<Pro
 
         var response = await visitor.GetAsync("/checkout/review");
 
-        Assert.Equal("/cart?notice=no-active-checkout", response.Headers.Location!.ToString());
+        Assert.Equal("/cart", response.Headers.Location!.ToString());
         Assert.Equal("No active checkout session found", await CartErrorAsync(visitor, response.Headers.Location!));
     }
 
@@ -41,7 +41,7 @@ public sealed class NoOpenCheckoutTest : IClassFixture<WebApplicationFactory<Pro
 
         var response = await guest.GetAsync("/checkout/buyer");
 
-        Assert.Equal("/cart?notice=no-active-checkout", response.Headers.Location!.ToString());
+        Assert.Equal("/cart", response.Headers.Location!.ToString());
         Assert.Equal("No active checkout session found", await CartErrorAsync(guest, response.Headers.Location!));
     }
 
@@ -56,7 +56,7 @@ public sealed class NoOpenCheckoutTest : IClassFixture<WebApplicationFactory<Pro
 
         var response = await afterRestart.GetAsync("/checkout/delivery");
 
-        Assert.Equal("/cart?notice=no-active-checkout", response.Headers.Location!.ToString());
+        Assert.Equal("/cart", response.Headers.Location!.ToString());
         Assert.Equal("No active checkout session found", await CartErrorAsync(afterRestart, response.Headers.Location!));
     }
 
@@ -82,7 +82,7 @@ public sealed class NoOpenCheckoutTest : IClassFixture<WebApplicationFactory<Pro
 
         var response = await visitor.GetAsync("/checkout/confirmation");
 
-        Assert.Equal("/cart?notice=no-confirmed-order", response.Headers.Location!.ToString());
+        Assert.Equal("/cart", response.Headers.Location!.ToString());
         Assert.Equal("No confirmed order found", await CartErrorAsync(visitor, response.Headers.Location!));
     }
 

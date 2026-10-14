@@ -53,7 +53,7 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
 
         var landing = await LogInAsync(browser, email, returnUrl: null);
 
-        Assert.Equal("/cart?notice=welcome-back", landing);
+        Assert.Equal("/cart", landing);
         Assert.Equal([$"{CleanArchitecture} x1"], CartLines(await browser.GetStringAsync("/cart")));
     }
 
@@ -71,7 +71,7 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         var buyerStep = await guest.GetAsync(landing);
 
         Assert.Equal("/checkout/buyer", landing);
-        Assert.Equal("/cart?notice=no-active-checkout", buyerStep.Headers.Location!.ToString());
+        Assert.Equal("/cart", buyerStep.Headers.Location!.ToString());
         var cartPage = await guest.GetStringAsync(buyerStep.Headers.Location);
         Assert.Equal("No active checkout session found", AvailabilityPages.Text(cartPage, @"data-test=""cart-error-message"">([^<]*)</div>"));
         Assert.Equal([$"{DomainDrivenDesign} x1"], CartLines(cartPage));
@@ -144,7 +144,7 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
 
         var landing = await ChooseAsync(guest, mergePage, "USE_ACCOUNT_CART");
 
-        Assert.Equal("/cart?notice=account-cart-used", landing);
+        Assert.Equal("/cart", landing);
         var cartPage = await guest.GetStringAsync(landing);
         Assert.Equal("Using your account cart.", AvailabilityPages.Text(cartPage, @"data-test=""cart-success-message"">([^<]*)</div>"));
         Assert.Equal([$"{CleanArchitecture} x1"], CartLines(cartPage));
@@ -157,7 +157,7 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
 
         var landing = await ChooseAsync(guest, mergePage, "USE_ANONYMOUS_CART");
 
-        Assert.Equal("/cart?notice=recent-cart-used", landing);
+        Assert.Equal("/cart", landing);
         var cartPage = await guest.GetStringAsync(landing);
         Assert.Equal("Using your recent cart.", AvailabilityPages.Text(cartPage, @"data-test=""cart-success-message"">([^<]*)</div>"));
         Assert.Equal([$"{CleanArchitecture} x2", $"{Mug} x1"], CartLines(cartPage));

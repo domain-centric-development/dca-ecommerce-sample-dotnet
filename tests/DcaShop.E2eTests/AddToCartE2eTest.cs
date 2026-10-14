@@ -17,7 +17,7 @@ public sealed class AddToCartE2eTest : BaseE2eTest
 
         var cart = await product.AddToCartAsync();
 
-        Assert.Equal("/cart?notice=product-added", cart.ShownPath);
+        Assert.Equal("/cart", cart.ShownPath);
         Assert.Equal("Product added to cart!", await cart.SuccessMessageAsync());
         Assert.Equal(["Domain-Driven Design x1"], await cart.LineItemsAsync());
     }

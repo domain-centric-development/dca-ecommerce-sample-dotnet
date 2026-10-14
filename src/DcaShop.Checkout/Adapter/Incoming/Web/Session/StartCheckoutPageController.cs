@@ -42,9 +42,16 @@ public sealed class StartCheckoutPageController : Controller
             // The two base types are the checkout's own refusals. ArgumentException is still here because a form
             // field the customer typed reaches a value object unvalidated; each field moved into request
             // validation is one reason less to catch it.
-            return Redirect(e is CheckoutItemsUnavailableException unavailable
-                ? CheckoutRoutes.CartWith(CartNotice.ItemsUnavailable, unavailable.ProductIds.Count)
-                : CheckoutRoutes.CartWith(NoticeFor(e)));
+            if (e is CheckoutItemsUnavailableException unavailable)
+            {
+                TempData.LeaveForTheCart(CartNotice.ItemsUnavailable, unavailable.ProductIds.Count);
+            }
+            else
+            {
+                TempData.LeaveForTheCart(NoticeFor(e));
+            }
+
+            return Redirect(CheckoutRoutes.Cart);
         }
     }
 

@@ -136,10 +136,12 @@ Buyer, delivery and payment step:
 | `CheckoutStepNotCompletedException`, `CheckoutStepOutOfOrderException` | Please complete the previous checkout steps first. |
 
 A step-order refusal shows its sentence only while step access still grants the submitted step; otherwise the
-page redirects to the step still open — on every step, placing the order included — with the code
-`?notice=earlier-steps-first` in the address (`CheckoutRoutes.Notice`, `CheckoutStepNotice.EarlierStepsFirst`). The
-buyer, delivery and payment pages turn that code into "Please complete the previous checkout steps first." once
-step access granted them, and show nothing for any other code; the address never carries the sentence.
+page redirects to the step still open — on every step, placing the order included — and leaves that step the
+code `earlier-steps-first` (`CheckoutStepNotice.EarlierStepsFirst`) in the sealed notice cookie (TempData), addressed
+to that step alone. The buyer, delivery and payment pages read their own notice — reading removes it — and turn that
+code into "Please complete the previous checkout steps first." once step access granted them; they show nothing for
+a code they do not know, and a step that is denied and redirects passes no notice on. The cookie never carries the
+sentence.
 
 | Step | Argument exception | Any other refusal |
 |---|---|---|

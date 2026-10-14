@@ -50,7 +50,7 @@ public sealed class OutdatedCartStartTest : IClassFixture<WebApplicationFactory<
         var productPage = await visitor.GetStringAsync(await AvailabilityPages.ProductPathAsync(visitor, Hexagon));
         var started = await visitor.PostAsync("/checkout/start", GuestOrders.Form(productPage, ("cartId", cart.CartId.ToString())));
         Assert.Equal(HttpStatusCode.Redirect, started.StatusCode);
-        Assert.Equal("/cart?notice=items-unavailable&count=1", started.Headers.Location!.ToString());
+        Assert.Equal("/cart", started.Headers.Location!.ToString());
         Assert.Equal(
             "Cannot start checkout, 1 item(s) unavailable or out of stock.",
             AvailabilityPages.Text(await visitor.GetStringAsync(started.Headers.Location), @"data-test=""cart-error-message"">([^<]*)</div>"));

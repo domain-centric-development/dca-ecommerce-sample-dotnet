@@ -1,9 +1,14 @@
+using DcaShop.Checkout.Domain.Model;
+
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+
 namespace DcaShop.Checkout.Adapter.Incoming.Web;
 
 /// <summary>
-/// The notices a redirect carries to a checkout page, as a fixed code in its address (<c>?notice=&lt;code&gt;</c>) —
-/// never the sentence and never in a server session, so any instance that answers the next request shows it. A notice
-/// that names a number carries it beside the code (<c>&amp;count=&lt;n&gt;</c>); the page words the sentence.
+/// The notices a redirect leaves for a checkout step's page. A notice travels in TempData — a cookie sealed with the key
+/// ring every instance shares — as its fixed code, never the sentence and never in a server session, so any instance
+/// that answers the next request shows it. A notice that names a number carries it beside the code; the page words the
+/// sentence. It is addressed to one step: only that step's page reads it, and reading removes it.
 /// </summary>
 internal enum CheckoutStepNotice
 {
@@ -26,11 +31,11 @@ internal enum CheckoutStepNotice
     OrderNotPlaced = 5,
 }
 
-/// <summary>Each notice's code in the address and the sentence its page shows.</summary>
+/// <summary>Each notice's code, the sentence its page shows, and where a step's page finds the notice left for it.</summary>
 internal static class CheckoutStepNotices
 {
-    /// <summary>The query parameter that carries the number a notice names.</summary>
-    public const string CountParameter = "count";
+    /// <summary>Beside a step's key, the key of the number its notice names.</summary>
+    private const string CountSuffix = ".count";
 
     public static string Code(this CheckoutStepNotice notice) => notice switch
     {
@@ -43,7 +48,7 @@ internal static class CheckoutStepNotices
         _ => throw new ArgumentOutOfRangeException(nameof(notice)),
     };
 
-    /// <summary>The sentence the page shows; none for a notice that names a number the address did not carry.</summary>
+    /// <summary>The sentence the page shows; none for a notice that names a number it was not left with.</summary>
     public static string? Sentence(this CheckoutStepNotice notice, int? count = null) => notice switch
     {
         CheckoutStepNotice.EarlierStepsFirst => "Please complete the previous checkout steps first.",
@@ -57,7 +62,36 @@ internal static class CheckoutStepNotices
         _ => throw new ArgumentOutOfRangeException(nameof(notice)),
     };
 
-    /// <summary>The notice an address names by its code; none for a code the shop does not know.</summary>
+    /// <summary>The notice a code names; none for a code the shop does not know.</summary>
     public static CheckoutStepNotice? FromCode(string? code) =>
         Enum.GetValues<CheckoutStepNotice>().Cast<CheckoutStepNotice?>().FirstOrDefault(notice => notice?.Code() == code);
+
+    /// <summary>Leaves the notice's code — and the number it names — for the step's page the redirect leads to.</summary>
+    public static void Leave(this ITempDataDictionary tempData, CheckoutStep step, CheckoutStepNotice notice, int? count = null)
+    {
+        tempData[KeyOf(step)] = notice.Code();
+        if (count is { } number)
+        {
+            tempData[KeyOf(step) + CountSuffix] = number;
+        }
+        else
+        {
+            tempData.Remove(KeyOf(step) + CountSuffix);
+        }
+    }
+
+    /// <summary>The notice left for the step's page and the number it names, if any — reading them removes them.</summary>
+    public static (CheckoutStepNotice? Notice, int? Count) TakeCheckoutStepNotice(this ITempDataDictionary tempData, CheckoutStep step) =>
+        (FromCode(tempData[KeyOf(step)] as string), tempData[KeyOf(step) + CountSuffix] as int?);
+
+    /// <summary>The TempData key of the notice addressed to a step's page, written out per step.</summary>
+    private static string KeyOf(CheckoutStep step) => step switch
+    {
+        CheckoutStep.BuyerInfo => "notice.checkout.buyer",
+        CheckoutStep.Delivery => "notice.checkout.delivery",
+        CheckoutStep.Payment => "notice.checkout.payment",
+        CheckoutStep.Review => "notice.checkout.review",
+        CheckoutStep.Confirmation => "notice.checkout.confirmation",
+        _ => throw new ArgumentOutOfRangeException(nameof(step), step, null),
+    };
 }

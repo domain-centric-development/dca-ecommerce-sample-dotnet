@@ -30,7 +30,7 @@ public sealed class CheckoutBetweenVisitorsTest : IClassFixture<WebApplicationFa
 
         var started = await stranger.PostAsync("/checkout/start", Form(strangersPage, ("cartId", ownersCartId)));
 
-        Assert.Equal("/cart?notice=cart-not-found", started.Headers.Location!.ToString());
+        Assert.Equal("/cart", started.Headers.Location!.ToString());
         Assert.Equal("Your cart could not be found.", await CartErrorAsync(stranger, started.Headers.Location!));
         var ownersBuyerStep = await owner.GetStringAsync("/checkout/buyer");
         Assert.Equal(new[] { "Domain-Driven Design x1" }, SummaryItems(ownersBuyerStep));

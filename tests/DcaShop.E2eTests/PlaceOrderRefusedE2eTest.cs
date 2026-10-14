@@ -32,7 +32,7 @@ public sealed class PlaceOrderRefusedE2eTest : BaseE2eTest
 
         await review.PressPlaceOrderAsync();
 
-        await Assertions.Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex(System.Text.RegularExpressions.Regex.Escape(shop.BaseUrl + "/checkout/review") + @"(\?.*)?$"));
+        await Assertions.Expect(Page).ToHaveURLAsync(shop.BaseUrl + "/checkout/review");
         Assert.NotEmpty(await review.ErrorMessageAsync());
         Assert.False(await review.ShowsConfirmationAsync());
         Assert.Equal("3 units available", await (await ProductDetailPage.NavigateToAsync(Page, shop.BaseUrl, hexagon)).AvailabilityAsync());

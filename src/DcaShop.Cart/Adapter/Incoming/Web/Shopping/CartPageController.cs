@@ -38,14 +38,12 @@ public sealed class CartPageController : Controller
 
     /// <summary>The customer's active cart; a customer without one sees the empty cart — reading opens none.</summary>
     [HttpGet("")]
-    public async Task<IActionResult> Show(
-        [FromQuery(Name = CartPageNotices.Parameter)] string? notice,
-        [FromQuery(Name = CartPageNotices.CountParameter)] int? count,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> Show(CancellationToken cancellationToken)
     {
+        var (notice, count) = TempData.TakeCartPageNotice(CartPageNotices.CartPage);
         var result = await _getActiveCart.ExecuteAsync(new GetActiveCartQuery(CurrentCustomerId), cancellationToken);
         var viewModel = result is { Cart: { } cart, Totals: { } totals } ? ToViewModel(cart, totals) : CartPageViewModel.Empty;
-        return View("~/Views/Cart/View.cshtml", WithNotice(viewModel, CartPageNotices.FromCode(notice), count));
+        return View("~/Views/Cart/View.cshtml", WithNotice(viewModel, notice, count));
     }
 
     [HttpPost("add-product")]
@@ -55,15 +53,23 @@ public sealed class CartPageController : Controller
         try
         {
             await _addItemToCart.ExecuteAsync(new AddItemToCartCommand(cartId, CurrentCustomerId, productId, quantity), cancellationToken);
-            return Redirect(CartPageNotices.PathWith(CartPage, CartPageNotice.ProductAdded));
+            TempData.Leave(CartPageNotices.CartPage, CartPageNotice.ProductAdded);
+            return Redirect(CartPage);
         }
         catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
         {
             // The context's own refusals, plus the argument exception a form field still reaches a value object
             // with.
-            return Redirect(e is InsufficientArticleStockException insufficient
-                ? CartPageNotices.PathWith(CartPage, CartPageNotice.NotEnoughStock, insufficient.Requested)
-                : CartPageNotices.PathWith(CartPage, NoticeFor(e)));
+            if (e is InsufficientArticleStockException insufficient)
+            {
+                TempData.Leave(CartPageNotices.CartPage, CartPageNotice.NotEnoughStock, insufficient.Requested);
+            }
+            else
+            {
+                TempData.Leave(CartPageNotices.CartPage, NoticeFor(e));
+            }
+
+            return Redirect(CartPage);
         }
     }
 

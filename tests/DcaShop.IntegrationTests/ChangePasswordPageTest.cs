@@ -88,7 +88,7 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
             "/login", Submission(Element(page, "login-form", "</form>"), ("email", Email), ("password", NewPassword)));
 
         var landing = await FollowRedirectsAsync(client, loggedIn);
-        Assert.Equal("/cart?notice=welcome-back", landing.Path);
+        Assert.Equal("/cart", landing.Path);
         Assert.Equal(
             $"Welcome, {Email}",
             Text(await landing.Response.Content.ReadAsStringAsync(), @"data-test=""user-greeting"">([^<]*)</span>"));
@@ -160,7 +160,7 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
             "/login", Submission(Element(page, "login-form", "</form>"), ("email", Email), ("password", Password)));
 
         var landing = await FollowRedirectsAsync(client, loggedIn);
-        Assert.Equal("/cart?notice=welcome-back", landing.Path);
+        Assert.Equal("/cart", landing.Path);
         Assert.Equal(
             $"Welcome, {Email}",
             Text(await landing.Response.Content.ReadAsStringAsync(), @"data-test=""user-greeting"">([^<]*)</span>"));

@@ -61,7 +61,7 @@ public sealed class AccountFlowTest : IClassFixture<WebApplicationFactory<Progra
         // Nothing to decide — but the items still have to arrive, or logging in would silently empty the cart.
         var merge = await guest.GetAsync(loggedIn.Headers.Location);
         Assert.Equal(HttpStatusCode.Redirect, merge.StatusCode);
-        Assert.Equal("/cart?notice=welcome-back", merge.Headers.Location!.ToString());
+        Assert.Equal("/cart", merge.Headers.Location!.ToString());
 
         var cart = await guest.GetStringAsync("/cart");
         Assert.Contains("data-test=\"cart-item\"", cart, StringComparison.Ordinal);

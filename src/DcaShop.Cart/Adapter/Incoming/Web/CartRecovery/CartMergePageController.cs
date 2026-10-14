@@ -49,9 +49,9 @@ public sealed class CartMergePageController : Controller
     public async Task<IActionResult> Show(
         [FromQuery] string anonymousUserId,
         [FromQuery] string? returnUrl,
-        [FromQuery(Name = CartPageNotices.Parameter)] string? notice,
         CancellationToken cancellationToken)
     {
+        var (notice, _) = TempData.TakeCartPageNotice(CartPageNotices.MergePage);
         var registeredUserId = _identityProvider.GetCurrentIdentity().UserId.Value;
         var options = await _getMergeOptions.ExecuteAsync(
             new GetCartMergeOptionsQuery(anonymousUserId, registeredUserId), cancellationToken);
@@ -63,7 +63,7 @@ public sealed class CartMergePageController : Controller
             await _recoverCart.ExecuteAsync(
                 new RecoverCartCommand(anonymousUserId, registeredUserId), cancellationToken);
 
-            return Redirect(WithNoticeForTheCart(Destination(returnUrl), CartPageNotice.WelcomeBack));
+            return RedirectWithNoticeForTheCart(Destination(returnUrl), CartPageNotice.WelcomeBack);
         }
 
         return View(
@@ -71,7 +71,7 @@ public sealed class CartMergePageController : Controller
             CartMergePageViewModel.FromResult(options, anonymousUserId, returnUrl) with
             {
                 // The one notice this page says; any other code is not its own and shows nothing.
-                ErrorMessage = CartPageNotices.FromCode(notice) is CartPageNotice.InvalidMergeOption
+                ErrorMessage = notice is CartPageNotice.InvalidMergeOption
                     ? CartPageNotice.InvalidMergeOption.Sentence()
                     : null,
             });
@@ -87,30 +87,37 @@ public sealed class CartMergePageController : Controller
         if (CartMergeStrategySubmission.Parse(strategy) is not { } chosen)
         {
             var back = $"/cart/merge?anonymousUserId={WebUtility.UrlEncode(anonymousUserId)}";
-            return Redirect(CartPageNotices.PathWith(
-                string.IsNullOrWhiteSpace(returnUrl) ? back : $"{back}&returnUrl={WebUtility.UrlEncode(returnUrl)}",
-                CartPageNotice.InvalidMergeOption));
+            TempData.Leave(CartPageNotices.MergePage, CartPageNotice.InvalidMergeOption);
+            return Redirect(
+                string.IsNullOrWhiteSpace(returnUrl) ? back : $"{back}&returnUrl={WebUtility.UrlEncode(returnUrl)}");
         }
 
         await _mergeCarts.ExecuteAsync(
             new MergeCartsCommand(anonymousUserId, _identityProvider.GetCurrentIdentity().UserId.Value, chosen),
             cancellationToken);
 
-        return Redirect(WithNoticeForTheCart(Destination(returnUrl), chosen switch
+        return RedirectWithNoticeForTheCart(Destination(returnUrl), chosen switch
         {
             CartMergeStrategy.MergeBoth => CartPageNotice.CartsMerged,
             CartMergeStrategy.UseAccountCart => CartPageNotice.AccountCartUsed,
             _ => CartPageNotice.RecentCartUsed,
-        }));
+        });
     }
 
     private static string Destination(string? returnUrl) =>
         string.IsNullOrWhiteSpace(returnUrl) ? CartPage : returnUrl;
 
     /// <summary>
-    /// The destination, carrying the notice when it is the cart page — the one page that says it; any other page the
-    /// visitor was headed to opens at its own address.
+    /// To the destination, leaving the notice when it is the cart page — the one page that says it; any other page the
+    /// visitor was headed to opens without one, and no notice waits for a later visit to the cart.
     /// </summary>
-    private static string WithNoticeForTheCart(string destination, CartPageNotice notice) =>
-        destination == CartPage ? CartPageNotices.PathWith(destination, notice) : destination;
+    private RedirectResult RedirectWithNoticeForTheCart(string destination, CartPageNotice notice)
+    {
+        if (destination == CartPage)
+        {
+            TempData.Leave(CartPageNotices.CartPage, notice);
+        }
+
+        return Redirect(destination);
+    }
 }
