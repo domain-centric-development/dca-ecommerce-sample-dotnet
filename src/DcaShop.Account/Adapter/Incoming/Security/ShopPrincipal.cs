@@ -50,7 +50,7 @@ public static class ShopPrincipal
             claims.Add(new Claim(ClaimTypes.Email, email));
         }
 
-        claims.AddRange(identity.Roles.Select(role => new Claim(ClaimTypes.Role, role)));
+        claims.AddRange(identity.Roles.Select(role => new Claim(ClaimTypes.Role, role.Code)));
 
         var claimsIdentity = new ClaimsIdentity(claims, authenticatedScheme, ClaimTypes.NameIdentifier, ClaimTypes.Role);
         return new ClaimsPrincipal(claimsIdentity);

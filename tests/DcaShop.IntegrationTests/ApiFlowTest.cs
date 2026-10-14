@@ -150,7 +150,7 @@ public sealed class ApiFlowTest : IClassFixture<WebApplicationFactory<Program>>
         return scope.ServiceProvider.GetRequiredService<JwtTokenService>().GenerateRegisteredToken(
             UserId.Of(userId),
             email,
-            new HashSet<string> { IIdentityProvider.IIdentity.RoleCustomer, IIdentityProvider.IIdentity.RoleStaff });
+            new HashSet<Role> { Role.Customer, Role.Staff });
     }
 
     private static StringContent NewProduct() => new(

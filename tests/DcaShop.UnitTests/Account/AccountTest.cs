@@ -23,12 +23,12 @@ public sealed class AccountTest
     {
         var account = NewAccount();
         var snapshot = account.Roles;
-        if (snapshot is ISet<string> mutable)
-            Assert.Throws<NotSupportedException>(() => mutable.Add("injected"));
-        Assert.DoesNotContain("injected", account.Roles);
-        account.AddRole("later-role");
-        Assert.DoesNotContain("later-role", snapshot);
-        Assert.Contains("later-role", account.Roles);
+        if (snapshot is ISet<Role> mutable)
+            Assert.Throws<NotSupportedException>(() => mutable.Add(Role.Staff));
+        Assert.DoesNotContain(Role.Staff, account.Roles);
+        account.AddRole(Role.Staff);
+        Assert.DoesNotContain(Role.Staff, snapshot);
+        Assert.Contains(Role.Staff, account.Roles);
     }
 
     [Fact]

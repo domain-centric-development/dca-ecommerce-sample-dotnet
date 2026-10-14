@@ -25,7 +25,7 @@ namespace DcaShop.Account.Domain.Model;
 /// </remarks>
 public sealed class Account : AggregateRootBase<Account, AccountId>
 {
-    private readonly HashSet<string> _roles;
+    private readonly HashSet<Role> _roles;
 
     private Account(
         AccountId id,
@@ -33,7 +33,7 @@ public sealed class Account : AggregateRootBase<Account, AccountId>
         Owner owner,
         UserId linkedUserId,
         HashedPassword password,
-        IEnumerable<string> roles,
+        IEnumerable<Role> roles,
         DateTimeOffset createdAt)
     {
         Id = id;
@@ -66,7 +66,7 @@ public sealed class Account : AggregateRootBase<Account, AccountId>
 
     public AccountStatus Status { get; private set; }
 
-    public IReadOnlySet<string> Roles => _roles.ToFrozenSet(StringComparer.Ordinal);
+    public IReadOnlySet<Role> Roles => _roles.ToFrozenSet();
 
     public DateTimeOffset CreatedAt { get; }
 
@@ -99,7 +99,7 @@ public sealed class Account : AggregateRootBase<Account, AccountId>
         UserId linkedUserId,
         HashedPassword password,
         AccountStatus status,
-        IEnumerable<string> roles,
+        IEnumerable<Role> roles,
         DateTimeOffset createdAt,
         DateTimeOffset? lastLoginAt) =>
         new(id, email, owner, linkedUserId, password, roles, createdAt)
@@ -215,7 +215,7 @@ public sealed class Account : AggregateRootBase<Account, AccountId>
         RegisterEvent(AccountClosed.Now(Id));
     }
 
-    public void AddRole(string role) => _roles.Add(role);
+    public void AddRole(Role role) => _roles.Add(role);
 
-    public void RemoveRole(string role) => _roles.Remove(role);
+    public void RemoveRole(Role role) => _roles.Remove(role);
 }

@@ -8,15 +8,15 @@ public sealed record JwtIdentity(
     UserId UserId,
     IIdentityProvider.IdentityType Type,
     string? Email,
-    IReadOnlySet<string> Roles) : IIdentityProvider.IIdentity
+    IReadOnlySet<Role> Roles) : IIdentityProvider.IIdentity
 {
     /// <summary>
     /// A visitor with an identity but no session. The <see cref="UserId"/> is deliberately the one the browser
     /// already carried: expiry ends the session, not the identity (ADR-029).
     /// </summary>
     public static JwtIdentity Anonymous(UserId userId) =>
-        new(userId, IIdentityProvider.IdentityType.Anonymous, null, new HashSet<string>());
+        new(userId, IIdentityProvider.IdentityType.Anonymous, null, new HashSet<Role>());
 
-    public static JwtIdentity Registered(UserId userId, string email, IReadOnlySet<string> roles) =>
+    public static JwtIdentity Registered(UserId userId, string email, IReadOnlySet<Role> roles) =>
         new(userId, IIdentityProvider.IdentityType.Registered, email, roles);
 }

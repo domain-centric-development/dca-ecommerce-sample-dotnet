@@ -96,7 +96,7 @@ public sealed class CreatedProductPriceE2eTest : BaseE2eTest, IDisposable
         return tokens.GenerateRegisteredToken(
             UserId.Of(SubjectOf(token)),
             email,
-            new HashSet<string> { IIdentityProvider.IIdentity.RoleCustomer, IIdentityProvider.IIdentity.RoleStaff });
+            new HashSet<Role> { Role.Customer, Role.Staff });
     }
 
     private static string SubjectOf(string jwt)

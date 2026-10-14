@@ -1,3 +1,5 @@
+using DcaShop.SharedKernel.Domain.Model;
+
 namespace DcaShop.Account.Application.AuthenticateAccount;
 
 /// <summary>
@@ -9,10 +11,10 @@ public sealed record AuthenticateAccountResult(
     bool Success,
     string? UserId,
     string? Email,
-    IReadOnlySet<string>? Roles,
+    IReadOnlySet<Role>? Roles,
     string? ErrorMessage)
 {
-    public static AuthenticateAccountResult Succeeded(string userId, string email, IReadOnlySet<string> roles) =>
+    public static AuthenticateAccountResult Succeeded(string userId, string email, IReadOnlySet<Role> roles) =>
         new(true, userId, email, roles, null);
 
     public static AuthenticateAccountResult Failed(string errorMessage) =>

@@ -125,7 +125,7 @@ public sealed class ShopIdentityAuthenticationHandlerTest
     private (string, string) SessionCookieFor(UserId userId)
     {
         _accounts.Register(userId);
-        return (SessionCookie, _tokenService.GenerateRegisteredToken(userId, Email, new HashSet<string> { "CUSTOMER" }));
+        return (SessionCookie, _tokenService.GenerateRegisteredToken(userId, Email, new HashSet<Role> { Role.Customer }));
     }
 
     /// <summary>

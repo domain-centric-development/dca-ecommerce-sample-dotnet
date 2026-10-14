@@ -55,11 +55,11 @@ public sealed class JwtTokenService : ITokenService
     public string GenerateAnonymousToken(UserId userId) =>
         Write([new Claim(ClaimType, TypeAnonymous)], userId, _options.IdentityLifetime);
 
-    public string GenerateRegisteredToken(UserId userId, string email, IReadOnlySet<string> roles)
+    public string GenerateRegisteredToken(UserId userId, string email, IReadOnlySet<Role> roles)
     {
         ArgumentNullException.ThrowIfNull(roles);
         var claims = new List<Claim> { new(ClaimType, TypeRegistered), new(ClaimEmail, email) };
-        claims.AddRange(roles.Select(role => new Claim(ClaimRoles, role)));
+        claims.AddRange(roles.Select(role => new Claim(ClaimRoles, role.Code)));
         return Write(claims, userId, _options.SessionLifetime);
     }
 
@@ -139,7 +139,12 @@ public sealed class JwtTokenService : ITokenService
             throw new ArgumentException("Registered JWT missing email claim", nameof(token));
         }
 
-        var roles = token.Claims.Where(c => c.Type == ClaimRoles).Select(c => c.Value).ToHashSet();
+        // A code no role carries is dropped, not honoured: a token can only grant what the shop knows.
+        var roles = token.Claims
+            .Where(c => c.Type == ClaimRoles)
+            .Select(c => Role.FromCode(c.Value))
+            .OfType<Role>()
+            .ToHashSet();
         return JwtIdentity.Registered(userId, email, roles);
     }
 }

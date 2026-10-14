@@ -22,7 +22,7 @@ authentication, roles, and the lifecycle (active, suspended, closed).
 **Identity:** `AccountId`
 
 **Related terms:** `Email`, `Owner`, `HashedPassword`, `AccountStatus`, `UserId`,
-`PasswordHasher`, `Role` (planned).
+`PasswordHasher`, `Role`.
 
 **Operations:** `Register` (the account comes into existence, linked to the caller's `UserId`),
 `Reconstitute` (restores a stored account; no rule re-evaluated, no event), `CheckPassword` (a
@@ -36,9 +36,7 @@ operation on the aggregate accepts an `Owner` or mentions a name, so the only wa
 system is `Register`. The date of birth of that same owner may be corrected later
 (`ChangeOwnerDateOfBirth`). Distinct from the buyer's name in the `checkout` context (`BuyerInfo`),
 which is per-order shipping data and freely editable — same words, different concept, different
-lifecycle. `Roles` is currently an `IReadOnlySet<string>` over the constants of `Role`. Planned
-cleanup: promote `Role` to a Value Object (instead of `string`) to enforce valid values and improve
-domain vocabulary. On registration the
+lifecycle. `Roles` is a set of `Role` values. On registration the
 `UserId` from the JWT is preserved unchanged to guarantee cart/checkout continuity across the
 guest → account transition.
 
@@ -154,13 +152,14 @@ without it is forbidden.
 staff"); `cart/shopping` — the rule "Only staff list every cart; a stranger is challenged, a customer is
 forbidden" (`staff-list-every-cart`).
 
-**Type:** Value Object with the fixed values customer and staff — today a `static class Role` holding the two
-constants `Role.Customer` and `Role.Staff`, over `IReadOnlySet<string> Roles`.
+**Type:** Value Object with the fixed values customer and staff — `Role.Customer` and `Role.Staff` are its only
+instances, and an account's roles are a set of them. It lives in the shared kernel, because the adapters of other
+contexts (the product and cart APIs) guard on it; its `Code` (`CUSTOMER`, `STAFF`) is the name a token carries, and
+a code no role carries is dropped when a token is read.
 
 **Synonyms (avoid):** raw `string` role.
 
-**Notes:** A fixed set of values is a type, not a string: `IReadOnlySet<string> Roles` becomes a set of `Role`
-values, which rules out typos at compile time.
+**Notes:** A fixed set of values is a type, not a string: a set of `Role` values rules out typos at compile time.
 
 ### Token (planned)
 
@@ -289,8 +288,6 @@ because it is consumed by domain code and expressed in domain language.
 
 ## Open issues from DCA review
 
-- **`Role` as a VO instead of `string`** — replace `Account.Roles : IReadOnlySet<string>` with a set
-  of `Role` values.
 - **Introduce `Token` as a VO** if tokens have business relevance (e.g. refresh,
   password reset).
 - **Polysemy `CustomerId` (Cart, Checkout) vs `UserId` (SharedKernel) vs `AccountId`** —

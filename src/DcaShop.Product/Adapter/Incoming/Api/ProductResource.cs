@@ -2,6 +2,7 @@ using DcaShop.Product.Application.CreateProduct;
 using DcaShop.Product.Application.GetAllProducts;
 using DcaShop.Product.Application.GetProductById;
 using DcaShop.SharedKernel.Application.Shared;
+using DcaShop.SharedKernel.Domain.Model;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -41,7 +42,7 @@ public sealed class ProductResource : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = IIdentityProvider.IIdentity.RoleStaff)]
+    [Authorize(Roles = Role.StaffCode)]
     public async Task<ActionResult<ProductDto>> CreateProduct(
         [FromBody] CreateProductRequest request, CancellationToken cancellationToken)
     {

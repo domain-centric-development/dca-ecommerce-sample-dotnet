@@ -28,16 +28,6 @@ public interface IIdentityProvider : IOutputPort
     /// </summary>
     public interface IIdentity
     {
-        /// <summary>The role every registered account holds.</summary>
-        public const string RoleCustomer = "CUSTOMER";
-
-        /// <summary>
-        /// The operator role. It lives here rather than in the Account context because the adapters that guard
-        /// on it — the product and cart APIs — belong to other contexts, and a role name is exactly the kind of
-        /// tiny, universally agreed concept the shared kernel is for.
-        /// </summary>
-        public const string RoleStaff = "STAFF";
-
         /// <summary>The cross-context identity. It survives session expiry and changes only on explicit logout.</summary>
         UserId UserId { get; }
 
@@ -46,13 +36,13 @@ public interface IIdentityProvider : IOutputPort
         /// <summary>The email of the authenticated account, absent for an anonymous visitor.</summary>
         string? Email { get; }
 
-        IReadOnlySet<string> Roles { get; }
+        IReadOnlySet<Role> Roles { get; }
 
         bool IsAnonymous => Type == IdentityType.Anonymous;
 
         bool IsRegistered => Type == IdentityType.Registered;
 
-        bool HasRole(string role) => Roles.Contains(role);
+        bool HasRole(Role role) => Roles.Contains(role);
     }
 
     /// <summary>Whether the visitor has authenticated in the current session.</summary>

@@ -56,7 +56,7 @@ public sealed class IsAccountRegisteredUseCaseTest
             UserId.Of(UserIdValue),
             HashedPassword.FromHash("hashed:OldPassw0rd"),
             status,
-            new[] { "CUSTOMER" },
+            new[] { Role.Customer },
             DateTimeOffset.Parse("2026-01-01T00:00:00Z"),
             DateTimeOffset.Parse("2026-07-31T08:15:30Z"));
 

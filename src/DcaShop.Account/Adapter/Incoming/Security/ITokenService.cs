@@ -15,5 +15,5 @@ namespace DcaShop.Account.Adapter.Incoming.Security;
 /// </remarks>
 public interface ITokenService
 {
-    string GenerateRegisteredToken(UserId userId, string email, IReadOnlySet<string> roles);
+    string GenerateRegisteredToken(UserId userId, string email, IReadOnlySet<Role> roles);
 }

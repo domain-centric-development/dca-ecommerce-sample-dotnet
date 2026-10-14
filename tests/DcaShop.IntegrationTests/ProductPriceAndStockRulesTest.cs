@@ -166,7 +166,7 @@ public sealed class ProductPriceAndStockRulesTest
         var staffToken = scope.ServiceProvider.GetRequiredService<JwtTokenService>().GenerateRegisteredToken(
             UserId.Of(SubjectOf(token)),
             email,
-            new HashSet<string> { IIdentityProvider.IIdentity.RoleCustomer, IIdentityProvider.IIdentity.RoleStaff });
+            new HashSet<Role> { Role.Customer, Role.Staff });
         var client = shop.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", staffToken);
         return client;

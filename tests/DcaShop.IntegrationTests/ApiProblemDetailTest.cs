@@ -115,7 +115,7 @@ public sealed class ApiProblemDetailTest : IClassFixture<WebApplicationFactory<P
         return scope.ServiceProvider.GetRequiredService<JwtTokenService>().GenerateRegisteredToken(
             UserId.Of(userId),
             email,
-            new HashSet<string> { IIdentityProvider.IIdentity.RoleCustomer, IIdentityProvider.IIdentity.RoleStaff });
+            new HashSet<Role> { Role.Customer, Role.Staff });
     }
 
     private static object Registration(string email) => new

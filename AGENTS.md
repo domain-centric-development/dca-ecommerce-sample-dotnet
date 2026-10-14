@@ -166,7 +166,7 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   visitor), but only a registered session yields an authenticated principal (`ShopPrincipal.From`). An anonymous
   visitor is `NoResult`, so `[Authorize]` challenges (login redirect on pages, `401` + `WWW-Authenticate: Bearer`
   with a problem document on the API) and a customer without a role is forbidden (`403`). Claims-only gates are
-  attributes: `[Authorize(Roles = RoleStaff)]` on the two staff routes, `[Authorize]` on the account pages. The
+  attributes: `[Authorize(Roles = Role.StaffCode)]` on the two staff routes, `[Authorize]` on the account pages. The
   backoffice keeps its own cookie scheme, never the default.
 - API surface: `/api/**` and `/mcp` are **Bearer only** — the default policy scheme forwards those paths to the
   `ShopBearer` scheme, which reads no cookie and writes none; that is the sole reason `TokenOnlyAwareAntiforgeryFilter`

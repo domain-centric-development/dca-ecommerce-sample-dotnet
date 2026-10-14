@@ -380,7 +380,7 @@ public sealed class CartApiTest : IDisposable
         return scope.ServiceProvider.GetRequiredService<JwtTokenService>().GenerateRegisteredToken(
             UserId.Of(userId),
             email,
-            new HashSet<string> { IIdentityProvider.IIdentity.RoleCustomer, IIdentityProvider.IIdentity.RoleStaff });
+            new HashSet<Role> { Role.Customer, Role.Staff });
     }
 
     private static string SubjectOf(string jwt)
