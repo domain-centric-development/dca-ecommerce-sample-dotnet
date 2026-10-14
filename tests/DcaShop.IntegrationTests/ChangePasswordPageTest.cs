@@ -1,3 +1,4 @@
+
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -85,7 +86,7 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
         var page = await client.GetStringAsync("/login");
 
         var loggedIn = await client.PostAsync(
-            "/login", Submission(Element(page, "login-form", "</form>"), ("email", Email), ("password", NewPassword)));
+            "/login", Forms.AsRendered(Element(page, "login-form", "</form>"), ("email", Email), ("password", NewPassword)));
 
         var landing = await FollowRedirectsAsync(client, loggedIn);
         Assert.Equal("/cart", landing.Path);
@@ -103,7 +104,7 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
         var page = await client.GetStringAsync("/login");
 
         var refused = await client.PostAsync(
-            "/login", Submission(Element(page, "login-form", "</form>"), ("email", Email), ("password", Password)));
+            "/login", Forms.AsRendered(Element(page, "login-form", "</form>"), ("email", Email), ("password", Password)));
 
         Assert.Equal(HttpStatusCode.OK, refused.StatusCode);
         Assert.Equal(
@@ -157,7 +158,7 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
         var page = await client.GetStringAsync("/login");
 
         var loggedIn = await client.PostAsync(
-            "/login", Submission(Element(page, "login-form", "</form>"), ("email", Email), ("password", Password)));
+            "/login", Forms.AsRendered(Element(page, "login-form", "</form>"), ("email", Email), ("password", Password)));
 
         var landing = await FollowRedirectsAsync(client, loggedIn);
         Assert.Equal("/cart", landing.Path);
@@ -230,7 +231,7 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
         var page = await client.GetStringAsync(ChangePasswordPath);
         return await client.PostAsync(
             ChangePasswordPath,
-            Submission(
+            Forms.AsRendered(
                 Element(page, "change-password-form", "</form>"),
                 ("currentPassword", current),
                 ("newPassword", replacement),
@@ -252,7 +253,7 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
         var page = await client.GetStringAsync(ChangePasswordPath);
         return await client.PostAsync(
             ChangePasswordPath,
-            Submission(
+            Forms.AsRendered(
                 Element(page, "change-password-form", "</form>"),
                 ("currentPassword", current),
                 ("newPassword", replacement),
@@ -272,7 +273,7 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
         var page = await client.GetStringAsync("/register");
         return await client.PostAsync(
             "/register",
-            Submission(
+            Forms.AsRendered(
                 Element(page, "register-form", "</form>"),
                 ("firstName", "Anna"),
                 ("lastName", "Schmidt"),
@@ -295,18 +296,6 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
 
         Assert.NotEqual(HttpStatusCode.Redirect, response.StatusCode);
         return (path, response);
-    }
-
-    /// <summary>The form as the browser would send it: its hidden fields as rendered, plus what the visitor typed.</summary>
-    private static FormUrlEncodedContent Submission(string form, params (string Name, string Value)[] typed)
-    {
-        var hidden = Regex.Matches(form, @"<input\b[^>]*type=""hidden""[^>]*>")
-            .Select(input => (
-                Name: Regex.Match(input.Value, @"name=""([^""]+)""").Groups[1].Value,
-                Value: WebUtility.HtmlDecode(Regex.Match(input.Value, @"value=""([^""]*)""").Groups[1].Value)));
-
-        return new FormUrlEncodedContent(
-            hidden.Concat(typed).Select(f => new KeyValuePair<string, string>(f.Name, f.Value)));
     }
 
     /// <summary>The markup from the element carrying <paramref name="dataTest"/> to its closing tag.</summary>

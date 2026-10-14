@@ -4,7 +4,6 @@ using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Checkout.Application.Session.StartCheckout;
 using DcaShop.Checkout.Application.Shared;
-using DcaShop.Inventory.Application.ReduceStock;
 using DcaShop.Product.Application.GetAllProducts;
 
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -37,8 +36,7 @@ public sealed class OutdatedCartStartTest : IClassFixture<WebApplicationFactory<
         var cart = await scope.ServiceProvider.GetRequiredService<IGetOrCreateActiveCartInputPort>().ExecuteAsync(new GetOrCreateActiveCartCommand(guest));
         await scope.ServiceProvider.GetRequiredService<IAddItemToCartInputPort>()
             .ExecuteAsync(new AddItemToCartCommand(cart.CartId, guest, hexagon.ProductId.Value, 5));
-        await scope.ServiceProvider.GetRequiredService<IReduceStockInputPort>()
-            .ExecuteAsync(new ReduceStockCommand([new ReduceStockCommand.Line(hexagon.ProductId.Value, 5)], Guid.NewGuid()));
+        await GuestOrders.AnotherGuestHasBoughtAsync(_factory, hexagon.ProductId.Value, 5);
         var start = scope.ServiceProvider.GetRequiredService<IStartCheckoutInputPort>();
 
         var refused = await Assert.ThrowsAsync<CheckoutItemsUnavailableException>(() =>

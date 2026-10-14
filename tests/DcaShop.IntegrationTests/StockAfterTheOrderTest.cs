@@ -1,7 +1,10 @@
 using System.Net;
 using System.Text.RegularExpressions;
 
+using DcaShop.Inventory.Application.ReduceStock;
+
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DcaShop.IntegrationTests;
 
@@ -55,6 +58,17 @@ internal static class GuestOrders
     /// <summary>A new visitor: a client with cookies of its own, redirects left to the caller.</summary>
     public static HttpClient Guest(WebApplicationFactory<Program> factory) =>
         factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
+
+    /// <summary>
+    /// What another guest's placed order does to the stock of <paramref name="productId"/>: the reduction its
+    /// confirmation triggers in Inventory.
+    /// </summary>
+    public static async Task AnotherGuestHasBoughtAsync(WebApplicationFactory<Program> shop, Guid productId, int quantity)
+    {
+        using var scope = shop.Services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<IReduceStockInputPort>()
+            .ExecuteAsync(new ReduceStockCommand([new ReduceStockCommand.Line(productId, quantity)], Guid.NewGuid()));
+    }
 
     public static async Task<string> AvailabilityAsync(HttpClient guest, string productPath) =>
         AvailabilityPages.Availability(await guest.GetStringAsync(productPath));

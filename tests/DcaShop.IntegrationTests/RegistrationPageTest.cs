@@ -1,3 +1,4 @@
+
 using System.Net;
 using System.Text.RegularExpressions;
 
@@ -68,7 +69,7 @@ public sealed class RegistrationPageTest : IClassFixture<WebApplicationFactory<P
 
         var registered = await client.PostAsync(
             "/register",
-            Submission(
+            Forms.AsRendered(
                 Element(page, "register-form", "</form>"),
                 ("firstName", "Anna"),
                 ("lastName", "Schmidt"),
@@ -199,7 +200,7 @@ public sealed class RegistrationPageTest : IClassFixture<WebApplicationFactory<P
 
         var answer = await client.PostAsync(
             "/register",
-            Submission(Element(page, "register-form", "</form>"), [.. valid.Select(f => (f.Key, f.Value))]));
+            Forms.AsRendered(Element(page, "register-form", "</form>"), [.. valid.Select(f => (f.Key, f.Value))]));
 
         Assert.Equal(HttpStatusCode.OK, answer.StatusCode);
         var refused = await answer.Content.ReadAsStringAsync();
@@ -221,7 +222,7 @@ public sealed class RegistrationPageTest : IClassFixture<WebApplicationFactory<P
         var page = await client.GetStringAsync("/register");
         return await client.PostAsync(
             "/register",
-            Submission(
+            Forms.AsRendered(
                 Element(page, "register-form", "</form>"),
                 ("firstName", "Anna"),
                 ("lastName", "Schmidt"),
@@ -229,18 +230,6 @@ public sealed class RegistrationPageTest : IClassFixture<WebApplicationFactory<P
                 ("email", email),
                 ("password", "Secret123"),
                 ("confirmPassword", "Secret123")));
-    }
-
-    /// <summary>The form as the browser would send it: its hidden fields as rendered, plus what the visitor typed.</summary>
-    private static FormUrlEncodedContent Submission(string form, params (string Name, string Value)[] typed)
-    {
-        var hidden = Regex.Matches(form, @"<input\b[^>]*type=""hidden""[^>]*>")
-            .Select(input => (
-                Name: Regex.Match(input.Value, @"name=""([^""]+)""").Groups[1].Value,
-                Value: WebUtility.HtmlDecode(Regex.Match(input.Value, @"value=""([^""]*)""").Groups[1].Value)));
-
-        return new FormUrlEncodedContent(
-            hidden.Concat(typed).Select(f => new KeyValuePair<string, string>(f.Name, f.Value)));
     }
 
     /// <summary>The <c>maxlength</c> of the input named <paramref name="name"/>.</summary>

@@ -1,9 +1,6 @@
 using System.Net;
 
-using DcaShop.Inventory.Application.ReduceStock;
-
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace DcaShop.IntegrationTests;
 
@@ -25,7 +22,7 @@ public sealed class PlaceOrderRefusalPageTest : IClassFixture<WebApplicationFact
         var guest = GuestOrders.Guest(_factory);
         var hexagon = await AvailabilityPages.ProductPathAsync(guest, Hexagon);
         await GuestOrders.GoToTheReviewAsync(guest, (hexagon, 2));
-        await AnotherVisitorHasBoughtAsync(hexagon, 8);
+        await GuestOrders.AnotherGuestHasBoughtAsync(_factory, Guid.Parse(hexagon["/products/".Length..]), 8);
 
         var placed = await guest.PostAsync("/checkout/confirm", GuestOrders.Form(await guest.GetStringAsync("/checkout/review")));
 
@@ -36,13 +33,5 @@ public sealed class PlaceOrderRefusalPageTest : IClassFixture<WebApplicationFact
             "Cannot place the order, 1 item(s) unavailable or out of stock.",
             AvailabilityPages.Text(review, @"data-test=""review-error-message"">([^<]*)</div>"));
         Assert.DoesNotContain("data-test=\"confirmation-title\"", review, StringComparison.Ordinal);
-    }
-
-    /// <summary>What another visitor's placed order does to the stock: the reduction its confirmation triggers in Inventory.</summary>
-    private async Task AnotherVisitorHasBoughtAsync(string productPath, int quantity)
-    {
-        using var scope = _factory.Services.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<IReduceStockInputPort>()
-            .ExecuteAsync(new ReduceStockCommand([new ReduceStockCommand.Line(Guid.Parse(productPath["/products/".Length..]), quantity)], Guid.NewGuid()));
     }
 }

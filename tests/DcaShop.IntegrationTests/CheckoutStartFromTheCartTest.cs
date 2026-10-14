@@ -7,22 +7,25 @@ namespace DcaShop.IntegrationTests;
 
 /// <summary>
 /// What the cart page offers and answers when its cart can no longer be checked out as it was — short of stock since
-/// another guest's order, or emptied by the guest's own order — through the real pages. Each test runs a host of its
-/// own: the orders use up seeded stock.
+/// another guest's order, or emptied by the guest's own order — through the real pages. The class runs a host of its
+/// own, since the orders use up seeded stock; its tests order different products, so neither touches the other's.
 /// </summary>
-public sealed class CheckoutStartFromTheCartTest
+public sealed class CheckoutStartFromTheCartTest : IClassFixture<WebApplicationFactory<Program>>
 {
     private const string Hexagon = "Wooden Hexagon Desk Model";
+
+    private readonly WebApplicationFactory<Program> _factory;
+
+    public CheckoutStartFromTheCartTest(WebApplicationFactory<Program> factory) => _factory = factory;
 
     [Fact]
     public async Task ACartShortOfStockOffersNoCheckoutAndSaysWhy()
     {
-        using var factory = new WebApplicationFactory<Program>();
-        var guest = GuestOrders.Guest(factory);
+        var guest = GuestOrders.Guest(_factory);
         var hexagon = await AvailabilityPages.ProductPathAsync(guest, Hexagon);
         Assert.Equal("8 units available", await GuestOrders.AvailabilityAsync(guest, hexagon));
         await AddAsync(guest, hexagon, 5);
-        await GuestOrders.PlaceOrderAsync(GuestOrders.Guest(factory), (hexagon, 5));
+        await GuestOrders.PlaceOrderAsync(GuestOrders.Guest(_factory), (hexagon, 5));
         Assert.Equal("3 units available", await GuestOrders.AvailabilityShortlyAfterwardsAsync(guest, hexagon, "3 units available"));
 
         var cartPage = await guest.GetStringAsync("/cart");
@@ -35,8 +38,7 @@ public sealed class CheckoutStartFromTheCartTest
     [Fact]
     public async Task StartingFromACartEmptiedByTheOrderIsRefused()
     {
-        using var factory = new WebApplicationFactory<Program>();
-        var guest = GuestOrders.Guest(factory);
+        var guest = GuestOrders.Guest(_factory);
         await AddAsync(guest, await AvailabilityPages.ProductPathAsync(guest, "Domain-Driven Design"), 1);
         var oldCartPage = await guest.GetStringAsync("/cart");
         var cartId = Regex.Match(oldCartPage, @"name=""cartId"" value=""([0-9a-f-]{36})""").Groups[1].Value;

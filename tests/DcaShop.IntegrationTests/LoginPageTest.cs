@@ -1,3 +1,4 @@
+
 using System.Net;
 using System.Text.RegularExpressions;
 
@@ -66,7 +67,7 @@ public sealed class LoginPageTest : IClassFixture<WebApplicationFactory<Program>
 
         var loggedIn = await client.PostAsync(
             "/login",
-            Submission(
+            Forms.AsRendered(
                 Element(page, "login-form", "</form>"), ("email", "anna.schmidt@example.com"), ("password", Password)));
 
         var landing = await FollowRedirectsAsync(client, loggedIn);
@@ -94,7 +95,7 @@ public sealed class LoginPageTest : IClassFixture<WebApplicationFactory<Program>
         var catalogue = await client.GetStringAsync("/products");
 
         var loggedOut = await client.PostAsync(
-            "/logout", Submission(Element(catalogue, "logout-form", "</form>")));
+            "/logout", Forms.AsRendered(Element(catalogue, "logout-form", "</form>")));
 
         Assert.Equal(HttpStatusCode.Redirect, loggedOut.StatusCode);
         Assert.Equal("/login?logout=true", loggedOut.Headers.Location!.ToString());
@@ -116,7 +117,7 @@ public sealed class LoginPageTest : IClassFixture<WebApplicationFactory<Program>
 
         var refused = await client.PostAsync(
             "/login",
-            Submission(Element(page, "login-form", "</form>"), ("email", "anna.schmidt@example"), ("password", Password)));
+            Forms.AsRendered(Element(page, "login-form", "</form>"), ("email", "anna.schmidt@example"), ("password", Password)));
 
         Assert.Equal(HttpStatusCode.OK, refused.StatusCode);
         var answer = await refused.Content.ReadAsStringAsync();
@@ -136,7 +137,7 @@ public sealed class LoginPageTest : IClassFixture<WebApplicationFactory<Program>
         var page = await client.GetStringAsync("/register");
         return await client.PostAsync(
             "/register",
-            Submission(
+            Forms.AsRendered(
                 Element(page, "register-form", "</form>"),
                 ("firstName", "Anna"),
                 ("lastName", "Schmidt"),
@@ -159,18 +160,6 @@ public sealed class LoginPageTest : IClassFixture<WebApplicationFactory<Program>
 
         Assert.NotEqual(HttpStatusCode.Redirect, response.StatusCode);
         return (path, response);
-    }
-
-    /// <summary>The form as the browser would send it: its hidden fields as rendered, plus what the visitor typed.</summary>
-    private static FormUrlEncodedContent Submission(string form, params (string Name, string Value)[] typed)
-    {
-        var hidden = Regex.Matches(form, @"<input\b[^>]*type=""hidden""[^>]*>")
-            .Select(input => (
-                Name: Regex.Match(input.Value, @"name=""([^""]+)""").Groups[1].Value,
-                Value: WebUtility.HtmlDecode(Regex.Match(input.Value, @"value=""([^""]*)""").Groups[1].Value)));
-
-        return new FormUrlEncodedContent(
-            hidden.Concat(typed).Select(f => new KeyValuePair<string, string>(f.Name, f.Value)));
     }
 
     /// <summary>The markup from the element carrying <paramref name="dataTest"/> to its closing tag.</summary>
