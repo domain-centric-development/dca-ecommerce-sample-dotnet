@@ -30,7 +30,9 @@ public static class ShopUnderTest
         }
 
         var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-            builder.UseSetting("Checkout:PaymentProvider:BaseUrl", PaymentProviderStub.Url));
+            builder
+                .UseSetting("Checkout:PaymentProvider:BaseUrl", PaymentProviderStub.Url)
+                .UseSetting("Checkout:PaymentProvider:Timeout", PaymentProviderStub.Timeout));
         // A port chosen by the system: port 0 alone leaves Kestrel on its default one, which another shop may hold.
         factory = factory.WithWebHostBuilder(builder => builder.ConfigureKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, 0)));
         factory.UseKestrel(0);

@@ -30,6 +30,7 @@ public sealed class ShopOfItsOwn : IDisposable
     {
         var shop = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
             .UseSetting("Checkout:PaymentProvider:BaseUrl", PaymentProviderStub.Url)
+            .UseSetting("Checkout:PaymentProvider:Timeout", PaymentProviderStub.Timeout)
             .ConfigureKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, 0)));
         shop.UseKestrel();
         shop.StartServer();

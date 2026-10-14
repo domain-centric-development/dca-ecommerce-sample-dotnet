@@ -17,6 +17,13 @@ public static class PaymentProviderStub
 
     public static string Url => Server.Value.Url!;
 
+    /// <summary>
+    /// How long the shops of the suite wait for the stub, in place of the shop's two seconds. The stub runs in the test
+    /// process beside the shops and the browsers; under the load of the parallel suites it can take longer than two
+    /// seconds, and the payment would fail as "not available" in a test that never asked for that.
+    /// </summary>
+    public const string Timeout = "00:00:30";
+
     /// <summary>From now on every payment request is authorized with a payment reference; the requests so far are forgotten.</summary>
     public static void AuthorizesPayments()
     {
