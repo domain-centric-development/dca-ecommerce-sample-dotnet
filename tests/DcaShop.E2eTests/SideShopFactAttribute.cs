@@ -15,7 +15,10 @@ public abstract class SideShopFactAttribute : FactAttribute
     }
 }
 
-/// <summary>An E2E test that starts a shop of its own, with services the suite's shop does not have.</summary>
+/// <summary>
+/// An E2E test that starts a shop of its own: with services the suite's shop does not have, or with the seeded catalogue
+/// and stock as the shop starts with them, which the suite's shared shop does not keep.
+/// </summary>
 public sealed class OwnShopFactAttribute : SideShopFactAttribute
 {
     public OwnShopFactAttribute()

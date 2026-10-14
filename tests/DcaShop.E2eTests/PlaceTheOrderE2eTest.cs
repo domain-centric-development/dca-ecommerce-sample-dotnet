@@ -2,7 +2,10 @@ using DcaShop.E2eTests.Pages;
 
 namespace DcaShop.E2eTests;
 
-/// <summary>A guest places the order from the review and sees the confirmation.</summary>
+/// <summary>
+/// A guest places the order from the review and sees the confirmation. The order buys a product of the test's own, so
+/// the seeded stock stays as other tests count it.
+/// </summary>
 public sealed class PlaceTheOrderE2eTest : BaseE2eTest
 {
     public PlaceTheOrderE2eTest(BrowserFixture browser) : base(browser)
@@ -23,9 +26,8 @@ public sealed class PlaceTheOrderE2eTest : BaseE2eTest
 
     private async Task<ReviewPage> GuestOnTheReviewStepAsync()
     {
-        var catalog = await ProductCatalogPage.NavigateToAsync(Page);
-        var product = await catalog.ViewProductAsync("Domain-Driven Design");
-        await product.AddToCartAsync();
+        var product = await Staff.CreateProductAsync("Order Mug", 14.99m, 5);
+        await (await ProductDetailPage.NavigateToAsync(Page, product.Path)).AddToCartAsync();
         var cart = await CartPage.NavigateToAsync(Page);
         var buyer = await cart.ProceedToCheckoutAsync();
         var delivery = await (await buyer.FillBuyerInfoAsync("jane@example.com", "Jane", "Doe", "+49 30 1234567")).ContinueToDeliveryAsync();

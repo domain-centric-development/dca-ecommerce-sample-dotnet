@@ -1,14 +1,6 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-
-using DcaShop.Account.Adapter.Incoming.Security;
-using DcaShop.SharedKernel.Application.Shared;
-using DcaShop.SharedKernel.Domain.Model;
-
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 
 namespace DcaShop.E2eTests;
 
@@ -105,45 +97,7 @@ public sealed class CreateProductApiE2eTest : IDisposable
 
     public void Dispose() => _shop.Dispose();
 
-    private HttpClient Bearer(string token)
-    {
-        var client = new HttpClient { BaseAddress = new Uri(_shop.BaseUrl) };
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
+    private HttpClient Bearer(string token) => Staff.Client(_shop.BaseUrl, token);
 
-    /// <summary>
-    /// A staff token for a freshly registered account. No registration path hands the role out, so the test mints
-    /// the token the way an operator provisioning tool would, with the secret the shop under test is started with.
-    /// </summary>
-    private async Task<string> StaffTokenAsync(string email)
-    {
-        using var client = new HttpClient { BaseAddress = new Uri(_shop.BaseUrl) };
-        var registered = await client.PostAsJsonAsync("/api/auth/register", new
-        {
-            email,
-            password = "Secret123",
-            firstName = "Ada",
-            lastName = "Lovelace",
-            dateOfBirth = "1815-12-10",
-        });
-        Assert.Equal(HttpStatusCode.Created, registered.StatusCode);
-        var token = (await registered.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
-
-        var tokens = new JwtTokenService(
-            Options.Create(new JwtOptions { Secret = JwtOptions.DevelopmentSecret }),
-            NullLogger<JwtTokenService>.Instance);
-        return tokens.GenerateRegisteredToken(
-            UserId.Of(SubjectOf(token)),
-            email,
-            new HashSet<Role> { Role.Customer, Role.Staff });
-    }
-
-    private static string SubjectOf(string jwt)
-    {
-        var payload = jwt.Split('.')[1];
-        var padded = payload.PadRight(payload.Length + ((4 - (payload.Length % 4)) % 4), '=');
-        var json = JsonDocument.Parse(Convert.FromBase64String(padded.Replace('-', '+').Replace('_', '/')));
-        return json.RootElement.GetProperty("sub").GetString()!;
-    }
+    private Task<string> StaffTokenAsync(string email) => Staff.TokenAsync(_shop.BaseUrl, email);
 }

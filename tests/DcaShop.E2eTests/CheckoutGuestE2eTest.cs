@@ -4,7 +4,8 @@ namespace DcaShop.E2eTests;
 
 /// <summary>
 /// Guest checkout through the browser — the same four scenarios, page objects and <c>data-test</c> selectors as
-/// the Java sample's <c>CheckoutGuestE2ETest</c>; either suite can be pointed at either shop.
+/// the Java sample's <c>CheckoutGuestE2ETest</c>; either suite can be pointed at either shop. The flow that places the
+/// order buys a product of the test's own, so the seeded stock stays as other tests count it.
 /// </summary>
 public sealed class CheckoutGuestE2eTest : BaseE2eTest
 {
@@ -15,10 +16,9 @@ public sealed class CheckoutGuestE2eTest : BaseE2eTest
     [E2eFact(DisplayName = "Complete checkout flow as guest user")]
     public async Task CompleteGuestCheckoutFlow()
     {
-        // Step 1: Navigate to product catalog and add product to cart
-        var catalog = await ProductCatalogPage.NavigateToAsync(Page);
-        var detail = await catalog.ViewFirstProductAsync();
-        await detail.AddToCartAsync();
+        // Step 1: Open a product and add it to the cart
+        var product = await Staff.CreateProductAsync("Guest Mug", 14.99m, 5);
+        await (await ProductDetailPage.NavigateToAsync(Page, product.Path)).AddToCartAsync();
 
         // Step 2: Navigate to cart and verify product is added
         var cart = await CartPage.NavigateToAsync(Page);

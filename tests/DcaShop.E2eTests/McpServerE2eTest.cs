@@ -33,12 +33,17 @@ public sealed class McpServerE2eTest
         Assert.Equal(["id"], Parameters(tools["product-by-id"]));
     }
 
-    [E2eFact(DisplayName = "All products lists the range with price and stock")]
+    /// <summary>
+    /// Runs a shop of its own: it counts the seeded catalogue and its stock exactly, and tests in the suite's shared
+    /// shop add products and place orders.
+    /// </summary>
+    [OwnShopFact(DisplayName = "All products lists the range with price and stock")]
     public async Task AllProductsListsTheWholeRangeInNameOrderWithPriceAndStock()
     {
+        using var shop = ShopOfItsOwn.Start();
         await using var assistant = await McpClient.CreateAsync(new HttpClientTransport(new HttpClientTransportOptions
         {
-            Endpoint = new Uri(ShopUnderTest.BaseUrl + "/mcp"),
+            Endpoint = new Uri(shop.BaseUrl + "/mcp"),
             TransportMode = HttpTransportMode.StreamableHttp,
         }));
 

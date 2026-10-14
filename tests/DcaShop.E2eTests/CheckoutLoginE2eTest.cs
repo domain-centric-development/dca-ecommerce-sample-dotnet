@@ -4,7 +4,8 @@ namespace DcaShop.E2eTests;
 
 /// <summary>
 /// Checkout as an authenticated visitor — the same four scenarios, page objects and <c>data-test</c> selectors
-/// as the Java sample's <c>CheckoutLoginE2ETest</c>; either suite can be pointed at either shop.
+/// as the Java sample's <c>CheckoutLoginE2ETest</c>; either suite can be pointed at either shop. The flow that places
+/// the order buys a product of the test's own, so the seeded stock stays as other tests count it.
 /// </summary>
 public sealed class CheckoutLoginE2eTest : BaseE2eTest
 {
@@ -19,7 +20,8 @@ public sealed class CheckoutLoginE2eTest : BaseE2eTest
     {
         var email = UniqueEmail("testuser");
         await RegisterAsync(email);
-        await AddProductToCartAsync();
+        var product = await Staff.CreateProductAsync("Account Mug", 14.99m, 5);
+        await (await ProductDetailPage.NavigateToAsync(Page, product.Path)).AddToCartAsync();
 
         var cart = await CartPage.NavigateToAsync(Page);
         Assert.True(await cart.HasItemsAsync(), "Cart should have items");

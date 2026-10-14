@@ -4,7 +4,8 @@ namespace DcaShop.E2eTests;
 
 /// <summary>
 /// The sample catalog the shop seeds at start-up: the same 21 products in both samples, listed by product name in
-/// ordinal order. Same scenario as the Java sample's <c>SeededCatalogE2ETest</c>.
+/// ordinal order. Same scenario as the Java sample's <c>SeededCatalogE2ETest</c>. The test runs a shop of its own:
+/// tests in the suite's shared shop add products of their own to its catalogue.
 /// </summary>
 public sealed class SeededCatalogE2eTest : BaseE2eTest
 {
@@ -12,10 +13,11 @@ public sealed class SeededCatalogE2eTest : BaseE2eTest
     {
     }
 
-    [E2eFact(DisplayName = "The catalog lists the seeded products in name order")]
+    [OwnShopFact(DisplayName = "The catalog lists the seeded products in name order")]
     public async Task CatalogListsTheSeededProductsInNameOrder()
     {
-        var titles = await (await ProductCatalogPage.NavigateToAsync(Page)).ProductTitlesAsync();
+        using var shop = ShopOfItsOwn.Start();
+        var titles = await (await ProductCatalogPage.NavigateToAsync(Page, shop.BaseUrl)).ProductTitlesAsync();
 
         Assert.Equal(21, titles.Count);
         Assert.Equal(titles.Order(StringComparer.Ordinal), titles);
