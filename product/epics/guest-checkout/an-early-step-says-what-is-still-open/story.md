@@ -1,7 +1,9 @@
 ---
 id: an-early-step-says-what-is-still-open
 epic: guest-checkout
-status: approved
+status: delivered
+delivered: 2026-10-14T04:55:41Z
+delivered_by: gate
 context: checkout
 feature: steps
 title: A step sent too early says that the earlier steps come first
@@ -48,3 +50,7 @@ why, so that I know what to do instead of wondering why the page changed.
   that answers the next request shows it.
 - The redirect carries `?notice=earlier-steps-first` — the parameter `notice` and the code `earlier-steps-first`, the
   same in both shops' routes; the step page turns the code into the sentence and shows nothing for an unknown code.
+
+## Assumptions
+
+- answered: b — the two production files go back to the base before the test stage runs again; the tests stay. The build then applies the change anew, the valid codes as one enum in the incoming web adapter (product/tech.md, Runtime). (an-early-step-says-what-is-still-open-01)

@@ -103,13 +103,15 @@ Test: DcaShop.IntegrationTests.StepProgressTest#ThePaymentStepOpenedFromTheBuyer
 - When a delivery form with Street Address "Hauptstrasse 1", City "Berlin", Postal Code "10115", Country
   "Germany" and "Standard Shipping" is sent to the shop
 - Then the guest ends on the buyer step at `/checkout/buyer`
+- And the page says "Please complete the previous checkout steps first."
 - And the review cannot be opened afterwards: `/checkout/review` opens the buyer step
-Test: DcaShop.IntegrationTests.StepProgressTest#ADeliveryFormSentBeforeTheBuyerStepLeadsToTheBuyerStepAndKeepsTheReviewClosed
+Test: DcaShop.E2eTests.StepSentTooEarlyE2eTest#ADeliveryFormSentBeforeTheBuyerStepEndsOnTheBuyerStepAndKeepsTheReviewClosed
 
 #### place-order-before-the-review
 - Given a guest who has submitted the buyer and delivery steps and is on the payment step
 - When a "Place Order" is sent to the shop
 - Then the guest ends on the payment step at `/checkout/payment`
+- And the page says "Please complete the previous checkout steps first."
 - And no confirmation is shown: the order is not placed
 Test: DcaShop.IntegrationTests.StepSentTooEarlyTest#PlaceOrderSentFromThePaymentStepLeadsToThePaymentStepAndPlacesNoOrder
 
