@@ -41,6 +41,32 @@ public sealed class AccountUniquenessTest
         Assert.Equal(account.Id, (await _accounts.FindByEmailAsync(Email.Of("grace@example.com")))!.Id);
     }
 
+    [Fact]
+    public async Task AnAddressChangedAndSavedAgainIsFreeForAnotherAccount()
+    {
+        var account = await _accounts.SaveAsync(AccountOf("ada@example.com", UserId.GenerateAnonymous()));
+        account.ChangeEmail(Email.Of("countess@example.com"));
+
+        await _accounts.SaveAsync(account);
+
+        Assert.Null(await _accounts.FindByEmailAsync(Email.Of("ada@example.com")));
+        Assert.Equal(account.Id, (await _accounts.FindByEmailAsync(Email.Of("countess@example.com")))!.Id);
+        var newcomer = await _accounts.SaveAsync(AccountOf("ada@example.com", UserId.GenerateAnonymous()));
+        Assert.Equal(newcomer.Id, (await _accounts.FindByEmailAsync(Email.Of("ada@example.com")))!.Id);
+    }
+
+    [Fact]
+    public async Task DeletingAnAccountReleasesTheAddressItIsIndexedUnder()
+    {
+        var account = await _accounts.SaveAsync(AccountOf("ada@example.com", UserId.GenerateAnonymous()));
+        account.ChangeEmail(Email.Of("countess@example.com"));
+
+        await _accounts.DeleteByIdAsync(account.Id);
+
+        var newcomer = await _accounts.SaveAsync(AccountOf("ada@example.com", UserId.GenerateAnonymous()));
+        Assert.Equal(newcomer.Id, (await _accounts.FindByEmailAsync(Email.Of("ada@example.com")))!.Id);
+    }
+
     private static DcaShop.Account.Domain.Model.Account AccountOf(string email, UserId visitor) =>
         DcaShop.Account.Domain.Model.Account.Register(
             Email.Of(email),

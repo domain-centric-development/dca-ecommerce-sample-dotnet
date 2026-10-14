@@ -15,7 +15,7 @@ public sealed class InMemoryAccountRepository : IAccountRepository
     private readonly ConcurrentDictionary<AccountId, Domain.Model.Account> _accounts = new();
     private readonly ConcurrentDictionary<string, AccountId> _byEmail = new();
     private readonly ConcurrentDictionary<UserId, AccountId> _byLinkedUserId = new();
-    private readonly ConcurrentDictionary<AccountId, string> _indexedEmail = new();
+    private readonly ConcurrentDictionary<AccountId, string> _indexedEmailByAccount = new();
 
     public Task<Domain.Model.Account?> FindByIdAsync(AccountId id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_accounts.TryGetValue(id, out var account) ? account : null);
@@ -50,12 +50,12 @@ public sealed class InMemoryAccountRepository : IAccountRepository
     /// </summary>
     private void ReleasePreviousEmail(Domain.Model.Account account)
     {
-        if (_indexedEmail.TryGetValue(account.Id, out var previous) && previous != account.Email.Value)
+        if (_indexedEmailByAccount.TryGetValue(account.Id, out var previous) && previous != account.Email.Value)
         {
             _byEmail.TryRemove(KeyValuePair.Create(previous, account.Id));
         }
 
-        _indexedEmail[account.Id] = account.Email.Value;
+        _indexedEmailByAccount[account.Id] = account.Email.Value;
     }
 
     /// <summary>Claims a unique value for one account, or refuses when somebody else holds it.</summary>
@@ -74,8 +74,11 @@ public sealed class InMemoryAccountRepository : IAccountRepository
     {
         if (_accounts.TryRemove(id, out var removed))
         {
-            _byEmail.TryRemove(removed.Email.Value, out _);
-            _indexedEmail.TryRemove(id, out _);
+            if (_indexedEmailByAccount.TryRemove(id, out var indexed))
+            {
+                _byEmail.TryRemove(KeyValuePair.Create(indexed, id));
+            }
+
             _byLinkedUserId.TryRemove(removed.LinkedUserId, out _);
         }
 
