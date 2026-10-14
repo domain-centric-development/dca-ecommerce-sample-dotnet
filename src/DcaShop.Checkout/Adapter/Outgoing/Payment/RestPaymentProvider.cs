@@ -13,7 +13,7 @@ namespace DcaShop.Checkout.Adapter.Outgoing.Payment;
 
 /// <summary>
 /// The payment service provider over REST — the anti-corruption layer towards it. A payment is one
-/// <c>POST /payments</c> with amount and currency: <c>201</c> with a payment reference authorizes it, <c>402</c>
+/// <c>POST /payments</c> with amount, currency and the checkout reference (<c>merchantReference</c>): <c>201</c> with a payment reference authorizes it, <c>402</c>
 /// refuses it, and anything else — no answer in time, no connection, another status, no reference — counts as the
 /// provider being unavailable. The provider's request and answer shapes stay inside this class.
 /// </summary>
@@ -45,7 +45,7 @@ public sealed class RestPaymentProvider : IPaymentProvider
         try
         {
             using var response = await _httpClients.CreateClient(HttpClientName)
-                .PostAsJsonAsync("payments", new PaymentRequest(amount.Amount.ToString("0.00", CultureInfo.InvariantCulture), amount.Currency), cancellationToken)
+                .PostAsJsonAsync("payments", new PaymentRequest(amount.Amount.ToString("0.00", CultureInfo.InvariantCulture), amount.Currency, sessionId.ToString()), cancellationToken)
                 .ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.PaymentRequired)
@@ -92,8 +92,11 @@ public sealed class RestPaymentProvider : IPaymentProvider
         return IPaymentProvider.PaymentResult.Unavailable(reason);
     }
 
-    /// <summary>The amount as a decimal string with two places — a JSON number would pass through binary floating point.</summary>
-    private sealed record PaymentRequest(string Amount, string Currency);
+    /// <summary>
+    /// The amount as a decimal string with two places — a JSON number would pass through binary floating point — and
+    /// the checkout reference: the checkout session's id as text, the same in every request of that checkout.
+    /// </summary>
+    private sealed record PaymentRequest(string Amount, string Currency, string MerchantReference);
 
     private sealed record PaymentAuthorization(string? Reference);
 }

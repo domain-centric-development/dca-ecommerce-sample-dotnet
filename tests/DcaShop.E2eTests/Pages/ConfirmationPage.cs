@@ -23,4 +23,12 @@ public sealed class ConfirmationPage : BasePage
 
     /// <summary>The confirmation's title as the browser renders it.</summary>
     public async Task<string> TitleAsync() => (await Page.Locator($"[data-test='{ConfirmationTitle}']").InnerTextAsync()).Trim();
+
+    /// <summary>The order reference the confirmation names, without its label. The line carries no data-test; it is read by its class.</summary>
+    public async Task<string> OrderReferenceAsync()
+    {
+        var line = Page.Locator(".confirmation__reference");
+        await Assertions.Expect(line).ToBeVisibleAsync();
+        return (await line.InnerTextAsync()).Replace("Order Reference:", string.Empty, StringComparison.Ordinal).Trim();
+    }
 }
