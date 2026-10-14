@@ -105,7 +105,12 @@ public sealed class McpToolTest : IClassFixture<WebApplicationFactory<Program>>
                 TransportMode = HttpTransportMode.StreamableHttp,
             },
             http);
-        return await McpClient.CreateAsync(transport);
+        // The client first probes with server/discover and falls back to the initialize handshake when that probe
+        // takes longer than 5 s. A host built for one test can take that long for its first request on a loaded
+        // machine; the probe is then cancelled mid-request, and the in-memory test server hands the client the
+        // shop's 499 instead of the cancellation the fallback waits for. This shop speaks server/discover, so the
+        // probe is bounded by the client's connect budget alone.
+        return await McpClient.CreateAsync(transport, new McpClientOptions { DiscoverProbeTimeout = Timeout.InfiniteTimeSpan });
     }
 
     private static async Task<CallToolResult> CallProductByIdAsync(McpClient assistant, string id) =>

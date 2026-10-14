@@ -27,10 +27,7 @@ public sealed class ReviewPage : BasePage
     }
 
     /// <summary>Presses "Place Order" and waits until the shop has answered it, wherever that answer leads.</summary>
-    public Task PlaceOrderAndAwaitTheAnswerAsync() =>
-        PressPlaceOrderAsync(button => Page.RunAndWaitForResponseAsync(
-            () => button.ClickAsync(),
-            response => response.Request.Method == "POST" && new Uri(response.Url).AbsolutePath == "/checkout/confirm"));
+    public Task PlaceOrderAndAwaitTheAnswerAsync() => PressPlaceOrderAsync();
 
     /// <summary>The error the review shows, as written.</summary>
     public Task<string> ErrorMessageAsync() => VisibleTextAsync(ErrorMessage);
@@ -75,21 +72,15 @@ public sealed class ReviewPage : BasePage
     /// <summary>Presses "Place Order" and answers the path of whatever page the shop opens next, without expecting one.</summary>
     public async Task<string> PlaceOrderAndShowNextPathAsync()
     {
-        await PressPlaceOrderAsync(button => Page.RunAndWaitForRequestFinishedAsync(
-            () => button.ClickAsync(),
-            new PageRunAndWaitForRequestFinishedOptions { Predicate = request => request.IsNavigationRequest && request.Method == "GET" }));
+        await PressPlaceOrderAsync();
         return CurrentPath;
     }
 
-    /// <summary>
-    /// Presses "Place Order" once it shows, through <paramref name="clickAndWait"/> — the click and the wait for what the
-    /// caller needs to have happened — and then lets the page that is shown load.
-    /// </summary>
-    private async Task PressPlaceOrderAsync(Func<ILocator, Task> clickAndWait)
+    /// <summary>Presses "Place Order" once it shows and waits until the page the shop answers with has loaded.</summary>
+    private async Task PressPlaceOrderAsync()
     {
         var button = Page.Locator($"[data-test='{PlaceOrderButton}']");
         await Assertions.Expect(button).ToBeVisibleAsync();
-        await clickAndWait(button);
-        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+        await Page.RunAndWaitForNextPageAsync(() => button.ClickAsync());
     }
 }

@@ -63,10 +63,7 @@ public sealed class PaymentPage : BasePage
     {
         var button = Page.Locator($"[data-test='{ContinueButton}']");
         await Assertions.Expect(button).ToBeVisibleAsync();
-        await Page.RunAndWaitForRequestFinishedAsync(
-            () => button.ClickAsync(),
-            new PageRunAndWaitForRequestFinishedOptions { Predicate = request => request.IsNavigationRequest && request.Method == "GET" });
-        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+        await Page.RunAndWaitForNextPageAsync(() => button.ClickAsync());
         return CurrentPath;
     }
 

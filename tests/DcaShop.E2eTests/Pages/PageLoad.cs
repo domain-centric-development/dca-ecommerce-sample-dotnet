@@ -15,6 +15,9 @@ public static class PageLoad
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
+    /// <summary>The mark <see cref="RunAndWaitForNextPageAsync"/> leaves on the document the browser is sent away from.</summary>
+    private const string LeftBehind = "__pageLoadLeftBehind";
+
     /// <summary>Waits until the browser shows <paramref name="url"/> (a glob) and that page has loaded.</summary>
     public static Task WaitForLoadedUrlAsync(this IPage page, string url)
     {
@@ -52,12 +55,38 @@ public static class PageLoad
         }
     }
 
+    /// <summary>
+    /// Runs <paramref name="action"/>, which sends the browser to another document — a form's post and its redirect,
+    /// wherever it leads — and waits until that document has loaded. The shown document is marked first, so the wait
+    /// tells the next document from the one the action left, whatever URL either has.
+    /// </summary>
+    public static async Task RunAndWaitForNextPageAsync(this IPage page, Func<Task> action)
+    {
+        await page.EvaluateAsync($"() => {{ window.{LeftBehind} = true; }}");
+        await action();
+
+        var deadline = DateTime.UtcNow + Patience;
+        while (!await HasLoadedAsync(page, $"() => window.{LeftBehind} !== true && document.readyState === 'complete'"))
+        {
+            if (DateTime.UtcNow > deadline)
+            {
+                throw new TimeoutException($"The browser did not finish loading the next page within {Patience.TotalSeconds} seconds; it shows {page.Url}.");
+            }
+
+            await Task.Delay(100);
+        }
+    }
+
     /// <summary>Whether the shown document has loaded; a page that sends itself on may replace it while it is asked.</summary>
-    private static async Task<bool> HasLoadedAsync(IPage page)
+    private static Task<bool> HasLoadedAsync(IPage page) =>
+        HasLoadedAsync(page, "() => document.readyState === 'complete'");
+
+    /// <summary>Whether <paramref name="loaded"/> holds for the shown document; it may be replaced while it is asked.</summary>
+    private static async Task<bool> HasLoadedAsync(IPage page, string loaded)
     {
         try
         {
-            return await page.EvaluateAsync<string>("() => document.readyState") == "complete";
+            return await page.EvaluateAsync<bool>(loaded);
         }
         catch (PlaywrightException e) when (e.Message.Contains("Execution context was destroyed", StringComparison.Ordinal))
         {

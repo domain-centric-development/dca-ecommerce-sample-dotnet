@@ -170,10 +170,7 @@ public sealed class BackofficeEventsPage : BasePage
     {
         var retry = IncompleteEntryOf(eventType).Locator($"[data-test='{EventRetry}']");
         await Assertions.Expect(retry).ToBeVisibleAsync();
-        await Page.RunAndWaitForRequestFinishedAsync(
-            () => retry.ClickAsync(),
-            new PageRunAndWaitForRequestFinishedOptions { Predicate = request => request.IsNavigationRequest && request.Method == "GET" });
-        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+        await Page.RunAndWaitForNextPageAsync(() => retry.ClickAsync());
         return new Uri(Page.Url).AbsolutePath;
     }
 
