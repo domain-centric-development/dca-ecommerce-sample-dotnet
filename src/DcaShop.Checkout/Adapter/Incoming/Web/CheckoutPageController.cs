@@ -136,14 +136,10 @@ public sealed class CheckoutPageController : Controller
             await _confirm.ExecuteAsync(new ConfirmCheckoutCommand(session.SessionId.Value, CurrentCustomerId()), cancellationToken);
             return Redirect(CheckoutRoutes.PathOf(CheckoutStep.Confirmation));
         }
-        catch (DomainException e) when (e is CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException)
-        {
-            return await ToTheStepStillOpenAsync(CheckoutStep.Review, cancellationToken) ?? BackToTheReview(e);
-        }
         catch (Exception e) when (e is UseCaseException or DomainException)
         {
             // The confirmation carries no field the customer typed, so only the checkout's own refusals arrive here.
-            return BackToTheReview(e);
+            return await RefusedAsync(CheckoutStep.Review, e, cancellationToken);
         }
     }
 
@@ -202,16 +198,31 @@ public sealed class CheckoutPageController : Controller
             await action(session.SessionId.Value);
             return Redirect(next);
         }
-        catch (DomainException e) when (e is CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException)
-        {
-            return await ToTheStepStillOpenAsync(step, cancellationToken) ?? await Page(step, cancellationToken, MessageFor(step, e));
-        }
         catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
         {
             // The two base types are the checkout's own refusals; the argument exception is the form field that
             // reaches a value object unvalidated.
-            return await Page(step, cancellationToken, MessageFor(step, e));
+            return await RefusedAsync(step, e, cancellationToken);
         }
+    }
+
+    /// <summary>
+    /// The one place a step's refusal becomes an answer, whichever handler met it. A step sent before the earlier
+    /// steps are done goes to the step still open, which says why; any other refusal — and an early one whose step
+    /// the domain grants after all — is said by the step itself: the review at its own address, every other step
+    /// re-rendered with the sentence.
+    /// </summary>
+    private async Task<IActionResult> RefusedAsync(CheckoutStep step, Exception refusal, CancellationToken cancellationToken)
+    {
+        if (refusal is CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException
+            && await ToTheStepStillOpenAsync(step, cancellationToken) is { } stillOpen)
+        {
+            return stillOpen;
+        }
+
+        return step == CheckoutStep.Review
+            ? BackToTheReview(refusal)
+            : await Page(step, cancellationToken, MessageFor(step, refusal));
     }
 
     /// <summary>
