@@ -134,5 +134,4 @@ public sealed class ApiFlowTest : IClassFixture<WebApplicationFactory<Program>>
         "application/json");
 
     private static StringContent Empty() => new(string.Empty, Encoding.UTF8, "application/json");
-
 }

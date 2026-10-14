@@ -150,5 +150,4 @@ public sealed class ProductPriceAndStockRulesTest
     }
 
     private static StringContent Json(string body) => new(body, Encoding.UTF8, "application/json");
-
 }

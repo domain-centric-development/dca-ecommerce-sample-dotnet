@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace DcaShop.IntegrationTests;
@@ -17,10 +15,10 @@ public sealed class CartTotalsTest : IClassFixture<WebApplicationFactory<Program
     [Fact]
     public async Task TheSubtotalAddsUpTheLineTotals()
     {
-        var client = NewBrowser();
-        await AddOneUnitAsync(client, "Domain-Driven Design");
-        await AddOneUnitAsync(client, "Domain-Driven Design");
-        await AddOneUnitAsync(client, "Clean Architecture");
+        var client = CartPages.NewBrowser(_factory);
+        await CartPages.AddOneUnitAsync(client, "Domain-Driven Design");
+        await CartPages.AddOneUnitAsync(client, "Domain-Driven Design");
+        await CartPages.AddOneUnitAsync(client, "Clean Architecture");
 
         var cartPage = await client.GetStringAsync("/cart");
 
@@ -30,10 +28,10 @@ public sealed class CartTotalsTest : IClassFixture<WebApplicationFactory<Program
     [Fact]
     public async Task TheVatContainedInTheSubtotalIsShownAtNineteenPercent()
     {
-        var client = NewBrowser();
-        await AddOneUnitAsync(client, "Domain-Driven Design");
-        await AddOneUnitAsync(client, "Domain-Driven Design");
-        await AddOneUnitAsync(client, "Clean Architecture");
+        var client = CartPages.NewBrowser(_factory);
+        await CartPages.AddOneUnitAsync(client, "Domain-Driven Design");
+        await CartPages.AddOneUnitAsync(client, "Domain-Driven Design");
+        await CartPages.AddOneUnitAsync(client, "Clean Architecture");
 
         var cartPage = await client.GetStringAsync("/cart");
 
@@ -43,8 +41,8 @@ public sealed class CartTotalsTest : IClassFixture<WebApplicationFactory<Program
     [Fact]
     public async Task TheContainedVatIsRoundedHalfUpToTheCent()
     {
-        var client = NewBrowser();
-        await AddOneUnitAsync(client, "Domain-Driven Design");
+        var client = CartPages.NewBrowser(_factory);
+        await CartPages.AddOneUnitAsync(client, "Domain-Driven Design");
 
         var cartPage = await client.GetStringAsync("/cart");
 
@@ -57,17 +55,4 @@ public sealed class CartTotalsTest : IClassFixture<WebApplicationFactory<Program
 
     private static string VatRow(string cartPage) =>
         AvailabilityPages.Text(cartPage, @"data-test=""cart-tax-row""><span>incl. VAT</span><span>([^<]*)</span>");
-
-    private HttpClient NewBrowser() =>
-        _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
-
-    private static async Task AddOneUnitAsync(HttpClient client, string productName)
-    {
-        var productPath = await AvailabilityPages.ProductPathAsync(client, productName);
-        var productPage = await client.GetStringAsync(productPath);
-        var token = Regex.Match(productPage, @"name=""__RequestVerificationToken"" type=""hidden"" value=""([^""]+)""").Groups[1].Value;
-        Assert.NotEmpty(token);
-        await client.PostAsync("/cart/add-product",
-            new FormUrlEncodedContent([new("productId", productPath["/products/".Length..]), new("quantity", "1"), new("__RequestVerificationToken", token)]));
-    }
 }

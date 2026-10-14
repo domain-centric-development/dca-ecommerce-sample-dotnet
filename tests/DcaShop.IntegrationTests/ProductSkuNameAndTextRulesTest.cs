@@ -148,5 +148,4 @@ public sealed class ProductSkuNameAndTextRulesTest
         var catalogue = await scope.ServiceProvider.GetRequiredService<IGetAllProductsInputPort>().ExecuteAsync(new GetAllProductsQuery());
         return catalogue.Products.Count;
     }
-
 }

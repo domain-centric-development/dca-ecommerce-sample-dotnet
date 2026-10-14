@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace DcaShop.IntegrationTests;
@@ -17,10 +15,8 @@ public sealed class CartPageTest : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task TheCartPageIsTitledAndHeadedShoppingCart()
     {
-        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
-        var productPath = await AvailabilityPages.ProductPathAsync(client, "Domain-Driven Design");
-        var productPage = await client.GetStringAsync(productPath);
-        await client.PostAsync("/cart/add-product", AddForm(productPage, productPath["/products/".Length..]));
+        var client = CartPages.NewBrowser(_factory);
+        await CartPages.AddOneUnitAsync(client, "Domain-Driven Design");
 
         var cartPage = await client.GetStringAsync("/cart");
 
@@ -31,10 +27,10 @@ public sealed class CartPageTest : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task AboveTheLinesTheCartCountsItsLinesAndItsUnits()
     {
-        var client = NewBrowser();
-        await AddOneUnitAsync(client, "Domain-Driven Design");
-        await AddOneUnitAsync(client, "Domain-Driven Design");
-        await AddOneUnitAsync(client, "Clean Architecture");
+        var client = CartPages.NewBrowser(_factory);
+        await CartPages.AddOneUnitAsync(client, "Domain-Driven Design");
+        await CartPages.AddOneUnitAsync(client, "Domain-Driven Design");
+        await CartPages.AddOneUnitAsync(client, "Clean Architecture");
 
         var cartPage = await client.GetStringAsync("/cart");
 
@@ -48,7 +44,7 @@ public sealed class CartPageTest : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task AnEmptyCartInvitesTheVisitorToBrowse()
     {
-        var client = NewBrowser();
+        var client = CartPages.NewBrowser(_factory);
 
         var cartPage = await client.GetStringAsync("/cart");
 
@@ -64,30 +60,13 @@ public sealed class CartPageTest : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task ACartThatCanBeBoughtOffersTheCheckoutAndAWayBackToTheCatalogue()
     {
-        var client = NewBrowser();
-        await AddOneUnitAsync(client, "Domain-Driven Design");
+        var client = CartPages.NewBrowser(_factory);
+        await CartPages.AddOneUnitAsync(client, "Domain-Driven Design");
 
         var cartPage = await client.GetStringAsync("/cart");
 
         var actions = AvailabilityPages.Section(cartPage, "cart-checkout-form");
         Assert.Equal("Proceed to Checkout", AvailabilityPages.Text(actions, @"<button [^>]*data-test=""cart-checkout-button"">([^<]*)</button>"));
         Assert.Equal("/products", AvailabilityPages.Text(actions, @"<a href=""([^""]*)"">Continue Shopping</a>"));
-    }
-
-    private HttpClient NewBrowser() =>
-        _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
-
-    private static async Task AddOneUnitAsync(HttpClient client, string productName)
-    {
-        var productPath = await AvailabilityPages.ProductPathAsync(client, productName);
-        var productPage = await client.GetStringAsync(productPath);
-        await client.PostAsync("/cart/add-product", AddForm(productPage, productPath["/products/".Length..]));
-    }
-
-    private static FormUrlEncodedContent AddForm(string productPage, string productId)
-    {
-        var token = Regex.Match(productPage, @"name=""__RequestVerificationToken"" type=""hidden"" value=""([^""]+)""").Groups[1].Value;
-        Assert.NotEmpty(token);
-        return new([new("productId", productId), new("quantity", "1"), new("__RequestVerificationToken", token)]);
     }
 }
