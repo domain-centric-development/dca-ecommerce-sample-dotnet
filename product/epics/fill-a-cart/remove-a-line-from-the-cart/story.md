@@ -1,7 +1,9 @@
 ---
 id: remove-a-line-from-the-cart
 epic: fill-a-cart
-status: approved
+status: delivered
+delivered: 2026-10-14T20:58:27Z
+delivered_by: gate
 context: cart
 feature: shopping
 title: A line is removed from the cart page

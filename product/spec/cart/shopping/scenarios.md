@@ -339,3 +339,48 @@ Test: DcaShop.E2eTests.CartApiE2eTest#AProductIdThatIsNotAUuidIsABadRequestAndLe
 - And its title is "Unacceptable value" and it carries no detail
 - And her cart still holds "Domain-Driven Design" × 1
 Test: DcaShop.IntegrationTests.CartItemRemovalResourceTest#RemovingAProductIdThatIsNotAUuidIsABadRequestAndLeavesTheLine
+
+### Rule: "Remove" takes one line out of the cart, whatever its quantity; the other lines keep their order
+
+#### remove-takes-the-line-out
+- Given a guest who added "Domain-Driven Design", "Clean Architecture" and "Team Topologies" once each, in that order
+- When they press "Remove" on the line "Clean Architecture" on the cart page
+- Then the cart page shows two lines, "Domain-Driven Design" first and "Team Topologies" second
+- And the header's cart entry shows the badge "2"
+Test: DcaShop.E2eTests.RemoveFromCartE2eTest#RemoveTakesTheLineOut
+
+#### remove-takes-the-whole-quantity
+- Given a guest whose cart holds "Domain-Driven Design" with quantity 3 and "Clean Architecture" with quantity 1
+- When they press "Remove" on the line "Domain-Driven Design"
+- Then the cart page shows one line, "Clean Architecture" with quantity 1
+- And it shows "Total Items: 1" and "Total Quantity: 1"
+Test: DcaShop.IntegrationTests.CartItemRemovalTest#RemovingALineTakesItsWholeQuantityOut
+
+#### removing-the-last-line-empties-the-cart
+- Given a guest whose cart holds only "Domain-Driven Design" with quantity 1
+- When they press "Remove" on that line
+- Then the cart page shows "Your cart is empty"
+Test: DcaShop.IntegrationTests.CartItemRemovalTest#RemovingTheLastLineLeavesAnEmptyCart
+
+### Rule: A "Remove" for a line the visitor's cart does not hold changes nothing
+
+#### removing-a-line-already-gone-changes-nothing
+- Given a guest who opened the cart page with "Domain-Driven Design" and "Clean Architecture" in two tabs and
+  pressed "Remove" on "Clean Architecture" in the first tab
+- When they press "Remove" on "Clean Architecture" in the second tab
+- Then the cart page opens and shows the one line "Domain-Driven Design"
+Test: DcaShop.IntegrationTests.CartItemRemovalTest#RemovingALineAnotherTabAlreadyRemovedChangesNothing
+
+#### a-remove-with-a-malformed-line-id-changes-nothing
+- Given a guest whose cart holds "Domain-Driven Design" with quantity 1
+- When a "Remove" naming the line "no-such-line" is sent to the shop
+- Then the cart page opens and still shows "Domain-Driven Design" with quantity 1
+Test: DcaShop.IntegrationTests.CartItemRemovalTest#ARemoveNamingAMalformedItemIdChangesNothing
+
+#### a-remove-for-another-visitors-line-changes-nothing
+- Given a guest whose cart holds `"Ubiquitous Language" Mug` and a second guest in another browser whose cart holds
+  "Team Topologies"
+- When the second guest sends a "Remove" naming the first guest's `"Ubiquitous Language" Mug` line
+- Then the first guest's cart still shows `"Ubiquitous Language" Mug` with quantity 1
+- And the second guest's cart page still shows "Team Topologies"
+Test: DcaShop.IntegrationTests.CartItemRemovalTest#ARemoveNamingAnotherVisitorsLineChangesNeitherCart
