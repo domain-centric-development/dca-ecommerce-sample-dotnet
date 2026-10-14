@@ -1,4 +1,4 @@
-@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.CheckoutPageViewModel
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.BuyerInfoPageViewModel
 @{ ViewData["Title"] = "Checkout - Buyer Information"; var b = Model.Session.BuyerInfo; var email = b?.Email ?? (Model.IsAnonymous ? string.Empty : Model.IdentityEmail); }
 <div class="checkout">
 @await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 1)
@@ -45,5 +45,5 @@ else
 </div>
 <div class="form__actions"><button class="btn btn--primary" type="submit" data-test="buyer-continue-button">Continue to Delivery</button></div>
 </form>
-@await Html.PartialAsync("~/Views/Checkout/_OrderSummary.cshtml", Model)
+@await Html.PartialAsync("~/Views/Checkout/_OrderSummary.cshtml", Model.Session)
 </div>

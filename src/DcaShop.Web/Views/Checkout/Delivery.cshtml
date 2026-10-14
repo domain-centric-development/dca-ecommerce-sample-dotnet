@@ -1,4 +1,4 @@
-@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.CheckoutPageViewModel
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.DeliveryPageViewModel
 @{ ViewData["Title"] = "Checkout - Delivery"; var a = Model.Session.DeliveryAddress; var selectedId = Model.Session.ShippingOption?.Id; }
 <div class="checkout">
 @await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 2)
@@ -61,7 +61,7 @@
 <button class="btn btn--primary" type="submit" data-test="delivery-continue-button">Continue to Payment</button>
 </div>
 </form>
-@await Html.PartialAsync("~/Views/Checkout/_OrderSummary.cshtml", Model)
+@await Html.PartialAsync("~/Views/Checkout/_OrderSummary.cshtml", Model.Session)
 </div>
 @section Scripts {
 <script>

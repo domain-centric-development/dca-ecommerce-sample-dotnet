@@ -1,4 +1,4 @@
-@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.CheckoutPageViewModel
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.ReviewPageViewModel
 @{ ViewData["Title"] = "Checkout - Review"; var s = Model.Session; ViewData["WithTotals"] = true; ViewData["SummaryTitle"] = "Order Items"; }
 <div class="checkout">
 @await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 4)
@@ -51,7 +51,7 @@ else
 }
 </div>
 </div>
-@await Html.PartialAsync("~/Views/Checkout/_OrderSummary.cshtml", Model, ViewData)
+@await Html.PartialAsync("~/Views/Checkout/_OrderSummary.cshtml", Model.Session, ViewData)
 <div class="review__actions">
 <a class="btn btn--secondary" href="/checkout/payment" data-test="review-back-link">Back</a>
 <form method="post" action="/checkout/confirm" data-test="review-confirm-form">

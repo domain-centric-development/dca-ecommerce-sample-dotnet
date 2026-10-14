@@ -1,4 +1,4 @@
-@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.CheckoutPageViewModel
+@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.PaymentPageViewModel
 @{ ViewData["Title"] = "Checkout - Payment"; var selectedId = Model.Session.PaymentSelection?.ProviderId.Value; ViewData["WithTotals"] = true; }
 <div class="checkout">
 @await Html.PartialAsync("~/Views/Checkout/_Progress.cshtml", 3)
@@ -24,7 +24,7 @@
 <button class="btn btn--primary" type="submit" data-test="payment-continue-button">Continue to Review</button>
 </div>
 </form>
-@await Html.PartialAsync("~/Views/Checkout/_OrderSummary.cshtml", Model, ViewData)
+@await Html.PartialAsync("~/Views/Checkout/_OrderSummary.cshtml", Model.Session, ViewData)
 </div>
 @section Scripts {
 <script>

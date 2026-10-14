@@ -1,8 +1,8 @@
-@model DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion.CheckoutPageViewModel
+@model DcaShop.Checkout.Domain.ReadModel.CheckoutCartSnapshot
 @{
     var title = ViewData["SummaryTitle"] as string ?? "Order Summary";
     var withTotals = ViewData["WithTotals"] as bool? ?? false;   // buyer/delivery: subtotal only; payment/review: shipping + total
-    var s = Model.Session;
+    var s = Model;
 }
 @if (s.LineItems.Count > 0)
 {
