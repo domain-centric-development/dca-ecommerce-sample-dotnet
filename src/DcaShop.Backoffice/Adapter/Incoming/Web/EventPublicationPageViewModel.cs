@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 
 using DcaShop.Backoffice.Application.GetEventPublications;
+using DcaShop.Backoffice.Application.Shared;
 
 namespace DcaShop.Backoffice.Adapter.Incoming.Web;
 
@@ -37,8 +38,6 @@ public sealed record EventPublicationPageViewModel(
         string StatusLabel,
         bool Failed)
     {
-        private const string FailedStatus = "Failed";
-
         internal static Item From(EventPublicationSummary summary) =>
             new(
                 summary.Id.ToString(),
@@ -50,7 +49,7 @@ public sealed record EventPublicationPageViewModel(
                 Format(summary.CompletionDate),
                 summary.IsCompleted,
                 summary.IsCompleted ? "Completed" : "Incomplete",
-                summary.Status == FailedStatus);
+                summary.Status == PublicationStatus.Failed);
 
         private static string? Format(DateTimeOffset? value) =>
             value?.LocalDateTime.ToString(DateFormat, CultureInfo.InvariantCulture);

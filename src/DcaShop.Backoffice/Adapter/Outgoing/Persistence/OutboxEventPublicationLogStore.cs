@@ -3,6 +3,9 @@ using System.Text.Json;
 using DcaShop.Backoffice.Application.Shared;
 using DcaShop.SharedKernel.Infrastructure.Events;
 
+using OutboxStatus = DcaShop.SharedKernel.Infrastructure.Events.PublicationStatus;
+using PublicationStatus = DcaShop.Backoffice.Application.Shared.PublicationStatus;
+
 namespace DcaShop.Backoffice.Adapter.Outgoing.Persistence;
 
 /// <summary>
@@ -50,7 +53,7 @@ public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
             Payload(publication, delivery),
             delivery.ConsumerId,
             publication.RegisteredOn,
-            delivery.CompletedOn, Spell(delivery.Status));
+            delivery.CompletedOn, StatusOf(delivery.Status));
 
     private static string Payload(IntegrationEventPublication publication, ConsumerDelivery delivery)
     {
@@ -65,18 +68,28 @@ public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
     /// A delivery's status as the event log publishes it, written out per value — renaming a member never changes what
     /// the log shows.
     /// </summary>
-    private static string Spell(PublicationStatus status) => status switch
+    private static string Spell(OutboxStatus status) => status switch
     {
-        PublicationStatus.Staged => "Staged",
-        PublicationStatus.Pending => "Pending",
-        PublicationStatus.Completed => "Completed",
-        PublicationStatus.Failed => "Failed",
+        OutboxStatus.Staged => "Staged",
+        OutboxStatus.Pending => "Pending",
+        OutboxStatus.Completed => "Completed",
+        OutboxStatus.Failed => "Failed",
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+    };
+
+    /// <summary>The outbox's status of a delivery in the log's own type, written out per value.</summary>
+    private static PublicationStatus StatusOf(OutboxStatus status) => status switch
+    {
+        OutboxStatus.Staged => PublicationStatus.Staged,
+        OutboxStatus.Pending => PublicationStatus.Pending,
+        OutboxStatus.Completed => PublicationStatus.Completed,
+        OutboxStatus.Failed => PublicationStatus.Failed,
         _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
     };
 
     // The outbox counts failed deliveries; the operator reads every try, the successful one included.
     private static int Tries(ConsumerDelivery delivery) =>
-        delivery.Attempts + (delivery.Status == PublicationStatus.Completed ? 1 : 0);
+        delivery.Attempts + (delivery.Status == OutboxStatus.Completed ? 1 : 0);
 
     private static string Serialize(object @event)
     {

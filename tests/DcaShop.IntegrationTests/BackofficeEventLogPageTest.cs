@@ -24,19 +24,19 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
 
     private static readonly EventPublicationEntry Delivered = new(
         Guid.NewGuid(), "DcaShop.Product.Events.ProductCreatedEvent", "{}", "PriceInitializationEventConsumer",
-        Published, Published.AddSeconds(2), "Completed");
+        Published, Published.AddSeconds(2), PublicationStatus.Completed);
 
     private static readonly EventPublicationEntry Staged = new(
         Guid.NewGuid(), "DcaShop.Product.Events.ProductCreatedEvent", "{}", "integration-event-dispatcher",
-        Published.AddMinutes(1), null, "Staged");
+        Published.AddMinutes(1), null, PublicationStatus.Staged);
 
     private static readonly EventPublicationEntry Pending = new(
         Guid.NewGuid(), "DcaShop.Product.Events.ProductCreatedEvent", "{}", "StockInitializationEventConsumer",
-        Published.AddMinutes(2), null, "Pending");
+        Published.AddMinutes(2), null, PublicationStatus.Pending);
 
     private static readonly EventPublicationEntry Failed = new(
         Guid.NewGuid(), "DcaShop.Checkout.Events.CheckoutConfirmedEvent", "{}", "CartCompletionEventConsumer",
-        Published.AddMinutes(3), null, "Failed");
+        Published.AddMinutes(3), null, PublicationStatus.Failed);
 
     private readonly WebApplicationFactory<Program> _factory;
 

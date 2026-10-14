@@ -22,10 +22,26 @@ public sealed record EventPublicationEntry(
     string ListenerId,
     DateTimeOffset PublicationDate,
     DateTimeOffset? CompletionDate,
-    string Status = "Pending")
+    PublicationStatus Status = PublicationStatus.Pending)
 {
     public bool IsCompleted => CompletionDate is not null;
 
     /// <summary>The type without its namespace — what the log lists.</summary>
     public string ShortEventType => EventType[(EventType.LastIndexOf('.') + 1)..];
+}
+
+/// <summary>The status of a delivery to one listener, as the outbox keeps it.</summary>
+public enum PublicationStatus
+{
+    /// <summary>Registered inside the publishing use case's transaction, not yet released.</summary>
+    Staged,
+
+    /// <summary>Released and waiting for its delivery, a first one or a retry.</summary>
+    Pending,
+
+    /// <summary>Delivered.</summary>
+    Completed,
+
+    /// <summary>Given up after its retries; the one an operator can retry from the log.</summary>
+    Failed,
 }

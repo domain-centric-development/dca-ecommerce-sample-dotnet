@@ -26,7 +26,7 @@ public sealed record EventPublicationSummary(
     string ListenerId,
     DateTimeOffset PublicationDate,
     DateTimeOffset? CompletionDate,
-    string Status = "Pending")
+    PublicationStatus Status = PublicationStatus.Pending)
 {
     public static EventPublicationSummary From(EventPublicationEntry entry)
     {
