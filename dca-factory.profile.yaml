@@ -18,7 +18,7 @@ filterFlag: --filter
 filterFormat: "FullyQualifiedName~{class}.{method}"
 # `dotnet test` reads only its last --filter: several selectors go into one, joined by "|".
 filterJoin: "|"
-architecture: dotnet test --filter FullyQualifiedName~Architecture
+architecture: dotnet test tests/DcaShop.ArchitectureTests
 
 # The one source a stage may treat as an authority. Generated from the same sources as the
 # building blocks and the rule catalog this project consumes.

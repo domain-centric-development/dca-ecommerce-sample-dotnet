@@ -234,7 +234,7 @@ SELECTOR = re.compile(r"^([\w.]+)#([\w]+)$")
 CONTRACT = 22
 
 
-VERSION = "0.82.2"
+VERSION = "0.83.1"
 
 
 def split_front(text):
@@ -1024,6 +1024,14 @@ def git(cwd, *args, env=None):
     if completed.returncode == 0:
         return 0, completed.stdout.strip()
     return completed.returncode, (completed.stdout + completed.stderr).strip()
+
+
+def git_identity(cwd):
+    """`-c user.name=… -c user.email=…` where the repository names no committer — a factory commit must not
+    fail on a machine that never committed."""
+    if git(cwd, "config", "user.email")[1].strip():
+        return []
+    return ["-c", "user.name=dca-factory", "-c", "user.email=dca-factory@localhost"]
 
 
 # Several stories are a loop over one story run, and the loop needs to know what comes next without
