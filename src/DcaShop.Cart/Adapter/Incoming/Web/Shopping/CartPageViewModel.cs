@@ -12,6 +12,9 @@ public sealed record CartPageViewModel(
     bool HasAnyPriceChanges,
     bool CanCheckout)
 {
+    /// <summary>The page of a customer who has no active cart: the empty state, nothing to check out.</summary>
+    public static CartPageViewModel Empty { get; } = new(Guid.Empty, "Active", [], 0, 0, string.Empty, string.Empty, false, false);
+
     public sealed record Line(
         Guid ItemId,
         Guid ProductId,

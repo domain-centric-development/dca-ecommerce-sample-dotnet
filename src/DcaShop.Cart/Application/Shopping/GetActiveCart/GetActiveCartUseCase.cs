@@ -1,9 +1,13 @@
 using DcaShop.Cart.Application.Shared;
+using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Domain.Model;
 
 namespace DcaShop.Cart.Application.Shopping.GetActiveCart;
 
-/// <summary>Read use case behind the mini basket: the active cart of a customer, enriched, or nothing.</summary>
+/// <summary>
+/// Read use case behind the cart page and the mini basket: the active cart of a customer, enriched with its totals, or
+/// nothing — it never opens one.
+/// </summary>
 public sealed class GetActiveCartUseCase : IGetActiveCartInputPort
 {
     private readonly IShoppingCartRepository _carts;
@@ -23,6 +27,7 @@ public sealed class GetActiveCartUseCase : IGetActiveCartInputPort
             return new GetActiveCartResult(null);
         }
 
-        return new GetActiveCartResult(await _reader.ReadAsync(cart, cancellationToken).ConfigureAwait(false));
+        var enriched = await _reader.ReadAsync(cart, cancellationToken).ConfigureAwait(false);
+        return new GetActiveCartResult(enriched, CartTotals.From(enriched));
     }
 }

@@ -1,5 +1,6 @@
 using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Application.Shopping.AddItemToCart;
+using DcaShop.Cart.Application.Shopping.GetActiveCart;
 using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Cart.Domain.Model;
@@ -17,28 +18,29 @@ namespace DcaShop.Cart.Adapter.Incoming.Web.Shopping;
 public sealed class CartPageController : Controller
 {
     private readonly IGetOrCreateActiveCartInputPort _getOrCreateActiveCart;
-    private readonly IGetCartByIdInputPort _getCartById;
+    private readonly IGetActiveCartInputPort _getActiveCart;
     private readonly IAddItemToCartInputPort _addItemToCart;
     private readonly IIdentityProvider _identityProvider;
 
     public CartPageController(
         IGetOrCreateActiveCartInputPort getOrCreateActiveCart,
-        IGetCartByIdInputPort getCartById,
+        IGetActiveCartInputPort getActiveCart,
         IAddItemToCartInputPort addItemToCart,
         IIdentityProvider identityProvider)
     {
         _getOrCreateActiveCart = getOrCreateActiveCart;
-        _getCartById = getCartById;
+        _getActiveCart = getActiveCart;
         _addItemToCart = addItemToCart;
         _identityProvider = identityProvider;
     }
 
+    /// <summary>The customer's active cart; a customer without one sees the empty cart — reading opens none.</summary>
     [HttpGet("")]
     public async Task<IActionResult> Show(CancellationToken cancellationToken)
     {
-        var cartId = await ActiveCartIdAsync(cancellationToken);
-        var result = await _getCartById.ExecuteAsync(new GetCartByIdQuery(cartId, CurrentCustomerId), cancellationToken);
-        return result is { Cart: { } cart, Totals: { } totals } ? View("~/Views/Cart/View.cshtml", ToViewModel(cart, totals)) : NotFound();
+        var result = await _getActiveCart.ExecuteAsync(new GetActiveCartQuery(CurrentCustomerId), cancellationToken);
+        var viewModel = result is { Cart: { } cart, Totals: { } totals } ? ToViewModel(cart, totals) : CartPageViewModel.Empty;
+        return View("~/Views/Cart/View.cshtml", viewModel);
     }
 
     [HttpPost("add-product")]
