@@ -22,6 +22,18 @@ public sealed class RegistrationE2eTest : BaseE2eTest
         Assert.False(await home.HeaderOffersRegisterAsync(), "the header no longer offers to register");
     }
 
+    [E2eFact(DisplayName = "Registration says the account was created")]
+    public async Task TheHomePageARegistrationLeadsToSaysTheAccountWasCreated()
+    {
+        var register = await RegisterPage.NavigateToAsync(Page);
+
+        await register.RegisterAsync("Anna", "Schmidt", "1990-05-17", "anna.schmidt@example.com", "Secret123", "Secret123");
+
+        Assert.Equal("/", CurrentPath);
+        var home = await HomePage.OpenAsync(Page);
+        Assert.Equal(["Account created successfully! Welcome!"], await home.NoticesAsync());
+    }
+
     [E2eFact(DisplayName = "Differing passwords are refused")]
     public async Task DifferingPasswordsAreRefusedAndKeepEverythingButThePasswords()
     {

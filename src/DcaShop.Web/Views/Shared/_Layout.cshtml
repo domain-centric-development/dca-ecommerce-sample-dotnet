@@ -51,6 +51,7 @@ else
 </header>
 <main class="site-main">
 <div class="container">
+@await Component.InvokeAsync("AccountNotice")
 @RenderBody()
 </div>
 </main>

@@ -82,7 +82,9 @@ public sealed class RegisterPageController : Controller
             _identitySession.SetRegisteredIdentity(
                 _tokenService.GenerateRegisteredToken(UserId.Of(result.UserId), result.Email, result.Roles));
 
-            return Redirect(string.IsNullOrWhiteSpace(returnUrl) ? "/" : returnUrl);
+            var target = string.IsNullOrWhiteSpace(returnUrl) ? "/" : returnUrl;
+            TempData.Leave(AccountPageNotices.AddressedTo(target), AccountPageNotice.AccountCreated);
+            return Redirect(target);
         }
         catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
         {

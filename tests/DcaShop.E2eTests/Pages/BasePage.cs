@@ -59,6 +59,17 @@ public abstract class BasePage
         return await greeting.CountAsync() == 0 ? string.Empty : (await greeting.InnerTextAsync()).Trim();
     }
 
+    /// <summary>
+    /// The notices the page shows above its content, as the browser renders them; waits until the first one is
+    /// visible.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> NoticesAsync()
+    {
+        var notices = Page.Locator("[data-test='account-notice']");
+        await Assertions.Expect(notices.First).ToBeVisibleAsync();
+        return (await notices.AllInnerTextsAsync()).Select(notice => notice.Trim()).ToList();
+    }
+
     /// <summary>Whether the site header offers the "Register" link.</summary>
     public async Task<bool> HeaderOffersRegisterAsync() =>
         await Page.Locator("[data-test='site-header'] [data-test='nav-register-link']").CountAsync() > 0;

@@ -2,7 +2,12 @@
 using System.Net;
 using System.Text.RegularExpressions;
 
+using DcaShop.Account.Application.RegisterAccount;
+using DcaShop.SharedKernel.Domain.Model;
+
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DcaShop.IntegrationTests;
 
@@ -84,6 +89,32 @@ public sealed class RegistrationPageTest : IClassFixture<WebApplicationFactory<P
         Assert.Equal(
             "Welcome, anna.schmidt@example.com",
             Text(Element(catalogue, "site-header", "</header>"), @"data-test=""user-greeting"">([^<]*)</span>"));
+    }
+
+    [Fact]
+    public async Task ARegistrationOpenedForTheCatalogueSaysThereOnceThatTheAccountWasCreated()
+    {
+        using var shop = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(s => s.AddSingleton<IRegisterAccountInputPort>(new SucceedingRegistration())));
+        var client = Visitor(shop);
+        var page = await client.GetStringAsync("/register?returnUrl=/products");
+
+        var registered = await client.PostAsync(
+            "/register",
+            Forms.AsRendered(
+                Element(page, "register-form", "</form>"),
+                ("firstName", "Anna"),
+                ("lastName", "Schmidt"),
+                ("dateOfBirth", "1990-05-17"),
+                ("email", "anna.schmidt@example.com"),
+                ("password", "Secret123"),
+                ("confirmPassword", "Secret123")));
+
+        Assert.Equal("/products", registered.Headers.Location!.ToString());
+        var catalogue = await client.GetStringAsync(registered.Headers.Location);
+        Assert.Equal(
+            ["Account created successfully! Welcome!"],
+            Regex.Matches(catalogue, @"data-test=""account-notice"">([^<]*)</div>").Select(m => Rendered(m.Groups[1].Value)));
     }
 
     [Fact]
@@ -230,6 +261,14 @@ public sealed class RegistrationPageTest : IClassFixture<WebApplicationFactory<P
                 ("email", email),
                 ("password", "Secret123"),
                 ("confirmPassword", "Secret123")));
+    }
+
+    /// <summary>A registration that accepts every command as a new customer — the page's translation alone.</summary>
+    private sealed class SucceedingRegistration : IRegisterAccountInputPort
+    {
+        public Task<RegisterAccountResult> ExecuteAsync(RegisterAccountCommand command, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new RegisterAccountResult(
+                $"account-{command.CurrentUserId}", command.CurrentUserId, command.Email, new HashSet<Role> { Role.Customer }));
     }
 
     /// <summary>The <c>maxlength</c> of the input named <paramref name="name"/>.</summary>
