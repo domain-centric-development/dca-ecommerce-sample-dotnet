@@ -66,7 +66,9 @@ public sealed class ProductApiExceptionHandler : IExceptionHandler
             // A value the caller sent is not acceptable to a value object — a malformed stock keeping unit, a
             // blank name. This is the one mapping that stays imprecise: the same exception type is what the
             // runtime raises for a defect in this application, and nothing in the type tells the two apart.
-            // Moving each such check into request validation is what removes the ambiguity, one field at a time.
+            // Moving each such check into request validation is what removes the ambiguity, one field at a time --
+            // except a value refused only after the model normalised it: a price that rounds to zero stays the
+            // value object's refusal, because only the value object knows the rounding.
             case ArgumentException:
                 _logger.LogDebug("Rejected request value: {Reason}", exception.Message);
                 return ProblemAsync(httpContext, exception, StatusCodes.Status400BadRequest, "Unacceptable value");

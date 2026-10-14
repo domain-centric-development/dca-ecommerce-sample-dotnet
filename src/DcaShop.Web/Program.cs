@@ -24,8 +24,9 @@ builder.Services
     .AddApplicationPart(typeof(DcaShop.Checkout.CheckoutContext).Assembly);
 builder.Services.AddDcaShop(builder.Configuration);
 
-// RFC 9457 problem documents are the answer format of /api/** and /mcp. Each context registers one
-// IExceptionHandler for its own routes; this is the service they write through.
+// On /api/** and /mcp a failure a context names answers with an RFC 9457 problem document, and an address no
+// route matches answers with its bare status. Each context registers one IExceptionHandler for its own routes;
+// this is the service they write through.
 builder.Services.AddProblemDetails();
 
 // The antiforgery cookie follows the identity cookie's policy: a form inside a foreign frame sends its token
@@ -109,9 +110,10 @@ if (!allowFraming)
     });
 }
 
-// The HTML status-code pages are for the pages alone. A bodiless error on /api/** and /mcp -- an address that matches
-// no route -- stays as it is: a client reading JSON is never handed a web page. Switched off per request rather than
-// registered in a UseWhen branch, because a re-execution from inside a branch no longer reaches the error endpoint.
+// The HTML status-code pages are for the pages alone. Any bodiless error on /api/** and /mcp -- an address that
+// matches no route, a bare 403 -- stays as it is: a client reading JSON is never handed a web page. Switched off
+// per request rather than registered in a UseWhen branch, because a re-execution from inside a branch no longer
+// reaches the error endpoint.
 app.UseStatusCodePagesWithReExecute("/error/{0}");
 app.Use(async (context, next) =>
 {

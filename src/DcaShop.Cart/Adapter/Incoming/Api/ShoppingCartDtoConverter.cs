@@ -40,8 +40,8 @@ public sealed class ShoppingCartDtoConverter
     }
 
     /// <summary>
-    /// Every answer spells a cart's status the same way, upper-case as the reference API does. Each value's spelling is
-    /// written out, so renaming a member never changes what a client reads.
+    /// A cart's status as every answer spells it: upper-case, the same for the single cart and the list. Each value's
+    /// spelling is written out, so renaming a member never changes what a client reads.
     /// </summary>
     private static string Spell(CartStatus status) => status switch
     {
