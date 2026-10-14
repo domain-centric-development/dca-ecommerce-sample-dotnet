@@ -5,11 +5,12 @@ contract: 22
 
 compile: dotnet build
 # `dotnet test` takes one project per invocation — two paths in one call is an MSBuild error
-# (MSB1008). Each test project is its own entry, so the gate can select a single test in it.
-test: dotnet test tests/DcaShop.UnitTests --logger trx
+# (MSB1008). `test` runs the whole solution; the other levels name their project, so the gate can
+# select a single test in it.
+test: dotnet test --logger trx
 test.integration: dotnet test tests/DcaShop.IntegrationTests --logger trx
 http.stub: wiremock-net
-e2eTest: dotnet test tests/DcaShop.E2eTests --logger trx
+e2eTest: dotnet test tests/DcaShop.E2eTests/DcaShop.E2eTests.csproj --logger trx
 browser: playwright
 # The gate reads which tests actually ran from the runner's report; the .NET test
 # platform writes one only when asked (`--logger trx`), so it is asked above.
@@ -17,7 +18,7 @@ filterFlag: --filter
 filterFormat: "FullyQualifiedName~{class}.{method}"
 # `dotnet test` reads only its last --filter: several selectors go into one, joined by "|".
 filterJoin: "|"
-architecture: dotnet test tests/DcaShop.ArchitectureTests
+architecture: dotnet test --filter FullyQualifiedName~Architecture
 
 # The one source a stage may treat as an authority. Generated from the same sources as the
 # building blocks and the rule catalog this project consumes.
@@ -35,10 +36,12 @@ review.clean-code: review-clean-code
 
 contextMap: docs/architecture/context-map.md
 # What must hold for any change (story-gate.py --change, the commit hook, CI). The end-user suite
-# needs a running shop, so it stays out of it.
-required: compile test test.integration architecture format
+# starts the shop itself on a free port, so it runs whole here too.
+required: compile test test.integration architecture format e2eTest
 format: dotnet format --verify-no-changes
 formatFix: dotnet format
 acceptance: pages
 run: dotnet run --project src/DcaShop.Web
 carrier.plan: dca-modelling
+carrier.discover: product-discovery
+covers.test: **
