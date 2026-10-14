@@ -45,7 +45,7 @@ public sealed class RestPaymentProvider : IPaymentProvider
         try
         {
             using var response = await _httpClients.CreateClient(HttpClientName)
-                .PostAsJsonAsync("payments", new PaymentRequest(amount.Amount.ToString("0.00", CultureInfo.InvariantCulture), amount.Currency, sessionId.ToString()), cancellationToken)
+                .PostAsJsonAsync("payments", new PaymentRequest(amount.Amount.ToString("0.00", CultureInfo.InvariantCulture), amount.Currency.Code, sessionId.ToString()), cancellationToken)
                 .ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.PaymentRequired)

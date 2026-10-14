@@ -33,7 +33,7 @@ public sealed class ProvisionInitialPriceUseCase : IProvisionInitialPriceInputPo
     {
         ArgumentNullException.ThrowIfNull(input);
         var productId = new ProductId(input.ProductId);
-        var newPrice = Price.Of(Money.Of(input.PriceAmount, input.PriceCurrency));
+        var newPrice = Price.Of(Money.Of(input.PriceAmount, Currency.Of(input.PriceCurrency)));
 
         return _transactionBoundary.InTransactionAsync(async ct =>
         {
@@ -75,7 +75,7 @@ public sealed class ProvisionInitialPriceUseCase : IProvisionInitialPriceInputPo
             productPrice.Id.Value,
             productPrice.ProductId.Value,
             productPrice.CurrentPrice.Value.Amount,
-            productPrice.CurrentPrice.Value.Currency,
+            productPrice.CurrentPrice.Value.Currency.Code,
             productPrice.EffectiveFrom,
             created,
             alreadyApplied);

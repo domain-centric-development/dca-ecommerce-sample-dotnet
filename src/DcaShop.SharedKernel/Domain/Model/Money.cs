@@ -7,16 +7,12 @@ namespace DcaShop.SharedKernel.Domain.Model;
 /// <summary>A non-negative amount in one currency, normalised to two decimal places.</summary>
 public sealed record Money : IValue
 {
-    public Money(decimal amount, string currency)
+    public Money(decimal amount, Currency currency)
     {
+        ArgumentNullException.ThrowIfNull(currency);
         if (amount < 0)
         {
             throw new ArgumentException("Amount cannot be negative", nameof(amount));
-        }
-
-        if (string.IsNullOrWhiteSpace(currency) || !IsoCurrencyCodes.Contains(currency))
-        {
-            throw new ArgumentException("Currency must be an ISO 4217 code", nameof(currency));
         }
 
         if (amount > 999999999999.99m) throw new ArgumentException("Amount exceeds maximum monetary value", nameof(amount));
@@ -30,13 +26,13 @@ public sealed record Money : IValue
     /// <summary>Whether there is an amount at all. An amount is never negative, so this is "not zero".</summary>
     public bool IsPositive => Amount != 0m;
 
-    public string Currency { get; }
+    public Currency Currency { get; }
 
-    public static Money Of(decimal amount, string currency) => new(amount, currency);
+    public static Money Of(decimal amount, Currency currency) => new(amount, currency);
 
-    public static Money Euro(decimal amount) => new(amount, "EUR");
+    public static Money Euro(decimal amount) => new(amount, Currency.Euro);
 
-    public static Money Zero(string currency) => new(0m, currency);
+    public static Money Zero(Currency currency) => new(0m, currency);
 
     public Money Add(Money other) => new(Amount + SameCurrency(other, "add").Amount, Currency);
 
@@ -50,7 +46,7 @@ public sealed record Money : IValue
 
     public bool IsGreaterThan(Money other) => Amount > SameCurrency(other, "compare").Amount;
 
-    public override string ToString() => Amount.ToString("0.00", CultureInfo.InvariantCulture) + " " + Currency;
+    public override string ToString() => Amount.ToString("0.00", CultureInfo.InvariantCulture) + " " + Currency.Code;
 
     private Money SameCurrency(Money other, string operation)
     {

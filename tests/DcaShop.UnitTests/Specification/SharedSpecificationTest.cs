@@ -45,7 +45,7 @@ public sealed class SharedSpecificationTest
                 {
                     Action action = () =>
                     {
-                        var result = Money.Of(decimal.Parse(v.GetProperty("amount").GetString()!, CultureInfo.InvariantCulture), v.GetProperty("currency").GetString()!);
+                        var result = Money.Of(decimal.Parse(v.GetProperty("amount").GetString()!, CultureInfo.InvariantCulture), Currency.Of(v.GetProperty("currency").GetString()!));
                         if (v.TryGetProperty("subtract", out var subtract)) result = result.Subtract(Money.Of(decimal.Parse(subtract.GetString()!, CultureInfo.InvariantCulture), result.Currency));
                         if (v.GetProperty("accept").GetBoolean()) Assert.Equal(v.GetProperty("normalized").GetString(), result.Amount.ToString("0.00", CultureInfo.InvariantCulture));
                     };

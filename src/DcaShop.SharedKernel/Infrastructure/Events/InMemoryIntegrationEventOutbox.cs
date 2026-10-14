@@ -21,7 +21,7 @@ public sealed class InMemoryIntegrationEventOutbox : IIntegrationEventOutbox
     public IntegrationEventPublication Register(IIntegrationEvent @event)
     {
         ArgumentNullException.ThrowIfNull(@event);
-        var publication = new IntegrationEventPublication(@event.EventId, JsonSerializer.Serialize(@event, @event.GetType()),
+        var publication = new IntegrationEventPublication(@event.EventId, JsonSerializer.Serialize(@event, @event.GetType(), IntegrationEventJson.Options),
             @event.GetType(), _clock.GetUtcNow(), PublicationStatus.Staged, 0, null, null);
         // Validate deserialization before registering an undeliverable snapshot.
         _ = publication.Event;

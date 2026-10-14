@@ -23,7 +23,7 @@ public sealed class ProductCreatedEventPublisher : EventListener<ProductCreated>
                 @event.OccurredOn,
                 @event.ProductId.Value,
                 @event.InitialPrice.Value.Amount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
-                @event.InitialPrice.Value.Currency,
+                @event.InitialPrice.Value.Currency.Code,
                 @event.InitialStock),
             cancellationToken);
 }

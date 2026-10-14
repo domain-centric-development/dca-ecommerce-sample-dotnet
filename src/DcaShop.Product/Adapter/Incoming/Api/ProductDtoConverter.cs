@@ -24,7 +24,7 @@ public sealed class ProductDtoConverter
             command.Description,
             command.ImageUrl,
             result.InitialPrice.Amount,
-            result.InitialPrice.Currency,
+            result.InitialPrice.Currency.Code,
             command.Category,
             null,
             null);
@@ -40,7 +40,7 @@ public sealed class ProductDtoConverter
             product.Description.Value,
             product.ImageUrl.Value,
             product.CurrentPrice.Amount,
-            product.CurrentPrice.Currency,
+            product.CurrentPrice.Currency.Code,
             product.Category.Name,
             product.Article.AvailableStock,
             product.Article.IsAvailable);

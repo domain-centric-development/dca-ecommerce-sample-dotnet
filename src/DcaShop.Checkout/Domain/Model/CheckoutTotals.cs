@@ -44,7 +44,7 @@ public sealed record CheckoutTotals(Money Subtotal, Money Shipping, Money Tax, M
     public static CheckoutTotals Calculate(Money subtotal, Money shipping, Money tax) =>
         new(subtotal, shipping, tax, subtotal.Add(shipping));
 
-    public static CheckoutTotals Zero(string currency) => new(Money.Zero(currency), Money.Zero(currency), Money.Zero(currency), Money.Zero(currency));
+    public static CheckoutTotals Zero(Currency currency) => new(Money.Zero(currency), Money.Zero(currency), Money.Zero(currency), Money.Zero(currency));
 
     /// <summary>Shipping changes the basis, so the contained tax is worked out again.</summary>
     public CheckoutTotals WithShipping(Money newShipping) => Calculate(Subtotal, newShipping);

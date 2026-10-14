@@ -10,16 +10,16 @@ namespace DcaShop.SharedKernel.Domain.Model;
 /// </remarks>
 public sealed class CurrencyMismatchException : DomainException
 {
-    public CurrencyMismatchException(string operation, string left, string right)
-        : base($"Cannot {operation} money in {left} and {right}")
+    public CurrencyMismatchException(string operation, Currency left, Currency right)
+        : base($"Cannot {operation} money in {left.Code} and {right.Code}")
     {
         Left = left;
         Right = right;
     }
 
-    /// <summary>The ISO 4217 code of the amount the operation started from.</summary>
-    public string Left { get; }
+    /// <summary>The currency of the amount the operation started from.</summary>
+    public Currency Left { get; }
 
-    /// <summary>The ISO 4217 code of the amount it was combined with.</summary>
-    public string Right { get; }
+    /// <summary>The currency of the amount it was combined with.</summary>
+    public Currency Right { get; }
 }

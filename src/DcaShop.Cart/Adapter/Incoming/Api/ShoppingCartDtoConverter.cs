@@ -20,7 +20,7 @@ public sealed class ShoppingCartDtoConverter
             cart.Items.Select(ToItemDto).ToList(),
             Spell(cart.Status),
             subtotal.Amount,
-            subtotal.Currency,
+            subtotal.Currency.Code,
             cart.ItemCount);
     }
 
@@ -35,7 +35,7 @@ public sealed class ShoppingCartDtoConverter
                     Spell(c.Status),
                     c.ItemCount,
                     c.Total.Amount,
-                    c.Total.Currency))
+                    c.Total.Currency.Code))
                 .ToList());
     }
 
@@ -57,5 +57,5 @@ public sealed class ShoppingCartDtoConverter
             item.ProductId.Value.ToString(),
             item.Quantity.Value,
             item.Article.CurrentPrice.Amount,
-            item.Article.CurrentPrice.Currency);
+            item.Article.CurrentPrice.Currency.Code);
 }

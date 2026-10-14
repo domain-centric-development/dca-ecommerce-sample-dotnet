@@ -6,7 +6,7 @@ namespace DcaShop.Product.Application.Shared;
 /// <summary>Combines a product with the price and stock answers of the outgoing ports into an <see cref="EnrichedProduct"/>.</summary>
 public sealed class ProductArticleAssembler
 {
-    private const string DefaultCurrency = "EUR";
+    private static readonly Currency DefaultCurrency = Currency.Euro;
 
     private readonly IPricingDataPort _pricing;
     private readonly IProductStockDataPort _stock;

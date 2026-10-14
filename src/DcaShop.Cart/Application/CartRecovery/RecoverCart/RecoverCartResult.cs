@@ -13,7 +13,7 @@ public sealed record RecoverCartResult(
 {
     /// <summary>Nothing to recover: the identity did not change, or the guest cart was empty or absent.</summary>
     public static RecoverCartResult NoRecoveryNeeded(string customerId) =>
-        new(null, customerId, [], Money.Zero("EUR"), 0, false);
+        new(null, customerId, [], Money.Zero(Currency.Euro), 0, false);
 
     public sealed record CartItemSummary(Guid ItemId, Guid ProductId, int Quantity, Money UnitPrice);
 }

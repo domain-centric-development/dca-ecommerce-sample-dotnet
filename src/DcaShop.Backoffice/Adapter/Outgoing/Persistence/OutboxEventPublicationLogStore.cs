@@ -21,7 +21,7 @@ public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
     // Before the first dispatch captures consumer identities, display the dispatcher placeholder.
     private const string OutboxListener = "integration-event-dispatcher";
 
-    private static readonly JsonSerializerOptions PayloadFormat = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions PayloadFormat = IntegrationEventJson.Indented;
 
     private readonly IIntegrationEventOutbox _outbox;
 

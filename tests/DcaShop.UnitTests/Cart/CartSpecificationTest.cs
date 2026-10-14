@@ -37,7 +37,7 @@ public sealed class CartSpecificationTest
 
     [Fact]
     public void AMinimumInAnotherCurrencyIsNotComparable() =>
-        Assert.False(new HasMinTotal(Money.Of(1m, "USD")).IsSatisfiedBy(CartWithOneItem()));
+        Assert.False(new HasMinTotal(Money.Of(1m, Currency.Of("USD"))).IsSatisfiedBy(CartWithOneItem()));
 
     [Fact]
     public void WhatTheAggregateCannotSeeStaysNeutral()

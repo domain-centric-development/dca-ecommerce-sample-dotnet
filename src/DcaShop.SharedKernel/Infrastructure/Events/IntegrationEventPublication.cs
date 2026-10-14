@@ -18,7 +18,7 @@ public sealed record IntegrationEventPublication(Guid Id, string Payload, Type E
     public ImmutableDictionary<string, ConsumerDelivery> Consumers { get; init; } = ImmutableDictionary<string, ConsumerDelivery>.Empty;
     public bool ConsumersInitialized { get; init; }
     /// <summary>A fresh deserialization prevents a consumer or caller from changing the retained snapshot.</summary>
-    public IIntegrationEvent Event => (IIntegrationEvent)(JsonSerializer.Deserialize(Payload, EventType)
+    public IIntegrationEvent Event => (IIntegrationEvent)(JsonSerializer.Deserialize(Payload, EventType, IntegrationEventJson.Options)
         ?? throw new InvalidOperationException("An event snapshot must not deserialize to null"));
 }
 

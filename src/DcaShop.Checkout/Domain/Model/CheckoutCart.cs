@@ -10,7 +10,7 @@ namespace DcaShop.Checkout.Domain.Model;
 /// </summary>
 public sealed record CheckoutCart : IValue
 {
-    private const string DefaultCurrency = "EUR";
+    private static readonly Currency DefaultCurrency = Currency.Euro;
 
     public CheckoutCart(CartId cartId, CustomerId customerId, IReadOnlyList<EnrichedCheckoutLineItem> items)
     {

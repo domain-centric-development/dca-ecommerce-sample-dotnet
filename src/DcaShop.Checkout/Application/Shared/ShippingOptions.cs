@@ -11,7 +11,7 @@ public static class ShippingOptions
         new ShippingOption("standard", "Standard Shipping", "5-7 business days", Money.Euro(4.99m)),
         new ShippingOption("express", "Express Shipping", "2-3 business days", Money.Euro(9.99m)),
         new ShippingOption("overnight", "Overnight Shipping", "Next business day", Money.Euro(19.99m)),
-        new ShippingOption("free", "Free Shipping", "7-10 business days", Money.Zero("EUR")),
+        new ShippingOption("free", "Free Shipping", "7-10 business days", Money.Zero(Currency.Euro)),
     };
 
     public static ShippingOption? Find(string id) => All.FirstOrDefault(o => o.Id == id);

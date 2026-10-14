@@ -34,7 +34,7 @@ public sealed class CreateProductUseCase : ICreateProductInputPort
                     throw new DuplicateSkuException(sku);
                 }
 
-                var price = Price.Of(Money.Of(command.PriceAmount, command.PriceCurrency));
+                var price = Price.Of(Money.Of(command.PriceAmount, Currency.Of(command.PriceCurrency)));
                 var product = _factory.Create(
                     sku,
                     ProductName.Of(command.Name),

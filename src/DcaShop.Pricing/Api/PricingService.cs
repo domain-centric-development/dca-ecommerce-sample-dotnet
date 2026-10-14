@@ -41,5 +41,5 @@ public sealed class PricingService
     }
 
     public Task ProvisionInitialPriceAsync(ProductId productId, Money price, CancellationToken cancellationToken = default) =>
-        _provisionInitialPrice.ExecuteAsync(new ProvisionInitialPriceCommand(productId.Value, price.Amount, price.Currency), cancellationToken);
+        _provisionInitialPrice.ExecuteAsync(new ProvisionInitialPriceCommand(productId.Value, price.Amount, price.Currency.Code), cancellationToken);
 }
