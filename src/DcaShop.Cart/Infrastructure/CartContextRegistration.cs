@@ -7,7 +7,7 @@ using DcaShop.Cart.Api;
 using DcaShop.Cart.Application.CartCheckout.CompleteCart;
 using DcaShop.Cart.Application.CartRecovery.GetCartMergeOptions;
 using DcaShop.Cart.Application.CartRecovery.MergeCarts;
-using DcaShop.Cart.Application.CartRecovery.RecoverCartOnLogin;
+using DcaShop.Cart.Application.CartRecovery.RecoverCart;
 using DcaShop.Cart.Application.Operations.GetAllCarts;
 using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Application.Shopping.AddItemToCart;
@@ -43,7 +43,7 @@ public static class CartContextRegistration
         services.AddScoped<ICompleteCartInputPort, CompleteCartUseCase>();
         services.AddScoped<IGetCartMergeOptionsInputPort, GetCartMergeOptionsUseCase>();
         services.AddScoped<IMergeCartsInputPort, MergeCartsUseCase>();
-        services.AddScoped<IRecoverCartOnLoginInputPort, RecoverCartOnLoginUseCase>();
+        services.AddScoped<IRecoverCartInputPort, RecoverCartUseCase>();
         services.AddScoped<EnrichedCartReader>();
 
         // Incoming adapters

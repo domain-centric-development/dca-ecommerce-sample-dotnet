@@ -18,7 +18,7 @@ The Cart context groups its use cases into four features — domain-named naviga
 | Feature | Meaning | Use cases |
 |---------|---------|-----------|
 | `Shopping` | Filling and reading the shopping cart while the customer shops | `CreateCart`, `GetOrCreateActiveCart`, `GetActiveCart`, `GetCartById`, `AddItemToCart`, `RemoveItemFromCart` |
-| `CartRecovery` | Recovering a guest cart on login — offering and applying a merge | `RecoverCartOnLogin`, `GetCartMergeOptions`, `MergeCarts` |
+| `CartRecovery` | Recovering a guest cart on login — offering and applying a merge | `RecoverCart`, `GetCartMergeOptions`, `MergeCarts` |
 | `CartCheckout` | Reconciling the cart once Checkout confirms an order — the purchased units leave the cart (`CompleteCart`) | `CompleteCart` |
 | `Operations` | Operating the shop — staff-only views across all carts | `GetAllCarts` |
 

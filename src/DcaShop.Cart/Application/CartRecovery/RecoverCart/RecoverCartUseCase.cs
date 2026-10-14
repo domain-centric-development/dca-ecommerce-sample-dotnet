@@ -4,7 +4,7 @@ using DcaShop.Cart.Domain.Model;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
-namespace DcaShop.Cart.Application.CartRecovery.RecoverCartOnLogin;
+namespace DcaShop.Cart.Application.CartRecovery.RecoverCart;
 
 /// <summary>
 /// Carries a guest's cart over to the account at login, for the case where there is nothing to decide: the
@@ -16,13 +16,13 @@ namespace DcaShop.Cart.Application.CartRecovery.RecoverCartOnLogin;
 /// have to follow the identity, or logging in would silently empty the cart. The use case is idempotent: with
 /// matching identities, or with no guest cart, it does nothing.
 /// </remarks>
-public sealed class RecoverCartOnLoginUseCase : IRecoverCartOnLoginInputPort
+public sealed class RecoverCartUseCase : IRecoverCartInputPort
 {
     private readonly IShoppingCartRepository _carts;
     private readonly IDomainEventPublisher _events;
     private readonly ITransactionBoundary _transactionBoundary;
 
-    public RecoverCartOnLoginUseCase(
+    public RecoverCartUseCase(
         IShoppingCartRepository carts, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
         _carts = carts;
@@ -30,15 +30,15 @@ public sealed class RecoverCartOnLoginUseCase : IRecoverCartOnLoginInputPort
         _transactionBoundary = transactionBoundary;
     }
 
-    public async Task<RecoverCartOnLoginResult> ExecuteAsync(
-        RecoverCartOnLoginCommand command, CancellationToken cancellationToken = default)
+    public async Task<RecoverCartResult> ExecuteAsync(
+        RecoverCartCommand command, CancellationToken cancellationToken = default)
     {
         var anonymousCustomerId = CustomerId.Of(command.AnonymousUserId);
         var registeredCustomerId = CustomerId.Of(command.RegisteredUserId);
 
         if (anonymousCustomerId == registeredCustomerId)
         {
-            return RecoverCartOnLoginResult.NoRecoveryNeeded(registeredCustomerId.Value);
+            return RecoverCartResult.NoRecoveryNeeded(registeredCustomerId.Value);
         }
 
         return await _transactionBoundary.InTransactionAsync(
@@ -49,7 +49,7 @@ public sealed class RecoverCartOnLoginUseCase : IRecoverCartOnLoginInputPort
 
                 if (anonymousCart is null || anonymousCart.IsEmpty)
                 {
-                    return RecoverCartOnLoginResult.NoRecoveryNeeded(registeredCustomerId.Value);
+                    return RecoverCartResult.NoRecoveryNeeded(registeredCustomerId.Value);
                 }
 
                 var accountCart = await _carts.FindActiveByCustomerAsync(registeredCustomerId, ct)
@@ -68,11 +68,11 @@ public sealed class RecoverCartOnLoginUseCase : IRecoverCartOnLoginInputPort
                 await _events.PublishAndClearEventsAsync(accountCart, ct).ConfigureAwait(false);
                 await _carts.DeleteByIdAsync(anonymousCart.Id, ct).ConfigureAwait(false);
 
-                return new RecoverCartOnLoginResult(
+                return new RecoverCartResult(
                     accountCart.Id.Value,
                     accountCart.CustomerId.Value,
                     accountCart.Items
-                        .Select(i => new RecoverCartOnLoginResult.CartItemSummary(
+                        .Select(i => new RecoverCartResult.CartItemSummary(
                             i.Id.Value, i.ProductId.Value, i.Quantity.Value, i.PriceAtAddition.Value))
                         .ToList(),
                     accountCart.CalculateTotal(),

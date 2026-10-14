@@ -148,7 +148,7 @@ DcaShop.Cart/
 │   ├── Shopping/                feature — filling and reading the cart
 │   │   ├── AddItemToCart/       I*InputPort : IUseCase<Command, Result>, *UseCase, *Command, *Result
 │   │   └── GetCartById/         … one folder per use case
-│   ├── CartRecovery/            feature — RecoverCartOnLogin, GetCartMergeOptions, MergeCarts
+│   ├── CartRecovery/            feature — RecoverCart, GetCartMergeOptions, MergeCarts
 │   ├── CartCheckout/            feature — CompleteCart
 │   ├── Operations/              feature — GetAllCarts (staff-only)
 │   └── Shared/                  output ports, context-wide: IShoppingCartRepository, IArticleDataPort

@@ -2,7 +2,7 @@ using System.Net;
 
 using DcaShop.Cart.Application.CartRecovery.GetCartMergeOptions;
 using DcaShop.Cart.Application.CartRecovery.MergeCarts;
-using DcaShop.Cart.Application.CartRecovery.RecoverCartOnLogin;
+using DcaShop.Cart.Application.CartRecovery.RecoverCart;
 using DcaShop.SharedKernel.Application.Shared;
 
 using Microsoft.AspNetCore.Mvc;
@@ -28,13 +28,13 @@ public sealed class CartMergePageController : Controller
 {
     private readonly IGetCartMergeOptionsInputPort _getMergeOptions;
     private readonly IMergeCartsInputPort _mergeCarts;
-    private readonly IRecoverCartOnLoginInputPort _recoverCart;
+    private readonly IRecoverCartInputPort _recoverCart;
     private readonly IIdentityProvider _identityProvider;
 
     public CartMergePageController(
         IGetCartMergeOptionsInputPort getMergeOptions,
         IMergeCartsInputPort mergeCarts,
-        IRecoverCartOnLoginInputPort recoverCart,
+        IRecoverCartInputPort recoverCart,
         IIdentityProvider identityProvider)
     {
         _getMergeOptions = getMergeOptions;
@@ -56,7 +56,7 @@ public sealed class CartMergePageController : Controller
             // Nothing to decide does not mean nothing to do: when only the guest cart holds items, they still
             // have to follow the visitor into their account, or logging in would silently empty the cart.
             await _recoverCart.ExecuteAsync(
-                new RecoverCartOnLoginCommand(anonymousUserId, registeredUserId), cancellationToken);
+                new RecoverCartCommand(anonymousUserId, registeredUserId), cancellationToken);
 
             TempData["Message"] = "Welcome back!";
             return Redirect(Destination(returnUrl));
