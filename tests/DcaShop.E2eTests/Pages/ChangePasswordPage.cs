@@ -26,7 +26,7 @@ public sealed class ChangePasswordPage : BasePage
     public static async Task<ChangePasswordPage> OpenAsync(IPage page)
     {
         var changePassword = new ChangePasswordPage(page);
-        await changePassword.WaitForUrlAsync(Path + "**");
+        await changePassword.WaitForUrlAsync(Path);
         await changePassword.WaitForAsync(Form);
         return changePassword;
     }

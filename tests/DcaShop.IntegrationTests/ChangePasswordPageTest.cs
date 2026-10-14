@@ -243,7 +243,7 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
         var client = Visitor(shop);
         Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(client, Email)).StatusCode);
         var changed = await ChangePasswordAsync(client, Password, NewPassword);
-        Assert.Equal(ChangePasswordPath + "?notice=password-changed", changed.Headers.Location!.ToString());
+        Assert.Equal(ChangePasswordPath, changed.Headers.Location!.ToString());
     }
 
     /// <summary>Opens the change-password page and submits it with the new password typed twice.</summary>

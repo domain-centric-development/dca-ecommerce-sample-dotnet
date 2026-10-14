@@ -43,14 +43,14 @@ public sealed class ProfilePageController : Controller
     }
 
     [HttpGet("")]
-    public async Task<IActionResult> Show(
-        [FromQuery(Name = AccountPageNotices.Parameter)] string? notice, CancellationToken cancellationToken)
+    public async Task<IActionResult> Show(CancellationToken cancellationToken)
     {
+        var notice = TempData.TakeAccountPageNotice(AccountPageNotices.ProfilePage);
         var identity = _identityProvider.GetCurrentIdentity();
         var stored = await StoredProfileAsync(identity.UserId.Value, cancellationToken);
         return stored is null
             ? LoginRedirect()
-            : View(ViewName, ProfilePageViewModel.Of(stored, AccountPageNotices.FromCode(notice)?.Sentence()));
+            : View(ViewName, ProfilePageViewModel.Of(stored, notice?.Sentence()));
     }
 
     [HttpPost("")]
@@ -73,7 +73,8 @@ public sealed class ProfilePageController : Controller
                 // to be re-issued — otherwise the session would keep naming the old one.
                 _identitySession.SetRegisteredIdentity(
                     _tokenService.GenerateRegisteredToken(identity.UserId, result.Profile!.Email, identity.Roles));
-                return Redirect(AccountPageNotices.PathWith(AccountRoutes.Profile, AccountPageNotice.ProfileUpdated));
+                TempData.Leave(AccountPageNotices.ProfilePage, AccountPageNotice.ProfileUpdated);
+                return Redirect(AccountRoutes.Profile);
 
             case ChangeProfileOutcome.AccountNotAccessible:
                 return LoginRedirect();

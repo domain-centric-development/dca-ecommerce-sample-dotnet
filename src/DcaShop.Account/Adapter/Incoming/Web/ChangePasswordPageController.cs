@@ -33,9 +33,9 @@ public sealed class ChangePasswordPageController : Controller
     }
 
     [HttpGet("")]
-    public async Task<IActionResult> Show(
-        [FromQuery(Name = AccountPageNotices.Parameter)] string? notice, CancellationToken cancellationToken)
+    public async Task<IActionResult> Show(CancellationToken cancellationToken)
     {
+        var notice = TempData.TakeAccountPageNotice(AccountPageNotices.ChangePasswordPage);
         var identity = _identityProvider.GetCurrentIdentity();
         var accessible = (await _getAccountOverview.ExecuteAsync(
             new GetAccountOverviewQuery(identity.UserId.Value), cancellationToken)).Found;
@@ -45,7 +45,7 @@ public sealed class ChangePasswordPageController : Controller
             return LoginRedirect();
         }
 
-        return View(ViewName, ChangePasswordPageViewModel.Blank(AccountPageNotices.FromCode(notice)?.Sentence()));
+        return View(ViewName, ChangePasswordPageViewModel.Blank(notice?.Sentence()));
     }
 
     [HttpPost("")]
@@ -88,8 +88,11 @@ public sealed class ChangePasswordPageController : Controller
         _ => throw new ArgumentOutOfRangeException(nameof(rule), rule, null),
     };
 
-    private IActionResult ChangedRedirect() =>
-        Redirect(AccountPageNotices.PathWith(AccountRoutes.ChangePassword, AccountPageNotice.PasswordChanged));
+    private IActionResult ChangedRedirect()
+    {
+        TempData.Leave(AccountPageNotices.ChangePasswordPage, AccountPageNotice.PasswordChanged);
+        return Redirect(AccountRoutes.ChangePassword);
+    }
 
     private IActionResult LoginRedirect() =>
         Redirect(AccountRoutes.ToLoginWithReturnUrl(AccountRoutes.ChangePassword));

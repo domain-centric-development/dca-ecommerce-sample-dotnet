@@ -63,9 +63,24 @@ public sealed class ProfilePageTest : IClassFixture<WebApplicationFactory<Progra
         var saved = await SaveProfileAsync(client, "Anna.Schmidt@Example.com", "1990-05-17");
 
         var profile = await saved.Response.Content.ReadAsStringAsync();
-        Assert.Equal("/account/profile?notice=profile-updated", saved.Path);
+        Assert.Equal("/account/profile", saved.Path);
         Assert.Equal("Your profile has been updated.", Text(profile, @"data-test=""profile-success-message"">([^<]*)</div>"));
         Assert.Equal(Email, InputValue(profile, "profile-email-input"));
+    }
+
+    [Fact]
+    public async Task TheSavedNoticeIsShownOnceAndNeverTakenFromTheAddress()
+    {
+        const string Notice = @"data-test=""profile-success-message""";
+        var client = Visitor(_factory.WithWebHostBuilder(_ => { }));
+        Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(client, Email)).StatusCode);
+
+        var saved = await SaveProfileAsync(client, Email, "1990-05-17");
+
+        Assert.Contains(Notice, await saved.Response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+        Assert.DoesNotContain(Notice, await client.GetStringAsync("/account/profile"), StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            Notice, await client.GetStringAsync("/account/profile?notice=profile-updated"), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -191,7 +206,7 @@ public sealed class ProfilePageTest : IClassFixture<WebApplicationFactory<Progra
         var client = Visitor(shop);
         Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(client, Email)).StatusCode);
         var saved = await SaveProfileAsync(client, NewEmail, "1990-05-17");
-        Assert.Equal("/account/profile?notice=profile-updated", saved.Path);
+        Assert.Equal("/account/profile", saved.Path);
     }
 
     /// <summary>Opens the profile, submits it with the given details and follows the answer as a browser would.</summary>

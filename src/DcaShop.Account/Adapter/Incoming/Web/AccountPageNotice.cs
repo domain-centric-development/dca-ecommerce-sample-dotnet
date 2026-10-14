@@ -1,10 +1,11 @@
-using System.Net;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace DcaShop.Account.Adapter.Incoming.Web;
 
 /// <summary>
-/// The notices a redirect carries to an account page, as a fixed code in its address (<c>?notice=&lt;code&gt;</c>) —
-/// never the sentence and never in a server session, so any instance that answers the next request shows it.
+/// The notices a redirect leaves for an account page. A notice travels in TempData — a cookie sealed with the key ring
+/// every instance shares — as its fixed code, never the sentence and never in a server session, so any instance that
+/// answers the next request shows it. It is addressed to one page: only that page reads it, and reading removes it.
 /// </summary>
 internal enum AccountPageNotice
 {
@@ -15,11 +16,14 @@ internal enum AccountPageNotice
     PasswordChanged = 2,
 }
 
-/// <summary>Each notice's code in the address and the sentence its page shows.</summary>
+/// <summary>Each notice's code, the sentence its page shows, and where a page finds the notice left for it.</summary>
 internal static class AccountPageNotices
 {
-    /// <summary>The query parameter that carries a notice's code.</summary>
-    public const string Parameter = "notice";
+    /// <summary>The TempData key of the notice addressed to the profile page.</summary>
+    public const string ProfilePage = "notice.account.profile";
+
+    /// <summary>The TempData key of the notice addressed to the change-password page.</summary>
+    public const string ChangePasswordPage = "notice.account.change-password";
 
     public static string Code(this AccountPageNotice notice) => notice switch
     {
@@ -35,11 +39,15 @@ internal static class AccountPageNotices
         _ => throw new ArgumentOutOfRangeException(nameof(notice)),
     };
 
-    /// <summary>The notice an address names by its code; none for a code the shop does not know.</summary>
+    /// <summary>The notice a code names; none for a code the shop does not know.</summary>
     public static AccountPageNotice? FromCode(string? code) =>
         Enum.GetValues<AccountPageNotice>().Cast<AccountPageNotice?>().FirstOrDefault(notice => notice?.Code() == code);
 
-    /// <summary>The page's path carrying the notice.</summary>
-    public static string PathWith(string path, AccountPageNotice notice) =>
-        $"{path}?{Parameter}={WebUtility.UrlEncode(notice.Code())}";
+    /// <summary>Leaves the notice's code for the page the redirect leads to.</summary>
+    public static void Leave(this ITempDataDictionary tempData, string page, AccountPageNotice notice) =>
+        tempData[page] = notice.Code();
+
+    /// <summary>The notice left for this page, if any — reading it removes it.</summary>
+    public static AccountPageNotice? TakeAccountPageNotice(this ITempDataDictionary tempData, string page) =>
+        FromCode(tempData[page] as string);
 }

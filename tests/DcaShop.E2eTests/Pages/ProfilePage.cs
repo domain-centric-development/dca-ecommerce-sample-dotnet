@@ -26,7 +26,7 @@ public sealed class ProfilePage : BasePage
     public static async Task<ProfilePage> OpenAsync(IPage page)
     {
         var profile = new ProfilePage(page);
-        await profile.WaitForUrlAsync(Path + "**");
+        await profile.WaitForUrlAsync(Path);
         await profile.WaitForAsync(Profile);
         return profile;
     }
