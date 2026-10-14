@@ -11,7 +11,7 @@ public sealed class NotFoundTitleE2eTest : BaseE2eTest
     {
     }
 
-    [E2eFact(DisplayName = "Unknown product shows the not-found page")]
+    [E2eFact(DisplayName = "Unknown product shows the not found page")]
     public async Task NotFoundPageIsTitledWithTheShopName()
     {
         var notFound = await NotFoundPage.NavigateToAsync(Page, "/products/no-such-product");

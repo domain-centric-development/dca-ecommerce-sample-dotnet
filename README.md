@@ -99,13 +99,10 @@ throwaway page on another port of this host, frames the shop in it and adds a pr
 no configuration: the shop allows framing out of the box, and another port is the same *site*, so its `Lax` cookies
 travel into the frame unchanged.
 
-Framing from another *site* is the second case, and only that one needs the cookie policy relaxed. It runs against a
-shop started for it, over TLS — a browser demands `Secure` for a `SameSite=None` cookie:
-
-```bash
-Jwt__SameSite=None Jwt__SecureCookies=true dotnet run --project src/DcaShop.Web --urls https://localhost:5443 &
-E2E_BASE_URL=https://localhost:5443 E2E_EMBEDDED=true dotnet test tests/DcaShop.E2eTests
-```
+Framing from another *site* is the second case, and only that one needs the cookie policy relaxed.
+`EmbeddingPolicyE2eTest` starts the shops for it on ports of their own: one out of the box, which a foreign site frames
+but cannot use, and one with `Jwt__SameSite=None Jwt__SecureCookies=true` over TLS — a browser demands `Secure` for a
+`SameSite=None` cookie — which takes the product into its cart inside the foreign frame.
 
 ## Solution layout
 

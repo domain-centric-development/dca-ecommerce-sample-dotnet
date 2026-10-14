@@ -20,7 +20,7 @@ public sealed class ProviderPaymentE2eTest : BaseE2eTest
     {
     }
 
-    [E2eFact(DisplayName = "A payment the provider authorizes moves the checkout on to the review step")]
+    [E2eFact(DisplayName = "Authorized payment moves to review")]
     public async Task APaymentTheProviderAuthorizesLeadsOnToTheReview()
     {
         // Given a checkout session at the payment step

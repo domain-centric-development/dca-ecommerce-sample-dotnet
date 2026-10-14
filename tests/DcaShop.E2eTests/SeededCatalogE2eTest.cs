@@ -13,7 +13,7 @@ public sealed class SeededCatalogE2eTest : BaseE2eTest
     {
     }
 
-    [OwnShopFact(DisplayName = "The catalog lists the seeded products in name order")]
+    [OwnShopFact(DisplayName = "Catalogue lists the seeded range")]
     public async Task CatalogListsTheSeededProductsInNameOrder()
     {
         using var shop = ShopOfItsOwn.Start();

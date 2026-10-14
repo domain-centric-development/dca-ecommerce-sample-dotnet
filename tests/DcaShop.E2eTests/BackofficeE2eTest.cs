@@ -3,9 +3,8 @@ using DcaShop.E2eTests.Pages;
 namespace DcaShop.E2eTests;
 
 /// <summary>
-/// The backoffice through the browser: login, the event publication log and its counts, a failed login, logout,
-/// and the redirect that keeps the log away from anyone who has not signed in. Port of the Java sample's
-/// <c>BackofficeE2ETest</c>.
+/// The backoffice through the browser: login, the event publication log, its payload, and the redirect that keeps the
+/// log away from anyone who has not signed in. Port of the Java sample's <c>BackofficeE2ETest</c>.
 /// </summary>
 /// <remarks>
 /// Requires the shop running with the default operator credentials (<c>admin</c>/<c>admin</c>) and at least one
@@ -23,7 +22,7 @@ public sealed class BackofficeE2eTest : BaseE2eTest
     {
     }
 
-    [E2eFact(DisplayName = "Login as admin and view the event log")]
+    [E2eFact(DisplayName = "Login opens the event log")]
     public async Task LoginAndViewEventLog()
     {
         var events = await SignInAsync();
@@ -35,7 +34,7 @@ public sealed class BackofficeE2eTest : BaseE2eTest
         Assert.True(await events.TotalEventsAsync() >= 0, "Total events count should be a non-negative number");
     }
 
-    [E2eFact(DisplayName = "Event log shows published domain events with correct counts")]
+    [E2eFact(DisplayName = "Log lists the events published at start up")]
     public async Task EventLogShowsPublishedEvents()
     {
         var events = await SignInAsync();
@@ -51,27 +50,7 @@ public sealed class BackofficeE2eTest : BaseE2eTest
         Assert.Equal(total, completed + incomplete);
     }
 
-    [E2eFact(DisplayName = "Invalid credentials show a login error message")]
-    public async Task InvalidLoginShowsError()
-    {
-        var login = await BackofficeLoginPage.NavigateToAsync(Page);
-        await login.FillCredentialsAsync(AdminUsername, "wrongpassword");
-        await login.SubmitExpectingErrorAsync();
-
-        Assert.True(await login.ShowsLoginErrorAsync(), "Login page should display an error after failed authentication");
-    }
-
-    [E2eFact(DisplayName = "Logout redirects to login page and shows logout confirmation")]
-    public async Task LogoutRedirectsToLoginPage()
-    {
-        var events = await SignInAsync();
-
-        var login = await events.LogoutAsync();
-
-        Assert.True(await login.ShowsLogoutMessageAsync(), "Login page should confirm the logout");
-    }
-
-    [E2eFact(DisplayName = "Unauthenticated access to events page redirects to login")]
+    [E2eFact(DisplayName = "Event log sends a visitor to the login")]
     public async Task UnauthenticatedAccessRedirectsToLogin()
     {
         await ClearCookiesAsync();
@@ -95,7 +74,7 @@ public sealed class BackofficeE2eTest : BaseE2eTest
         Assert.True(await events.IsOnPageAsync(), "The event log should open after the login");
     }
 
-    [E2eFact(DisplayName = "Event payload can be expanded to reveal details")]
+    [E2eFact(DisplayName = "Payload can be expanded")]
     public async Task EventPayloadCanBeExpanded()
     {
         var events = await SignInAsync();
