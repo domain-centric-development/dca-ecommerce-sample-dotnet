@@ -28,7 +28,7 @@ public sealed class EmbeddedShopE2eTest : BaseE2eTest, IDisposable
     {
     }
 
-    [EmbeddedModeFact(embedded: false, DisplayName = "A page on another port embeds the shop")]
+    [E2eFact(DisplayName = "A page on another port embeds the shop")]
     public async Task ASlideDeckOnAnotherPortFramesTheShopAndAddsToTheCart()
     {
         await Page.GotoAsync(StartEmbeddingServer("localhost", "/products"));
