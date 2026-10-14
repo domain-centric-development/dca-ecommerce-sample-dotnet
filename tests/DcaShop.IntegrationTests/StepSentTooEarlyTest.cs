@@ -48,16 +48,17 @@ public sealed class StepSentTooEarlyTest : IClassFixture<WebApplicationFactory<P
         var cartId = Regex.Match(cartPage, @"name=""cartId"" value=""([0-9a-f-]{36})""").Groups[1].Value;
         var started = await client.PostAsync("/checkout/start", Form(cartPage, ("cartId", cartId)));
         Assert.Equal("/checkout/buyer", started.Headers.Location!.ToString());
-        await Step(client, "/checkout/buyer", "/checkout/delivery", "/checkout/buyer",
+        await Step(client, "/checkout/buyer", "/checkout/delivery",
             ("email", "jane@example.com"), ("firstName", "Jane"), ("lastName", "Doe"), ("phone", "+49 30 1234567"));
-        await Step(client, "/checkout/delivery", "/checkout/payment", "/checkout/delivery",
+        await Step(client, "/checkout/delivery", "/checkout/payment",
             ("street", "Hauptstrasse 1"), ("streetLine2", string.Empty), ("city", "Berlin"), ("state", string.Empty),
             ("postalCode", "10115"), ("country", "Germany"), ("shippingOptionId", "standard"));
     }
 
-    private static async Task Step(HttpClient client, string page, string expectedNext, string url, params (string, string)[] fields)
+    /// <summary>Submits the step at <paramref name="page"/> with the form that page renders.</summary>
+    private static async Task Step(HttpClient client, string page, string expectedNext, params (string, string)[] fields)
     {
-        var response = await client.PostAsync(url, Form(await client.GetStringAsync(page), fields));
+        var response = await client.PostAsync(page, Form(await client.GetStringAsync(page), fields));
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Equal(expectedNext, response.Headers.Location!.ToString());
     }

@@ -17,7 +17,7 @@ public sealed class CartStockWarningE2eTest : BaseE2eTest
     {
     }
 
-    [RestartingFact(DisplayName = "Short stock line warns")]
+    [OwnShopFact(DisplayName = "Short stock line warns")]
     public async Task ALineHoldingMoreThanTheStockLeftWarnsOfInsufficientStock()
     {
         using var shop = SideShop.Start();

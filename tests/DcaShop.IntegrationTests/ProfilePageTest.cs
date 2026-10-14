@@ -35,6 +35,7 @@ public sealed class ProfilePageTest : IClassFixture<WebApplicationFactory<Progra
 
         var profile = await response.Content.ReadAsStringAsync();
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("My Profile", myProfile.Text);
         Assert.Equal("/account/profile", myProfile.Target);
         Assert.Equal("My Profile", Text(profile, @"data-test=""profile-title"">([^<]*)</h2>"));
         Assert.Equal("Basic Information", Text(profile, @"<h3 class=""card__header-title"">([^<]*)</h3>"));

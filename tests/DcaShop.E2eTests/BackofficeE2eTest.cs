@@ -16,6 +16,9 @@ public sealed class BackofficeE2eTest : BaseE2eTest
     private const string AdminUsername = "admin";
     private const string AdminPassword = "admin";
 
+    /// <summary>An address below the back office that no page answers; the prefix guards it all the same.</summary>
+    private const string UnknownBackofficeAddress = "/backoffice/settings";
+
     public BackofficeE2eTest(BrowserFixture browser) : base(browser)
     {
     }
@@ -81,7 +84,7 @@ public sealed class BackofficeE2eTest : BaseE2eTest
     public async Task LoginAfterARedirectOpensTheEventLog()
     {
         await ClearCookiesAsync();
-        await NavigateToAsync("/backoffice/settings");
+        await NavigateToAsync(UnknownBackofficeAddress);
         Assert.StartsWith("/backoffice/login", CurrentPath, StringComparison.Ordinal);
 
         var login = await BackofficeLoginPage.OpenAsync(Page);
@@ -108,7 +111,7 @@ public sealed class BackofficeE2eTest : BaseE2eTest
     {
         var events = await SignInAsync();
 
-        var lines = await events.ExpandCompletedPayloadOfAsync("ProductCreatedEvent");
+        var lines = await events.CompletedPayloadLinesOfAsync("ProductCreatedEvent");
 
         Assert.Equal("Status: COMPLETED, attempts: 1", lines[0]);
         var content = string.Join('\n', lines.Skip(1));

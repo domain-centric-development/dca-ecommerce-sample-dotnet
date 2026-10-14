@@ -106,10 +106,10 @@ public sealed class BackofficeEventsPage : BasePage
     }
 
     /// <summary>
-    /// Expands the "Event Payload" of the first entry of the given type that carries the badge "Completed" and reads the
-    /// payload's lines as the browser shows them.
+    /// The lines of the "Event Payload" of the first entry of the given type that carries the badge "Completed", as the
+    /// browser shows them once the payload is expanded.
     /// </summary>
-    public async Task<IReadOnlyList<string>> ExpandCompletedPayloadOfAsync(string eventType)
+    public async Task<IReadOnlyList<string>> CompletedPayloadLinesOfAsync(string eventType)
     {
         var entry = Page.Locator($"[data-test='{EventLogItem}']")
             .Filter(new() { Has = Page.Locator($"[data-test='{EventType}']", new() { HasTextString = eventType }) })

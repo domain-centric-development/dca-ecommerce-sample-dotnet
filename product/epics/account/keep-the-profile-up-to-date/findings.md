@@ -9,4 +9,4 @@ The judge's confirmed defects that did not block the story, kept for a later sto
 
 | # | Perspective | File:line | Severity | Defect | Fix | Status |
 |---|---|---|---|---|---|---|
-| 1 | clean-code | tests/DcaShop.IntegrationTests/ProfilePageTest.cs:266 | minor | `Link` returns the anchor's `Text`, but no caller reads it. The "My Profile" link is found by its `data-test` only, so its label is never checked when it is followed | Assert `myProfile.Text == "My Profile"` at line 99, or drop `Text` from `Link` | open |
+| 1 | clean-code | tests/DcaShop.IntegrationTests/ProfilePageTest.cs:266 | minor | `Link` returns the anchor's `Text`, but no caller reads it. The "My Profile" link is found by its `data-test` only, so its label is never checked when it is followed | Assert `myProfile.Text == "My Profile"` at line 99, or drop `Text` from `Link` | done |

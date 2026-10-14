@@ -141,12 +141,14 @@ public abstract class BasePage
         addEventListener('pagereveal', async (event) => {
           const transition = event.viewTransition;
           if (transition) {
+            // A transition the browser skips (under reduced motion, say) rejects `ready`: expected, not a failure.
             try { await transition.ready; } catch { }
           }
           window.__pageTransitionAnimations = document.getAnimations()
             .filter(a => (a.effect?.pseudoElement ?? '').startsWith('::view-transition'))
-            .filter(a => a.effect.getComputedTiming().duration > 0)
-            .map(a => `${a.effect.pseudoElement} ${a.effect.getComputedTiming().duration} ms`);
+            .map(a => ({ part: a.effect.pseudoElement, duration: a.effect.getComputedTiming().duration }))
+            .filter(a => a.duration > 0)
+            .map(a => `${a.part} ${a.duration} ms`);
           window.__pageTransitionParts = JSON.stringify(document.getAnimations()
             .filter(a => (a.effect?.pseudoElement ?? '').startsWith('::view-transition'))
             .map(a => ({ part: a.effect.pseudoElement, frames: a.effect.getKeyframes() })));
