@@ -424,7 +424,7 @@ and read purposes.
 **Related terms:** `CheckoutSession`, `LineItemSnapshot`.
 
 **Operations:** `From`, `ItemCount`, `TotalQuantity`, `HasBuyerInfo`, `HasDeliveryAddress`,
-`HasShippingOption`, `HasPaymentSelection`, `HasOrderReference`, `IsActive`,
+`HasShippingOption`, `HasPaymentSelection`, `HasTotals`, `HasOrderReference`, `IsActive`,
 `IsCompleted`, `IsConfirmed`.
 
 ### LineItemSnapshot

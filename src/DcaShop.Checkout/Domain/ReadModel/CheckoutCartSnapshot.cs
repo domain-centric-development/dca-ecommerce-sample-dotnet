@@ -59,6 +59,8 @@ public sealed record CheckoutCartSnapshot(
 
     public bool HasPaymentSelection => PaymentSelection is not null;
 
+    public bool HasTotals => Totals is not null;
+
     public bool HasOrderReference => OrderReference is not null;
 
     public bool IsActive => Status == CheckoutSessionStatus.Active;
