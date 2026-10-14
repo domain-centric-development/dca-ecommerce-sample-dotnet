@@ -1,4 +1,4 @@
-using DcaShop.Pricing.Application.SetProductPrice;
+using DcaShop.Pricing.Application.ProvisionInitialPrice;
 using DcaShop.Pricing.Events;
 using DcaShop.SharedKernel.Infrastructure.Events;
 
@@ -13,20 +13,20 @@ namespace DcaShop.Pricing.Adapter.Incoming.Event;
 /// </summary>
 public sealed class PriceInitializationEventConsumer : EventListener<IPriceInitializationTrigger>
 {
-    private readonly ISetProductPriceInputPort _setProductPrice;
+    private readonly IProvisionInitialPriceInputPort _provisionInitialPrice;
     private readonly ILogger<PriceInitializationEventConsumer> _logger;
 
-    public PriceInitializationEventConsumer(ISetProductPriceInputPort setProductPrice, ILogger<PriceInitializationEventConsumer> logger)
+    public PriceInitializationEventConsumer(IProvisionInitialPriceInputPort provisionInitialPrice, ILogger<PriceInitializationEventConsumer> logger)
     {
-        _setProductPrice = setProductPrice;
+        _provisionInitialPrice = provisionInitialPrice;
         _logger = logger;
     }
 
     protected override async Task OnAsync(IPriceInitializationTrigger @event, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Initialising price for product {ProductId}", @event.ProductId);
-        await _setProductPrice.ExecuteAsync(
-            new SetProductPriceCommand(
+        await _provisionInitialPrice.ExecuteAsync(
+            new ProvisionInitialPriceCommand(
                 @event.ProductId,
                 decimal.Parse(@event.Amount, System.Globalization.CultureInfo.InvariantCulture),
                 @event.Currency,

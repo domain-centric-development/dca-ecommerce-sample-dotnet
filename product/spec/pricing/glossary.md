@@ -136,7 +136,7 @@ whoever creates products (Interface Inversion).
 **Related terms:** `ProductPrice`, **Initial Price Determination**
 
 **Notes:** Consumed by `DcaShop.Pricing.Adapter.Incoming.Event.PriceInitializationEventConsumer`, which calls
-the `SetProductPrice` use case with the event's `EventId` (the contract extends `IIntegrationEvent`). The use
+the `ProvisionInitialPrice` use case with the event's `EventId` (the contract extends `IIntegrationEvent`). The use
 case skips an event `IProcessedEvents` has already recorded for its effect, `set-product-price`, and records it
 in the same transaction — a redelivery cannot reset a price that changed since.
 
@@ -173,8 +173,8 @@ transition from the "unpriced" to the "priced" state.
 
 **Type:** Concept
 
-**Related terms:** `ProductPrice.Create`, _see Open Issues:
-`ProvisionInitialPrice`_
+**Related terms:** `ProductPrice.Create`, the `ProvisionInitialPrice` use case and
+`PricingService.ProvisionInitialPriceAsync`
 
 ---
 
@@ -193,18 +193,11 @@ business:
    - Extend the model into a **price history** in which each historical price
      entry has its own identity (then `PriceId` makes sense).
 
-2. **CRUD language `SetProductPrice`** in the use-case layer and
-   `PricingService.SetPriceAsync` in the Api — should be
-   renamed to **`ProvisionInitialPrice`** (or similar business-meaningful name)
-   to linguistically express the transition character ("a product is being
-   priced for the first time"). In the aggregate this already corresponds to
-   `ProductPrice.Create(...)`.
-
-3. **Missing price history** — the current modeling overwrites `CurrentPrice`
+2. **Missing price history** — the current modeling overwrites `CurrentPrice`
    and emits `PriceChanged`. A real price history (e.g. for retrospective
    analyses or future-dated prices) would be a separate modeling topic.
 
-4. **Future-dated prices** — `EffectiveFrom` is currently fixed to
+3. **Future-dated prices** — `EffectiveFrom` is currently fixed to
    `DateTimeOffset.UtcNow`. Scheduled price changes (e.g. "effective June 1st") are
    not modeled.
 

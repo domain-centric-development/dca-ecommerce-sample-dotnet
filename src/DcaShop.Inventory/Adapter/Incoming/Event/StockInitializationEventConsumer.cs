@@ -1,4 +1,4 @@
-using DcaShop.Inventory.Application.SetStockLevel;
+using DcaShop.Inventory.Application.ProvisionInitialStock;
 using DcaShop.Inventory.Events;
 using DcaShop.SharedKernel.Infrastructure.Events;
 
@@ -13,18 +13,18 @@ namespace DcaShop.Inventory.Adapter.Incoming.Event;
 /// </summary>
 public sealed class StockInitializationEventConsumer : EventListener<IStockInitializationTrigger>
 {
-    private readonly ISetStockLevelInputPort _setStockLevel;
+    private readonly IProvisionInitialStockInputPort _provisionInitialStock;
     private readonly ILogger<StockInitializationEventConsumer> _logger;
 
-    public StockInitializationEventConsumer(ISetStockLevelInputPort setStockLevel, ILogger<StockInitializationEventConsumer> logger)
+    public StockInitializationEventConsumer(IProvisionInitialStockInputPort provisionInitialStock, ILogger<StockInitializationEventConsumer> logger)
     {
-        _setStockLevel = setStockLevel;
+        _provisionInitialStock = provisionInitialStock;
         _logger = logger;
     }
 
     protected override async Task OnAsync(IStockInitializationTrigger @event, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Initialising stock for product {ProductId}", @event.ProductId);
-        await _setStockLevel.ExecuteAsync(new SetStockLevelCommand(@event.ProductId, @event.InitialStock, @event.EventId), cancellationToken).ConfigureAwait(false);
+        await _provisionInitialStock.ExecuteAsync(new ProvisionInitialStockCommand(@event.ProductId, @event.InitialStock, @event.EventId), cancellationToken).ConfigureAwait(false);
     }
 }

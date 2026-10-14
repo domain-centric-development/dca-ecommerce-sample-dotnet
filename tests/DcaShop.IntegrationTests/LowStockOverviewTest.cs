@@ -1,5 +1,5 @@
 using DcaShop.Inventory.Application.GetLowStockProducts;
-using DcaShop.Inventory.Application.SetStockLevel;
+using DcaShop.Inventory.Application.ProvisionInitialStock;
 using DcaShop.SharedKernel.Domain.Model;
 
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -69,8 +69,8 @@ public sealed class LowStockOverviewTest : IClassFixture<WebApplicationFactory<P
     {
         var productId = Guid.NewGuid();
         using var scope = _factory.Services.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<ISetStockLevelInputPort>()
-            .ExecuteAsync(new SetStockLevelCommand(productId, quantity));
+        await scope.ServiceProvider.GetRequiredService<IProvisionInitialStockInputPort>()
+            .ExecuteAsync(new ProvisionInitialStockCommand(productId, quantity));
         return new ProductId(productId);
     }
 

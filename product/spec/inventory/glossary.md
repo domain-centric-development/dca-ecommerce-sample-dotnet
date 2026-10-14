@@ -215,7 +215,7 @@ catalog.
 **Related terms:** `StockLevel`, `IStockReductionTrigger`
 
 **Notes:** Consumed by `DcaShop.Inventory.Adapter.Incoming.Event.StockInitializationEventConsumer`, which calls
-the `SetStockLevel` use case with the event's `EventId` (the contract extends `IIntegrationEvent`). The use case
+the `ProvisionInitialStock` use case with the event's `EventId` (the contract extends `IIntegrationEvent`). The use case
 skips an event `IProcessedEvents` has already recorded for its effect, `set-stock-level`, and records it in the
 same transaction — a redelivery cannot reset a stock level that changed since.
 

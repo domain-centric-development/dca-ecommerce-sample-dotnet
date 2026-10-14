@@ -1,8 +1,8 @@
 using DcaShop.Checkout.Events;
 using DcaShop.Inventory.Adapter.Incoming.Event;
 using DcaShop.Inventory.Api;
+using DcaShop.Inventory.Application.ProvisionInitialStock;
 using DcaShop.Inventory.Application.ReduceStock;
-using DcaShop.Inventory.Application.SetStockLevel;
 using DcaShop.Pricing.Adapter.Incoming.Event;
 using DcaShop.Pricing.Api;
 using DcaShop.Product.Events;
@@ -32,7 +32,7 @@ public sealed class RedeliveredTriggerTest : IClassFixture<WebApplicationFactory
     public async Task ARedeliveredCheckoutConfirmationReducesStockOnce()
     {
         var product = ProductId.Generate();
-        await Inventory().SetStockLevelAsync(product, 10);
+        await Inventory().ProvisionInitialStockAsync(product, 10);
         var confirmed = new CheckoutConfirmedEvent(
             Guid.NewGuid(), DateTimeOffset.UtcNow, "session-1", Guid.NewGuid().ToString(), "customer-1", Money.Euro(20m),
             [new CheckoutConfirmedEvent.LineItemInfo(product, 2)]);
@@ -61,7 +61,7 @@ public sealed class RedeliveredTriggerTest : IClassFixture<WebApplicationFactory
         var created = ProductCreated(out var product);
 
         await DeliverAsync<PriceInitializationEventConsumer>(created);
-        await Pricing().SetPriceAsync(product, Money.Euro(12.00m));
+        await Pricing().ProvisionInitialPriceAsync(product, Money.Euro(12.00m));
         await DeliverAsync<PriceInitializationEventConsumer>(created);
 
         Assert.Equal(Money.Euro(12.00m), (await Pricing().GetPriceAsync(product))!.CurrentPrice);
@@ -74,8 +74,8 @@ public sealed class RedeliveredTriggerTest : IClassFixture<WebApplicationFactory
         var eventId = Guid.NewGuid();
         using var scope = _factory.Services.CreateScope();
 
-        await scope.ServiceProvider.GetRequiredService<ISetStockLevelInputPort>()
-            .ExecuteAsync(new SetStockLevelCommand(product.Value, 10, eventId));
+        await scope.ServiceProvider.GetRequiredService<IProvisionInitialStockInputPort>()
+            .ExecuteAsync(new ProvisionInitialStockCommand(product.Value, 10, eventId));
         var reduced = await scope.ServiceProvider.GetRequiredService<IReduceStockInputPort>()
             .ExecuteAsync(new ReduceStockCommand([new ReduceStockCommand.Line(product.Value, 2)], eventId));
 

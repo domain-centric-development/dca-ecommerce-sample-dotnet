@@ -1,5 +1,5 @@
 using DcaShop.Pricing.Application.GetPricesForProducts;
-using DcaShop.Pricing.Application.SetProductPrice;
+using DcaShop.Pricing.Application.ProvisionInitialPrice;
 using DcaShop.SharedKernel.Domain.Model;
 
 using DomainCentric.BuildingBlocks.Ddd.Strategic.Relationships;
@@ -11,12 +11,12 @@ namespace DcaShop.Pricing.Api;
 public sealed class PricingService
 {
     private readonly IGetPricesForProductsInputPort _getPrices;
-    private readonly ISetProductPriceInputPort _setPrice;
+    private readonly IProvisionInitialPriceInputPort _provisionInitialPrice;
 
-    public PricingService(IGetPricesForProductsInputPort getPrices, ISetProductPriceInputPort setPrice)
+    public PricingService(IGetPricesForProductsInputPort getPrices, IProvisionInitialPriceInputPort provisionInitialPrice)
     {
         _getPrices = getPrices;
-        _setPrice = setPrice;
+        _provisionInitialPrice = provisionInitialPrice;
     }
 
     public sealed record PriceInfo(ProductId ProductId, Money CurrentPrice, DateTimeOffset EffectiveFrom);
@@ -40,6 +40,6 @@ public sealed class PricingService
         return prices.TryGetValue(productId, out var price) ? price : null;
     }
 
-    public Task SetPriceAsync(ProductId productId, Money price, CancellationToken cancellationToken = default) =>
-        _setPrice.ExecuteAsync(new SetProductPriceCommand(productId.Value, price.Amount, price.Currency), cancellationToken);
+    public Task ProvisionInitialPriceAsync(ProductId productId, Money price, CancellationToken cancellationToken = default) =>
+        _provisionInitialPrice.ExecuteAsync(new ProvisionInitialPriceCommand(productId.Value, price.Amount, price.Currency), cancellationToken);
 }

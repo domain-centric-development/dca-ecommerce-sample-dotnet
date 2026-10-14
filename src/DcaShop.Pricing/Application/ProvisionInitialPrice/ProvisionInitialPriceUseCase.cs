@@ -5,13 +5,13 @@ using DcaShop.SharedKernel.Domain.Model;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
-namespace DcaShop.Pricing.Application.SetProductPrice;
+namespace DcaShop.Pricing.Application.ProvisionInitialPrice;
 
 /// <summary>
 /// Creates the price record on first use and updates it afterwards. Whole use case is local: one short
 /// transaction around load, mutate, save, publish.
 /// </summary>
-public sealed class SetProductPriceUseCase : ISetProductPriceInputPort
+public sealed class ProvisionInitialPriceUseCase : IProvisionInitialPriceInputPort
 {
     /// <summary>The effect's key in <see cref="IProcessedEvents"/> — stable: a rename would replay old events.</summary>
     private const string Effect = "set-product-price";
@@ -21,7 +21,7 @@ public sealed class SetProductPriceUseCase : ISetProductPriceInputPort
     private readonly IDomainEventPublisher _events;
     private readonly ITransactionBoundary _transactionBoundary;
 
-    public SetProductPriceUseCase(IProductPriceRepository prices, IProcessedEvents processedEvents, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
+    public ProvisionInitialPriceUseCase(IProductPriceRepository prices, IProcessedEvents processedEvents, IDomainEventPublisher events, ITransactionBoundary transactionBoundary)
     {
         _prices = prices;
         _processedEvents = processedEvents;
@@ -29,7 +29,7 @@ public sealed class SetProductPriceUseCase : ISetProductPriceInputPort
         _transactionBoundary = transactionBoundary;
     }
 
-    public Task<SetProductPriceResult> ExecuteAsync(SetProductPriceCommand input, CancellationToken cancellationToken = default)
+    public Task<ProvisionInitialPriceResult> ExecuteAsync(ProvisionInitialPriceCommand input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
         var productId = new ProductId(input.ProductId);
@@ -41,7 +41,7 @@ public sealed class SetProductPriceUseCase : ISetProductPriceInputPort
             if (input.EventId is { } eventId && await _processedEvents.ContainsAsync(Effect, eventId, ct).ConfigureAwait(false))
             {
                 return existing is null
-                    ? new SetProductPriceResult(Guid.Empty, input.ProductId, 0m, input.PriceCurrency, default, Created: false, AlreadyApplied: true)
+                    ? new ProvisionInitialPriceResult(Guid.Empty, input.ProductId, 0m, input.PriceCurrency, default, Created: false, AlreadyApplied: true)
                     : ResultOf(existing, created: false, alreadyApplied: true);
             }
 
@@ -70,7 +70,7 @@ public sealed class SetProductPriceUseCase : ISetProductPriceInputPort
         }, cancellationToken);
     }
 
-    private static SetProductPriceResult ResultOf(ProductPrice productPrice, bool created, bool alreadyApplied) =>
+    private static ProvisionInitialPriceResult ResultOf(ProductPrice productPrice, bool created, bool alreadyApplied) =>
         new(
             productPrice.Id.Value,
             productPrice.ProductId.Value,

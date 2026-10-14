@@ -2,7 +2,7 @@ using DcaShop.Pricing.Adapter.Incoming.Event;
 using DcaShop.Pricing.Adapter.Outgoing.Persistence;
 using DcaShop.Pricing.Api;
 using DcaShop.Pricing.Application.GetPricesForProducts;
-using DcaShop.Pricing.Application.SetProductPrice;
+using DcaShop.Pricing.Application.ProvisionInitialPrice;
 using DcaShop.Pricing.Application.Shared;
 using DcaShop.SharedKernel.Infrastructure.Events;
 
@@ -16,7 +16,7 @@ public static class PricingContextRegistration
     public static IServiceCollection AddPricingContext(this IServiceCollection services)
     {
         // Use cases (input ports)
-        services.AddScoped<ISetProductPriceInputPort, SetProductPriceUseCase>();
+        services.AddScoped<IProvisionInitialPriceInputPort, ProvisionInitialPriceUseCase>();
         services.AddScoped<IGetPricesForProductsInputPort, GetPricesForProductsUseCase>();
 
         // Outgoing adapters (output ports)

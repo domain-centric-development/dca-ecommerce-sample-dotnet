@@ -1,6 +1,6 @@
 using DcaShop.Inventory.Application.GetStockForProducts;
+using DcaShop.Inventory.Application.ProvisionInitialStock;
 using DcaShop.Inventory.Application.ReduceStock;
-using DcaShop.Inventory.Application.SetStockLevel;
 using DcaShop.SharedKernel.Domain.Model;
 
 using DomainCentric.BuildingBlocks.Ddd.Strategic.Relationships;
@@ -12,16 +12,16 @@ namespace DcaShop.Inventory.Api;
 public sealed class InventoryService
 {
     private readonly IGetStockForProductsInputPort _getStock;
-    private readonly ISetStockLevelInputPort _setStockLevel;
+    private readonly IProvisionInitialStockInputPort _provisionInitialStock;
     private readonly IReduceStockInputPort _reduceStock;
 
     public InventoryService(
         IGetStockForProductsInputPort getStock,
-        ISetStockLevelInputPort setStockLevel,
+        IProvisionInitialStockInputPort provisionInitialStock,
         IReduceStockInputPort reduceStock)
     {
         _getStock = getStock;
-        _setStockLevel = setStockLevel;
+        _provisionInitialStock = provisionInitialStock;
         _reduceStock = reduceStock;
     }
 
@@ -57,8 +57,8 @@ public sealed class InventoryService
         return stock is not null && stock.AvailableStock >= quantity;
     }
 
-    public Task SetStockLevelAsync(ProductId productId, int quantity, CancellationToken cancellationToken = default) =>
-        _setStockLevel.ExecuteAsync(new SetStockLevelCommand(productId.Value, quantity), cancellationToken);
+    public Task ProvisionInitialStockAsync(ProductId productId, int quantity, CancellationToken cancellationToken = default) =>
+        _provisionInitialStock.ExecuteAsync(new ProvisionInitialStockCommand(productId.Value, quantity), cancellationToken);
 
     public Task<ReduceStockResult> ReduceStockAsync(ProductId productId, int quantity, CancellationToken cancellationToken = default) =>
         _reduceStock.ExecuteAsync(new ReduceStockCommand([new ReduceStockCommand.Line(productId.Value, quantity)]), cancellationToken);

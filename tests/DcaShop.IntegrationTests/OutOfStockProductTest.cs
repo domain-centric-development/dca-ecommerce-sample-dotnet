@@ -1,4 +1,4 @@
-using DcaShop.Inventory.Application.SetStockLevel;
+using DcaShop.Inventory.Application.ProvisionInitialStock;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,8 +53,8 @@ public sealed class OutOfStockProductTest : IClassFixture<WebApplicationFactory<
     {
         var path = await AvailabilityPages.ProductPathAsync(client, SoldOut);
         using var scope = _factory.Services.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<ISetStockLevelInputPort>()
-            .ExecuteAsync(new SetStockLevelCommand(Guid.Parse(path["/products/".Length..]), 0));
+        await scope.ServiceProvider.GetRequiredService<IProvisionInitialStockInputPort>()
+            .ExecuteAsync(new ProvisionInitialStockCommand(Guid.Parse(path["/products/".Length..]), 0));
         return path;
     }
 }
