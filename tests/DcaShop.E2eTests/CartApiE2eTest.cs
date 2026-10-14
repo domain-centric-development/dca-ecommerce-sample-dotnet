@@ -11,6 +11,17 @@ namespace DcaShop.E2eTests;
 /// </summary>
 public sealed class CartApiE2eTest
 {
+    [E2eFact(DisplayName = "No active cart is not found")]
+    public async Task ReadingTheActiveCartOfACustomerWithoutOneIsNotFound()
+    {
+        var token = await CustomerTokenAsync($"grace-{Guid.NewGuid():N}@example.com");
+        var grace = Staff.Client(ShopUnderTest.BaseUrl, token);
+
+        var response = await grace.GetAsync($"/api/carts/customer/{SubjectOf(token)}/active");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     [E2eFact(DisplayName = "A malformed product id is a bad request")]
     public async Task AProductIdThatIsNotAUuidIsABadRequestAndLeavesTheCartEmpty()
     {
@@ -44,5 +55,14 @@ public sealed class CartApiE2eTest
         });
         Assert.Equal(HttpStatusCode.Created, registered.StatusCode);
         return (await registered.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
+    }
+
+    /// <summary>The customer a token names, its <c>sub</c>.</summary>
+    private static string SubjectOf(string jwt)
+    {
+        var payload = jwt.Split('.')[1];
+        var padded = payload.PadRight(payload.Length + ((4 - (payload.Length % 4)) % 4), '=');
+        var json = JsonDocument.Parse(Convert.FromBase64String(padded.Replace('-', '+').Replace('_', '/')));
+        return json.RootElement.GetProperty("sub").GetString()!;
     }
 }

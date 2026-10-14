@@ -69,6 +69,22 @@ public sealed class CartApiTest : IDisposable
     }
 
     [Fact]
+    public async Task ReadingTheActiveCartLeavesNoCartBehindSoOpeningOneIsCreated()
+    {
+        var (token, customerId) = await _factory.RegisterThroughTheApiAsync("grace@example.com");
+        var grace = _factory.Bearer(token);
+        await grace.GetAsync($"/api/carts/customer/{customerId}/active");
+
+        var response = await grace.PostAsync("/api/carts", Empty());
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var cart = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(0, cart.GetProperty("items").GetArrayLength());
+        Assert.Equal("ACTIVE", cart.GetProperty("status").GetString());
+        Assert.Equal(0, cart.GetProperty("itemCount").GetInt32());
+    }
+
+    [Fact]
     public async Task AddingAProductAnswersWithTheCartHoldingItsLineAndTotal()
     {
         var client = await _factory.CustomerClientAsync("ada@example.com");

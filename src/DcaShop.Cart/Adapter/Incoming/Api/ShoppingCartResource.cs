@@ -1,8 +1,8 @@
 using DcaShop.Cart.Application.Operations.GetAllCarts;
 using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.CreateCart;
+using DcaShop.Cart.Application.Shopping.GetActiveCart;
 using DcaShop.Cart.Application.Shopping.GetCartById;
-using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Cart.Application.Shopping.RemoveItemFromCart;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Application.Shared;
@@ -33,7 +33,7 @@ namespace DcaShop.Cart.Adapter.Incoming.Api;
 public sealed class ShoppingCartResource : ControllerBase
 {
     private readonly ICreateCartInputPort _createCart;
-    private readonly IGetOrCreateActiveCartInputPort _getOrCreateActiveCart;
+    private readonly IGetActiveCartInputPort _getActiveCart;
     private readonly IGetAllCartsInputPort _getAllCarts;
     private readonly IGetCartByIdInputPort _getCartById;
     private readonly IAddItemToCartInputPort _addItemToCart;
@@ -43,7 +43,7 @@ public sealed class ShoppingCartResource : ControllerBase
 
     public ShoppingCartResource(
         ICreateCartInputPort createCart,
-        IGetOrCreateActiveCartInputPort getOrCreateActiveCart,
+        IGetActiveCartInputPort getActiveCart,
         IGetAllCartsInputPort getAllCarts,
         IGetCartByIdInputPort getCartById,
         IAddItemToCartInputPort addItemToCart,
@@ -52,7 +52,7 @@ public sealed class ShoppingCartResource : ControllerBase
         IIdentityProvider identityProvider)
     {
         _createCart = createCart;
-        _getOrCreateActiveCart = getOrCreateActiveCart;
+        _getActiveCart = getActiveCart;
         _getAllCarts = getAllCarts;
         _getCartById = getCartById;
         _addItemToCart = addItemToCart;
@@ -91,10 +91,11 @@ public sealed class ShoppingCartResource : ControllerBase
 
     /// <summary>
     /// The caller's active cart. The customer id in the path is the Java sample's route shape; it must name the
-    /// caller, and any other value is treated as a cart that does not exist for them.
+    /// caller, and any other value is treated as a cart that does not exist for them. Reading opens none: a caller
+    /// without an active cart is answered <c>404</c>, and opening one stays <see cref="CreateCart"/>'s.
     /// </summary>
     [HttpGet("customer/{customerId}/active")]
-    public async Task<ActionResult<ShoppingCartDto>> GetOrCreateActiveCart(
+    public async Task<ActionResult<ShoppingCartDto>> GetActiveCart(
         string customerId, CancellationToken cancellationToken)
     {
         if (!string.Equals(customerId, CurrentCustomerId, StringComparison.Ordinal))
@@ -102,10 +103,8 @@ public sealed class ShoppingCartResource : ControllerBase
             return NotFound();
         }
 
-        var result = await _getOrCreateActiveCart.ExecuteAsync(
-            new GetOrCreateActiveCartCommand(CurrentCustomerId), cancellationToken);
-        var cart = await ReadAsync(result.CartId, cancellationToken);
-        return Ok(_converter.ToDto(cart!));
+        var result = await _getActiveCart.ExecuteAsync(new GetActiveCartQuery(CurrentCustomerId), cancellationToken);
+        return result.Cart is null ? NotFound() : Ok(_converter.ToDto(result.Cart));
     }
 
     [HttpPost("{cartId:guid}/items")]
