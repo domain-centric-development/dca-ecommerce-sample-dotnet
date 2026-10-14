@@ -55,8 +55,7 @@ internal sealed class CheckoutStepPage(
         // the page; otherwise the domain decides who may see it
         if (error is null)
         {
-            var result = await session.ExecuteAsync(
-                GetCheckoutSessionQuery.ForStep(current.SessionId.Value, CurrentCustomerId(), step), cancellationToken);
+            var result = await ForStepAsync(current, step, cancellationToken);
             if (result.StepAccess is { Granted: false } access)
             {
                 return page.Redirect(CheckoutRoutes.PathTo(access));
@@ -69,11 +68,54 @@ internal sealed class CheckoutStepPage(
     }
 
     /// <summary>
-    /// Submits a step and redirects to <paramref name="next"/>; a refusal is said by the step still open when it came
-    /// too early, otherwise by the step itself, re-rendered with the sentence.
+    /// Submits a step and redirects to <paramref name="next"/>; a refusal is said by the step itself, re-rendered with
+    /// the sentence.
     /// </summary>
-    public async Task<IActionResult> SubmittingAsync(
-        CheckoutStep step, string next, Func<Guid, Task> submission, Render render, CancellationToken cancellationToken)
+    public Task<IActionResult> SubmittingAsync(
+        CheckoutStep step, string next, Func<Guid, Task> submission, Render render, CancellationToken cancellationToken) =>
+        SubmitAsync(
+            step,
+            next,
+            submission,
+            // The two base types are the checkout's own refusals; the argument exception is the form field that
+            // reaches a value object unvalidated.
+            refusal => refusal is UseCaseException or DomainException or ArgumentException,
+            refusal => ShowAsync(step, render, cancellationToken, MessageFor(step, refusal)),
+            cancellationToken);
+
+    /// <summary>
+    /// Places the order and redirects to the confirmation. A refused "Place Order" redirects to the review, so the
+    /// browser stays at the review's own address.
+    /// </summary>
+    public Task<IActionResult> PlacingTheOrderAsync(Func<Guid, Task> placing, CancellationToken cancellationToken) =>
+        SubmitAsync(
+            CheckoutStep.Review,
+            CheckoutRoutes.PathOf(CheckoutStep.Confirmation),
+            placing,
+            // The confirmation carries no field the customer typed, so only the checkout's own refusals arrive here.
+            refusal => refusal is UseCaseException or DomainException,
+            refusal => Task.FromResult<IActionResult>(BackToTheReview(refusal)),
+            cancellationToken);
+
+    /// <summary>Back to the cart, leaving the cart page the notice that says why.</summary>
+    public RedirectResult ToTheCart(CartNotice notice)
+    {
+        page.TempData.LeaveForTheCart(notice);
+        return page.Redirect(CheckoutRoutes.Cart);
+    }
+
+    /// <summary>
+    /// The one place a step's submission meets a refusal, whichever handler sent it. A step sent before the earlier
+    /// steps are done goes to the step still open, which says why; any other refusal — and an early one whose step the
+    /// domain grants after all — is said by the step, as <paramref name="saidByTheStep"/> answers it.
+    /// </summary>
+    private async Task<IActionResult> SubmitAsync(
+        CheckoutStep step,
+        string next,
+        Func<Guid, Task> submission,
+        Func<Exception, bool> isRefusal,
+        Func<Exception, Task<IActionResult>> saidByTheStep,
+        CancellationToken cancellationToken)
     {
         var current = await ActiveSessionAsync(cancellationToken);
         if (current is null)
@@ -86,44 +128,10 @@ internal sealed class CheckoutStepPage(
             await submission(current.SessionId.Value);
             return page.Redirect(next);
         }
-        catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
+        catch (Exception e) when (isRefusal(e))
         {
-            // The two base types are the checkout's own refusals; the argument exception is the form field that
-            // reaches a value object unvalidated.
-            return await ToTheStepStillOpenAsync(step, e, cancellationToken)
-                ?? await ShowAsync(step, render, cancellationToken, MessageFor(step, e));
+            return await ToTheStepStillOpenAsync(step, e, cancellationToken) ?? await saidByTheStep(e);
         }
-    }
-
-    /// <summary>
-    /// Places the order and redirects to the confirmation. A refused "Place Order" redirects to the review, so the
-    /// browser stays at the review's own address — or to the step still open, when it came too early.
-    /// </summary>
-    public async Task<IActionResult> PlacingTheOrderAsync(Func<Guid, Task> placing, CancellationToken cancellationToken)
-    {
-        var current = await ActiveSessionAsync(cancellationToken);
-        if (current is null)
-        {
-            return NoActiveSession();
-        }
-
-        try
-        {
-            await placing(current.SessionId.Value);
-            return page.Redirect(CheckoutRoutes.PathOf(CheckoutStep.Confirmation));
-        }
-        catch (Exception e) when (e is UseCaseException or DomainException)
-        {
-            // The confirmation carries no field the customer typed, so only the checkout's own refusals arrive here.
-            return await ToTheStepStillOpenAsync(CheckoutStep.Review, e, cancellationToken) ?? BackToTheReview(e);
-        }
-    }
-
-    /// <summary>Back to the cart, leaving the cart page the notice that says why.</summary>
-    public RedirectResult ToTheCart(CartNotice notice)
-    {
-        page.TempData.LeaveForTheCart(notice);
-        return page.Redirect(CheckoutRoutes.Cart);
     }
 
     /// <summary>
@@ -138,8 +146,7 @@ internal sealed class CheckoutStepPage(
         }
 
         var access = await ActiveSessionAsync(cancellationToken) is { } current
-            ? (await session.ExecuteAsync(
-                GetCheckoutSessionQuery.ForStep(current.SessionId.Value, CurrentCustomerId(), step), cancellationToken)).StepAccess
+            ? (await ForStepAsync(current, step, cancellationToken)).StepAccess
             : StepAccess.BackToCart();
         if (access is not { Granted: false })
         {
@@ -211,6 +218,10 @@ internal sealed class CheckoutStepPage(
 
     /// <summary>Back to the cart, telling the customer there is no checkout to continue.</summary>
     private RedirectResult NoActiveSession() => ToTheCart(CartNotice.NoActiveCheckout);
+
+    /// <summary>The session with the domain's decision whether <paramref name="step"/> may be opened.</summary>
+    private Task<GetCheckoutSessionResult> ForStepAsync(CheckoutCartSnapshot current, CheckoutStep step, CancellationToken cancellationToken) =>
+        session.ExecuteAsync(GetCheckoutSessionQuery.ForStep(current.SessionId.Value, CurrentCustomerId(), step), cancellationToken);
 
     private async Task<CheckoutCartSnapshot?> ActiveSessionAsync(CancellationToken cancellationToken) =>
         (await active.ExecuteAsync(new GetActiveCheckoutSessionQuery(CurrentCustomerId()), cancellationToken)).Session;
