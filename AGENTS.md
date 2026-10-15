@@ -52,8 +52,8 @@ docker compose run --rm test                                             # tests
 ```
 
 The architecture suite runs the experimental rules too: `tests/DcaShop.ArchitectureTests/dca-archunit.properties`
-(copied next to the test assembly) sets `dca.rules.experimental = true` and turns off DCA-HEX-015, which the libraries
-retire. An enforced experimental rule fails the build like any other; an informational one only lists.
+(copied next to the test assembly) sets `dca.rules.experimental = true` and turns off the rule on state kept in one instance, which the
+libraries retire (the file names its id). An enforced experimental rule fails the build like any other; an informational one only lists.
 
 The architecture tests also (re)generate `docs/architecture/context-map.md` and fail when it was stale —
 commit it with the change that caused it. `product/domain.md` is the designed, hand-maintained strategic map
