@@ -232,6 +232,8 @@ internal sealed class CheckoutStepPage(
         (CheckoutStep.Payment, PaymentProviderNotFoundException) =>
             "This way to pay is not offered. Please choose another one.",
         (CheckoutStep.Payment, NothingToPayException) => "There is nothing to pay for this order.",
+        (CheckoutStep.Delivery, ShippingOptionNotOfferedException) =>
+            "This shipping method is not offered. Please choose another one.",
         (_, CheckoutStepNotCompletedException or CheckoutStepOutOfOrderException) => CheckoutStepNotice.EarlierStepsFirst.Sentence()!,
         (CheckoutStep.BuyerInfo, ArgumentException) => "Please check the details you entered.",
         (CheckoutStep.Delivery, ArgumentException) => "Please check the delivery address you entered.",

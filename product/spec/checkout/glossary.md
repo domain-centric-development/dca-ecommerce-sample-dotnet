@@ -529,6 +529,16 @@ try again later." when the provider is unavailable.
 
 ---
 
+### ShippingOptionNotOffered
+
+**Definition:** The shipping method the delivery form names is not one the delivery step offers; the step is refused
+and asks for another choice. The failure carries the refused identifier. The customer sees "This shipping method is
+not offered. Please choose another one."
+
+**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `ShippingOption`, `ShippingOptions`
+
+---
+
 ### PaymentResult
 
 **Definition:** What the payment provider made of a payment operation, as checkout understands it. A payment

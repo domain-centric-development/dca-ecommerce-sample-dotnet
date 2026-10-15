@@ -36,6 +36,20 @@ public sealed class ChooseDeliveryAddressE2eTest : BaseE2eTest
         Assert.Equal("74.98 EUR", (await payment.TotalAsync()).Trim());
     }
 
+    [E2eFact(DisplayName = "An unknown shipping method is refused")]
+    public async Task AShippingMethodTheStepDoesNotOfferOpensTheDeliveryStepAgainWithTheRefusal()
+    {
+        var delivery = await GuestOnTheDeliveryStepAsync();
+        await delivery.FillAddressAsync("Hauptstrasse 1", "Berlin", "10115", "Germany", string.Empty);
+        await delivery.ChooseShippingMethodAsync("Standard Shipping");
+        await delivery.SendShippingMethodAsync("teleport");
+
+        var shownPath = await delivery.SubmitAndShowNextPathAsync();
+
+        Assert.Equal("/checkout/delivery", shownPath);
+        Assert.Equal("This shipping method is not offered. Please choose another one.", await delivery.ErrorMessageAsync());
+    }
+
     private async Task<DeliveryPage> GuestOnTheDeliveryStepAsync()
     {
         var catalog = await ProductCatalogPage.NavigateToAsync(Page);

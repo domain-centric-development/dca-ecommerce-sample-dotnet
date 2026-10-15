@@ -33,7 +33,7 @@ public sealed class SubmitDeliveryUseCase : ISubmitDeliveryInputPort
                               ?? throw new CheckoutSessionNotFoundException(sessionId);
 
                 var shippingOption = ShippingOptions.Find(command.ShippingOptionId)
-                                     ?? throw new ArgumentException($"Unknown shipping option: {command.ShippingOptionId}", nameof(command));
+                                     ?? throw new ShippingOptionNotOfferedException(command.ShippingOptionId);
                 var address = new DeliveryAddress(command.Street, command.StreetLine2, command.City, command.PostalCode, command.Country, command.State);
                 session.SubmitDelivery(address, shippingOption);
 

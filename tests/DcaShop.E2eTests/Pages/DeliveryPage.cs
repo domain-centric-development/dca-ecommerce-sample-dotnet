@@ -8,6 +8,7 @@ public sealed class DeliveryPage : BasePage
     private const string ContinueButton = "delivery-continue-button";
     private const string BackLink = "delivery-back-link";
     private const string ShippingRadio = "delivery-shipping-radio";
+    private const string ErrorMessage = "delivery-error-message";
 
     private DeliveryPage(IPage page) : base(page)
     {
@@ -79,6 +80,20 @@ public sealed class DeliveryPage : BasePage
         await price.EvaluateAsync("(field, value) => { field.value = value; }", amount);
         return this;
     }
+
+    /// <summary>
+    /// Changes the shipping method the form sends for the chosen one to <paramref name="id"/> — what a browser could
+    /// send instead of a method the step offers.
+    /// </summary>
+    public async Task<DeliveryPage> SendShippingMethodAsync(string id)
+    {
+        var method = Page.Locator($"[data-test='{ShippingRadio}']:checked");
+        await Assertions.Expect(method).ToBeEnabledAsync();
+        await method.EvaluateAsync("(field, value) => { field.value = value; }", id);
+        return this;
+    }
+
+    public Task<string> ErrorMessageAsync() => VisibleTextAsync(ErrorMessage);
 
     /// <summary>Submits the form and answers the path of whatever page the shop opens next, without expecting one.</summary>
     public async Task<string> SubmitAndShowNextPathAsync()

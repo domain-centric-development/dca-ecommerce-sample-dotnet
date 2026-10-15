@@ -149,6 +149,12 @@ sentence.
 | delivery (`/checkout/delivery`) | Please check the delivery address you entered. | Your delivery details could not be saved. Please try again. |
 | payment (`/checkout/payment`) | Please choose a way to pay. | Your payment selection could not be saved. Please try again. |
 
+Delivery step:
+
+| Refusal | Sentence |
+|---|---|
+| `ShippingOptionNotOfferedException` | This shipping method is not offered. Please choose another one. |
+
 Payment step:
 
 | Refusal | Sentence |
