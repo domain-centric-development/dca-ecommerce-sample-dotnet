@@ -64,6 +64,28 @@ public sealed class BackofficeRetryE2eTest : BaseE2eTest
         Assert.Equal(incomplete - 1, await log.IncompleteCountAsync());
     }
 
+    [OwnShopFact(DisplayName = "A delivery under way offers no retry")]
+    public async Task AnEntryWhoseDeliveryIsStillUnderWayOffersNoRetry()
+    {
+        using var shop = SideShop.Start(services => services
+            .AddSingleton<Linger>()
+            .AddScoped<IEventListener, LingeringListener>());
+        using (var scope = shop.Services.CreateScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>()
+                .PublishAsync(new LingeringEvent(Guid.NewGuid(), DateTimeOffset.UtcNow));
+        }
+
+        await shop.Services.GetRequiredService<Linger>().Entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        var login = await BackofficeLoginPage.NavigateToAsync(Page, shop.BaseUrl);
+        await login.FillCredentialsAsync("admin", "admin");
+        var events = await login.SubmitAsync();
+
+        Assert.Equal("Incomplete", await events.BadgeOfAsync(nameof(LingeringEvent)));
+        Assert.False(await events.OffersRetryOfAsync(nameof(LingeringEvent)), "the entry under way offers a retry");
+    }
+
     /// <summary>Waits until the shop has stopped working on every delivery, whichever state each ended in — or gives up waiting.</summary>
     private static async Task QuietAsync(SideShop shop)
     {
@@ -121,5 +143,27 @@ public sealed class BackofficeRetryE2eTest : BaseE2eTest
 
         protected override Task OnAsync(RecoverableEvent @event, CancellationToken cancellationToken) =>
             _repair.Done ? Task.CompletedTask : throw new InvalidOperationException("listener unavailable");
+    }
+
+    public sealed record LingeringEvent(Guid EventId, DateTimeOffset OccurredOn) : IIntegrationEvent;
+
+    /// <summary>Signals once the lingering listener has begun a delivery.</summary>
+    public sealed class Linger
+    {
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    /// <summary>Begins every delivery and never finishes it while the shop runs, so the delivery stays under way.</summary>
+    public sealed class LingeringListener : EventListener<LingeringEvent>
+    {
+        private readonly Linger _linger;
+
+        public LingeringListener(Linger linger) => _linger = linger;
+
+        protected override async Task OnAsync(LingeringEvent @event, CancellationToken cancellationToken)
+        {
+            _linger.Entered.TrySetResult();
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+        }
     }
 }

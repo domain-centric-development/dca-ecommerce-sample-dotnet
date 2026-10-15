@@ -163,6 +163,14 @@ public sealed class BackofficeEventsPage : BasePage
         return (await badge.TextContentAsync() ?? string.Empty).Trim();
     }
 
+    /// <summary>Whether the first entry of the given type offers a retry button, once the entry is visible.</summary>
+    public async Task<bool> OffersRetryOfAsync(string eventType)
+    {
+        var entry = EntryOf(eventType);
+        await Assertions.Expect(entry).ToBeVisibleAsync();
+        return await entry.Locator($"[data-test='{EventRetry}']").CountAsync() > 0;
+    }
+
     /// <summary>The "Completed" date of the first entry of the given type, once it shows one.</summary>
     public async Task<string> CompletionDateOfAsync(string eventType)
     {
