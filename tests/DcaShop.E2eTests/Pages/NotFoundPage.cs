@@ -10,14 +10,18 @@ public sealed partial class NotFoundPage : BasePage
     private const string BrowseLink = "error-browse-link";
     private const string HomeLink = "error-home-link";
 
-    private NotFoundPage(IPage page) : base(page)
+    private NotFoundPage(IPage page, int? status) : base(page)
     {
+        Status = status;
     }
+
+    /// <summary>The HTTP status the shop answered the navigation with.</summary>
+    public int? Status { get; }
 
     public static async Task<NotFoundPage> NavigateToAsync(IPage page, string path)
     {
-        await page.GotoAsync(BaseUrl + path);
-        var notFound = new NotFoundPage(page);
+        var response = await page.GotoAsync(BaseUrl + path);
+        var notFound = new NotFoundPage(page, response?.Status);
         await notFound.WaitForUrlAsync(path);
         await notFound.WaitForAsync(BrowseLink);
         return notFound;

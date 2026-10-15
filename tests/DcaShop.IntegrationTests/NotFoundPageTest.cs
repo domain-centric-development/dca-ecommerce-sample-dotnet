@@ -46,6 +46,18 @@ public sealed class NotFoundPageTest : IClassFixture<WebApplicationFactory<Progr
         Assert.Equal("Welcome to domaincentric.commerce", Rendered(Match(followed, @"<h1[^>]*>(.*?)</h1>")));
     }
 
+    [Fact]
+    public async Task AMalformedProductAddressAnswersNotFound()
+    {
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
+
+        var response = await client.GetAsync(UnknownProduct);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var page = await response.Content.ReadAsStringAsync();
+        Assert.Equal("Page Not Found", Rendered(Match(page, @"<h2 class=""error-page__title"">(.*?)</h2>")));
+    }
+
     private static async Task<string> NotFoundPage(HttpClient client)
     {
         var response = await client.GetAsync(UnknownProduct);
