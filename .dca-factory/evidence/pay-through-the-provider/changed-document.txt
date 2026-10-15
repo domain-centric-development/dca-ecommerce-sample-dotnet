@@ -1,3 +1,0 @@
-modified	README.md
-modified	project/domain.md
-modified	src/DcaShop.Checkout/Domain/glossary.md

@@ -1,2 +1,0 @@
-modified	src/DcaShop.Product/Domain/Model/ProductSelection.cs
-modified	src/DcaShop.Web/wwwroot/css/main.css

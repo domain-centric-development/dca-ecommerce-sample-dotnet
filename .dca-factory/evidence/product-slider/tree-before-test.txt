@@ -1,9 +1,0 @@
-32cab20e3246822b026b63a4268dd782823e2accbc6208d87f3fce3827812757  tasks/product-slider/.story-digest
-772b074535e4b8669a0d67884688a9057c10331ae6ad3cfe39930c5ebb314969  tasks/product-slider/.story-planned
-689d8a6b03bb8f13284d72aabe35c318760b364d9e6e74ca5adbc041b3222743  tasks/product-slider/.verify/changed.txt
-499ff115a77f235df32bb98cf47addc44ed60efd1badb1bb01505556fb13f9f8  tasks/product-slider/.verify/journal.tsv
-130ff90668c3a52fe09b4726673d8f1fea315135c83dc222cd80950dad02e1c3  tasks/product-slider/.verify/story.diff
-a838864f353bef8f206e52843588d0519e0176c4037d29774b9813fb4f543695  tasks/product-slider/.verify/tree-after-plan.txt
-ca7802950e7b5d5ec5501570779866b64f893226e2494d265e3ad3e456dc9ff6  tasks/product-slider/.verify/tree-before-plan.txt
-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  tasks/product-slider/.verify/tree-before-test.txt
-83360ab13d68ad1c0960b6ff5f918cbc5c3564fa31d9838478f142e30c89651b  tasks/product-slider/plan.md
