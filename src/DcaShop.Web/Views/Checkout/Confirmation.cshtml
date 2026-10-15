@@ -49,12 +49,8 @@
 <div class="order-summary__line"><span>Subtotal</span><span>@s.Subtotal</span></div>
 @if (s.ShippingOption is not null) {<div class="order-summary__line"><span>Shipping</span><span>@s.Totals.Shipping</span></div>}
 <div class="order-summary__line"><span>Tax</span><span>@s.Totals.Tax</span></div>
-<div class="order-summary__total"><span>Total Paid</span><span>@s.Totals.Total</span></div>
+<div class="order-summary__total"><span>Order Total</span><span>@s.Totals.Total</span></div>
 </div>
-</div>
-<div class="confirmation__next-steps">
-<p>We've sent a confirmation email to @(s.BuyerInfo?.Email ?? "your email address").</p>
-<p>You can track your order status using your order reference.</p>
 </div>
 <div class="confirmation__footer"><a class="btn btn--primary btn--lg" href="/" data-test="confirmation-continue-link">Continue Shopping</a></div>
 </div>

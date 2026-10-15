@@ -181,8 +181,8 @@ structurally overlaps with `CheckoutCartSnapshot` (read model). Possible cleanup
 
 ### CheckoutTotals
 
-**Definition:** Calculated amounts of a checkout session: subtotal, shipping, tax, and grand
-total.
+**Definition:** Calculated amounts of a checkout session: subtotal, shipping, tax, and the order
+total (`Total`) — the amount of the order, not an amount paid: the payment is only authorized.
 
 **Type:** Value Object
 

@@ -21,6 +21,18 @@ public sealed class PlaceTheOrderE2eTest : BaseE2eTest
         Assert.Equal("Your order has been placed successfully", await confirmation.TitleAsync());
     }
 
+    [E2eFact(DisplayName = "The confirmation promises no email")]
+    public async Task TheConfirmationPromisesNeitherAnEmailNorOrderTracking()
+    {
+        var review = await GuestOnTheReviewStepAsync();
+
+        var confirmation = await review.PlaceOrderAsync();
+
+        var text = await confirmation.TextAsync();
+        Assert.DoesNotContain("We've sent a confirmation email", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("You can track your order status using your order reference.", text, StringComparison.Ordinal);
+    }
+
     private async Task<ReviewPage> GuestOnTheReviewStepAsync()
     {
         var catalog = await ProductCatalogPage.NavigateToAsync(Page);
