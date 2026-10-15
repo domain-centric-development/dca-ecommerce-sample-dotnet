@@ -62,3 +62,12 @@ Test: DcaShop.IntegrationTests.DeliveryStepTest#APostalCodeOfSpacesOnlyOpensTheD
   (spaces only) and "Standard Shipping"
 - Then the delivery step opens again with the error "Please check the delivery address you entered."
 Test: DcaShop.IntegrationTests.DeliveryStepTest#ACountryOfSpacesOnlyOpensTheDeliveryStepAgainWithTheRefusal
+
+### Rule: The shipping price is the chosen method's price as the delivery step offers it, whatever the form carries
+
+#### a-shipping-price-sent-with-the-form-is-not-taken
+- Given a guest who started the checkout with "Domain-Driven Design" once and is on the delivery step
+- When the delivery form is sent with Street Address "Hauptstrasse 1", City "Berlin", Postal Code "10115", Country
+  "Germany" and "Overnight Shipping", carrying the shipping price "0.00 EUR"
+- Then the payment step opens and shows Subtotal "54.99 EUR", Shipping "19.99 EUR" and Total "74.98 EUR"
+Test: DcaShop.E2eTests.ChooseDeliveryAddressE2eTest#TheShippingPriceIsTheChosenMethodsPriceWhateverTheFormCarries
