@@ -70,3 +70,20 @@ Test: DcaShop.IntegrationTests.NotFoundPageTest#BrowseAllProductsOnTheNotFoundPa
 - When they follow "Go to Homepage"
 - Then the home page "Welcome to domaincentric.commerce" opens
 Test: DcaShop.IntegrationTests.NotFoundPageTest#GoToHomepageOnTheNotFoundPageOpensTheHomePage
+
+### Rule: A product address the catalogue has no product for answers with status 404 and the not-found page
+
+#### an-unknown-product-answers-404
+- Given the catalogue has no product with the id "00000000-0000-4000-8000-000000000001"
+- When a visitor opens `/products/00000000-0000-4000-8000-000000000001`
+- Then the shop answers with status 404
+- And the page shows "404", "Page Not Found" and "The page you're looking for doesn't exist or has been removed.
+  Perhaps you were looking for one of our products?"
+Test: DcaShop.E2eTests.UnknownProductE2eTest#AProductTheCatalogueDoesNotHaveAnswersNotFound
+
+#### a-malformed-product-address-answers-404
+- Given a visitor with no cookies
+- When they open `/products/no-such-product`
+- Then the shop answers with status 404
+- And the page shows "Page Not Found"
+Test: DcaShop.IntegrationTests.NotFoundPageTest#AMalformedProductAddressAnswersNotFound

@@ -1,7 +1,9 @@
 ---
 id: an-unknown-product-page-answers-not-found
 epic: browse-catalogue
-status: adopted
+status: delivered
+delivered: 2026-10-15T08:13:06Z
+delivered_by: gate
 context: product
 feature: productdetails
 title: The page of an unknown product answers "not found"
