@@ -108,6 +108,44 @@ public sealed class ProductPriceAndStockRulesTest
         Assert.Equal(21, await ProductCountAsync(shop));
     }
 
+    [Fact]
+    public async Task APriceOfZeroIsAnUnacceptableValueNamedInTheErrorsAndTheCatalogueKeepsItsProducts()
+    {
+        using var shop = new WebApplicationFactory<Program>();
+        var staff = await shop.StaffClientAsync("free-mug-problem@example.com");
+
+        var response = await staff.PostAsync("/api/products", Json(
+            """{"sku":"FREE-001","name":"Free Mug","description":"","imageUrl":"","price":0,"category":"Desk & Office","stock":5}"""));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Unacceptable value", problem.GetProperty("title").GetString());
+        var errors = problem.GetProperty("errors");
+        Assert.Equal(new[] { "price" }, errors.EnumerateObject().Select(field => field.Name));
+        Assert.Equal(new string?[] { "The price must be greater than zero." }, errors.GetProperty("price").EnumerateArray().Select(reason => reason.GetString()));
+        Assert.Equal(21, await ProductCountAsync(shop));
+    }
+
+    [Fact]
+    public async Task ANegativeInitialStockIsAnUnacceptableValueNamedInTheErrorsAndTheCatalogueKeepsItsProducts()
+    {
+        using var shop = new WebApplicationFactory<Program>();
+        var staff = await shop.StaffClientAsync("owed-pin-problem@example.com");
+
+        var response = await staff.PostAsync("/api/products", Json(
+            """{"sku":"PIN-003","name":"Owed Pin","description":"","imageUrl":"","price":12.99,"category":"Stickers & Pins","stock":-1}"""));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Unacceptable value", problem.GetProperty("title").GetString());
+        var errors = problem.GetProperty("errors");
+        Assert.Equal(new[] { "stock" }, errors.EnumerateObject().Select(field => field.Name));
+        Assert.Equal(new string?[] { "The initial stock must not be negative." }, errors.GetProperty("stock").EnumerateArray().Select(reason => reason.GetString()));
+        Assert.Equal(21, await ProductCountAsync(shop));
+    }
+
     private static async Task<int> ProductCountAsync(WebApplicationFactory<Program> shop)
     {
         using var scope = shop.Services.CreateScope();

@@ -38,6 +38,17 @@ its title alone.
 | Product | any other `DomainException` | 422 | Business rule violated | — |
 | Product | argument exception | 400 | Unacceptable value | — |
 
+### Product creation request (`POST /api/products`)
+
+A body its request validation refuses answers 400, titled "Unacceptable value", without a `detail`; its `errors` maps
+each refused field, spelled as the request's JSON spells it, to the reasons.
+
+| Field | Refused when | Reason |
+|---|---|---|
+| `name` | missing or blank | A name is required. |
+| `price` | zero or less | The price must be greater than zero. |
+| `stock` | negative | The initial stock must not be negative. |
+
 ## Pages
 
 ### Password rules

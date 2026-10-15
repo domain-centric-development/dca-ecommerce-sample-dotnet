@@ -21,6 +21,7 @@ namespace DcaShop.Product.Adapter.Incoming.Api;
 /// pipeline answers <c>401</c> to a stranger and <c>403</c> to a customer without the role (ADR-008).
 /// </remarks>
 [ApiController]
+[UnacceptableValueProblem]
 [Route("api/products")]
 public sealed class ProductResource : ControllerBase
 {

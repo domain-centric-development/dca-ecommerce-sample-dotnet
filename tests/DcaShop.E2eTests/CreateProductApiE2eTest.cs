@@ -89,6 +89,26 @@ public sealed class CreateProductApiE2eTest : IDisposable
         Assert.False(problem.TryGetProperty("detail", out _));
     }
 
+    [E2eFact(DisplayName = "A blank name is refused")]
+    public async Task ABlankNameIsAnUnacceptableValueNamedInTheErrorsAndNoProductIsAdded()
+    {
+        var staff = Bearer(await StaffTokenAsync("blank-name-maker@example.com"));
+
+        var response = await staff.PostAsync("/api/products", new StringContent(
+            """{"sku":"BLANK-001","name":"   ","description":"","imageUrl":"","price":9.99,"category":"Books","stock":1}""",
+            System.Text.Encoding.UTF8,
+            "application/json"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Unacceptable value", problem.GetProperty("title").GetString());
+        var errors = problem.GetProperty("errors");
+        Assert.Equal(new[] { "name" }, errors.EnumerateObject().Select(field => field.Name));
+        Assert.Equal(new string?[] { "A name is required." }, errors.GetProperty("name").EnumerateArray().Select(reason => reason.GetString()));
+        Assert.Equal(21, (await staff.GetFromJsonAsync<JsonElement>("/api/products")).GetArrayLength());
+    }
+
     [E2eFact(DisplayName = "A duplicate sku is a conflict")]
     public async Task ASkuTheCatalogueAlreadyCarriesIsAConflictAndNoProductIsAdded()
     {
