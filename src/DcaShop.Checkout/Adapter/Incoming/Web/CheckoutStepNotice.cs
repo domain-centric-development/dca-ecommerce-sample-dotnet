@@ -29,6 +29,9 @@ internal enum CheckoutStepNotice
 
     /// <summary>"Place Order" was refused for any other reason.</summary>
     OrderNotPlaced = 5,
+
+    /// <summary>Paying again found the payment already authorized for the total; informs, refuses nothing.</summary>
+    PaymentAlreadyAuthorized = 6,
 }
 
 /// <summary>Each notice's code, the sentence its page shows, and where a step's page finds the notice left for it.</summary>
@@ -45,6 +48,7 @@ internal static class CheckoutStepNotices
         CheckoutStepNotice.ItemsUnavailable => "items-unavailable",
         CheckoutStepNotice.ReviewFirst => "review-first",
         CheckoutStepNotice.OrderNotPlaced => "order-not-placed",
+        CheckoutStepNotice.PaymentAlreadyAuthorized => "payment-already-authorized",
         _ => throw new ArgumentOutOfRangeException(nameof(notice)),
     };
 
@@ -59,6 +63,7 @@ internal static class CheckoutStepNotices
             : null,
         CheckoutStepNotice.ReviewFirst => "Please review your order before placing it.",
         CheckoutStepNotice.OrderNotPlaced => "Your order could not be placed. Please try again.",
+        CheckoutStepNotice.PaymentAlreadyAuthorized => "Your payment is already authorized.",
         _ => throw new ArgumentOutOfRangeException(nameof(notice)),
     };
 
@@ -83,6 +88,24 @@ internal static class CheckoutStepNotices
     /// <summary>The notice left for the step's page and the number it names, if any — reading them removes them.</summary>
     public static (CheckoutStepNotice? Notice, int? Count) TakeCheckoutStepNotice(this ITempDataDictionary tempData, CheckoutStep step) =>
         (FromCode(tempData[KeyOf(step)] as string), tempData[KeyOf(step) + CountSuffix] as int?);
+
+    /// <summary>
+    /// The sentence of a notice left for the step's page that informs rather than refuses, if that is the one left —
+    /// reading it removes it; a refusal stays for <see cref="TakeCheckoutStepNotice"/>.
+    /// </summary>
+    public static string? TakeCheckoutStepInformation(this ITempDataDictionary tempData, CheckoutStep step)
+    {
+        if (FromCode(tempData.Peek(KeyOf(step)) as string) is not { } notice || !notice.Informs())
+        {
+            return null;
+        }
+
+        tempData.Remove(KeyOf(step));
+        return notice.Sentence();
+    }
+
+    /// <summary>Whether the notice informs the customer rather than says why a step was refused.</summary>
+    private static bool Informs(this CheckoutStepNotice notice) => notice == CheckoutStepNotice.PaymentAlreadyAuthorized;
 
     /// <summary>The TempData key of the notice addressed to a step's page, written out per step.</summary>
     private static string KeyOf(CheckoutStep step) => step switch

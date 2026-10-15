@@ -6,6 +6,10 @@
 {
 <div class="alert alert--error" data-test="review-error-message">@Model.Error</div>
 }
+@if (Model.Information is not null)
+{
+<div class="alert alert--info" data-test="review-notice-message">@Model.Information</div>
+}
 <div class="review-sections" data-test="review-sections">
 <div class="review-section" data-test="review-buyer-section">
 <div class="review-section__header"><h3 class="review-section__title">Buyer Information</h3><a class="review-section__edit" href="/checkout/buyer" data-test="review-buyer-edit-link">Edit</a></div>

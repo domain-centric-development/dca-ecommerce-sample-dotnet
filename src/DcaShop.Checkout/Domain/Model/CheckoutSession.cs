@@ -123,6 +123,25 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         }
     }
 
+    /// <summary>
+    /// Whether the session holds a payment <paramref name="providerId"/> authorized for its current total — paying again
+    /// through that provider would then request nothing new.
+    /// </summary>
+    public bool IsTotalCoveredBy(PaymentProviderId providerId) => PaymentSelection?.Covers(providerId, Totals.Total) ?? false;
+
+    /// <summary>
+    /// Forgets the payment the provider released: it no longer pays this checkout, so the payment step is open again.
+    /// </summary>
+    public void ReleasePayment()
+    {
+        EnsureModifiable();
+        PaymentSelection = null;
+        if (CurrentStep.IsAfter(CheckoutStep.Payment))
+        {
+            CurrentStep = CheckoutStep.Payment;
+        }
+    }
+
     public void SubmitPayment(PaymentSelection payment)
     {
         EnsureModifiable();

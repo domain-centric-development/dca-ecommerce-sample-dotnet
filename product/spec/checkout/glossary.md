@@ -58,6 +58,8 @@ claim of durable distributed transactions or universal rollback of unenlisted re
 - `Supersede` — kept with status superseded when a new checkout action replaces it; no event; only an active session can be superseded
 - `SubmitBuyerInfo`, `SubmitDelivery`, `SubmitPayment` — record the step's data and move on to the next step when standing on it
 - `AssertReadyForPayment` — a question: the preconditions of `SubmitPayment`, checked without changing anything
+- `IsTotalCoveredBy` — a question: whether the session's payment, authorized by the given provider, covers its current total
+- `ReleasePayment` — the session forgets the payment the provider cancelled; a session past the payment step goes back to it
 - `GoBackTo` — moves the current step back; data already submitted stays
 - `Confirm` — status confirmed, totals recomputed at current prices; refused while the pricing verdict reports a changed price or a shortage
 - `Complete` — after payment: status completed, with the order reference
@@ -107,13 +109,27 @@ and shipping cost.
 ### PaymentSelection
 
 **Definition:** Selected payment method consisting of `PaymentProviderId` and the provider
-reference (e.g. payment intent ID) the provider returned when the payment was initiated.
+reference (e.g. payment intent ID) the provider returned when the payment was initiated, plus the authorized
+amount.
 
 **Type:** Value Object
 
-**Related terms:** `PaymentProviderId`, `PaymentSubmitted`.
+**Related terms:** `PaymentProviderId`, `PaymentSubmitted`, Authorized amount, Payment cancellation.
 
-**Operations:** `WithReference`, `HasReference`.
+**Operations:** `WithReference`, `HasReference`, `Covers` — whether the payment, authorized by the given provider,
+pays exactly the given total: it needs a payment reference, the same provider and an authorized amount equal to the
+total.
+
+### Authorized amount (AuthorizedAmount)
+
+**Definition:** The total a `PaymentSelection`'s payment was authorized for. The payment covers the checkout only
+while it equals the checkout's current total: paying again for the same total requests nothing new and the customer
+sees "Your payment is already authorized."; a changed total (another shipping method) cancels the payment and
+requests a new one with the same checkout reference.
+
+**Type:** Value Object (`Money`, part of `PaymentSelection`)
+
+**Related terms:** `PaymentSelection`, `CheckoutTotals`, Payment cancellation.
 
 ### CheckoutLineItem
 
@@ -557,8 +573,25 @@ its outcome is one of:
 **Related terms:** `PaymentProviderId`, `PaymentSelection`, `PaymentSubmitted`.
 
 **Notes:** The **payment stand-in** (`MockPaymentProvider`, id `mock`) authorizes every payment and takes
-payments where no provider address is configured. The provider's contract has no confirmation or cancellation;
-the REST adapter answers both with `Refused` without asking the provider.
+payments where no provider address is configured. The provider's contract has no confirmation: the REST adapter
+answers it with `Succeeded` without asking the provider. A cancellation is asked of the provider (see Payment
+cancellation).
+
+### Payment cancellation (CancelPayment)
+
+**Definition:** Releases an authorized payment at the payment provider by its payment reference, so the provider
+no longer holds it for the checkout. The REST adapter sends `POST /payments/{payment reference}/cancel`; `204`
+cancels the payment, any other answer, no answer in time or no connection counts as `Unavailable`. Paying again
+for a checkout whose payment no longer covers its total cancels that payment before the new one is requested; once
+the provider cancelled it, the session releases its `PaymentSelection` (`ReleasePayment`) and its payment step is
+open again. A cancellation the provider does not grant is logged and the new request goes ahead.
+
+**Type:** Concept (operation `CancelPaymentAsync` of the `IPaymentProvider` output port)
+
+**Synonyms (avoid):** release — the session's side of a cancellation (`CheckoutSession.ReleasePayment`), not a
+second operation at the provider.
+
+**Related terms:** `PaymentResult`, `PaymentSelection`, Authorized amount.
 
 ### Checkout reference (merchantReference)
 

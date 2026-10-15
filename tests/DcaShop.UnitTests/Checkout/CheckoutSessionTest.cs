@@ -120,6 +120,22 @@ public sealed class CheckoutSessionTest
     }
 
     [Fact]
+    public void APaymentAuthorizedForTheTotalNoLongerCountsOnceTheShippingChangesTheTotal()
+    {
+        var provider = PaymentProviderId.Of("provider");
+        var session = Started();
+        session.SubmitBuyerInfo(new BuyerInfo("a@b.de", "Ada", "Lovelace", "123"));
+        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard);
+        session.SubmitPayment(new PaymentSelection(provider, "pay-1", session.Totals.Total));
+        var authorizedForTheTotal = session.IsTotalCoveredBy(provider);
+
+        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), new ShippingOption("express", "Express", "2-3 days", Money.Euro(9.99m)));
+
+        Assert.True(authorizedForTheTotal);
+        Assert.False(session.IsTotalCoveredBy(provider));
+    }
+
+    [Fact]
     public void BuyerInfoRequiresValidEmail() =>
         Assert.Throws<ArgumentException>(() => new BuyerInfo("not-an-email", "A", "B", "1"));
 

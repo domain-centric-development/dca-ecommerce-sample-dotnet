@@ -5,7 +5,7 @@ answers per behaviour, the same in both samples. `PAYMENT_STUB` picks the set.
 
 | `PAYMENT_STUB` | `POST /payments` answers | What the checkout does |
 |---|---|---|
-| `authorize` (default) | `201` with a payment reference | moves on to the review step |
+| `authorize` (default) | `201` with a payment reference; `POST /payments/{payment reference}/cancel` answers `204` | moves on to the review step; paying again for a changed total cancels the first payment |
 | `refuse` | `402` | stays at the payment step: "The payment was refused. Please choose another way to pay." |
 | `slow` | `201` after 5 seconds | stays at the payment step after 2 seconds: "The payment provider is not available right now. Please try again later." |
 

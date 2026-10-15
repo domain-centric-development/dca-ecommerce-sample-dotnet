@@ -15,11 +15,13 @@ namespace DcaShop.Checkout.Adapter.Outgoing.Payment;
 /// The payment service provider over REST — the anti-corruption layer towards it. A payment is one
 /// <c>POST /payments</c> with amount, currency and the checkout reference (<c>merchantReference</c>): <c>201</c> with a payment reference authorizes it, <c>402</c>
 /// refuses it, and anything else — no answer in time, no connection, another status, no reference — counts as the
-/// provider being unavailable. The provider's request and answer shapes stay inside this class.
+/// provider being unavailable. An authorized payment is cancelled with <c>POST /payments/{payment reference}/cancel</c>:
+/// <c>204</c> cancels it, anything else counts as unavailable. The provider's request and answer shapes stay inside
+/// this class.
 /// </summary>
 /// <remarks>
-/// The contract has no availability, confirmation or cancellation endpoint: availability is learned from the payment
-/// request itself, a payment is complete once authorized, and a cancellation reaches nobody.
+/// The contract has no availability or confirmation endpoint: availability is learned from the payment request itself,
+/// and a payment is complete once authorized.
 /// </remarks>
 public sealed class RestPaymentProvider : IPaymentProvider
 {
@@ -81,14 +83,39 @@ public sealed class RestPaymentProvider : IPaymentProvider
     public Task<IPaymentProvider.PaymentResult> ConfirmPaymentAsync(string providerReference, CancellationToken cancellationToken = default) =>
         Task.FromResult(IPaymentProvider.PaymentResult.Succeeded(providerReference));
 
-    public Task<IPaymentProvider.PaymentResult> CancelPaymentAsync(string providerReference, CancellationToken cancellationToken = default) =>
-        Task.FromResult(IPaymentProvider.PaymentResult.Refused("The payment provider offers no cancellation"));
+    public async Task<IPaymentProvider.PaymentResult> CancelPaymentAsync(string providerReference, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClients.CreateClient(HttpClientName)
+                .PostAsync($"payments/{Uri.EscapeDataString(providerReference)}/cancel", content: null, cancellationToken)
+                .ConfigureAwait(false);
+
+            return response.StatusCode == HttpStatusCode.NoContent
+                ? IPaymentProvider.PaymentResult.Succeeded(providerReference)
+                : CancellationUnavailable($"The payment provider answered {(int)response.StatusCode}", providerReference);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return CancellationUnavailable("The payment provider did not answer in time", providerReference);
+        }
+        catch (HttpRequestException e)
+        {
+            return CancellationUnavailable($"The payment provider could not be reached: {e.Message}", providerReference);
+        }
+    }
 
     public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
 
     private IPaymentProvider.PaymentResult Unavailable(string reason, CheckoutSessionId sessionId)
     {
         _logger.LogWarning("Payment for session {SessionId} not taken: {Reason}", sessionId, reason);
+        return IPaymentProvider.PaymentResult.Unavailable(reason);
+    }
+
+    private IPaymentProvider.PaymentResult CancellationUnavailable(string reason, string providerReference)
+    {
+        _logger.LogWarning("Payment {Reference} not cancelled: {Reason}", providerReference, reason);
         return IPaymentProvider.PaymentResult.Unavailable(reason);
     }
 

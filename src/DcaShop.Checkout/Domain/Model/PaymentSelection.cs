@@ -1,11 +1,20 @@
+using DcaShop.SharedKernel.Domain.Model;
+
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Checkout.Domain.Model;
 
-/// <summary>Selected payment method plus an optional provider reference (e.g. a payment intent id).</summary>
-public sealed record PaymentSelection(PaymentProviderId ProviderId, string? ProviderReference = null) : IValue
+/// <summary>
+/// Selected payment method plus an optional provider reference (e.g. a payment intent id) and the amount the provider
+/// authorized under it.
+/// </summary>
+public sealed record PaymentSelection(PaymentProviderId ProviderId, string? ProviderReference = null, Money? AuthorizedAmount = null) : IValue
 {
     public bool HasReference => !string.IsNullOrWhiteSpace(ProviderReference);
 
     public PaymentSelection WithReference(string reference) => this with { ProviderReference = reference };
+
+    /// <summary>Whether this payment, authorized by <paramref name="providerId"/>, pays exactly <paramref name="total"/>.</summary>
+    public bool Covers(PaymentProviderId providerId, Money total) =>
+        HasReference && ProviderId == providerId && AuthorizedAmount == total;
 }
