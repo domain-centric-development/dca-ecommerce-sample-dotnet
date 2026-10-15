@@ -98,6 +98,22 @@ public sealed class BackofficeE2eTest : BaseE2eTest
             field => Assert.Contains(field, content, StringComparison.Ordinal));
     }
 
+    [E2eFact(DisplayName = "The back office header offers the operators logout")]
+    public async Task TheHeaderOfTheEventLogOffersTheOperatorsLogoutAndNothingOfAShopper()
+    {
+        await ClearCookiesAsync();
+        await SignInAsync();
+
+        var events = await BackofficeEventsPage.NavigateToAsync(Page);
+
+        Assert.Equal("Back office", await events.HeaderLabelAsync());
+        Assert.Equal("domaincentric.commerce", await events.LogoTextAsync());
+        Assert.Equal("Logout", await events.HeaderOperatorLogoutAsync());
+        Assert.False(await events.HeaderOffersLoginAsync(), "The back-office header should offer no shop login");
+        Assert.False(await events.HeaderOffersRegisterAsync(), "The back-office header should offer no registration");
+        Assert.False(await events.HeaderOffersCartAsync(), "The back-office header should offer no cart");
+    }
+
     private async Task<BackofficeEventsPage> SignInAsync()
     {
         var login = await BackofficeLoginPage.NavigateToAsync(Page);

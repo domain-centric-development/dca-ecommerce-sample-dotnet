@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<partial name="_SiteHead" />
+</head>
+<body>
+<div class="stack-ribbon stack-ribbon--dotnet" aria-hidden="true" data-test="stack-ribbon">
+<span class="stack-ribbon__label" title=".NET reference implementation — ASP.NET Core">.NET</span>
+</div>
+<header class="site-header" data-test="site-header">
+<div class="site-header__inner">
+<a class="site-header__logo" href="/" data-test="site-logo"><svg class="site-header__mark" viewBox="17.4 12 85.2 96" fill="none" aria-hidden="true" focusable="false"><polygon points="60,20 94.6,40 94.6,80 60,100 25.4,80 25.4,40" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/><circle cx="60" cy="20" r="8" fill="currentColor"/><circle cx="94.6" cy="40" r="8" fill="currentColor"/><circle cx="94.6" cy="80" r="8" fill="currentColor"/><circle cx="60" cy="100" r="8" fill="currentColor"/><circle cx="25.4" cy="80" r="8" fill="currentColor"/><circle cx="25.4" cy="40" r="8" fill="currentColor"/><circle class="site-header__mark-core" cx="60" cy="60" r="12"/></svg><span class="site-header__wordmark">domaincentric<span class="brand-tld">.commerce</span></span></a>
+<div class="site-header__actions">
+<span class="nav__link" data-test="backoffice-header-label">Back office</span>
+<form class="nav__logout-form" method="post" action="/backoffice/logout" data-test="backoffice-logout-form">
+@Html.AntiForgeryToken()
+<button class="nav__link nav__logout-btn" type="submit" data-test="backoffice-logout-button">Logout</button>
+</form>
+</div>
+</div>
+</header>
+<main class="site-main">
+<div class="container">
+@RenderBody()
+</div>
+</main>
+<partial name="_SiteFooter" />
+@RenderSection("Scripts", required: false)
+</body>
+</html>

@@ -78,6 +78,10 @@ public abstract class BasePage
     public async Task<bool> HeaderOffersLoginAsync() =>
         await Page.Locator("[data-test='site-header'] [data-test='nav-login-link']").CountAsync() > 0;
 
+    /// <summary>Whether the site header offers the "Cart" entry.</summary>
+    public async Task<bool> HeaderOffersCartAsync() =>
+        await Page.Locator("[data-test='site-header'] [data-test='mini-basket-trigger']").CountAsync() > 0;
+
     /// <summary>The label of the site header's logout button; empty when the header offers none.</summary>
     public async Task<string> HeaderLogoutButtonAsync()
     {

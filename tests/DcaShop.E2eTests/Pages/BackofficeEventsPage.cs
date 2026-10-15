@@ -24,6 +24,8 @@ public sealed class BackofficeEventsPage : BasePage
     private const string EventPayload = "event-payload";
     private const string EventRetry = "event-retry";
     private const string EventCompletionDate = "event-completion-date";
+    private const string HeaderLabel = "backoffice-header-label";
+    private const string HeaderLogoutButton = "backoffice-logout-button";
 
     private BackofficeEventsPage(IPage page) : base(page)
     {
@@ -46,6 +48,22 @@ public sealed class BackofficeEventsPage : BasePage
     public Task<bool> IsOnPageAsync() => ExistsAsync(EventLog);
 
     public Task<bool> HasSummaryAsync() => ExistsAsync(EventLogSummary);
+
+    /// <summary>The back office's name in the site header, once it is visible.</summary>
+    public async Task<string> HeaderLabelAsync()
+    {
+        var label = Page.Locator($"[data-test='site-header'] [data-test='{HeaderLabel}']");
+        await Assertions.Expect(label).ToBeVisibleAsync();
+        return (await label.InnerTextAsync()).Trim();
+    }
+
+    /// <summary>The label of the operator's logout button in the site header, once it is visible.</summary>
+    public async Task<string> HeaderOperatorLogoutAsync()
+    {
+        var logout = Page.Locator($"[data-test='site-header'] [data-test='{HeaderLogoutButton}']");
+        await Assertions.Expect(logout).ToBeVisibleAsync();
+        return (await logout.InnerTextAsync()).Trim();
+    }
 
     public async Task<string> HeadingAsync() =>
         (await Page.Locator("main h1").InnerTextAsync()).Trim();
