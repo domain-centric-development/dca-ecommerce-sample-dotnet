@@ -231,10 +231,10 @@ SELECTOR = re.compile(r"^([\w.]+)#([\w]+)$")
 #: so a project can be governed by a release older than the pipeline it was installed from without
 #: anything being incompatible. That is an update to offer, never a reason to refuse, and only the
 #: installer can see it — it is the one place that holds both files.
-CONTRACT = 23
+CONTRACT = 24
 
 
-VERSION = "0.84.2"
+VERSION = "0.85.0"
 
 
 def split_front(text):
@@ -1069,6 +1069,19 @@ def git(cwd, *args, env=None):
     # CRLF" beside the hash of `hash-object` — and a warning read as the answer is a blob that does not exist.
     if completed.returncode == 0:
         return 0, completed.stdout.strip()
+    return completed.returncode, (completed.stdout + completed.stderr).strip()
+
+
+def git_blob(cwd, spec):
+    """(code, text) of one object — `<blob hash>` or `<ref>:<path>` — exactly as git holds it. `git` strips its
+    answer, which would take a first line's indentation with it; a file's content is read here, never there."""
+    try:
+        completed = subprocess.run(["git", "cat-file", "blob", spec], cwd=cwd, capture_output=True, text=True,
+                                   encoding="utf-8", errors="replace")
+    except OSError as error:
+        return 1, str(error)
+    if completed.returncode == 0:
+        return 0, completed.stdout
     return completed.returncode, (completed.stdout + completed.stderr).strip()
 
 
