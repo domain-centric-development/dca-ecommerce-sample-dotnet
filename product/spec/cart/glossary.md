@@ -20,11 +20,11 @@ The Cart context groups its use cases into four features — domain-named naviga
 | `Shopping` | Filling and reading the shopping cart while the customer shops | `CreateCart`, `GetOrCreateActiveCart`, `GetActiveCart`, `GetCartById`, `AddItemToCart`, `RemoveItemFromCart`, `RemoveCartItem` |
 | `CartRecovery` | Recovering a guest cart on login — taking it over, or offering and applying a merge | `RecoverCart`, `GetCartMergeOptions`, `MergeCarts` |
 | `CartCheckout` | Reconciling the cart once Checkout confirms an order — the purchased units leave the cart (`CompleteCart`) | `CompleteCart` |
-| `Operations` | Operating the shop — staff-only views across all carts | `GetAllCarts` |
+| `CartOversight` | Cart oversight — the staff's view across every cart in the shop | `GetAllCarts` |
 
 `Application/Shared/` stays context-wide (`IShoppingCartRepository`, `IArticleDataPort`). The web
-adapters mirror `Shopping` and `CartRecovery`; the REST resource serves every feature and stays under
-`Adapter/Incoming/Api/`.
+adapters mirror `Shopping` and `CartRecovery`; the REST resources stay flat under `Adapter/Incoming/Api/` —
+`ShoppingCartResource` for the caller's own carts, `CartOversightResource` for the staff's list.
 
 ## Aggregates
 
@@ -393,5 +393,11 @@ The parts of the context's behaviour its people name; each groups what holds in 
 ### Cart checkout (cartcheckout)
 
 **Definition:** The cart after an order: it keeps what was not bought.
+
+**Type:** Feature
+
+### Cart oversight (cartoversight)
+
+**Definition:** The staff's view across every cart in the shop — the one view that leaves a customer's own carts.
 
 **Type:** Feature

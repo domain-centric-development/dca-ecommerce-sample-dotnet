@@ -1,4 +1,3 @@
-using DcaShop.Cart.Application.Operations.GetAllCarts;
 using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.CreateCart;
 using DcaShop.Cart.Application.Shopping.GetActiveCart;
@@ -8,7 +7,6 @@ using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Application.Shared;
 using DcaShop.SharedKernel.Domain.Model;
 
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,7 +22,7 @@ namespace DcaShop.Cart.Adapter.Incoming.Api;
 /// exists, which is exactly the fact a stranger must not learn.
 /// </para>
 /// <para>
-/// Listing every cart in the shop crosses that boundary by design and therefore demands the staff role.
+/// Listing every cart in the shop crosses that boundary by design; it is <see cref="CartOversightResource"/>'s.
 /// Authenticated by an <c>Authorization: Bearer</c> token and nothing else (ADR-007).
 /// </para>
 /// </remarks>
@@ -34,7 +32,6 @@ public sealed class ShoppingCartResource : ControllerBase
 {
     private readonly ICreateCartInputPort _createCart;
     private readonly IGetActiveCartInputPort _getActiveCart;
-    private readonly IGetAllCartsInputPort _getAllCarts;
     private readonly IGetCartByIdInputPort _getCartById;
     private readonly IAddItemToCartInputPort _addItemToCart;
     private readonly IRemoveItemFromCartInputPort _removeItemFromCart;
@@ -44,7 +41,6 @@ public sealed class ShoppingCartResource : ControllerBase
     public ShoppingCartResource(
         ICreateCartInputPort createCart,
         IGetActiveCartInputPort getActiveCart,
-        IGetAllCartsInputPort getAllCarts,
         IGetCartByIdInputPort getCartById,
         IAddItemToCartInputPort addItemToCart,
         IRemoveItemFromCartInputPort removeItemFromCart,
@@ -53,7 +49,6 @@ public sealed class ShoppingCartResource : ControllerBase
     {
         _createCart = createCart;
         _getActiveCart = getActiveCart;
-        _getAllCarts = getAllCarts;
         _getCartById = getCartById;
         _addItemToCart = addItemToCart;
         _removeItemFromCart = removeItemFromCart;
@@ -71,15 +66,6 @@ public sealed class ShoppingCartResource : ControllerBase
         var result = await _createCart.ExecuteAsync(new CreateCartCommand(CurrentCustomerId), cancellationToken);
         var cart = await ReadAsync(result.CartId, cancellationToken);
         return StatusCode(StatusCodes.Status201Created, _converter.ToDto(cart!));
-    }
-
-    /// <summary>Every cart in the shop — the operator view, and the only route that leaves the caller's own data.</summary>
-    [HttpGet]
-    [Authorize(Roles = Role.StaffCode)]
-    public async Task<ActionResult<ShoppingCartListDto>> GetAllCarts(CancellationToken cancellationToken)
-    {
-        var result = await _getAllCarts.ExecuteAsync(new GetAllCartsQuery(), cancellationToken);
-        return Ok(_converter.ToListDto(result));
     }
 
     [HttpGet("{cartId:guid}")]

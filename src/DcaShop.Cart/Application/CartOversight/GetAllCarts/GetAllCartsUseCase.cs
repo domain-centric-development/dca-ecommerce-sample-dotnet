@@ -1,6 +1,6 @@
 using DcaShop.Cart.Application.Shared;
 
-namespace DcaShop.Cart.Application.Operations.GetAllCarts;
+namespace DcaShop.Cart.Application.CartOversight.GetAllCarts;
 
 /// <summary>
 /// Lists every cart in the shop. This crosses customer boundaries by definition, so the adapter exposing it has

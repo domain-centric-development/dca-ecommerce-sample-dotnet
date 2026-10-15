@@ -154,7 +154,7 @@ DcaShop.Cart/
 │   │   └── GetCartById/         … one folder per use case
 │   ├── CartRecovery/            feature — RecoverCart, GetCartMergeOptions, MergeCarts
 │   ├── CartCheckout/            feature — CompleteCart
-│   ├── Operations/              feature — GetAllCarts (staff-only)
+│   ├── CartOversight/           feature — GetAllCarts (staff-only)
 │   └── Shared/                  output ports, context-wide: IShoppingCartRepository, IArticleDataPort
 ├── Adapter/
 │   ├── Incoming/Web/            protocol first, feature below: Shopping/CartPageController, CartRecovery/CartMergePageController
@@ -188,7 +188,7 @@ what tells them apart.
 | Factory | `ProductFactory`, `EnrichedCartFactory`, `CheckoutCartFactory` |
 | Facts passed into the aggregate | `ICheckoutArticlePriceResolver` — the application fetches, the model decides |
 | Enriched read model | `EnrichedProduct`, `EnrichedCart`, `CheckoutCart` / `EnrichedCheckoutLineItem` (persisted line item + fresh article data) |
-| Use case = input port + command/query + result | every `Application/<UseCase>/` folder — or `Application/<Feature>/<UseCase>/` where a context groups them (Cart: `Shopping`, `CartRecovery`, `CartCheckout`, `Operations`; Checkout: `Session`, `CheckoutCompletion`, `CartSync`) |
+| Use case = input port + command/query + result | every `Application/<UseCase>/` folder — or `Application/<Feature>/<UseCase>/` where a context groups them (Cart: `Shopping`, `CartRecovery`, `CartCheckout`, `CartOversight`; Checkout: `Session`, `CheckoutCompletion`, `CartSync`) |
 | Output ports in `Application/Shared`, adapters outside | `IArticleDataPort` ↔ `CompositeArticleDataAdapter` |
 | One port answered from several Open Host Services | `CompositeArticleDataAdapter` — product identity from the catalog, price from Pricing, availability from Inventory |
 | Anti-corruption layer to another context's Api | `Adapter/Outgoing/Product/`, `Adapter/Outgoing/Cart/` |

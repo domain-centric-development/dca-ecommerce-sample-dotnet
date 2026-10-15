@@ -1,6 +1,6 @@
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.In;
 
-namespace DcaShop.Cart.Application.Operations.GetAllCarts;
+namespace DcaShop.Cart.Application.CartOversight.GetAllCarts;
 
 public interface IGetAllCartsInputPort : IUseCase<GetAllCartsQuery, GetAllCartsResult>
 {

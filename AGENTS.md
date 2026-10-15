@@ -91,7 +91,7 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
 - Layers are folders/namespaces: `Domain/Model`, `Domain/Event`, `Domain/Service`, `Domain/Specification`,
   `Application/<UseCase>/` — or, once a context has grown cohesive clusters, `Application/<Feature>/<UseCase>/`
   (a *feature* is an optional, domain-named group of use cases below the layer — Cart: `Shopping`, `CartRecovery`,
-  `CartCheckout`, `Operations`; Checkout: `Session`, `CheckoutCompletion`, `CartSync`; one context uses one form,
+  `CartCheckout`, `CartOversight`; Checkout: `Session`, `CheckoutCompletion`, `CartSync`; one context uses one form,
   `DCA-USE-014`; features must not form cycles, `DCA-CYC-005`; incoming adapters may mirror them *below* the
   protocol: `Adapter/Incoming/Web/<Feature>/`; the domain is never mirrored by feature),
   `Application/Shared/` (output ports only, context-wide — never per feature), `Adapter/Incoming/{Web,Event}`, `Adapter/Outgoing/<Concern>/`,

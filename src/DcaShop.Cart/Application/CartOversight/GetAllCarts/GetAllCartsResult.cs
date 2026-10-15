@@ -1,6 +1,6 @@
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
-namespace DcaShop.Cart.Application.Operations.GetAllCarts;
+namespace DcaShop.Cart.Application.CartOversight.GetAllCarts;
 
 /// <summary>
 /// Every cart in the shop, as an operator sees them. The summaries carry the prices captured at addition rather
