@@ -52,8 +52,7 @@ docker compose run --rm test                                             # tests
 ```
 
 The architecture suite runs the experimental rules too: `tests/DcaShop.ArchitectureTests/dca-archunit.properties`
-(copied next to the test assembly) sets `dca.rules.experimental = true` and turns off the rule on state kept in one instance, which the
-libraries retire (the file names its id). An enforced experimental rule fails the build like any other; an informational one only lists.
+(copied next to the test assembly) sets `dca.rules.experimental = true`. An enforced experimental rule fails the build like any other; an informational one only lists.
 
 The architecture tests also (re)generate `docs/architecture/context-map.md` and fail when it was stale —
 commit it with the change that caused it. `product/domain.md` is the designed, hand-maintained strategic map
@@ -73,7 +72,7 @@ commit it with the change that caused it. `product/domain.md` is the designed, h
 ## Tech stack
 
 .NET 10 (LTS; SDK pinned via `global.json`), ASP.NET Core MVC + Razor views, xUnit, `DomainCentric.BuildingBlocks` + `DomainCentric.ArchRules(.Xunit)`
-from NuGet.org (`DomainCentric.BuildingBlocks` 0.1.1, `DomainCentric.ArchRules.Xunit` 0.4.0, pinned in `Directory.Build.props`;
+from NuGet.org (`DomainCentric.BuildingBlocks` 0.2.1, `DomainCentric.ArchRules.Xunit` 0.9.0, pinned in `Directory.Build.props`;
 `-p:UseLocalDcaDotnet=true` references the sibling `../dca-dotnet` as projects for unreleased rules — the counterpart of
 the Java sample's `-PwithDcaJava`; **run the tests once without it before calling anything done**, and CI
 (`.github/workflows/ci.yml`) does exactly that on every push). In-memory persistence only.
