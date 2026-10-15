@@ -42,6 +42,26 @@ public sealed class CartApiE2eTest
         Assert.Equal(0, cart.GetProperty("items").GetArrayLength());
     }
 
+    [E2eFact(DisplayName = "An unknown product is not available")]
+    public async Task AProductTheCatalogueDoesNotKnowIsUnprocessableAndLeavesTheCartEmpty()
+    {
+        var ada = Staff.Client(ShopUnderTest.BaseUrl, await CustomerTokenAsync($"ada-{Guid.NewGuid():N}@example.com"));
+        var opened = await ada.PostAsync("/api/carts", new StringContent(string.Empty, Encoding.UTF8, "application/json"));
+        Assert.Equal(HttpStatusCode.Created, opened.StatusCode);
+        var cartId = (await opened.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("cartId").GetString();
+
+        var response = await ada.PostAsync($"/api/carts/{cartId}/items", new StringContent(
+            """{"productId":"00000000-0000-4000-8000-000000000001","quantity":1}""", Encoding.UTF8, "application/json"));
+
+        Assert.Equal(HttpStatusCode.UnprocessableContent, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Article not available", problem.GetProperty("title").GetString());
+        Assert.Equal("There is no article for product 00000000-0000-4000-8000-000000000001.", problem.GetProperty("detail").GetString());
+        var cart = await ada.GetFromJsonAsync<JsonElement>($"/api/carts/{cartId}");
+        Assert.Equal(0, cart.GetProperty("items").GetArrayLength());
+    }
+
     private static async Task<string> CustomerTokenAsync(string email)
     {
         using var client = new HttpClient { BaseAddress = new Uri(ShopUnderTest.BaseUrl) };

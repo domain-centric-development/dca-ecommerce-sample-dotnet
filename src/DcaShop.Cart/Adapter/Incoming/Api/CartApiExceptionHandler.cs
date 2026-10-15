@@ -55,10 +55,11 @@ public sealed class CartApiExceptionHandler : IExceptionHandler
                 return ProblemAsync(
                     httpContext, exception, StatusCodes.Status404NotFound, "Cart not found", $"There is no cart {notFound.CartId.Value}.");
 
-            // The assortment carries no article for that product.
+            // The assortment carries no article for the product the body names. The request is well-formed but
+            // cannot be served, so 422; a 404 stays for what the address names.
             case ArticleNotAvailableException notAvailable:
                 return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status404NotFound, "Article not available", $"There is no article for product {notAvailable.ProductId.Value}.");
+                    httpContext, exception, StatusCodes.Status422UnprocessableEntity, "Article not available", $"There is no article for product {notAvailable.ProductId.Value}.");
 
             // The cart does not hold the position the caller named.
             case CartItemNotFoundException notInCart:

@@ -68,7 +68,7 @@ public sealed class ApiProblemDetailTest : IClassFixture<WebApplicationFactory<P
     }
 
     [Fact]
-    public async Task AnArticleTheAssortmentDoesNotCarryIsNotFound()
+    public async Task AnArticleTheAssortmentDoesNotCarryIsUnprocessable()
     {
         var (token, _) = await _factory.RegisterThroughTheApiAsync("api-problem-shopper@example.com");
         var client = _factory.Bearer(token);
@@ -78,7 +78,7 @@ public sealed class ApiProblemDetailTest : IClassFixture<WebApplicationFactory<P
 
         var refused = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId = Guid.NewGuid(), quantity = 1 });
 
-        Assert.Equal(HttpStatusCode.NotFound, refused.StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableContent, refused.StatusCode);
         Assert.Equal("application/problem+json", refused.Content.Headers.ContentType?.MediaType);
         Assert.Equal("Article not available", (await refused.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("title").GetString());
     }
