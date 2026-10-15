@@ -1,7 +1,9 @@
 ---
 id: an-unknown-product-in-the-body-is-unprocessable
 epic: shop-api
-status: approved
+status: delivered
+delivered: 2026-10-15T15:30:49Z
+delivered_by: gate
 context: cart
 feature: shopping
 title: A product the catalogue does not know, named in the body, is unprocessable
