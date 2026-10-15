@@ -68,6 +68,18 @@ public sealed class DeliveryPage : BasePage
         return this;
     }
 
+    /// <summary>
+    /// Changes the shipping price the form sends along with the chosen method to <paramref name="amount"/> — what a
+    /// browser could send instead of the price the step shows.
+    /// </summary>
+    public async Task<DeliveryPage> SendShippingPriceAsync(string amount)
+    {
+        var price = Page.Locator($"[data-test='delivery-shipping-option']:has([data-test='{ShippingRadio}']:checked) input[name='shippingCost']");
+        await Assertions.Expect(price).ToBeEnabledAsync();
+        await price.EvaluateAsync("(field, value) => { field.value = value; }", amount);
+        return this;
+    }
+
     /// <summary>Submits the form and answers the path of whatever page the shop opens next, without expecting one.</summary>
     public async Task<string> SubmitAndShowNextPathAsync()
     {

@@ -70,6 +70,32 @@ public sealed class CheckoutSessionTest
     }
 
     [Fact]
+    public void DeliveryCarriesTheChosenOptionsCostAsShipping()
+    {
+        var session = Started();
+        session.SubmitBuyerInfo(new BuyerInfo("a@b.de", "Ada", "Lovelace", "123"));
+
+        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), new ShippingOption("overnight", "Overnight", "Next day", Money.Euro(19.99m)));
+
+        Assert.Equal(Money.Euro(19.99m), session.Totals.Shipping);
+    }
+
+    [Fact]
+    public void DeliveryOpensThePaymentStep()
+    {
+        var session = Started();
+        session.SubmitBuyerInfo(new BuyerInfo("a@b.de", "Ada", "Lovelace", "123"));
+
+        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard);
+
+        Assert.Equal(CheckoutStep.Payment, session.CurrentStep);
+    }
+
+    [Fact]
+    public void DeliveryIsRefusedBeforeTheBuyerStepIsCompleted() =>
+        Assert.Throws<CheckoutStepNotCompletedException>(() => Started().SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard));
+
+    [Fact]
     public void ConfirmFailsWhenStockIsInsufficient()
     {
         var session = Started();

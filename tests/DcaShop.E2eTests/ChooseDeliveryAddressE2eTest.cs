@@ -21,6 +21,21 @@ public sealed class ChooseDeliveryAddressE2eTest : BaseE2eTest
         Assert.Equal("/checkout/payment", shownPath);
     }
 
+    [E2eFact(DisplayName = "A shipping price sent with the form is not taken")]
+    public async Task TheShippingPriceIsTheChosenMethodsPriceWhateverTheFormCarries()
+    {
+        var delivery = await GuestOnTheDeliveryStepAsync();
+        await delivery.FillAddressAsync("Hauptstrasse 1", "Berlin", "10115", "Germany", string.Empty);
+        await delivery.ChooseShippingMethodAsync("Overnight Shipping");
+        await delivery.SendShippingPriceAsync("0.00");
+
+        var payment = await delivery.ContinueToPaymentAsync();
+
+        Assert.Equal("54.99 EUR", await payment.SummaryLineAsync("Subtotal"));
+        Assert.Equal("19.99 EUR", await payment.SummaryLineAsync("Shipping"));
+        Assert.Equal("74.98 EUR", (await payment.TotalAsync()).Trim());
+    }
+
     private async Task<DeliveryPage> GuestOnTheDeliveryStepAsync()
     {
         var catalog = await ProductCatalogPage.NavigateToAsync(Page);

@@ -40,6 +40,17 @@ public sealed class PaymentPage : BasePage
     /// <summary>The checkout session's total as the order summary shows it, e.g. <c>9.99 EUR</c>.</summary>
     public Task<string> TotalAsync() => Page.Locator($"[data-test='{Total}']").InnerTextAsync();
 
+    /// <summary>
+    /// The amount of the order summary's line with the given label (<c>Subtotal</c>, <c>Shipping</c>), e.g. <c>4.99 EUR</c>.
+    /// The lines carry no data-test; they are read by their label.
+    /// </summary>
+    public async Task<string> SummaryLineAsync(string label)
+    {
+        var line = Page.Locator(".order-summary__line").Filter(new LocatorFilterOptions { HasText = label });
+        await Assertions.Expect(line).ToBeVisibleAsync();
+        return (await line.Locator("span").Nth(1).InnerTextAsync()).Trim();
+    }
+
     public async Task<ReviewPage> ContinueToReviewAsync()
     {
         await ClickAsync(ContinueButton);
