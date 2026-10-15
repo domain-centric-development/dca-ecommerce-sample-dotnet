@@ -58,3 +58,12 @@ Test: DcaShop.IntegrationTests.BackofficeListenerRetryTest#RetryingTheFailedList
 - When the operator presses "Retry failed listener" on that entry
 - Then `/backoffice/events` opens again and the entry still shows the badge "Incomplete"
 Test: DcaShop.IntegrationTests.BackofficeListenerRetryTest#ARetryWhoseListenerStillFailsLeavesTheDeliveryIncomplete, DcaShop.IntegrationTests.BackofficeEventLogPageTest#PressingRetryOnAFailedEntryRetriesItsListenerAndLeadsBackToTheLog
+
+### Rule: An entry whose delivery has not failed offers no retry
+
+#### a-delivery-under-way-offers-no-retry
+- Given the operator is logged in and an event's delivery to a listener is still under way and has not failed
+- When they open `/backoffice/events`
+- Then that entry shows the badge "Incomplete"
+- And it shows no button "Retry failed listener"
+Test: DcaShop.E2eTests.BackofficeRetryE2eTest#AnEntryWhoseDeliveryIsStillUnderWayOffersNoRetry
