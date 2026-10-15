@@ -80,8 +80,9 @@ Test: DcaShop.IntegrationTests.LoginApiTest#LoggingInAnswersOkWithATokenAndTheAd
 #### a-wrong-password-is-refused
 - Given an account "ada@example.com" with password "Secret123"
 - When a client sends `POST /api/auth/login` with `{"email":"ada@example.com","password":"Wrong1234"}`
-- Then the shop answers 401
-Test: DcaShop.IntegrationTests.LoginApiTest#AWrongPasswordIsUnauthorized
+- Then the shop answers 401 with an `application/problem+json` body and the header `WWW-Authenticate: Bearer`
+- And its title is "Authentication failed" and it carries no detail
+Test: DcaShop.E2eTests.LoginApiE2eTest#AWrongPasswordIsAProblemDocumentWithTheBearerChallenge
 
 ### Rule: Logging out through the API is the client discarding its token
 
