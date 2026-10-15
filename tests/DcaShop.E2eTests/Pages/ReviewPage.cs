@@ -37,10 +37,6 @@ public sealed class ReviewPage : BasePage
 
     public bool IsOnPage => CurrentPath.StartsWith(UrlPattern, StringComparison.Ordinal);
 
-    public Task<bool> ShowsEmailAsync(string email) => PageContainsAsync(email);
-
-    public Task<bool> ShowsAddressAsync(string address) => PageContainsAsync(address);
-
     /// <summary>
     /// The steps of the progress bar on the shown page, each as "label state" — done, current or open. The steps
     /// carry no data-test; they are read by their place in the bar.

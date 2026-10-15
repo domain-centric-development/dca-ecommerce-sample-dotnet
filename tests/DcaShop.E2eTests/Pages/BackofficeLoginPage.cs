@@ -7,8 +7,6 @@ public sealed class BackofficeLoginPage : BasePage
 {
     private const string UrlPattern = "/backoffice/login**";
     private const string SubmitButton = "backoffice-login-submit";
-    private const string LoginErrorMessage = "login-error-message";
-    private const string LogoutMessage = "logout-message";
 
     private BackofficeLoginPage(IPage page) : base(page)
     {
@@ -52,15 +50,4 @@ public sealed class BackofficeLoginPage : BasePage
         await Page.WaitForLoadedUrlAsync(url => !url.Contains("/login", StringComparison.Ordinal));
         return await BackofficeEventsPage.OpenAsync(Page);
     }
-
-    /// <summary>Submits and expects to stay here with an error — the credentials were wrong.</summary>
-    public async Task SubmitExpectingErrorAsync()
-    {
-        await ClickAsync(SubmitButton);
-        await WaitForAsync(LoginErrorMessage);
-    }
-
-    public Task<bool> ShowsLoginErrorAsync() => ExistsAsync(LoginErrorMessage);
-
-    public Task<bool> ShowsLogoutMessageAsync() => ExistsAsync(LogoutMessage);
 }

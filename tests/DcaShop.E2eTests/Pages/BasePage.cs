@@ -222,6 +222,4 @@ public abstract class BasePage
     public sealed record HeaderBasket(IReadOnlyList<HeaderBasketLine> Lines, string TotalLabel, string Total, string ViewCartText, string ViewCartTarget);
 
     protected string CurrentPath => Page.Url.Replace(BaseUrl, string.Empty, StringComparison.Ordinal);
-
-    protected async Task<bool> PageContainsAsync(string text) => (await Page.Locator("body").TextContentAsync() ?? string.Empty).Contains(text, StringComparison.Ordinal);
 }

@@ -9,7 +9,6 @@ public sealed class ProductDetailPage : BasePage
     private const string UrlPattern = "/products/*";
     private const string ProductDetail = "product-detail";
     private const string AddToCartButton = "product-add-to-cart-button";
-    private const string BackLink = "product-back-link";
     private const string Title = "product-detail-title";
     private const string PriceValue = "product-detail-price";
 
@@ -31,14 +30,6 @@ public sealed class ProductDetailPage : BasePage
         await WaitForUrlAsync("/cart**");
         return await CartPage.OpenAsync(Page);
     }
-
-    public async Task<ProductCatalogPage> BackToCatalogAsync()
-    {
-        await ClickAsync(BackLink);
-        return await ProductCatalogPage.OpenAsync(Page);
-    }
-
-    public Task<bool> IsDisplayedAsync() => ExistsAsync(ProductDetail);
 
     public static async Task<ProductDetailPage> NavigateToAsync(IPage page, string path)
     {

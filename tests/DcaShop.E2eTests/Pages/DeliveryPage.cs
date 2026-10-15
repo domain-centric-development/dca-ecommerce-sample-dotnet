@@ -59,8 +59,6 @@ public sealed class DeliveryPage : BasePage
         return await BuyerInfoPage.OpenAsync(Page);
     }
 
-    public Task<bool> HasBackLinkAsync() => ExistsAsync(BackLink);
-
     /// <summary>Chooses the shipping method shown under the given name.</summary>
     public async Task<DeliveryPage> ChooseShippingMethodAsync(string name)
     {

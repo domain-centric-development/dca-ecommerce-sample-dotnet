@@ -6,7 +6,6 @@ public sealed class LoginPage : BasePage
 {
     private const string UrlPattern = "/login**";
     private const string SubmitButton = "login-submit-button";
-    private const string RegisterLink = "login-register-link";
     private const string ErrorMessage = "login-error-message";
     private const string EmailInput = "login-email-input";
     private const string PasswordInput = "login-password-input";
@@ -56,12 +55,4 @@ public sealed class LoginPage : BasePage
 
     /// <summary>What the Password field holds.</summary>
     public Task<string> PasswordValueAsync() => Page.Locator($"[data-test='{PasswordInput}']").InputValueAsync();
-
-    public async Task<RegisterPage> GoToRegisterAsync()
-    {
-        await ClickAsync(RegisterLink);
-        return await RegisterPage.OpenAsync(Page);
-    }
-
-    public Task<bool> ShowsErrorAsync() => ExistsAsync(ErrorMessage);
 }

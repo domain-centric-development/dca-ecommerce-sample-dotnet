@@ -51,26 +51,8 @@ public sealed class BuyerInfoPage : BasePage
         return await DeliveryPage.OpenAsync(Page);
     }
 
-    public async Task<BuyerInfoPage> SubmitWithErrorsAsync()
-    {
-        await ClickAsync(ContinueButton);
-        // Brief wait: HTML5 validation prevents submission (no navigation),
-        // server-side validation re-renders this page.
-        await Page.WaitForTimeoutAsync(500);
-        return this;
-    }
-
-    public async Task<bool> HasValidationErrorsAsync() =>
-        await ExistsAsync(ErrorMessage)
-        || await PageContainsAsync("valid email")
-        || await PageContainsAsync("error")
-        || await HasHtml5ValidationErrorsAsync();
-
     /// <summary>The error the buyer step shows, as written.</summary>
     public Task<string> ErrorMessageAsync() => VisibleTextAsync(ErrorMessage);
-
-    private async Task<bool> HasHtml5ValidationErrorsAsync() =>
-        await Page.EvaluateAsync<bool>("() => { const form = document.querySelector('[data-test=\"buyer-form\"]'); return form != null && !form.checkValidity(); }");
 
     /// <summary>The login/register prompt is offered to anonymous visitors only.</summary>
     public Task<bool> ShowsAuthOptionsAsync() => ExistsAsync(AuthOptions);

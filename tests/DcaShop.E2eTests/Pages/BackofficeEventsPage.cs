@@ -17,7 +17,6 @@ public sealed class BackofficeEventsPage : BasePage
     private const string EventLogTotal = "event-log-total";
     private const string EventLogCompleted = "event-log-completed";
     private const string EventLogIncomplete = "event-log-incomplete";
-    private const string EventLogList = "event-log-list";
     private const string EventLogItem = "event-log-item";
     private const string EventType = "event-type";
     private const string EventStatus = "event-status";
@@ -25,8 +24,6 @@ public sealed class BackofficeEventsPage : BasePage
     private const string EventPayload = "event-payload";
     private const string EventRetry = "event-retry";
     private const string EventCompletionDate = "event-completion-date";
-    private const string EventLogRefresh = "event-log-refresh";
-    private const string EventLogLogout = "event-log-logout";
 
     private BackofficeEventsPage(IPage page) : base(page)
     {
@@ -50,8 +47,6 @@ public sealed class BackofficeEventsPage : BasePage
 
     public Task<bool> HasSummaryAsync() => ExistsAsync(EventLogSummary);
 
-    public Task<bool> HasEventListAsync() => ExistsAsync(EventLogList);
-
     public async Task<string> HeadingAsync() =>
         (await Page.Locator("main h1").InnerTextAsync()).Trim();
 
@@ -74,20 +69,6 @@ public sealed class BackofficeEventsPage : BasePage
         await Page.Locator($"[data-test='{EventType}']").AllTextContentsAsync();
 
     public Task<string> FirstEventTypeAsync() => TextAsync(EventType);
-
-    public Task<string> FirstEventStatusAsync() => TextAsync(EventStatus);
-
-    public async Task<BackofficeEventsPage> RefreshAsync()
-    {
-        await ClickAsync(EventLogRefresh);
-        return await OpenAsync(Page);
-    }
-
-    public async Task<BackofficeLoginPage> LogoutAsync()
-    {
-        await ClickAsync(EventLogLogout);
-        return await BackofficeLoginPage.OpenAsync(Page);
-    }
 
     public async Task ExpandFirstEventPayloadAsync()
     {
