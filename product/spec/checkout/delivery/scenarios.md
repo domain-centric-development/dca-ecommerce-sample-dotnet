@@ -71,3 +71,12 @@ Test: DcaShop.IntegrationTests.DeliveryStepTest#ACountryOfSpacesOnlyOpensTheDeli
   "Germany" and "Overnight Shipping", carrying the shipping price "0.00 EUR"
 - Then the payment step opens and shows Subtotal "54.99 EUR", Shipping "19.99 EUR" and Total "74.98 EUR"
 Test: DcaShop.E2eTests.ChooseDeliveryAddressE2eTest#TheShippingPriceIsTheChosenMethodsPriceWhateverTheFormCarries
+
+### Rule: A shipping method the delivery step does not offer is refused
+
+#### an-unknown-shipping-method-is-refused
+- Given a guest on the delivery step
+- When the delivery form is sent with Street Address "Hauptstrasse 1", City "Berlin", Postal Code "10115", Country
+  "Germany" and the shipping method "teleport"
+- Then the delivery step opens again with the error "This shipping method is not offered. Please choose another one."
+Test: DcaShop.E2eTests.ChooseDeliveryAddressE2eTest#AShippingMethodTheStepDoesNotOfferOpensTheDeliveryStepAgainWithTheRefusal

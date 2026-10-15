@@ -1,7 +1,9 @@
 ---
 id: only-an-offered-shipping-method-is-taken
 epic: guest-checkout
-status: approved
+status: delivered
+delivered: 2026-10-15T15:19:40Z
+delivered_by: gate
 context: checkout
 feature: delivery
 title: A shipping method the delivery step does not offer is refused
