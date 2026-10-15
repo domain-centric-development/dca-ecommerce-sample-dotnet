@@ -21,6 +21,7 @@ its title alone.
 | Account | `PasswordTooWeakException` | 422 | Password too weak | the sentence for its broken rule, see [Password rules](#password-rules) |
 | Account | `AccountClosedException` | 409 | Account closed | Account {accountId} is closed. |
 | Account | `AccountNotAccessibleException` | 403 | Account not accessible | This account cannot sign in. |
+| Account | outcome: login failed (`POST /api/auth/login`, with `WWW-Authenticate: Bearer`) | 401 | Authentication failed | — |
 | Account | any other `UseCaseException` | 422 | Request cannot be served | — |
 | Account | any other `DomainException` | 422 | Business rule violated | — |
 | Account | argument exception | 400 | Unacceptable value | — |

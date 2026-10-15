@@ -6,6 +6,7 @@ using DcaShop.SharedKernel.Domain.Model;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 
 namespace DcaShop.Account.Adapter.Incoming.Api;
 
@@ -22,6 +23,8 @@ namespace DcaShop.Account.Adapter.Incoming.Api;
 [Route("api/auth")]
 public sealed class AuthResource : ControllerBase
 {
+    private const string AuthenticationFailedTitle = "Authentication failed";
+
     private readonly IAuthenticateAccountInputPort _authenticateAccount;
     private readonly IRegisterAccountInputPort _registerAccount;
     private readonly ITokenService _tokenService;
@@ -47,9 +50,12 @@ public sealed class AuthResource : ControllerBase
         var result = await _authenticateAccount.ExecuteAsync(
             new AuthenticateAccountCommand(request.Email, request.Password), cancellationToken);
 
+        // Every failed login answers alike, as a problem document with the API's challenge: the use case's sentence
+        // is for the login page, and an answer that varied would tell the caller more than that the login failed.
         if (!result.Success)
         {
-            return StatusCode(StatusCodes.Status401Unauthorized, LoginResponse.Failed(result.ErrorMessage));
+            Response.Headers[HeaderNames.WWWAuthenticate] = "Bearer";
+            return Problem(statusCode: StatusCodes.Status401Unauthorized, title: AuthenticationFailedTitle);
         }
 
         var token = _tokenService.GenerateRegisteredToken(
