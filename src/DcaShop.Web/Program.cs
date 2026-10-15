@@ -20,6 +20,7 @@ builder.Services
     .AddApplicationPart(typeof(DcaShop.Backoffice.BackofficeContext).Assembly)
     .AddApplicationPart(typeof(DcaShop.Portal.PortalContext).Assembly)
     .AddApplicationPart(typeof(DcaShop.Product.ProductContext).Assembly)
+    .AddApplicationPart(typeof(DcaShop.Pricing.PricingContext).Assembly)
     .AddApplicationPart(typeof(DcaShop.Cart.CartContext).Assembly)
     .AddApplicationPart(typeof(DcaShop.Checkout.CheckoutContext).Assembly);
 builder.Services.AddDcaShop(builder.Configuration);

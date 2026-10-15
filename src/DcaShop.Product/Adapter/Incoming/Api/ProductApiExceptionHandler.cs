@@ -31,6 +31,8 @@ public sealed class ProductApiExceptionHandler : IExceptionHandler
     /// <summary>The routes this context exposes: its REST resource and its MCP tools.</summary>
     private static readonly string[] RoutePrefixes = ["/api/products", "/mcp"];
 
+    private const string PriceRouteSuffix = "/price";
+
     private readonly IProblemDetailsService _problemDetails;
     private readonly ILogger<ProductApiExceptionHandler> _logger;
 
@@ -78,9 +80,14 @@ public sealed class ProductApiExceptionHandler : IExceptionHandler
         }
     }
 
+    /// <summary>
+    /// The price below a product (<c>/api/products/{id}/price</c>) shares the prefix but is Pricing's route, with
+    /// Pricing's translation site; declining it keeps one owner per route, whatever order the handlers run in.
+    /// </summary>
     private static bool IsOwnRoute(HttpContext httpContext) =>
         httpContext.Request.Path.Value is { } path
-        && RoutePrefixes.Any(prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+        && RoutePrefixes.Any(prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        && !path.TrimEnd('/').EndsWith(PriceRouteSuffix, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Writes the problem document. The detail is worded here, from the failure's values — the exception's message

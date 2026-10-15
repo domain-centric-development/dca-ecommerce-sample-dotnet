@@ -43,13 +43,15 @@ context.** The Java sample decided the same in its ADR-044; the two samples carr
   it. The cut is the name: if a domain expert has a word for the failure, it is a domain exception with that word
   in it.
 - **The incoming adapter translates, and it is the only layer that does.** `ProductApiExceptionHandler`,
-  `CartApiExceptionHandler` and `AccountApiExceptionHandler` are `IExceptionHandler`s in their own context's
+  `PricingApiExceptionHandler`, `CartApiExceptionHandler` and `AccountApiExceptionHandler` are `IExceptionHandler`s in their own context's
   `Adapter/Incoming/Api` namespace, each producing a `ProblemDetails` (RFC 9457) through `AddProblemDetails()`.
   The page controllers of Cart, Checkout and Account catch the two base types and render the message into the form
   they came from.
 - **Scope is a route prefix, not a package.** Spring scopes an advice with `basePackages`; ASP.NET Core has one
   handler chain for the whole application, so each handler declines a request whose path is not its own
-  (`/api/products` and `/mcp`, `/api/carts`, `/api/auth`) and the next context's handler gets its turn. The chain
+  (`/api/products` and `/mcp`, `/api/products/{id}/price`, `/api/carts`, `/api/auth`) and the next context's
+  handler gets its turn; the catalogue's handler declines the price below a product, which is Pricing's route, so
+  each route has one translation site whatever the handler order. The chain
   runs only for the token-only paths: `Program.cs` branches it with `app.UseWhen(TokenOnlyPaths.IsTokenOnlyEndpoint
   …)`, and the pages keep `UseExceptionHandler("/error")`. It is registered after that endpoint so it is the inner
   handler and sees an API failure first. The HTML status-code pages (`UseStatusCodePagesWithReExecute("/error/{0}")`)

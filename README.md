@@ -224,6 +224,7 @@ and anonymous is still an identity — but not an authenticated one, so a staff 
 |---|---|
 | `GET /api/products`, `GET /api/products/{id}` | anyone — the same assortment the shop pages show |
 | `POST /api/products` | staff role |
+| `PUT /api/products/{id}/price` (Pricing's resource) | staff role |
 | `GET /api/carts` (every cart in the shop) | staff role |
 | `POST /api/carts`, `GET /api/carts/{id}`, `POST /{id}/items`, `DELETE /{id}/items/{productId}`, `POST /{id}/checkout` | the caller, on their own cart — a stranger's cart answers `404`, never `403` |
 

@@ -1,6 +1,8 @@
+using DcaShop.Pricing.Adapter.Incoming.Api;
 using DcaShop.Pricing.Adapter.Incoming.Event;
 using DcaShop.Pricing.Adapter.Outgoing.Persistence;
 using DcaShop.Pricing.Api;
+using DcaShop.Pricing.Application.ChangePrice;
 using DcaShop.Pricing.Application.GetPricesForProducts;
 using DcaShop.Pricing.Application.ProvisionInitialPrice;
 using DcaShop.Pricing.Application.Shared;
@@ -18,6 +20,7 @@ public static class PricingContextRegistration
         // Use cases (input ports)
         services.AddScoped<IProvisionInitialPriceInputPort, ProvisionInitialPriceUseCase>();
         services.AddScoped<IGetPricesForProductsInputPort, GetPricesForProductsUseCase>();
+        services.AddScoped<IChangePriceInputPort, ChangePriceUseCase>();
 
         // Outgoing adapters (output ports)
         services.AddSingleton<IProductPriceRepository, InMemoryProductPriceRepository>();
@@ -28,6 +31,9 @@ public static class PricingContextRegistration
 
         // Published API
         services.AddScoped<PricingService>();
+
+        // REST failure translation
+        services.AddExceptionHandler<PricingApiExceptionHandler>();
 
         return services;
     }
