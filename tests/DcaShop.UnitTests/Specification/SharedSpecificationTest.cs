@@ -26,65 +26,6 @@ public sealed class SharedSpecificationTest
         }
     }
 
-    /// <summary>
-    /// Every <c>Runs: always</c> scenario of the shared specification's <c>scenarios.md</c> is the title of exactly one
-    /// browser test of this shop, unless <c>exceptions.md</c> excepts this shop from it (its <c>.NET behavior</c> cell
-    /// is not empty). An exception names a scenario id that exists and whose title this suite does not carry: an
-    /// exception the suite meets is stale and fails until it is taken off.
-    /// </summary>
-    [SpecificationFact]
-    public void EverySharedScenarioIsOneBrowserTestUnlessExcepted()
-    {
-        var root = Path.Combine(AppContext.BaseDirectory, "specification");
-        var scenarios = SharedScenarios(File.ReadAllLines(Path.Combine(root, "scenarios.md")));
-        Assert.NotEmpty(scenarios);
-        var excepted = ExceptedForThisShop(File.ReadAllLines(Path.Combine(root, "exceptions.md")));
-        var titles = SharedScenariosTest.BrowserTestSources()
-            .SelectMany(source => SharedScenariosTest.DisplayName.Matches(File.ReadAllText(source)))
-            .Select(m => SharedScenariosTest.Unescape(m.Groups[1].Value))
-            .ToList();
-
-        var missing = scenarios
-            .Where(s => s.Runs == "always" && !excepted.Contains(s.Id) && titles.Count(t => t == s.Title) != 1)
-            .Select(s => $"{s.Id}: {titles.Count(t => t == s.Title)} browser tests titled \"{s.Title}\"");
-        var unknown = excepted.Where(id => !scenarios.Any(s => s.Id == id)).Select(id => "exception for an unknown scenario: " + id);
-        var stale = scenarios.Where(s => excepted.Contains(s.Id) && titles.Contains(s.Title)).Select(s => "stale exception, the suite meets it: " + s.Id);
-        var failures = missing.Concat(unknown).Concat(stale).Order().ToList();
-        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
-    }
-
-    /// <summary>Each <c>## scenario.&lt;id&gt;</c> heading of the shared <c>scenarios.md</c> with its Title and Runs lines.</summary>
-    private static List<(string Id, string Title, string Runs)> SharedScenarios(IEnumerable<string> lines)
-    {
-        var scenarios = new List<(string Id, string Title, string Runs)>();
-        string? id = null, title = null, runs = null;
-        foreach (var line in lines.Append("## "))
-        {
-            if (line.StartsWith("## ", StringComparison.Ordinal))
-            {
-                if (id is not null)
-                {
-                    Assert.False(title is null || runs is null, "Scenario without Title or Runs line: " + id);
-                    scenarios.Add((id, title!, runs!));
-                }
-                id = line.StartsWith("## scenario.", StringComparison.Ordinal) ? line[3..].Trim() : null;
-                title = runs = null;
-            }
-            else if (id is not null && line.StartsWith("Title:", StringComparison.Ordinal)) title = line[6..].Trim();
-            else if (id is not null && line.StartsWith("Runs:", StringComparison.Ordinal)) runs = line[5..].Trim();
-        }
-        return scenarios;
-    }
-
-    /// <summary>The scenario ids of the exception rows whose <c>.NET behavior</c> cell is not empty.</summary>
-    private static HashSet<string> ExceptedForThisShop(IEnumerable<string> lines) =>
-        lines.Where(line => line.StartsWith('|'))
-            .Select(line => line.Split('|'))
-            .Where(cells => cells.Length >= 8 && cells[1].Trim() != "Id" && !cells[1].Contains("---", StringComparison.Ordinal))
-            .Where(cells => cells[5].Trim().Length > 0)
-            .Select(cells => cells[1].Trim())
-            .ToHashSet(StringComparer.Ordinal);
-
     public static IEnumerable<object[]> Vectors()
     {
         if (!SpecificationVectors.Present) yield break;

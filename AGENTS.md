@@ -250,11 +250,11 @@ adapter. Update both samples' adapters, schema compatibility records and glossar
 The browser suite in `tests/DcaShop.E2eTests` implements the scenarios of this shop's `product/spec/**/scenarios.md`:
 each browser test's `DisplayName` is a scenario's title (its `Title:` line, else its key in words), no title names two
 tests, and a `Test:` line that names a browser test names one that exists. `SharedScenariosTest` checks it on every
-build, without the specification switch. With the switch, `SharedSpecificationTest` also checks that every `Runs: always`
-scenario of the shared `scenarios.md` is the title of exactly one browser test unless the shared `exceptions.md` excepts
-.NET; an exception for an unknown scenario or one the suite meets fails. Browser tests still titled after the shared specification's scenarios are
+build, without the specification switch. Browser tests still titled after the shared specification's scenarios are
 listed in the test, and the list only shrinks. A new end-user test therefore starts as a scenario in `product/spec`,
-then lands in both suites under the same title.
+then lands in both suites under the same title. The shared specification's `scenarios.md` binds neither suite: it
+is the history of the behaviour both shops share; the shared specification contributes ids, vectors and public event
+schemas, and `../scripts/check-shop-spec.py` keeps the two shops' `product/spec` equal.
 
 An explicit checkout action captures immutable positions, quantities and prices into a session. Cart edits do not
 create or mutate sessions. A new action supersedes the previous OPEN/Active session; confirmed/completed orders remain.

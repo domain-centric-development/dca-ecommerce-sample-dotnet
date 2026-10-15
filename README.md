@@ -367,7 +367,7 @@ point the build at a local checkout; the vectors are copied next to the test ass
 `SharedSpecificationTest`, `CheckoutSpecificationTest` and `RetainedDeliveryTest` drive the production code with them.
 The end-user scenarios the browser suite implements are this shop's `product/spec/**/scenarios.md`, test for test under
 the scenario title; `SharedScenariosTest` checks that binding against the sources of `tests/DcaShop.E2eTests` on every
-build.
+build. The specification's own `scenarios.md` is the history of the behaviour both shops share and binds no suite.
 
 ```bash
 dotnet test -c Debug -p:SpecificationPath=../dca-sample-specification

@@ -16,7 +16,7 @@ namespace DcaShop.UnitTests.Specification;
 public sealed class SharedScenariosTest
 {
     private static readonly Regex TestAttribute = new(@"\[(\w+Fact|\w+Theory)\b", RegexOptions.Compiled);
-    internal static readonly Regex DisplayName = new(@"DisplayName\s*=\s*""((?:[^""\\]|\\.)*)""", RegexOptions.Compiled);
+    private static readonly Regex DisplayName = new(@"DisplayName\s*=\s*""((?:[^""\\]|\\.)*)""", RegexOptions.Compiled);
     private static readonly Regex ClassDeclaration = new(@"\bclass\s+(\w+)", RegexOptions.Compiled);
     private static readonly Regex HappyPath = new(@"\s+\(happy path\)\s*$", RegexOptions.Compiled);
     private static readonly Regex MethodDeclaration = new(@"\bpublic\s+(?:async\s+)?[\w<>]+\s+(\w+)\s*\(", RegexOptions.Compiled);
@@ -186,10 +186,10 @@ public sealed class SharedScenariosTest
     /// The display name as the test runner sees it: the C# literal read from source with <c>\"</c> turned into
     /// <c>"</c> and <c>\\</c> into <c>\</c>, so a scenario title with quotes matches its test.
     /// </summary>
-    internal static string Unescape(string literal) =>
+    private static string Unescape(string literal) =>
         Regex.Replace(literal, @"\\([""\\])", "$1");
 
-    internal static string[] BrowserTestSources() =>
+    private static string[] BrowserTestSources() =>
         Directory.GetFiles(Path.Combine(RepositoryRoot(), "tests", "DcaShop.E2eTests"), "*E2eTest.cs");
 
     private static string RepositoryRoot([CallerFilePath] string thisFile = "") =>
