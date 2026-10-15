@@ -1,7 +1,9 @@
 ---
 id: an-unusable-product-request-is-a-problem-document
 epic: shop-api
-status: approved
+status: delivered
+delivered: 2026-10-15T15:32:56Z
+delivered_by: gate
 context: product
 feature: assortment
 title: Every refused product creation is a problem document

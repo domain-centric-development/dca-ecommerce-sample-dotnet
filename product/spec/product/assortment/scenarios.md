@@ -93,9 +93,10 @@ Test: DcaShop.IntegrationTests.ProductSkuNameAndTextRulesTest#ANameOf255Characte
 #### a-blank-name-is-refused
 - Given a client holding a staff token
 - When it creates a product with SKU "BLANK-001", name "   ", price 9.99, category "Books" and stock 1
-- Then the shop answers 400
+- Then the shop answers 400 with an `application/problem+json` body
+- And its title is "Unacceptable value" and its `errors` names `name` with the reason
 - And the catalogue still holds 21 products
-Test: DcaShop.IntegrationTests.ProductSkuNameAndTextRulesTest#ABlankNameIsRefusedAndTheCatalogueKeepsItsProducts
+Test: DcaShop.E2eTests.CreateProductApiE2eTest#ABlankNameIsAnUnacceptableValueNamedInTheErrorsAndNoProductIsAdded
 
 ### Rule: A description and an image URL are at most 2000 characters long
 
@@ -133,9 +134,10 @@ Test: DcaShop.E2eTests.CreateProductApiE2eTest#TheAnswerCarriesThePriceRoundedHa
 #### a-price-of-zero-is-refused
 - Given a client holding a staff token
 - When it creates "Free Mug" with SKU "FREE-001", price 0, category "Desk & Office" and stock 5
-- Then the shop answers 400
+- Then the shop answers 400 with an `application/problem+json` body
+- And its title is "Unacceptable value" and its `errors` names `price` with the reason
 - And the catalogue still holds 21 products
-Test: DcaShop.IntegrationTests.ProductPriceAndStockRulesTest#APriceOfZeroIsRefusedAndTheCatalogueKeepsItsProducts
+Test: DcaShop.IntegrationTests.ProductPriceAndStockRulesTest#APriceOfZeroIsAnUnacceptableValueNamedInTheErrorsAndTheCatalogueKeepsItsProducts
 
 #### a-price-that-rounds-to-zero-is-refused
 - Given a client holding a staff token
@@ -172,6 +174,7 @@ Test: DcaShop.IntegrationTests.ProductPriceAndStockRulesTest#AnInitialStockOfZer
 #### a-negative-initial-stock-is-refused
 - Given a client holding a staff token
 - When it creates "Owed Pin" with SKU "PIN-003", price 12.99, category "Stickers & Pins" and stock -1
-- Then the shop answers 400
+- Then the shop answers 400 with an `application/problem+json` body
+- And its title is "Unacceptable value" and its `errors` names `stock` with the reason
 - And the catalogue still holds 21 products
-Test: DcaShop.IntegrationTests.ProductPriceAndStockRulesTest#ANegativeInitialStockIsRefusedAndTheCatalogueKeepsItsProducts
+Test: DcaShop.IntegrationTests.ProductPriceAndStockRulesTest#ANegativeInitialStockIsAnUnacceptableValueNamedInTheErrorsAndTheCatalogueKeepsItsProducts
