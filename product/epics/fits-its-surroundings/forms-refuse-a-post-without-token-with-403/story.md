@@ -4,7 +4,7 @@ epic: fits-its-surroundings
 status: delivered
 delivered: 2026-10-13T07:38:37Z
 delivered_by: gate
-created: 2026-10-13T05:55:26Z
+created: 2026-10-12T20:20:16Z
 context: account
 title: A form post without its token is refused with 403
 depends_on: [register-an-account, log-in-and-log-out]

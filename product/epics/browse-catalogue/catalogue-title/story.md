@@ -4,7 +4,7 @@ epic: browse-catalogue
 status: delivered
 delivered: 2026-09-26T07:40:12Z
 delivered_by: gate
-created: 2026-10-11T12:03:20Z
+created: 2026-09-26T08:39:39Z
 context: product
 title: The catalogue page is titled "Product Catalog"
 depends_on: []
