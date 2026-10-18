@@ -4,6 +4,7 @@ epic: guest-checkout
 status: delivered
 delivered: 2026-10-13T00:47:26Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: checkout
 feature: session
 title: Start the checkout from the cart

@@ -4,6 +4,7 @@ epic: shop-with-an-account
 status: delivered
 delivered: 2026-10-13T12:45:35Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: account
 feature: signin
 title: The cart stays with the person through registration, logout and a lapsed login

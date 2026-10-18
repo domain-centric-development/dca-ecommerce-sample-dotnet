@@ -4,6 +4,7 @@ epic: shop-api
 status: delivered
 delivered: 2026-10-13T17:14:37Z
 delivered_by: gate
+created: 2026-10-13T19:17:38Z
 context: product
 feature: assortment
 title: A price that rounds to zero is an unacceptable value

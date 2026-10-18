@@ -4,6 +4,7 @@ epic: shop-api
 status: delivered
 delivered: 2026-10-12T21:59:58Z
 delivered_by: gate
+created: 2026-10-12T21:08:53Z
 context: product
 feature: catalogue
 title: The API answers an unknown product with a plain 404

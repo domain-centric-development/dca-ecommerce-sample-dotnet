@@ -4,6 +4,7 @@ epic: shop-api
 status: delivered
 delivered: 2026-10-15T15:32:56Z
 delivered_by: gate
+created: 2026-10-14T23:44:13Z
 context: product
 feature: assortment
 title: Every refused product creation is a problem document

@@ -4,6 +4,7 @@ epic: guest-checkout
 status: delivered
 delivered: 2026-10-13T11:32:41Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: checkout
 feature: session
 title: A visitor never reaches another visitor's checkout

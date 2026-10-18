@@ -4,6 +4,7 @@ epic: shop-api
 status: delivered
 delivered: 2026-10-15T15:30:49Z
 delivered_by: gate
+created: 2026-10-15T08:00:59Z
 context: cart
 feature: shopping
 title: A product the catalogue does not know, named in the body, is unprocessable

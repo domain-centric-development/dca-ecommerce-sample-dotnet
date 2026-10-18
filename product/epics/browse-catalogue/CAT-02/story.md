@@ -4,6 +4,7 @@ epic: browse-catalogue
 status: delivered
 delivered: 2026-09-26T06:32:31Z
 delivered_by: gate
+created: 2026-10-11T12:03:20Z
 context: product
 title: The product page
 depends_on: [CAT-01]

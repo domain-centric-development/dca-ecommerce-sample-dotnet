@@ -4,6 +4,7 @@ epic: run-the-shop
 status: delivered
 delivered: 2026-10-13T08:13:34Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: backoffice
 feature: redelivery
 title: Failed deliveries are retried on their own

@@ -4,6 +4,7 @@ epic: fits-its-surroundings
 status: delivered
 delivered: 2026-10-13T07:44:34Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: account
 title: The shop's forms refuse posts that did not come from its pages
 depends_on: [register-an-account, log-in-and-log-out, forms-refuse-a-post-without-token-with-403]

@@ -4,6 +4,7 @@ epic: fits-its-surroundings
 status: delivered
 delivered: 2026-10-13T00:40:43Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: portal
 feature: appearance
 title: The visitor chooses the shop's look

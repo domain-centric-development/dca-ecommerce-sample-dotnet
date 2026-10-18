@@ -5,6 +5,7 @@ kind: task
 status: delivered
 delivered: 2026-10-15T11:49:44Z
 delivered_by: gate
+created: 2026-10-15T08:00:59Z
 context: cart
 title: The cart oversight has its own place in the code
 closes: []

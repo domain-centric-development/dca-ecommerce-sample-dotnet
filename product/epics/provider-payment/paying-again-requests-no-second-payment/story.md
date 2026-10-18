@@ -4,6 +4,7 @@ epic: provider-payment
 status: delivered
 delivered: 2026-10-15T15:24:08Z
 delivered_by: gate
+created: 2026-10-14T23:44:13Z
 context: checkout
 feature: payment
 title: Paying again for a checkout leaves no second payment open

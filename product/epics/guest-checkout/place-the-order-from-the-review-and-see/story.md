@@ -4,6 +4,7 @@ epic: guest-checkout
 status: delivered
 delivered: 2026-10-13T07:22:34Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: checkout
 feature: ordering
 title: Place the order from the review and see the confirmation

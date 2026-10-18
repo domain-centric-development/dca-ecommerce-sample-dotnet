@@ -4,6 +4,7 @@ epic: shop-api
 status: delivered
 delivered: 2026-10-14T17:00:56Z
 delivered_by: gate
+created: 2026-10-14T15:26:30Z
 context: product
 feature: assortment
 title: A created product answers with its price rounded to cents

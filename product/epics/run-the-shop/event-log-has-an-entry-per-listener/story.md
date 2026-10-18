@@ -4,6 +4,7 @@ epic: run-the-shop
 status: delivered
 delivered: 2026-10-13T17:12:34Z
 delivered_by: gate
+created: 2026-10-13T19:17:38Z
 context: backoffice
 feature: redelivery
 title: The event log has an entry per listener, each with its own retry

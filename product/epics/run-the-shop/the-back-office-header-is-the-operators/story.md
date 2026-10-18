@@ -4,6 +4,7 @@ epic: run-the-shop
 status: delivered
 delivered: 2026-10-15T15:26:21Z
 delivered_by: gate
+created: 2026-10-14T23:44:13Z
 context: backoffice
 feature: access
 title: The back office's header is the operator's

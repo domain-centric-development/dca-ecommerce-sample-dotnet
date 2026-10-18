@@ -4,6 +4,7 @@ epic: guest-checkout
 status: delivered
 delivered: 2026-10-13T07:11:23Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: checkout
 feature: payment
 title: Choose how to pay

@@ -4,6 +4,7 @@ epic: availability
 status: delivered
 delivered: 2026-10-12T20:55:16Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: inventory
 feature: availability
 title: Availability shown

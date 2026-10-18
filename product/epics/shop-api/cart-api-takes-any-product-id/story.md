@@ -4,6 +4,7 @@ epic: shop-api
 status: delivered
 delivered: 2026-10-13T16:43:03Z
 delivered_by: gate
+created: 2026-10-13T19:17:38Z
 context: cart
 feature: shopping
 title: The cart API answers any product id

@@ -4,6 +4,7 @@ epic: fits-its-surroundings
 status: delivered
 delivered: 2026-10-13T01:18:33Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: portal
 feature: appearance
 title: The shop fits a phone

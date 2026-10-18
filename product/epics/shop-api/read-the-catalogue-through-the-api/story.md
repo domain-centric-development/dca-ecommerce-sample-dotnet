@@ -4,6 +4,7 @@ epic: shop-api
 status: delivered
 delivered: 2026-10-13T00:22:42Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: product
 feature: catalogue
 title: Read the catalogue through the API

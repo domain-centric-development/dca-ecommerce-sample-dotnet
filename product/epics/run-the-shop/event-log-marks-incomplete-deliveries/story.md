@@ -4,6 +4,7 @@ epic: run-the-shop
 status: delivered
 delivered: 2026-10-13T01:33:55Z
 delivered_by: gate
+created: 2026-10-13T05:55:26Z
 context: backoffice
 feature: eventlog
 title: The event log marks an incomplete delivery as Incomplete

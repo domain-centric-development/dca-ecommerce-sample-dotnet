@@ -4,6 +4,7 @@ epic: shop-api
 status: delivered
 delivered: 2026-10-13T07:49:01Z
 delivered_by: gate
+created: 2026-10-13T05:55:26Z
 context: product
 feature: assortment
 title: A created product answers with its price, and a page without description says so

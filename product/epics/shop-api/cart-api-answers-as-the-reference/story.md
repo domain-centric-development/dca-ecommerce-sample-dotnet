@@ -4,6 +4,7 @@ epic: shop-api
 status: delivered
 delivered: 2026-10-13T07:14:51Z
 delivered_by: gate
+created: 2026-10-13T05:55:26Z
 context: cart
 feature: shopping
 title: The cart API refuses a second open cart, spells its status and removes by product

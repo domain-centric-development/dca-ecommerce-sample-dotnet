@@ -4,6 +4,7 @@ epic: guest-checkout
 status: delivered
 delivered: 2026-10-13T16:29:01Z
 delivered_by: gate
+created: 2026-10-13T19:17:38Z
 context: checkout
 feature: steps
 title: A step sent too early leads to the step that is still open

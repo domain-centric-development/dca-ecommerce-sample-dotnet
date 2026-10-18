@@ -4,6 +4,7 @@ epic: guest-checkout
 status: delivered
 delivered: 2026-10-13T18:15:23Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: checkout
 feature: ordering
 title: Starting and placing check the cart against what can still be sold

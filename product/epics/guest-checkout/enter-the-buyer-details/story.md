@@ -4,6 +4,7 @@ epic: guest-checkout
 status: delivered
 delivered: 2026-10-13T06:31:40Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: checkout
 feature: buyerdetails
 title: Enter the buyer details

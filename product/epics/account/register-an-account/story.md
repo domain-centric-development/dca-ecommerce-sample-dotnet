@@ -4,6 +4,7 @@ epic: account
 status: delivered
 delivered: 2026-10-12T20:56:59Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: account
 feature: registration
 title: Register an account

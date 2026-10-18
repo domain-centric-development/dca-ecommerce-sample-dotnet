@@ -4,6 +4,7 @@ epic: guest-checkout
 status: delivered
 delivered: 2026-10-13T18:07:00Z
 delivered_by: gate
+created: 2026-10-13T19:17:38Z
 context: checkout
 feature: ordering
 title: A stock check that fails answers on the page it came from

@@ -4,6 +4,7 @@ epic: shop-api
 status: delivered
 delivered: 2026-10-13T17:10:50Z
 delivered_by: gate
+created: 2026-10-13T19:17:38Z
 context: product
 feature: assortment
 title: An image URL is held to 2000 characters

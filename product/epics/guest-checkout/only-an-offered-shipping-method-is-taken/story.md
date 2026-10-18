@@ -4,6 +4,7 @@ epic: guest-checkout
 status: delivered
 delivered: 2026-10-15T15:19:40Z
 delivered_by: gate
+created: 2026-10-15T08:00:59Z
 context: checkout
 feature: delivery
 title: A shipping method the delivery step does not offer is refused

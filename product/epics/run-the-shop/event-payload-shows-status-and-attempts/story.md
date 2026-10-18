@@ -4,6 +4,7 @@ epic: run-the-shop
 status: delivered
 delivered: 2026-10-13T07:39:46Z
 delivered_by: gate
+created: 2026-10-13T05:55:26Z
 context: backoffice
 feature: eventlog
 title: An event's payload opens with its status and every attempt

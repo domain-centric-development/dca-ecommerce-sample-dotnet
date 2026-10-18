@@ -4,6 +4,7 @@ epic: catalogue-for-assistants
 status: delivered
 delivered: 2026-10-13T00:28:55Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: product
 feature: catalogue
 title: An assistant reads the catalogue through tools

@@ -4,6 +4,7 @@ epic: account
 status: delivered
 delivered: 2026-10-12T21:34:12Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: account
 feature: registration
 title: Registration refuses an unusable form

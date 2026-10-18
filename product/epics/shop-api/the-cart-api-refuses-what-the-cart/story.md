@@ -4,6 +4,7 @@ epic: shop-api
 status: delivered
 delivered: 2026-10-13T16:51:28Z
 delivered_by: gate
+created: 2026-10-12T20:20:16Z
 context: cart
 feature: shopping
 title: The cart API refuses what the cart cannot take
