@@ -184,6 +184,27 @@ public sealed class CartApiTest : IDisposable
     }
 
     [Fact]
+    public async Task TheStaffListTotalsEachCartAtTodaysPrices()
+    {
+        var ada = await _factory.CustomerClientAsync("ada@example.com");
+        var opened = await (await ada.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
+        var cartId = opened.GetProperty("cartId").GetString();
+        var domainDrivenDesign = await _factory.ProductIdAsync("Domain-Driven Design");
+        await AddAsync(ada, cartId!, domainDrivenDesign, 1);
+        var staff = await _factory.StaffClientAsync("operator@example.com");
+        var priceChanged = await staff.PutAsync(
+            $"/api/products/{domainDrivenDesign}/price", new StringContent("""{"price":49.99}""", Encoding.UTF8, "application/json"));
+        Assert.Equal(HttpStatusCode.NoContent, priceChanged.StatusCode);
+
+        var response = await staff.GetAsync("/api/carts");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var carts = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("carts");
+        var cart = Assert.Single(carts.EnumerateArray(), c => c.GetProperty("cartId").GetString() == cartId);
+        Assert.Equal(49.99m, cart.GetProperty("total").GetDecimal());
+    }
+
+    [Fact]
     public async Task AProductIdNoProductHasIsAnArticleThatIsNotAvailable()
     {
         var client = await _factory.CustomerClientAsync("ada@example.com");

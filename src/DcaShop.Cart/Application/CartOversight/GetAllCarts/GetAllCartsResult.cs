@@ -3,8 +3,8 @@ using DcaShop.SharedKernel.Domain.Model;
 namespace DcaShop.Cart.Application.CartOversight.GetAllCarts;
 
 /// <summary>
-/// Every cart in the shop, as an operator sees them. The summaries carry the prices captured at addition rather
-/// than current article data: a list across all customers would otherwise ask the Product context once per cart.
+/// Every cart in the shop, as an operator sees them. Each summary's total is at today's prices — the total its
+/// customer reads.
 /// </summary>
 public sealed record GetAllCartsResult(IReadOnlyList<GetAllCartsResult.CartSummary> Carts)
 {
