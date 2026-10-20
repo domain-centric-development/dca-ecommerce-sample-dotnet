@@ -81,17 +81,19 @@ Test: DcaShop.IntegrationTests.CheckoutStartFromTheCartTest#StartingFromACartEmp
 - Given a guest at the review with "Wooden Hexagon Desk Model" five times
 - And another visitor has since bought it five times, leaving 3
 - When the guest presses "Place Order"
-- Then the review step stays open at `/checkout/review` and shows an error
+- Then the review step stays open at `/checkout/review` and shows
+  "Not enough stock left for 'Wooden Hexagon Desk Model'. Please adjust your order."
 - And no confirmation is shown
 - And the product page still reads "3 units available" and the guest's cart still holds the product five
   times
-Test: DcaShop.E2eTests.PlaceOrderRefusedE2eTest#PlaceOrderForMoreThanTheStockLeftKeepsTheReviewOpenAndChangesNothing
+Test: DcaShop.IntegrationTests.PlaceOrderShortOfStockPageTest#APlaceOrderForMoreThanTheStockLeftNamesTheProductAndChangesNothing
 
 #### place-order-is-refused-when-sold-out
 - Given a guest at the review with "Wooden Hexagon Desk Model" twice
 - And another visitor has since bought all 8
 - When the guest presses "Place Order"
-- Then the review step stays open at `/checkout/review` and shows an error
+- Then the review step stays open at `/checkout/review` and shows
+  "Not enough stock left for 'Wooden Hexagon Desk Model'. Please adjust your order."
 - And no confirmation is shown
 Test: DcaShop.IntegrationTests.PlaceOrderRefusalPageTest#ARefusedPlaceOrderOpensTheReviewAgainWithItsError
 
@@ -112,3 +114,15 @@ Test: DcaShop.E2eTests.PlaceTheOrderE2eTest#TheConfirmationPromisesNeitherAnEmai
 - Then the confirmation page shows "Order Total" "59.98 EUR"
 - And it does not say "Total Paid"
 Test: DcaShop.IntegrationTests.ConfirmationOrderTotalTest#TheConfirmationCallsTheAmountTheOrderTotal
+
+### Rule: Of orders placed at the same time, only those the stock still covers are placed
+
+#### the-order-the-stock-no-longer-covers-is-refused
+- Given the seeded "Wooden Hexagon Desk Model" with a stock of 8
+- And two guests, each at the review with "Wooden Hexagon Desk Model" five times
+- When both press "Place Order" at the same moment
+- Then exactly one of them sees the confirmation
+- And the other is back at the review `/checkout/review` with
+  "Not enough stock left for 'Wooden Hexagon Desk Model'. Please adjust your order."
+- And shortly afterwards the product page of "Wooden Hexagon Desk Model" reads "3 units available"
+Test: DcaShop.E2eTests.TwoOrdersAtOnceE2eTest#OfTwoOrdersPlacedAtOnceOnlyTheOneTheStockCoversIsPlaced
