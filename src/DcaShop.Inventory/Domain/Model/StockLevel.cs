@@ -27,8 +27,11 @@ public sealed class StockLevel : AggregateRootBase<StockLevel, StockLevelId>
 
     public StockQuantity ReservedQuantity { get; private set; }
 
+    /// <summary>The stock nobody has reserved yet: available less reserved.</summary>
+    public StockQuantity UnreservedQuantity => StockQuantity.Of(AvailableQuantity.Value - ReservedQuantity.Value);
+
     /// <summary>True while there is stock that nobody has reserved yet.</summary>
-    public bool IsAvailable => AvailableQuantity.Value > ReservedQuantity.Value;
+    public bool IsAvailable => UnreservedQuantity.Value > 0;
 
     public static StockLevel Create(ProductId productId, int initialQuantity)
     {
@@ -64,7 +67,7 @@ public sealed class StockLevel : AggregateRootBase<StockLevel, StockLevelId>
     public void Reserve(int amount)
     {
         RequireNotNegative(amount);
-        var unreserved = AvailableQuantity.Value - ReservedQuantity.Value;
+        var unreserved = UnreservedQuantity.Value;
         if (amount > unreserved)
         {
             throw new InsufficientUnreservedStockException(ProductId, amount, unreserved);

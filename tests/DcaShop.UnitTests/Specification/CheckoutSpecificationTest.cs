@@ -103,7 +103,7 @@ public sealed class CheckoutSpecificationTest
         s.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), new ShippingOption("free", "Free", "Tomorrow", Money.Euro(0)));
         s.SubmitPayment(new PaymentSelection(PaymentProviderId.Of("invoice")));
     }
-    private sealed class Fixture : ICartDataPort, ICheckoutArticleDataPort
+    private sealed class Fixture : ICartDataPort, ICheckoutArticleDataPort, IStockReservationPort
     {
         public readonly ProductId Product = ProductId.Generate();
         public readonly CartModel.ShoppingCart Cart = CartModel.ShoppingCart.Create(CartModel.CartId.Generate(), CartModel.CustomerId.Of("specification"));
@@ -123,7 +123,9 @@ public sealed class CheckoutSpecificationTest
                 .ExecuteAsync(new StartCheckoutCommand(Cart.Id.Value, Cart.CustomerId.Value));
             return (await Repository.FindByIdAsync(new CheckoutSessionId(result.SessionId)))!;
         }
-        public Task<ConfirmCheckoutResult> Confirm(CheckoutSession session) => new ConfirmCheckoutUseCase(Repository, this, new CheckoutPricing(), Events, new InMemoryTransactionBoundary()).ExecuteAsync(new ConfirmCheckoutCommand(session.Id.Value, session.CustomerId.Value));
+        public Task<ConfirmCheckoutResult> Confirm(CheckoutSession session) => new ConfirmCheckoutUseCase(Repository, this, this, new CheckoutPricing(), Events, new InMemoryTransactionBoundary(), NullLogger<ConfirmCheckoutUseCase>.Instance).ExecuteAsync(new ConfirmCheckoutCommand(session.Id.Value, session.CustomerId.Value));
+        public Task<IReadOnlyList<IStockReservationPort.Shortage>> ReserveAsync(IReadOnlyCollection<CheckoutLineItem> lines, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<IStockReservationPort.Shortage>>([]);
+        public Task ReleaseAsync(IReadOnlyCollection<CheckoutLineItem> lines, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<CartData?> FindByIdAsync(CartId cartId, CustomerId customerId, CancellationToken cancellationToken = default) => Task.FromResult<CartData?>(new CartData(cartId, customerId, Cart.Items.Select(i => new CartData.CartItemData(i.ProductId, i.PriceAtAddition.Value, i.Quantity.Value, i.PositionSnapshot)).ToArray(), Cart.IsActive));
         public Task<IReadOnlyDictionary<ProductId, CheckoutArticle>> GetArticleDataAsync(IReadOnlyCollection<ProductId> ids, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyDictionary<ProductId, CheckoutArticle>>(ids.ToDictionary(i => i, i => new CheckoutArticle(i, "Thing", Price, true, Stock, null)));
     }

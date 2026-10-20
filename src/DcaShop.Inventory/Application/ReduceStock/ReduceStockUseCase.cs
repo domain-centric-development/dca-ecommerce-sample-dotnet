@@ -10,9 +10,10 @@ using Microsoft.Extensions.Logging;
 namespace DcaShop.Inventory.Application.ReduceStock;
 
 /// <summary>
-/// Reduces the stock of every line of one sale in one transaction. Runs as the reaction to a confirmed checkout, so
-/// it reports a missing record or insufficient stock as a failed line instead of throwing — the order stands either
-/// way, the discrepancy is an inventory matter, and the remaining lines are still reduced.
+/// Reduces the stock of every line of one sale in one transaction, consuming the reservation the order made when it
+/// was placed. Runs as the reaction to a confirmed checkout, so it reports a missing record or insufficient stock as
+/// a failed line instead of throwing — the order stands either way, the discrepancy is an inventory matter, and the
+/// remaining lines are still reduced.
 /// </summary>
 public sealed class ReduceStockUseCase : IReduceStockInputPort
 {
@@ -43,26 +44,32 @@ public sealed class ReduceStockUseCase : IReduceStockInputPort
     {
         ArgumentNullException.ThrowIfNull(input);
 
-        return _transactionBoundary.InTransactionAsync(async ct =>
+        return _stockLevels.InStockLevelsAsync(
+            input.Lines.Select(line => new ProductId(line.ProductId)),
+            () => _transactionBoundary.InTransactionAsync(ct => ReduceOnceAsync(input, ct), cancellationToken),
+            cancellationToken);
+    }
+
+    /// <summary>Reduces every line unless the event was already processed, and records it as processed.</summary>
+    private async Task<ReduceStockResult> ReduceOnceAsync(ReduceStockCommand input, CancellationToken ct)
+    {
+        if (input.EventId is { } eventId && await _processedEvents.ContainsAsync(Effect, eventId, ct).ConfigureAwait(false))
         {
-            if (input.EventId is { } eventId && await _processedEvents.ContainsAsync(Effect, eventId, ct).ConfigureAwait(false))
-            {
-                return ReduceStockResult.Duplicate();
-            }
+            return ReduceStockResult.Duplicate();
+        }
 
-            var outcomes = new List<ReduceStockResult.LineOutcome>();
-            foreach (var line in input.Lines)
-            {
-                outcomes.Add(await ReduceAsync(line, ct).ConfigureAwait(false));
-            }
+        var outcomes = new List<ReduceStockResult.LineOutcome>();
+        foreach (var line in input.Lines)
+        {
+            outcomes.Add(await ReduceAsync(line, ct).ConfigureAwait(false));
+        }
 
-            if (input.EventId is { } processed)
-            {
-                await _processedEvents.MarkProcessedAsync(Effect, processed, ct).ConfigureAwait(false);
-            }
+        if (input.EventId is { } processed)
+        {
+            await _processedEvents.MarkProcessedAsync(Effect, processed, ct).ConfigureAwait(false);
+        }
 
-            return new ReduceStockResult(outcomes);
-        }, cancellationToken);
+        return new ReduceStockResult(outcomes);
     }
 
     private async Task<ReduceStockResult.LineOutcome> ReduceAsync(ReduceStockCommand.Line line, CancellationToken ct)
@@ -77,6 +84,14 @@ public sealed class ReduceStockUseCase : IReduceStockInputPort
         var previousStock = stockLevel.AvailableQuantity.Value;
         try
         {
+            // The order reserved its line when it was placed: the sale consumes what is still held of it, a stocktake
+            // may have capped that. Only a line the stock covers releases, so a failing reduction changes nothing.
+            var held = Math.Min(line.Quantity, stockLevel.ReservedQuantity.Value);
+            if (held > 0 && stockLevel.AvailableQuantity.Value >= line.Quantity)
+            {
+                stockLevel.Release(held);
+            }
+
             stockLevel.DecreaseStock(line.Quantity);
         }
         catch (InsufficientStockException e)

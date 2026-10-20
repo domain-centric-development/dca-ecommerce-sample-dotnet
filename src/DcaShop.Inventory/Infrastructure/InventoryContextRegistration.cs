@@ -5,6 +5,8 @@ using DcaShop.Inventory.Application.GetLowStockProducts;
 using DcaShop.Inventory.Application.GetStockForProducts;
 using DcaShop.Inventory.Application.ProvisionInitialStock;
 using DcaShop.Inventory.Application.ReduceStock;
+using DcaShop.Inventory.Application.ReleaseStock;
+using DcaShop.Inventory.Application.ReserveStock;
 using DcaShop.Inventory.Application.Shared;
 using DcaShop.SharedKernel.Infrastructure.Events;
 
@@ -20,6 +22,8 @@ public static class InventoryContextRegistration
         // Use cases (input ports)
         services.AddScoped<IProvisionInitialStockInputPort, ProvisionInitialStockUseCase>();
         services.AddScoped<IReduceStockInputPort, ReduceStockUseCase>();
+        services.AddScoped<IReserveStockInputPort, ReserveStockUseCase>();
+        services.AddScoped<IReleaseStockInputPort, ReleaseStockUseCase>();
         services.AddScoped<IGetStockForProductsInputPort, GetStockForProductsUseCase>();
         services.AddScoped<IGetLowStockProductsInputPort, GetLowStockProductsUseCase>();
 

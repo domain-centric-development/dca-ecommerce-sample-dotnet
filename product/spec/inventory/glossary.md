@@ -35,6 +35,9 @@ open orders, and ensures that reservations never exceed the available quantity.
 - `Release(amount)` — Release previously reserved stock: the reservation shrinks, the available quantity is unchanged
 - `AdjustStockTo(quantity)` — Manual correction / stocktake (see Open Issues): the available quantity is set to the counted figure, a reservation above it is capped
 - `IsAvailable` — Checks whether unreserved stock is available (a question; changes nothing)
+- `UnreservedQuantity` — The unreserved quantity (available-to-promise): available minus reserved (a question; changes nothing)
+- Reserve stock (`ReserveStock`) — Inventory earmarks every line of a placed order out of the unreserved stock — all lines or none; a product on two lines is reserved once for both, and a short product is answered with the unreserved quantity left
+- Release stock (`ReleaseStock`) — Inventory gives back what an order that was then not placed had reserved, never more than is still reserved
 
 **Notes:** Invariant: `reservedQuantity <= availableQuantity`. If the available
 stock drops below the reserved amount, the reservation is automatically
@@ -135,8 +138,9 @@ order and is no longer available for further reservations.
 
 ### StockReleased
 
-**Definition:** A previously made reservation has been cancelled; the quantity
-is reservable again.
+**Definition:** A previously made reservation has been given back — an order
+that was then not placed released it, or a sale consumed it before its stock
+went down; the quantity is no longer held for that order.
 
 **Type:** Domain Event
 
@@ -232,7 +236,8 @@ whose stock must go down. Owned here and implemented by Checkout's `CheckoutConf
 
 **Notes:** Consumed by `DcaShop.Inventory.Adapter.Incoming.Event.StockReductionEventConsumer`, which hands all
 lines and the event's `EventId` to the `ReduceStock` use case in one command (the contract extends
-`IIntegrationEvent`). The use case reduces the lines in one transaction, skips an event `IProcessedEvents` has
+`IIntegrationEvent`). For each line the stock still covers, the use case first releases what is still reserved
+of it (at most the line's quantity), then decreases the stock. The use case reduces the lines in one transaction, skips an event `IProcessedEvents` has
 already recorded for its effect, `reduce-stock`, and records it there — a redelivered order never reduces stock
 twice, while `set-stock-level` for the same event id is a different effect and still happens. The lines are
 `LineItems` in Inventory's own words — the contract borrows no order vocabulary from Checkout.
@@ -270,7 +275,10 @@ still be reserved.
 
 **Type:** Concept
 
-**Notes:** Currently not modeled as a value object; candidate for extraction.
+**Related terms:** `StockLevel.UnreservedQuantity`, Reserve stock (`ReserveStock`)
+
+**Notes:** Answered by `StockLevel.UnreservedQuantity`; `Reserve` and
+`ReserveStock` decide against it.
 
 ---
 

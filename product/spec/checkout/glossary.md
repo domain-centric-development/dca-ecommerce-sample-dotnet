@@ -61,7 +61,8 @@ claim of durable distributed transactions or universal rollback of unenlisted re
 - `IsTotalCoveredBy` — a question: whether the session's payment, authorized by the given provider, covers its current total
 - `ReleasePayment` — the session forgets the payment the provider cancelled; a session past the payment step goes back to it
 - `GoBackTo` — moves the current step back; data already submitted stays
-- `Confirm` — status confirmed, totals recomputed at current prices; refused while the pricing verdict reports a changed price or a shortage
+- `AssertReadyForConfirmation` — a question: the preconditions of `Confirm` against a pricing verdict, checked without changing anything
+- `Confirm` — status confirmed, totals recomputed at current prices; refused while the pricing verdict reports a changed price or a shortage. Before it, `ConfirmCheckout` reserves the session's stock in Inventory: a line the stock no longer covers refuses the confirmation as a shortage, and a confirmation that then fails releases the reservation
 - `Complete` — after payment: status completed, with the order reference
 - `Abandon` — kept with status abandoned; the cart's contents stay
 - `Expire` — kept with status expired, for inactivity; the cart's contents stay
@@ -215,16 +216,17 @@ contains a list of `ValidationError` entries.
 
 **Related terms:** `ValidationError`, `ICheckoutArticlePriceResolver`, `CheckoutSession`.
 
-**Operations:** `IsValid`, `Valid`, `WithErrors`, `WithError`.
+**Operations:** `IsValid`, `Valid`, `WithErrors`, `WithError`, `ShortOfStock` (the first line, in line
+order, that is unavailable or short of stock; none when only prices changed).
 
 ### ValidationError
 
 **Definition:** A specific violation of checkout preconditions for a line item (e.g. product
-unavailable, insufficient stock).
+unavailable, insufficient stock), naming the line's product by its id and by its name.
 
 **Type:** Value Object
 
-**Related terms:** `CheckoutValidationResult`, `ErrorType`, `ProductId`.
+**Related terms:** `CheckoutValidationResult`, `ErrorType`, `ProductId`, `ProductName`.
 
 **Operations:** `ProductUnavailable`, `InsufficientStock`.
 

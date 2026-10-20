@@ -180,7 +180,8 @@ Placing the order (`/checkout/confirm`):
 
 | Refusal | Sentence |
 |---|---|
-| `CheckoutValidationException` | Cannot place the order, {count} item(s) unavailable or out of stock. |
+| `CheckoutValidationException`, a line unavailable or short of stock — at the check or at the reservation | Not enough stock left for '{product}'. Please adjust your order. |
+| `CheckoutValidationException`, only prices changed | Cannot place the order, {count} item(s) unavailable or out of stock. |
 | `CheckoutStepNotCompletedException` | Please complete the previous checkout steps first. |
 | `CheckoutStepOutOfOrderException` | Please review your order before placing it. |
 | not sent from the review, the review open (checked by the page) | Please review your order before placing it. |

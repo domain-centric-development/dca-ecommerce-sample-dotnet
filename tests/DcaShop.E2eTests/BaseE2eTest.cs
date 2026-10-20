@@ -80,5 +80,25 @@ public abstract class BaseE2eTest : IClassFixture<BrowserFixture>, IAsyncLifetim
 
     protected Task WaitForUrlAsync(string pattern) => Page.WaitForLoadedUrlAsync(BaseUrl + pattern);
 
+    /// <summary>
+    /// Proceeds in <paramref name="page"/> from the cart through buyer, delivery and payment of the shop at
+    /// <paramref name="shopUrl"/>, and answers the review it lands on.
+    /// </summary>
+    protected static async Task<ReviewPage> GuestFromTheCartToTheReviewAsync(IPage page, string shopUrl)
+    {
+        await (await CartPage.NavigateToAsync(page, shopUrl)).PressProceedToCheckoutAsync();
+        var buyer = await BuyerInfoPage.OpenAsync(page, shopUrl);
+        await buyer.FillBuyerInfoAsync("jane@example.com", "Jane", "Doe", "+49 30 1234567");
+        await buyer.PressContinueToDeliveryAsync();
+        var delivery = await DeliveryPage.OpenAsync(page, shopUrl);
+        await delivery.FillAddressAsync("Hauptstrasse 1", "Berlin", "10115", "Germany", string.Empty);
+        await delivery.ChooseShippingMethodAsync("Standard Shipping");
+        await delivery.SubmitAndShowNextPathAsync();
+        var payment = await PaymentPage.OpenAsync(page, shopUrl);
+        await payment.ChooseTheOfferedPaymentProviderAsync();
+        await payment.SubmitAndShowNextPathAsync();
+        return await ReviewPage.OpenAsync(page, shopUrl);
+    }
+
     protected string CurrentPath => Page.Url.Replace(BaseUrl, string.Empty, StringComparison.Ordinal);
 }

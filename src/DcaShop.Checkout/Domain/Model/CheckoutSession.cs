@@ -164,6 +164,23 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
     /// </summary>
     public void Confirm(CheckoutValidationResult validation, Money recomputedSubtotal)
     {
+        AssertReadyForConfirmation(validation);
+        Totals = CheckoutTotals.Calculate(recomputedSubtotal, Totals.Shipping);
+        Status = CheckoutSessionStatus.Confirmed;
+        CurrentStep = CheckoutStep.Confirmation;
+        RegisterEvent(CheckoutConfirmed.Now(Id, CartId, CustomerId, Totals.Total, _lineItems));
+    }
+
+    /// <summary>
+    /// Asserts that this session may be confirmed with <paramref name="validation"/> right now — the same
+    /// preconditions <see cref="Confirm"/> enforces, without changing anything.
+    /// </summary>
+    /// <remarks>
+    /// A caller about to reserve the order's stock asks this first, so a session that would be refused afterwards
+    /// never holds stock back from other orders.
+    /// </remarks>
+    public void AssertReadyForConfirmation(CheckoutValidationResult validation)
+    {
         EnsureModifiable();
         EnsureAllStepsCompleted();
         if (CurrentStep != CheckoutStep.Review)
@@ -175,11 +192,6 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         {
             throw new CheckoutValidationException(validation);
         }
-
-        Totals = CheckoutTotals.Calculate(recomputedSubtotal, Totals.Shipping);
-        Status = CheckoutSessionStatus.Confirmed;
-        CurrentStep = CheckoutStep.Confirmation;
-        RegisterEvent(CheckoutConfirmed.Now(Id, CartId, CustomerId, Totals.Total, _lineItems));
     }
 
     public void Complete(string? orderReference)

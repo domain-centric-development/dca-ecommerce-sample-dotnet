@@ -9,6 +9,35 @@ namespace DcaShop.Inventory.Application.Shared;
 /// <summary>Persistence port for <see cref="StockLevel"/> aggregates.</summary>
 public interface IStockLevelRepository : IRepository<StockLevel, StockLevelId>
 {
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<ProductId, SemaphoreSlim> StockLevelLocks = new();
+
+    /// <summary>
+    /// Runs <paramref name="operation"/> while no other operation runs on the stock of these products, so a check of
+    /// the stock and the change it allows are never split by another. The products are taken in one order, so two
+    /// operations over overlapping products never deadlock: the later one waits for the earlier.
+    /// </summary>
+    async Task<T> InStockLevelsAsync<T>(IEnumerable<ProductId> productIds, Func<Task<T>> operation, CancellationToken cancellationToken = default)
+    {
+        var gates = productIds.Distinct().OrderBy(id => id.Value)
+            .Select(id => StockLevelLocks.GetOrAdd(id, _ => new SemaphoreSlim(1, 1)))
+            .ToList();
+        var taken = new List<SemaphoreSlim>();
+        try
+        {
+            foreach (var gate in gates)
+            {
+                await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+                taken.Add(gate);
+            }
+
+            return await operation().ConfigureAwait(false);
+        }
+        finally
+        {
+            taken.ForEach(gate => gate.Release());
+        }
+    }
+
     Task<StockLevel?> FindByProductIdAsync(ProductId productId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<StockLevel>> FindByProductIdsAsync(IReadOnlyCollection<ProductId> productIds, CancellationToken cancellationToken = default);

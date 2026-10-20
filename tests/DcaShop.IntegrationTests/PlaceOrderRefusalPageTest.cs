@@ -30,7 +30,7 @@ public sealed class PlaceOrderRefusalPageTest : IClassFixture<WebApplicationFact
         Assert.Equal("/checkout/review", placed.Headers.Location!.ToString());
         var review = await guest.GetStringAsync(placed.Headers.Location);
         Assert.Equal(
-            "Cannot place the order, 1 item(s) unavailable or out of stock.",
+            "Not enough stock left for 'Wooden Hexagon Desk Model'. Please adjust your order.",
             AvailabilityPages.Text(review, @"data-test=""review-error-message"">([^<]*)</div>"));
         Assert.DoesNotContain("data-test=\"confirmation-title\"", review, StringComparison.Ordinal);
     }

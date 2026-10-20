@@ -31,15 +31,15 @@ public sealed class CheckoutPricing : IDomainService
             var article = facts.GetValueOrDefault(item.ProductId);
             if (article is null || !article.IsAvailable)
             {
-                errors.Add(ValidationError.ProductUnavailable(item.ProductId));
+                errors.Add(ValidationError.ProductUnavailable(item.ProductId, item.ProductName));
             }
             else if (article.Price != item.UnitPrice)
             {
-                errors.Add(new ValidationError(item.ProductId, ErrorType.PriceChanged, $"Product {item.ProductId}: price changed; start a fresh checkout to accept it"));
+                errors.Add(new ValidationError(item.ProductId, ErrorType.PriceChanged, $"Product {item.ProductId}: price changed; start a fresh checkout to accept it", item.ProductName));
             }
             else if (article.AvailableStock < item.Quantity)
             {
-                errors.Add(ValidationError.InsufficientStock(item.ProductId, item.Quantity, article.AvailableStock));
+                errors.Add(ValidationError.InsufficientStock(item.ProductId, item.Quantity, article.AvailableStock, item.ProductName));
             }
         }
 

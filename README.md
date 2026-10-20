@@ -198,7 +198,7 @@ what tells them apart.
 | Idempotent consumer, per effect | every trigger extends `IIntegrationEvent`; the consumer hands the `EventId` to the use case, which checks and records it in `IProcessedEvents` under its own effect (`ReduceStockUseCase`: `reduce-stock`) inside its transaction |
 | Domain service | `CheckoutPricing`, `CartPricing` — take the aggregate, called by the use case |
 | Read model detached from the aggregate | `CheckoutCartSnapshot`, `LineItemSnapshot` |
-| Eventual consistency between contexts | explicit checkout → immutable snapshot; checkout confirmed → snapshot reconciliation and `ReduceStock` |
+| Eventual consistency between contexts | explicit checkout → immutable snapshot; checkout confirmed → snapshot reconciliation and `ReduceStock`, which consumes the stock `ConfirmCheckoutUseCase` reserved through `InventoryService` before its transaction (released again when the confirmation fails) |
 | Domain gateway called by the aggregate | `IPasswordHasher` — the contract in `Account/Domain/Gateway`, BCrypt in the adapter |
 | Specification as a first-class rule | `UsableDateOfBirth` — evaluated by `Owner` and by the change-profile use case |
 | Composable specifications translatable by an adapter | `ActiveCart`, `HasMinTotal`, `HasAnyAvailableItem` … over `ICompositeSpecification<T>`, visited by `ICartSpecificationVisitor`; `AvailableQuantityBelow` in Inventory, visited by `IStockLevelSpecificationVisitor` |

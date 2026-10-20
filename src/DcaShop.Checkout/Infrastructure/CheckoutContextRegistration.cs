@@ -1,6 +1,7 @@
 using DcaShop.Checkout.Adapter.Incoming.Event.CartSync;
 using DcaShop.Checkout.Adapter.Outgoing.Cart;
 using DcaShop.Checkout.Adapter.Outgoing.Event;
+using DcaShop.Checkout.Adapter.Outgoing.Inventory;
 using DcaShop.Checkout.Adapter.Outgoing.Payment;
 using DcaShop.Checkout.Adapter.Outgoing.Persistence;
 using DcaShop.Checkout.Adapter.Outgoing.Product;
@@ -54,6 +55,7 @@ public static class CheckoutContextRegistration
         services.AddSingleton<ICheckoutSessionRepository, InMemoryCheckoutSessionRepository>();
         services.AddScoped<ICartDataPort, CartDataAdapter>();
         services.AddScoped<ICheckoutArticleDataPort, CompositeCheckoutArticleDataAdapter>();
+        services.AddScoped<IStockReservationPort, InventoryStockReservationAdapter>();
         AddPaymentProvider(services, configuration);
         services.AddSingleton<IPaymentProviderRegistry, InMemoryPaymentProviderRegistry>();
         services.AddScoped<IEventListener, CheckoutConfirmedEventPublisher>();

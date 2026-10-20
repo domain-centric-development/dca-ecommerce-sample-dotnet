@@ -39,7 +39,7 @@ internal sealed class CheckoutStepPage(
     /// </summary>
     public async Task<IActionResult> ShowAsync(CheckoutStep step, Render render, CancellationToken cancellationToken, string? error = null)
     {
-        var (notice, count) = page.TempData.TakeCheckoutStepNotice(step);
+        var (notice, count, product) = page.TempData.TakeCheckoutStepNotice(step);
         var current = await ActiveSessionAsync(cancellationToken);
         if (current is null)
         {
@@ -48,7 +48,7 @@ internal sealed class CheckoutStepPage(
 
         if (step == CheckoutStep.Review)
         {
-            error ??= notice?.Sentence(count);
+            error ??= notice?.Sentence(count, product);
         }
 
         // A step re-rendered with an error — a rejected submit, or a refused "Place Order" carried to the review — keeps
@@ -64,7 +64,7 @@ internal sealed class CheckoutStepPage(
             current = result.Session!;
         }
 
-        return await render(current, error ?? notice?.Sentence(count));
+        return await render(current, error ?? notice?.Sentence(count, product));
     }
 
     /// <summary>
@@ -188,12 +188,19 @@ internal sealed class CheckoutStepPage(
         return page.Redirect(CheckoutRoutes.PathTo(access));
     }
 
-    /// <summary>The refused "Place Order" carried to the review, which renders it at its own address.</summary>
+    /// <summary>
+    /// The refused "Place Order" carried to the review, which renders it at its own address. A line the stock no longer
+    /// covers is named by its product; lines whose prices changed are counted.
+    /// </summary>
     private RedirectResult BackToTheReview(Exception refusal)
     {
-        if (refusal is CheckoutValidationException invalid)
+        if (refusal is CheckoutValidationException { Validation.ShortOfStock: { } shortLine })
         {
-            page.TempData.Leave(CheckoutStep.Review, CheckoutStepNotice.ItemsUnavailable, invalid.Validation.Errors.Count);
+            page.TempData.Leave(CheckoutStep.Review, CheckoutStepNotice.StockRanShort, product: shortLine.ProductName);
+        }
+        else if (refusal is CheckoutValidationException invalid)
+        {
+            page.TempData.Leave(CheckoutStep.Review, CheckoutStepNotice.PricesChanged, invalid.Validation.Errors.Count);
         }
         else
         {
