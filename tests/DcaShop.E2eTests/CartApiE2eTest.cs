@@ -62,6 +62,36 @@ public sealed class CartApiE2eTest
         Assert.Equal(0, cart.GetProperty("items").GetArrayLength());
     }
 
+    [E2eFact(DisplayName = "A quantity of zero is refused")]
+    public async Task AQuantityOfZeroIsAnUnacceptableValueNamingTheQuantityAndLeavesTheCartEmpty()
+    {
+        var ada = Staff.Client(ShopUnderTest.BaseUrl, await CustomerTokenAsync($"ada-{Guid.NewGuid():N}@example.com"));
+        var opened = await ada.PostAsync("/api/carts", new StringContent(string.Empty, Encoding.UTF8, "application/json"));
+        Assert.Equal(HttpStatusCode.Created, opened.StatusCode);
+        var cartId = (await opened.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("cartId").GetString();
+        var domainDrivenDesign = await ProductIdAsync(ada, "Domain-Driven Design");
+
+        var response = await ada.PostAsync($"/api/carts/{cartId}/items", new StringContent(
+            $$"""{"productId":"{{domainDrivenDesign}}","quantity":0}""", Encoding.UTF8, "application/json"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Unacceptable value", problem.GetProperty("title").GetString());
+        var reasons = problem.GetProperty("errors").GetProperty("quantity");
+        Assert.False(string.IsNullOrWhiteSpace(Assert.Single(reasons.EnumerateArray()).GetString()));
+        var cart = await ada.GetFromJsonAsync<JsonElement>($"/api/carts/{cartId}");
+        Assert.Equal(0, cart.GetProperty("items").GetArrayLength());
+    }
+
+    /// <summary>The id the catalogue gives the product of that name.</summary>
+    private static async Task<string> ProductIdAsync(HttpClient client, string name)
+    {
+        var products = await client.GetFromJsonAsync<JsonElement>("/api/products");
+        return products.EnumerateArray().Single(product => product.GetProperty("name").GetString() == name)
+            .GetProperty("id").GetString()!;
+    }
+
     private static async Task<string> CustomerTokenAsync(string email)
     {
         using var client = new HttpClient { BaseAddress = new Uri(ShopUnderTest.BaseUrl) };

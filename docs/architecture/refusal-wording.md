@@ -49,6 +49,17 @@ each refused field, spelled as the request's JSON spells it, to the reasons.
 | `price` | zero or less | The price must be greater than zero. |
 | `stock` | negative | The initial stock must not be negative. |
 
+### Cart item request (`POST /api/carts/{cartId}/items`)
+
+A body its request validation refuses answers the same way: 400, titled "Unacceptable value", without a `detail`;
+its `errors` maps each refused field, spelled as the request's JSON spells it, to the reasons. The reasons are the
+validation's own messages; the shop words none of them.
+
+| Field | Refused when |
+|---|---|
+| `productId` | missing |
+| `quantity` | less than 1 |
+
 ## Pages
 
 ### Password rules

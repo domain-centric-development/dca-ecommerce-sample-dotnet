@@ -28,6 +28,7 @@ namespace DcaShop.Cart.Adapter.Incoming.Api;
 /// </remarks>
 [ApiController]
 [Route("api/carts")]
+[UnacceptableValueProblem]
 public sealed class ShoppingCartResource : ControllerBase
 {
     private readonly ICreateCartInputPort _createCart;
