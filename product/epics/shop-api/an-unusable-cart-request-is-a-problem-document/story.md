@@ -1,7 +1,9 @@
 ---
 id: an-unusable-cart-request-is-a-problem-document
 epic: shop-api
-status: approved
+status: delivered
+delivered: 2026-10-20T18:55:36Z
+delivered_by: gate
 created: 2026-10-14T23:44:13Z
 context: cart
 feature: shopping

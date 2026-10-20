@@ -292,9 +292,10 @@ Test: DcaShop.IntegrationTests.CartApiTest#AddingExactlyWhatIsInStockIsAccepted
 #### a-quantity-of-zero-is-refused
 - Given Ada's open, empty cart
 - When her client adds "Domain-Driven Design" with quantity 0
-- Then the shop answers 400
+- Then the shop answers 400 with an `application/problem+json` body
+- And its title is "Unacceptable value" and its `errors` names `quantity` with the reason
 - And her cart is still empty
-Test: DcaShop.IntegrationTests.CartApiTest#AQuantityOfZeroIsABadRequestAndLeavesTheCartEmpty
+Test: DcaShop.E2eTests.CartApiE2eTest#AQuantityOfZeroIsAnUnacceptableValueNamingTheQuantityAndLeavesTheCartEmpty
 
 ### Rule: Removing a product the cart does not hold is refused
 
