@@ -1,7 +1,9 @@
 ---
 id: the-cart-oversight-totals-at-todays-prices
 epic: shop-api
-status: approved
+status: delivered
+delivered: 2026-10-20T09:35:08Z
+delivered_by: gate
 created: 2026-10-15T08:00:59Z
 context: cart
 feature: cartoversight

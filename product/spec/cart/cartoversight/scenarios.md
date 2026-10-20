@@ -19,3 +19,12 @@ Test: DcaShop.IntegrationTests.CartApiTest#ListingCartsWithoutATokenIsChallenged
 - When it sends `GET /api/carts`
 - Then the shop answers 403
 Test: DcaShop.IntegrationTests.ApiFlowTest#ListingEveryCartNeedsStaff
+
+### Rule: The cart oversight totals each cart at today's prices
+
+#### the-staff-list-totals-at-todays-prices
+- Given Ada's cart holds "Domain-Driven Design" once, added at 54.99 EUR
+- And the price of "Domain-Driven Design" has since been set to 49.99 EUR through the staff API
+- When a client holding a staff token sends `GET /api/carts`
+- Then Ada's cart in the answer has `total` 49.99
+Test: DcaShop.IntegrationTests.CartApiTest#TheStaffListTotalsEachCartAtTodaysPrices
