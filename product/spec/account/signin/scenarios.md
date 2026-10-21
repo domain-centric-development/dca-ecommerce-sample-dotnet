@@ -161,3 +161,19 @@ Test: DcaShop.IntegrationTests.TokenOnlyApiTest#RegisteringThroughTheApiHandsOut
 - When a client sends `POST /api/products` with a valid product and that token as `Authorization: Bearer`
 - Then the shop answers 401 with the header `WWW-Authenticate: Bearer`
 Test: DcaShop.IntegrationTests.TokenOnlyApiTest#ATokenWithAnAlteredSignatureIsChallengedLikeNoToken
+
+### Rule: A return page outside the shop is not followed; the login then opens the cart
+
+#### an-outside-return-page-opens-the-cart-after-login
+- Given the account "anna.schmidt@example.com" with password "Secret123", registered earlier
+- And a browser with no cookies and an empty cart that opened `/login?returnUrl=https://elsewhere.example/`
+- When the visitor logs in with "anna.schmidt@example.com" and "Secret123"
+- Then the cart page `/cart` opens and shows "Welcome back!"
+Test: DcaShop.E2eTests.LoginE2eTest#ALoginOpenedForAnotherSiteOpensTheCartInstead
+
+#### a-scheme-relative-return-page-opens-the-cart-after-login
+- Given the account "anna.schmidt@example.com" with password "Secret123", registered earlier
+- And a browser with no cookies and an empty cart that opened `/login?returnUrl=//elsewhere.example/`
+- When the visitor logs in with "anna.schmidt@example.com" and "Secret123"
+- Then the cart page `/cart` opens and shows "Welcome back!"
+Test: DcaShop.IntegrationTests.LoginPageTest#ALoginOpenedForASchemeRelativeAddressOpensTheCartWithTheWelcome
