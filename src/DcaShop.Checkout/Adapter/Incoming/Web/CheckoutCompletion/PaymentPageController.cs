@@ -41,14 +41,7 @@ public sealed class PaymentPageController : Controller
         _page.SubmittingAsync(
             CheckoutStep.Payment,
             CheckoutRoutes.PathOf(CheckoutStep.Review),
-            async id =>
-            {
-                var paid = await _submitPayment.ExecuteAsync(new SubmitPaymentCommand(id, _page.CurrentCustomerId(), providerId), cancellationToken);
-                if (paid.PaymentAlreadyAuthorized)
-                {
-                    TempData.Leave(CheckoutStep.Review, CheckoutStepNotice.PaymentAlreadyAuthorized);
-                }
-            },
+            id => _submitPayment.ExecuteAsync(new SubmitPaymentCommand(id, _page.CurrentCustomerId(), providerId), cancellationToken),
             (session, error) => RenderAsync(session, error, cancellationToken),
             cancellationToken);
 

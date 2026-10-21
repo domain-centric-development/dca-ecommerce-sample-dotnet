@@ -182,7 +182,6 @@ Payment step:
 
 | Refusal | Sentence |
 |---|---|
-| `PaymentInitiationFailedException` | The payment was refused. Please choose another way to pay. |
 | `PaymentProviderUnavailableException` | The payment provider is not available right now. Please try again later. |
 | `PaymentProviderNotFoundException` | This way to pay is not offered. Please choose another one. |
 | `NothingToPayException` | There is nothing to pay for this order. |
@@ -195,6 +194,8 @@ Placing the order (`/checkout/confirm`):
 | `CheckoutValidationException`, only prices changed | Cannot place the order, {count} item(s) unavailable or out of stock. |
 | `CheckoutStepNotCompletedException` | Please complete the previous checkout steps first. |
 | `CheckoutStepOutOfOrderException` | Please review your order before placing it. |
+| `PaymentInitiationFailedException` | The payment was refused. Please choose another way to pay. |
+| `PaymentProviderUnavailableException` | The payment provider is not available right now. Please try again later. |
 | not sent from the review, the review open (checked by the page) | Please review your order before placing it. |
 | any other refusal | Your order could not be placed. Please try again. |
 

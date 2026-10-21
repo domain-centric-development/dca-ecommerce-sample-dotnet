@@ -20,6 +20,7 @@ public sealed class SharedScenariosTest
     private static readonly Regex ClassDeclaration = new(@"\bclass\s+(\w+)", RegexOptions.Compiled);
     private static readonly Regex HappyPath = new(@"\s+\(happy path\)\s*$", RegexOptions.Compiled);
     private static readonly Regex MethodDeclaration = new(@"\bpublic\s+(?:async\s+)?[\w<>]+\s+(\w+)\s*\(", RegexOptions.Compiled);
+    private static readonly Regex BacktickedKey = new(@"`([a-z0-9]+(?:-[a-z0-9]+)+)`", RegexOptions.Compiled);
 
     /// <summary>The states of a story whose criteria are no title to come: delivered, or replaced by another story.</summary>
     private static readonly HashSet<string> Settled = new(["delivered", "superseded"], StringComparer.OrdinalIgnoreCase);
@@ -68,23 +69,42 @@ public sealed class SharedScenariosTest
         Assert.Equal(["Takes the line out", "The other lines keep their order"], StoryScenariosIn(story).Select(s => s.Title));
     }
 
+    /// <summary>
+    /// A scenario that a story not yet delivered changes or removes may name a browser test the story has already
+    /// renamed or retired: its <c>Test:</c> lines are rewritten only when the gate delivers the story.
+    /// </summary>
     [Fact]
     public void EveryBrowserTestAScenarioNamesExists()
     {
         var browserTests = BrowserTestSources().SelectMany(BrowserTestsIn).ToHashSet(StringComparer.Ordinal);
+        var changing = UndeliveredStories().SelectMany(ChangedScenarioKeys).ToHashSet(StringComparer.Ordinal);
 
-        var named = Scenarios().SelectMany(s => s.Tests)
+        var named = Scenarios().Where(s => !changing.Contains(s.Key)).SelectMany(s => s.Tests)
             .Where(test => test.StartsWith("DcaShop.E2eTests.", StringComparison.Ordinal));
 
         Assert.Empty(named.Where(test => !browserTests.Contains(test)).Order());
     }
 
+    [Fact]
+    public void AStoryNotYetDeliveredChangesItsCriteriaAndRemovesTheScenariosItsChangedExpectationsName()
+    {
+        string[] story =
+        [
+            "---", "id: a-story", "status: approved", "---", "", "# A story", "", "## Acceptance criteria", "",
+            "### Rule: one rule", "", "#### takes-the-line-out (happy path)", "- Given a cart", "",
+            "## Changed expectations", "", "- The rule goes with its scenario `keeps-the-order`.", "",
+            "## Notes", "", "- `not-a-removal` is only mentioned.",
+        ];
+
+        Assert.Equal(["takes-the-line-out", "keeps-the-order"], ChangedScenarioKeys(story));
+    }
+
     /// <summary>
-    /// Each scenario's title with the tests its <c>Test:</c> lines name, read from every <c>scenarios.md</c> below
-    /// <c>product/spec</c>. Two contexts may hold a scenario of the same title; only a browser test's title has to be
-    /// unique.
+    /// Each scenario's key and title with the tests its <c>Test:</c> lines name, read from every <c>scenarios.md</c>
+    /// below <c>product/spec</c>. Two contexts may hold a scenario of the same title; only a browser test's title has
+    /// to be unique.
     /// </summary>
-    private static List<(string Title, List<string> Tests)> Scenarios() =>
+    private static List<(string Key, string Title, List<string> Tests)> Scenarios() =>
         Directory.GetFiles(Path.Combine(RepositoryRoot(), "product", "spec"), "scenarios.md", SearchOption.AllDirectories)
             .SelectMany(file => ScenariosIn(File.ReadAllLines(file)))
             .ToList();
@@ -94,10 +114,29 @@ public sealed class SharedScenariosTest
     /// the scenarios the gate will add to the specification when it delivers the story.
     /// </summary>
     private static IEnumerable<string> StoryTitles() =>
+        UndeliveredStories().SelectMany(lines => StoryScenariosIn(lines).Select(s => s.Title));
+
+    private static IEnumerable<string[]> UndeliveredStories() =>
         Directory.GetFiles(Path.Combine(RepositoryRoot(), "product", "epics"), "story.md", SearchOption.AllDirectories)
             .Select(File.ReadAllLines)
-            .Where(lines => !Settled.Contains(Status(lines)))
-            .SelectMany(lines => StoryScenariosIn(lines).Select(s => s.Title));
+            .Where(lines => !Settled.Contains(Status(lines)));
+
+    /// <summary>
+    /// The scenario keys a story changes or removes: its criteria's keys, and every key in backticks under its
+    /// <c>## Changed expectations</c>.
+    /// </summary>
+    private static List<string> ChangedScenarioKeys(IReadOnlyList<string> lines) =>
+        StoryScenariosIn(lines).Select(s => s.Key)
+            .Concat(Section(lines, "## Changed expectations")
+                .SelectMany(line => BacktickedKey.Matches(line).Select(m => m.Groups[1].Value)))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+    private static IEnumerable<string> Section(IEnumerable<string> lines, string heading) =>
+        lines
+            .SkipWhile(line => !line.StartsWith(heading, StringComparison.Ordinal))
+            .Skip(1)
+            .TakeWhile(line => !line.StartsWith("## ", StringComparison.Ordinal));
 
     /// <summary>A story's <c>status:</c> from its front matter, empty without one.</summary>
     private static string Status(IReadOnlyList<string> lines)
@@ -122,11 +161,8 @@ public sealed class SharedScenariosTest
     /// The scenarios of a story's <c>## Acceptance criteria</c> section, read like a <c>scenarios.md</c>; a key's
     /// trailing <c>(happy path)</c> marker is not part of it.
     /// </summary>
-    private static List<(string Title, List<string> Tests)> StoryScenariosIn(IEnumerable<string> lines) =>
-        ScenariosIn(lines
-            .SkipWhile(line => !line.StartsWith("## Acceptance criteria", StringComparison.Ordinal))
-            .Skip(1)
-            .TakeWhile(line => !line.StartsWith("## ", StringComparison.Ordinal))
+    private static List<(string Key, string Title, List<string> Tests)> StoryScenariosIn(IEnumerable<string> lines) =>
+        ScenariosIn(Section(lines, "## Acceptance criteria")
             .Select(line => line.StartsWith("#### ", StringComparison.Ordinal)
                 ? HappyPath.Replace(line, "")
                 : line));
@@ -135,9 +171,9 @@ public sealed class SharedScenariosTest
     /// The scenarios of one document: a <c>#### key</c> heading, an optional Title line, the Test lines; a
     /// <c>###</c> heading ends a scenario.
     /// </summary>
-    private static List<(string Title, List<string> Tests)> ScenariosIn(IEnumerable<string> lines)
+    private static List<(string Key, string Title, List<string> Tests)> ScenariosIn(IEnumerable<string> lines)
     {
-        var scenarios = new List<(string Title, List<string> Tests)>();
+        var scenarios = new List<(string Key, string Title, List<string> Tests)>();
         string? key = null;
         string? title = null;
         var tests = new List<string>();
@@ -147,7 +183,7 @@ public sealed class SharedScenariosTest
             {
                 if (key is not null)
                 {
-                    scenarios.Add((title ?? InWords(key), tests));
+                    scenarios.Add((key, title ?? InWords(key), tests));
                 }
 
                 key = line.StartsWith("#### ", StringComparison.Ordinal) && line.Length > 5 ? line[5..].Trim() : null;

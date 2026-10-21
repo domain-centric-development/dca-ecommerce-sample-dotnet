@@ -13,8 +13,9 @@ using WireMock.Server;
 namespace DcaShop.IntegrationTests;
 
 /// <summary>
-/// The payment step against the payment provider, reached over HTTP: the shop is started with the provider's
-/// address, and the provider is a stub on a free port that answers what the test arranges.
+/// "Place Order" against the payment provider, reached over HTTP: the shop is started with the provider's address, and
+/// the provider is a stub on a free port that answers what the test arranges. Every answer but an authorization keeps
+/// the customer at the review with the shop's own sentence.
 /// </summary>
 public sealed class ProviderPaymentTest : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
@@ -36,40 +37,40 @@ public sealed class ProviderPaymentTest : IClassFixture<WebApplicationFactory<Pr
     public ProviderPaymentTest(WebApplicationFactory<Program> factory) => _factory = factory;
 
     [Fact]
-    public async Task ARefusedPaymentKeepsTheCustomerAtThePaymentStepWithTheRefusalText()
+    public async Task ARefusedPaymentKeepsTheCustomerAtTheReviewWithTheRefusalText()
     {
         ProviderAnswers(Response.Create().WithStatusCode(402));
-        var client = await ClientAtThePaymentStepAsync();
+        var client = await ClientAtTheReviewAsync();
 
-        var response = await PayAsync(client);
+        var response = await PlaceOrderAsync(client);
 
-        await AssertStaysAtPaymentShowingAsync(response, RefusalText);
+        await AssertStaysAtTheReviewShowingAsync(client, response, RefusalText);
     }
 
     [Fact]
     public async Task AProviderThatAnswersOnlyAfterFiveSecondsCountsAsUnavailable()
     {
         ProviderAnswers(Response.Create().WithStatusCode(201).WithBodyAsJson(new { reference = "late" }).WithDelay(TimeSpan.FromSeconds(5)));
-        var client = await ClientAtThePaymentStepAsync(ShortTimeout);
+        var client = await ClientAtTheReviewAsync(ShortTimeout);
 
         var watch = Stopwatch.StartNew();
-        var response = await PayAsync(client);
+        var response = await PlaceOrderAsync(client);
         watch.Stop();
 
-        await AssertStaysAtPaymentShowingAsync(response, UnavailableText);
+        await AssertStaysAtTheReviewShowingAsync(client, response, UnavailableText);
         Assert.True(watch.Elapsed < TimeSpan.FromSeconds(4), $"the late answer was awaited ({watch.Elapsed.TotalSeconds:0.0} s) instead of being abandoned at the timeout");
     }
 
     [Fact]
-    public async Task AnAuthorizedPaymentMovesOnToTheReviewAfterOneRequestForTheSessionTotal()
+    public async Task AnAuthorizedPaymentPlacesTheOrderAfterOneRequestForTheSessionTotal()
     {
         ProviderAnswers(Response.Create().WithStatusCode(201).WithBodyAsJson(new { reference = "pay-4711" }));
-        var client = await ClientAtThePaymentStepAsync();
+        var client = await ClientAtTheReviewAsync();
 
-        var response = await PayAsync(client);
+        var response = await PlaceOrderAsync(client);
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.Equal("/checkout/review", response.Headers.Location!.ToString());
+        Assert.Equal("/checkout/confirmation", response.Headers.Location!.ToString());
         var request = Assert.Single(_provider.LogEntries).RequestMessage!;
         Assert.Equal("POST", request.Method);
         Assert.Equal("/payments", request.Path);
@@ -82,33 +83,33 @@ public sealed class ProviderPaymentTest : IClassFixture<WebApplicationFactory<Pr
     public async Task AProviderFailingWithAServerErrorCountsAsUnavailable()
     {
         ProviderAnswers(Response.Create().WithStatusCode(500));
-        var client = await ClientAtThePaymentStepAsync();
+        var client = await ClientAtTheReviewAsync();
 
-        var response = await PayAsync(client);
+        var response = await PlaceOrderAsync(client);
 
-        await AssertStaysAtPaymentShowingAsync(response, UnavailableText);
+        await AssertStaysAtTheReviewShowingAsync(client, response, UnavailableText);
     }
 
     [Fact]
     public async Task AnAuthorizationWithoutAPaymentReferenceCountsAsUnavailable()
     {
         ProviderAnswers(Response.Create().WithStatusCode(201).WithBody("{}", encoding: System.Text.Encoding.UTF8).WithHeader("Content-Type", "application/json"));
-        var client = await ClientAtThePaymentStepAsync();
+        var client = await ClientAtTheReviewAsync();
 
-        var response = await PayAsync(client);
+        var response = await PlaceOrderAsync(client);
 
-        await AssertStaysAtPaymentShowingAsync(response, UnavailableText);
+        await AssertStaysAtTheReviewShowingAsync(client, response, UnavailableText);
     }
 
     [Fact]
     public async Task AProviderThatCannotBeReachedCountsAsUnavailable()
     {
         _provider.Stop();
-        var client = await ClientAtThePaymentStepAsync();
+        var client = await ClientAtTheReviewAsync();
 
-        var response = await PayAsync(client);
+        var response = await PlaceOrderAsync(client);
 
-        await AssertStaysAtPaymentShowingAsync(response, UnavailableText);
+        await AssertStaysAtTheReviewShowingAsync(client, response, UnavailableText);
     }
 
     private void ProviderAnswers(IResponseBuilder answer) =>
@@ -121,10 +122,10 @@ public sealed class ProviderPaymentTest : IClassFixture<WebApplicationFactory<Pr
             .UseSetting("Checkout:PaymentProvider:Timeout", timeout));
 
     /// <summary>
-    /// A visitor whose checkout is at the payment step: one Hexagon Sticker Sheet (9.99 EUR) with Free Shipping,
-    /// so the session total is 9.99 EUR.
+    /// A visitor whose checkout is at the review: one Hexagon Sticker Sheet (9.99 EUR) with Free Shipping, so the
+    /// session total is 9.99 EUR, and the provider the payment page offers chosen.
     /// </summary>
-    private async Task<HttpClient> ClientAtThePaymentStepAsync(string providerTimeout = GenerousTimeout)
+    private async Task<HttpClient> ClientAtTheReviewAsync(string providerTimeout = GenerousTimeout)
     {
         var client = ShopWithTheProvider(providerTimeout).CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
 
@@ -145,27 +146,27 @@ public sealed class ProviderPaymentTest : IClassFixture<WebApplicationFactory<Pr
         await Step(client, "/checkout/delivery", "/checkout/payment",
             ("street", "Analytical Engine Way 1"), ("city", "London"), ("postalCode", "12345"), ("country", "UK"), ("shippingOptionId", "free"));
 
-        return client;
-    }
-
-    /// <summary>The customer pays with the provider the payment page offers.</summary>
-    private static async Task<HttpResponseMessage> PayAsync(HttpClient client)
-    {
         var paymentPage = await client.GetStringAsync("/checkout/payment");
         var providerId = Regex.Match(paymentPage, @"name=""providerId"" value=""([^""]+)""").Groups[1].Value;
         Assert.NotEmpty(providerId);
+        await Step(client, "/checkout/payment", "/checkout/review", ("providerId", providerId));
 
-        return await client.PostAsync("/checkout/payment", Form(paymentPage, ("providerId", providerId)));
+        return client;
     }
 
-    /// <summary>Stays at the payment step: the payment page itself answers, not a redirect, with the text in its error slot.</summary>
-    private static async Task AssertStaysAtPaymentShowingAsync(HttpResponseMessage response, string text)
+    /// <summary>The customer presses "Place Order" on the review.</summary>
+    private static async Task<HttpResponseMessage> PlaceOrderAsync(HttpClient client) =>
+        await client.PostAsync("/checkout/confirm", Form(await client.GetStringAsync("/checkout/review"), ("placedFrom", "review")));
+
+    /// <summary>Stays at the review: redirected to its own address, which shows the text in its error slot and no confirmation.</summary>
+    private static async Task AssertStaysAtTheReviewShowingAsync(HttpClient client, HttpResponseMessage response, string text)
     {
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var page = await response.Content.ReadAsStringAsync();
-        Assert.Contains("data-test=\"payment-form\"", page, StringComparison.Ordinal);
-        var error = Regex.Match(page, @"data-test=""payment-error-message"">([^<]*)<").Groups[1].Value;
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/checkout/review", response.Headers.Location!.ToString());
+        var page = await client.GetStringAsync(response.Headers.Location);
+        var error = Regex.Match(page, @"data-test=""review-error-message"">([^<]*)<").Groups[1].Value;
         Assert.Equal(text, WebUtility.HtmlDecode(error));
+        Assert.DoesNotContain("data-test=\"confirmation-title\"", page, StringComparison.Ordinal);
     }
 
     private static async Task Step(HttpClient client, string url, string expectedNext, params (string, string)[] fields)

@@ -65,7 +65,7 @@ public sealed class CheckoutSessionTest
 
         Assert.Equal(CheckoutSessionStatus.Confirmed, session.Status);
         Assert.Equal(CheckoutStep.Confirmation, session.CurrentStep);
-        var confirmed = Assert.IsType<CheckoutConfirmed>(Assert.Single(session.DomainEvents));
+        var confirmed = Assert.IsType<CheckoutConfirmed>(session.DomainEvents.Last());
         Assert.Equal(Money.Euro(24.99m), confirmed.TotalAmount);
     }
 
@@ -120,32 +120,17 @@ public sealed class CheckoutSessionTest
     }
 
     [Fact]
-    public void APaymentAuthorizedForTheTotalNoLongerCountsOnceTheShippingChangesTheTotal()
-    {
-        var provider = PaymentProviderId.Of("provider");
-        var session = Started();
-        session.SubmitBuyerInfo(new BuyerInfo("a@b.de", "Ada", "Lovelace", "123"));
-        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), Standard);
-        session.SubmitPayment(new PaymentSelection(provider, "pay-1", session.Totals.Total));
-        var authorizedForTheTotal = session.IsTotalCoveredBy(provider);
-
-        session.SubmitDelivery(new DeliveryAddress("Street 1", "Town", "12345", "DE"), new ShippingOption("express", "Express", "2-3 days", Money.Euro(9.99m)));
-
-        Assert.True(authorizedForTheTotal);
-        Assert.False(session.IsTotalCoveredBy(provider));
-    }
-
-    [Fact]
     public void BuyerInfoRequiresValidEmail() =>
         Assert.Throws<ArgumentException>(() => new BuyerInfo("not-an-email", "A", "B", "1"));
 
     [Fact]
     public void CannotStartWithoutLineItems() =>
         Assert.Throws<EmptyCheckoutException>(() => CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("g"), Array.Empty<CheckoutLineItem>(), Money.Euro(0m)));
-    /// <summary>What the use case does: the pricing judges, the session confirms.</summary>
+    /// <summary>What the use case does: the pricing judges, the provider authorizes the total, the session confirms.</summary>
     private static void ConfirmWith(CheckoutSession session, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
         var pricing = new CheckoutPricing();
-        session.Confirm(pricing.ValidateItems(session, facts), pricing.CalculateOrderTotal(session, facts));
+        var authorized = new PaymentSelection(session.PaymentSelection!.ProviderId, "pay-1", session.Totals.Total);
+        session.Confirm(pricing.ValidateItems(session, facts), pricing.CalculateOrderTotal(session, facts), authorized);
     }
 }

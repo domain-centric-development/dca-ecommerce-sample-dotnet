@@ -115,6 +115,6 @@ public sealed class CheckoutCartSnapshotAccessTest
     private static void ConfirmWith(CheckoutSession session, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
         var pricing = new CheckoutPricing();
-        session.Confirm(pricing.ValidateItems(session, facts), pricing.CalculateOrderTotal(session, facts));
+        session.Confirm(pricing.ValidateItems(session, facts), pricing.CalculateOrderTotal(session, facts), new PaymentSelection(session.PaymentSelection!.ProviderId, "pay-1", session.Totals.Total));
     }
 }

@@ -224,6 +224,8 @@ internal sealed class CheckoutStepPage(
         CheckoutNotModifiableException => CheckoutStepNotice.CheckoutNotModifiable,
         CheckoutStepNotCompletedException => CheckoutStepNotice.EarlierStepsFirst,
         CheckoutStepOutOfOrderException => CheckoutStepNotice.ReviewFirst,
+        PaymentInitiationFailedException => CheckoutStepNotice.PaymentRefused,
+        PaymentProviderUnavailableException => CheckoutStepNotice.PaymentProviderUnavailable,
         _ => CheckoutStepNotice.OrderNotPlaced,
     };
 
@@ -236,10 +238,8 @@ internal sealed class CheckoutStepPage(
     {
         (_, CheckoutSessionNotFoundException) => CheckoutStepNotice.SessionNotFound.Sentence()!,
         (_, CheckoutNotModifiableException) => CheckoutStepNotice.CheckoutNotModifiable.Sentence()!,
-        (CheckoutStep.Payment, PaymentInitiationFailedException) =>
-            "The payment was refused. Please choose another way to pay.",
         (CheckoutStep.Payment, PaymentProviderUnavailableException) =>
-            "The payment provider is not available right now. Please try again later.",
+            CheckoutStepNotice.PaymentProviderUnavailable.Sentence()!,
         (CheckoutStep.Payment, PaymentProviderNotFoundException) =>
             "This way to pay is not offered. Please choose another one.",
         (CheckoutStep.Payment, NothingToPayException) => "There is nothing to pay for this order.",

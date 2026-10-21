@@ -103,71 +103,48 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
     }
 
     /// <summary>
-    /// Asserts that this session may be paid for right now — the same preconditions
-    /// <see cref="SubmitPayment"/> enforces, without changing anything.
+    /// Records how the customer pays and moves on to the review. The payment step only chooses the way to pay: the
+    /// payment itself is authorized at "Place Order", so nothing is requested, and nothing is published, here.
     /// </summary>
-    /// <remarks>
-    /// A caller about to reach a payment provider asks this first, so a session that would be rejected afterwards
-    /// never produces a payment intent at the provider.
-    /// </remarks>
-    public void AssertReadyForPayment()
-    {
-        EnsureModifiable();
-        EnsureStepCompleted(CheckoutStep.BuyerInfo);
-        EnsureStepCompleted(CheckoutStep.Delivery);
-        EnsureAtOrBeforeStep(CheckoutStep.Payment);
-
-        if (!Totals.Total.IsPositive)
-        {
-            throw new NothingToPayException(Id, Totals.Total);
-        }
-    }
-
-    /// <summary>
-    /// Whether the session holds a payment <paramref name="providerId"/> authorized for its current total — paying again
-    /// through that provider would then request nothing new.
-    /// </summary>
-    public bool IsTotalCoveredBy(PaymentProviderId providerId) => PaymentSelection?.Covers(providerId, Totals.Total) ?? false;
-
-    /// <summary>
-    /// Forgets the payment the provider released: it no longer pays this checkout, so the payment step is open again.
-    /// </summary>
-    public void ReleasePayment()
-    {
-        EnsureModifiable();
-        PaymentSelection = null;
-        if (CurrentStep.IsAfter(CheckoutStep.Payment))
-        {
-            CurrentStep = CheckoutStep.Payment;
-        }
-    }
-
     public void SubmitPayment(PaymentSelection payment)
     {
         EnsureModifiable();
         EnsureStepCompleted(CheckoutStep.BuyerInfo);
         EnsureStepCompleted(CheckoutStep.Delivery);
         EnsureAtOrBeforeStep(CheckoutStep.Payment);
-        PaymentSelection = payment ?? throw new ArgumentNullException(nameof(payment));
+        ArgumentNullException.ThrowIfNull(payment);
+        if (!Totals.Total.IsPositive)
+        {
+            throw new NothingToPayException(Id, Totals.Total);
+        }
+
+        PaymentSelection = payment;
         if (CurrentStep == CheckoutStep.Payment)
         {
             CurrentStep = CheckoutStep.Review;
         }
-
-        RegisterEvent(PaymentSubmitted.Now(Id, payment));
     }
 
     /// <summary>
-    /// Confirms the checkout once the checkout pricing has judged the current line items. The verdict and the
-    /// recomputed subtotal are handed in by the use case: deciding them needs article facts the session does
-    /// not own, so the domain service works them out and the session refuses to confirm an invalid one.
+    /// Confirms the checkout with the payment its provider authorized at "Place Order", once the checkout pricing has
+    /// judged the current line items. The verdict and the recomputed subtotal are handed in by the use case: deciding
+    /// them needs article facts the session does not own. The session refuses an invalid verdict, and a payment that
+    /// does not pay exactly the confirmed total through the provider the customer chose.
     /// </summary>
-    public void Confirm(CheckoutValidationResult validation, Money recomputedSubtotal)
+    public void Confirm(CheckoutValidationResult validation, Money recomputedSubtotal, PaymentSelection authorizedPayment)
     {
         AssertReadyForConfirmation(validation);
-        Totals = CheckoutTotals.Calculate(recomputedSubtotal, Totals.Shipping);
+        var totals = CheckoutTotals.Calculate(recomputedSubtotal, Totals.Shipping);
+        if (!authorizedPayment.Covers(PaymentSelection!.ProviderId, totals.Total))
+        {
+            throw new PaymentDoesNotCoverTotalException(Id, authorizedPayment.AuthorizedAmount, totals.Total);
+        }
+
+        Totals = totals;
+        PaymentSelection = authorizedPayment;
         Status = CheckoutSessionStatus.Confirmed;
         CurrentStep = CheckoutStep.Confirmation;
+        RegisterEvent(PaymentSubmitted.Now(Id, authorizedPayment));
         RegisterEvent(CheckoutConfirmed.Now(Id, CartId, CustomerId, Totals.Total, _lineItems));
     }
 

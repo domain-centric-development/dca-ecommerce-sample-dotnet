@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using DcaShop.Checkout.Adapter.Outgoing.Payment;
 using DcaShop.Checkout.Adapter.Outgoing.Persistence;
 using DcaShop.Checkout.Application.CartSync.SyncCheckoutWithCart;
 using DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
@@ -123,12 +124,22 @@ public sealed class CheckoutSpecificationTest
                 .ExecuteAsync(new StartCheckoutCommand(Cart.Id.Value, Cart.CustomerId.Value));
             return (await Repository.FindByIdAsync(new CheckoutSessionId(result.SessionId)))!;
         }
-        public Task<ConfirmCheckoutResult> Confirm(CheckoutSession session) => new ConfirmCheckoutUseCase(Repository, this, this, new CheckoutPricing(), Events, new InMemoryTransactionBoundary(), NullLogger<ConfirmCheckoutUseCase>.Instance).ExecuteAsync(new ConfirmCheckoutCommand(session.Id.Value, session.CustomerId.Value));
+        public Task<ConfirmCheckoutResult> Confirm(CheckoutSession session) => new ConfirmCheckoutUseCase(Repository, this, this, new InMemoryPaymentProviderRegistry([new StandIn()]), new CheckoutPricing(), Events, new InMemoryTransactionBoundary(), NullLogger<ConfirmCheckoutUseCase>.Instance).ExecuteAsync(new ConfirmCheckoutCommand(session.Id.Value, session.CustomerId.Value));
         public Task<IReadOnlyList<IStockReservationPort.Shortage>> ReserveAsync(IReadOnlyCollection<CheckoutLineItem> lines, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<IStockReservationPort.Shortage>>([]);
         public Task ReleaseAsync(IReadOnlyCollection<CheckoutLineItem> lines, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<CartData?> FindByIdAsync(CartId cartId, CustomerId customerId, CancellationToken cancellationToken = default) => Task.FromResult<CartData?>(new CartData(cartId, customerId, Cart.Items.Select(i => new CartData.CartItemData(i.ProductId, i.PriceAtAddition.Value, i.Quantity.Value, i.PositionSnapshot)).ToArray(), Cart.IsActive));
         public Task<CartData?> FindActiveForCustomerAsync(CustomerId customerId, CancellationToken cancellationToken = default) => FindByIdAsync(new CartId(Cart.Id.Value), customerId, cancellationToken);
         public Task<IReadOnlyDictionary<ProductId, CheckoutArticle>> GetArticleDataAsync(IReadOnlyCollection<ProductId> ids, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyDictionary<ProductId, CheckoutArticle>>(ids.ToDictionary(i => i, i => new CheckoutArticle(i, "Thing", Price, true, Stock, null)));
+    }
+    /// <summary>The way to pay the fixture's sessions choose; it authorizes every payment.</summary>
+    private sealed class StandIn : IPaymentProvider
+    {
+        public PaymentProviderId Id => PaymentProviderId.Of("invoice");
+        public string DisplayName => "Invoice";
+        public Task<IPaymentProvider.PaymentResult> InitiatePaymentAsync(CheckoutSessionId sessionId, Money amount, CancellationToken cancellationToken = default) => Task.FromResult(IPaymentProvider.PaymentResult.Succeeded("invoice-" + sessionId));
+        public Task<IPaymentProvider.PaymentResult> ConfirmPaymentAsync(string providerReference, CancellationToken cancellationToken = default) => Task.FromResult(IPaymentProvider.PaymentResult.Succeeded(providerReference));
+        public Task<IPaymentProvider.PaymentResult> CancelPaymentAsync(string providerReference, CancellationToken cancellationToken = default) => Task.FromResult(IPaymentProvider.PaymentResult.Succeeded(providerReference));
+        public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
     }
     private sealed class Publisher : IDomainEventPublisher
     {

@@ -33,3 +33,12 @@ the identical ordering and is changed alike.
   an aborted request is one of the reasons the write failed and that same token would cancel the clean-up before
   it reaches the provider; and a process that dies between initiation and release orphans the intent, which only
   reconciliation finds.
+
+## What holds today
+
+The payment step requests no payment: `SubmitPaymentUseCase` records the chosen provider in one transaction, and
+`CheckoutSession.SubmitPayment` refuses a total of zero itself. The remote effect is the authorization at Place
+Order, and the rule of this record holds there: `ConfirmCheckoutUseCase` asks `CheckoutSession.AssertReadyForConfirmation`
+and reserves the stock before it calls `InitiatePaymentAsync(...)` for the session's total, outside the transaction
+(ADR-004). A refused or unanswered payment releases the reserved stock. No cancellation is sent when the confirming
+transaction fails after the authorization; `CancelPaymentAsync` has no caller.

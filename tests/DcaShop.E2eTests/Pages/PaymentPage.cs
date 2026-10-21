@@ -27,16 +27,6 @@ public sealed class PaymentPage : BasePage
         return new PaymentPage(page);
     }
 
-    public async Task<PaymentPage> SelectFirstPaymentProviderAsync()
-    {
-        if (await ExistsAsync(ProviderRadio))
-        {
-            await SelectFirstRadioAsync(ProviderRadio);
-        }
-
-        return this;
-    }
-
     /// <summary>The checkout session's total as the order summary shows it, e.g. <c>9.99 EUR</c>.</summary>
     public Task<string> TotalAsync() => Page.Locator($"[data-test='{Total}']").InnerTextAsync();
 

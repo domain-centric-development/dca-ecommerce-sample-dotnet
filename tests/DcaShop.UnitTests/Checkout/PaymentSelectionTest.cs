@@ -35,4 +35,14 @@ public sealed class PaymentSelectionTest
         Assert.True(payment.Covers(Provider, Money.Euro(59.98m)));
         Assert.False(payment.Covers(Provider, Money.Euro(64.98m)));
     }
+
+    [Fact]
+    public void AnAuthorizationKeepsTheChosenProviderAndCarriesItsReferenceAndAmount()
+    {
+        var chosen = new PaymentSelection(Provider);
+
+        var authorized = chosen.Authorized("pay-1", Money.Euro(59.98m));
+
+        Assert.Equal(new PaymentSelection(Provider, "pay-1", Money.Euro(59.98m)), authorized);
+    }
 }

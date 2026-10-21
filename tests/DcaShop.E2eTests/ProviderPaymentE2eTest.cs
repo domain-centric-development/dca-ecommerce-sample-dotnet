@@ -20,33 +20,34 @@ public sealed class ProviderPaymentE2eTest : BaseE2eTest
     {
     }
 
-    [E2eFact(DisplayName = "Authorized payment moves to review")]
-    public async Task APaymentTheProviderAuthorizesLeadsOnToTheReview()
+    [E2eFact(DisplayName = "Place Order has the payment provider authorize the total the review showed and opens the confirmation")]
+    public async Task PlaceOrderHasTheProviderAuthorizeTheReviewedTotalAndOpensTheConfirmation()
     {
-        // Given a checkout session at the payment step
+        // Given a guest at the review with "Domain-Driven Design" once and "Standard Shipping", Total "59.98 EUR"
         var catalog = await ProductCatalogPage.NavigateToAsync(Page);
-        var detail = await catalog.ViewFirstProductAsync();
+        var detail = await catalog.ViewProductAsync("Domain-Driven Design");
         await detail.AddToCartAsync();
         var cart = await CartPage.NavigateToAsync(Page);
         var buyer = await cart.ProceedToCheckoutAsync();
-        var delivery = await (await buyer.FillBuyerInfoAsync("payer@example.com", "Test", "Payer", "+1-555-0100")).ContinueToDeliveryAsync();
-        await delivery.FillAddressAsync("123 Main Street", "Springfield", "12345", "United States", "IL");
-        await delivery.SelectFirstShippingOptionAsync();
+        var delivery = await (await buyer.FillBuyerInfoAsync("jane@example.com", "Jane", "Doe", "+49 30 1234567")).ContinueToDeliveryAsync();
+        await delivery.FillAddressAsync("Hauptstrasse 1", "Berlin", "10115", "Germany", string.Empty);
+        await delivery.ChooseShippingMethodAsync("Standard Shipping");
         var payment = await delivery.ContinueToPaymentAsync();
-        var sessionTotal = PaymentProviderStub.ParseShownAmount(await payment.TotalAsync());
+        await payment.ChooseTheOfferedPaymentProviderAsync();
+        var review = await payment.ContinueToReviewAsync();
+        Assert.Equal("59.98 EUR", await review.TotalAsync());
 
-        // And the payment provider authorizes payments
+        // And the payment provider authorizes payments — from here on, the requests it records are this order's
         PaymentProviderStub.AuthorizesPayments();
 
-        // When the customer pays through the payment provider
-        await payment.SelectFirstPaymentProviderAsync();
-        var review = await payment.ContinueToReviewAsync();
+        // When the guest presses "Place Order"
+        var confirmation = await review.PlaceOrderAsync();
 
-        // Then the checkout shows the review step
-        Assert.True(review.IsOnPage, "the checkout should show the review step");
+        // Then the confirmation page opens at /checkout/confirmation with "Order Total" "59.98 EUR"
+        Assert.Equal(("Order Total", "59.98 EUR"), await confirmation.OrderTotalAsync());
 
-        // And the payment provider received one payment request for the checkout session's total
+        // And the payment provider received one payment request, of "59.98"
         var request = Assert.Single(PaymentProviderStub.PaymentRequests());
-        Assert.Equal(sessionTotal, request);
+        Assert.Equal((59.98m, "EUR"), request);
     }
 }

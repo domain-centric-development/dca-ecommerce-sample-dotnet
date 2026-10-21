@@ -7,7 +7,6 @@ public sealed class ReviewPage : BasePage
     private const string UrlPattern = "/checkout/review";
     private const string PlaceOrderButton = "review-place-order-button";
     private const string ErrorMessage = "review-error-message";
-    private const string NoticeMessage = "review-notice-message";
     private const string BackLink = "review-back-link";
 
     private ReviewPage(IPage page) : base(page)
@@ -31,11 +30,16 @@ public sealed class ReviewPage : BasePage
     /// <summary>Presses "Place Order" and waits until the shop has answered it, wherever that answer leads.</summary>
     public Task PlaceOrderAndAwaitTheAnswerAsync() => PressPlaceOrderAsync();
 
+    /// <summary>The order's total as the review's order summary shows it, e.g. <c>59.98 EUR</c>.</summary>
+    public async Task<string> TotalAsync()
+    {
+        var total = Page.Locator("[data-test='order-summary-total']");
+        await Assertions.Expect(total).ToBeVisibleAsync();
+        return (await total.InnerTextAsync()).Trim();
+    }
+
     /// <summary>The error the review shows, as written.</summary>
     public Task<string> ErrorMessageAsync() => VisibleTextAsync(ErrorMessage);
-
-    /// <summary>The notice the review shows beside the order — not an error — as written.</summary>
-    public Task<string> NoticeMessageAsync() => VisibleTextAsync(NoticeMessage);
 
     /// <summary>Follows the review's "Back" link to the payment step.</summary>
     public async Task<PaymentPage> BackToPaymentAsync()

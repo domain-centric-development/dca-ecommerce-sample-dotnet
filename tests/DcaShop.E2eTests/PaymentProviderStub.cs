@@ -33,20 +33,6 @@ public static class PaymentProviderStub
 
     /// <summary>The payment requests the provider received, as amount and currency.</summary>
     public static IReadOnlyList<(decimal Amount, string Currency)> PaymentRequests() =>
-        ReceivedPaymentRequests().Select(request => (request.Amount, request.Currency)).ToList();
-
-    /// <summary>
-    /// The payment requests the provider received for one checkout — those whose <c>merchantReference</c> is
-    /// <paramref name="merchantReference"/> — as amount and currency. Other tests' payments do not count, so the
-    /// stub need not be the test's alone.
-    /// </summary>
-    public static IReadOnlyList<(decimal Amount, string Currency)> PaymentRequestsNaming(string merchantReference) =>
-        ReceivedPaymentRequests()
-            .Where(request => request.MerchantReference == merchantReference)
-            .Select(request => (request.Amount, request.Currency))
-            .ToList();
-
-    private static List<(decimal Amount, string Currency, string? MerchantReference)> ReceivedPaymentRequests() =>
         Server.Value.LogEntries
             .Select(entry => entry.RequestMessage!)
             .Where(request => request.Method == "POST" && request.Path == "/payments")
@@ -55,17 +41,9 @@ public static class PaymentProviderStub
                 using var body = JsonDocument.Parse(request.Body!);
                 // the contract sends the amount as a decimal string ("9.99"); reading it as a number would fail here
                 var amount = decimal.Parse(body.RootElement.GetProperty("amount").GetString()!, CultureInfo.InvariantCulture);
-                var merchantReference = body.RootElement.TryGetProperty("merchantReference", out var reference) ? reference.GetString() : null;
-                return (amount, body.RootElement.GetProperty("currency").GetString()!, merchantReference);
+                return (amount, body.RootElement.GetProperty("currency").GetString()!);
             })
             .ToList();
-
-    /// <summary>A shown amount such as <c>9.99 EUR</c>, as amount and currency.</summary>
-    public static (decimal Amount, string Currency) ParseShownAmount(string shown)
-    {
-        var parts = shown.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return (decimal.Parse(parts[0], CultureInfo.InvariantCulture), parts[1]);
-    }
 
     private static WireMockServer Start()
     {

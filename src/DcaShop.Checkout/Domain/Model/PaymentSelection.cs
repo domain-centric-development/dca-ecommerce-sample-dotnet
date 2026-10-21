@@ -14,6 +14,10 @@ public sealed record PaymentSelection(PaymentProviderId ProviderId, string? Prov
 
     public PaymentSelection WithReference(string reference) => this with { ProviderReference = reference };
 
+    /// <summary>The chosen way to pay, once its provider authorized <paramref name="amount"/> under <paramref name="reference"/>.</summary>
+    public PaymentSelection Authorized(string reference, Money amount) =>
+        this with { ProviderReference = reference, AuthorizedAmount = amount };
+
     /// <summary>Whether this payment, authorized by <paramref name="providerId"/>, pays exactly <paramref name="total"/>.</summary>
     public bool Covers(PaymentProviderId providerId, Money total) =>
         HasReference && ProviderId == providerId && AuthorizedAmount == total;

@@ -1,147 +1,117 @@
-using System.Text.Json;
-
-using DcaShop.Cart.Application.Shopping.AddItemToCart;
-using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
-using DcaShop.Checkout.Application.CheckoutCompletion.SubmitBuyerInfo;
-using DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
-using DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
-using DcaShop.Checkout.Application.Session.GetCheckoutSession;
-using DcaShop.Checkout.Application.Session.StartCheckout;
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
-using DcaShop.Product.Application.GetAllProducts;
 
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 
-using WireMock.Matchers;
-using WireMock.RequestBuilders;
-using WireMock.ResponseBuilders;
 using WireMock.Server;
 
 namespace DcaShop.IntegrationTests;
 
 /// <summary>
-/// Every payment request names the checkout it pays for: the payment use case through its input port, the shop wired
-/// to a payment provider that is a stub on a free port, answering per checkout reference what the test arranges.
+/// Every payment request "Place Order" sends names the checkout it pays for: the order through its input port, the shop
+/// wired to a payment provider that is a stub on a free port, answering per checkout reference what the test arranges.
 /// </summary>
 public sealed class PaymentReferenceTest : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string ProviderId = "provider";
-
     private readonly WireMockServer _provider = WireMockServer.Start();
     private readonly WebApplicationFactory<Program> _shop;
+    private readonly PortCheckouts _checkouts;
 
-    public PaymentReferenceTest(WebApplicationFactory<Program> factory) =>
-        _shop = factory.WithWebHostBuilder(builder => builder
-            .UseSetting("Checkout:PaymentProvider:BaseUrl", _provider.Url)
-            .UseSetting("Checkout:PaymentProvider:Timeout", "00:00:30"));
+    public PaymentReferenceTest(WebApplicationFactory<Program> factory)
+    {
+        _shop = PortCheckouts.ShopWith(factory, _provider);
+        _checkouts = new PortCheckouts(_shop);
+    }
+
+    [Fact]
+    public async Task PlaceOrderSendsOnePaymentRequestForTheSessionTotalNamingItsCheckout()
+    {
+        // Given a checkout session at the review
+        _provider.AuthorizesPayments();
+        var checkout = await _checkouts.AtTheReviewAsync("standard", ("Domain-Driven Design", 1));
+        var total = (await _checkouts.SessionAsync(checkout)).Totals.Total;
+        _provider.ResetLogEntries();
+
+        // And the payment provider authorizes payments
+        // When the customer presses "Place Order"
+        await _checkouts.PlaceOrderAsync(checkout);
+
+        // Then the payment provider received one payment request for the checkout session's total
+        var request = Assert.Single(_provider.PaymentRequests());
+        Assert.Equal(total.Amount, request.Amount);
+
+        // And that request carries the checkout reference, the checkout session's id as text, as merchantReference
+        Assert.Equal(checkout.SessionId.ToString(), request.MerchantReference);
+    }
 
     [Fact]
     public async Task TwoCheckoutsSendTwoDifferentReferences()
     {
-        ProviderAuthorizesEveryPayment();
-        var first = await CheckoutAtThePaymentStepAsync();
-        var second = await CheckoutAtThePaymentStepAsync();
+        // Given two customers, each with a checkout session at the review
+        _provider.AuthorizesPayments();
+        var first = await _checkouts.AtTheReviewAsync("standard", ("Domain-Driven Design", 1));
+        var second = await _checkouts.AtTheReviewAsync("standard", ("Domain-Driven Design", 1));
+        _provider.ResetLogEntries();
 
-        await PayAsync(first);
-        await PayAsync(second);
+        // When both press "Place Order"
+        await _checkouts.PlaceOrderAsync(first);
+        await _checkouts.PlaceOrderAsync(second);
 
-        var references = MerchantReferences();
+        // Then the payment provider received two payment requests with two different merchantReference values
+        var references = _provider.PaymentRequests().Select(request => request.MerchantReference).ToList();
         Assert.Equal(2, references.Count);
         Assert.All(references, reference => Assert.False(string.IsNullOrEmpty(reference)));
         Assert.NotEqual(references[0], references[1]);
     }
 
     [Fact]
-    public async Task TheProviderRefusingOneCheckoutLeavesTheOtherCheckoutPaid()
+    public async Task TheProviderRefusingOneCheckoutLeavesTheOtherCheckoutConfirmed()
     {
-        var first = await CheckoutAtThePaymentStepAsync();
-        var second = await CheckoutAtThePaymentStepAsync();
-        ProviderAuthorizesEveryPayment();
-        ProviderRefusesThePaymentOf(first.SessionId);
+        // Given two customers, each with a checkout session at the review
+        _provider.AuthorizesPayments();
+        var first = await _checkouts.AtTheReviewAsync("standard", ("Domain-Driven Design", 1));
+        var second = await _checkouts.AtTheReviewAsync("standard", ("Domain-Driven Design", 1));
 
-        var refused = await Record.ExceptionAsync(() => PayAsync(first));
-        var paid = await PayAsync(second);
+        // And the payment provider refuses the payment for the first customer's checkout reference only
+        _provider.RefusesThePaymentOf(first);
 
+        // When both press "Place Order"
+        var refused = await Record.ExceptionAsync(() => _checkouts.PlaceOrderAsync(first));
+        var placed = await _checkouts.PlaceOrderAsync(second);
+
+        // Then the first customer stays at the review with the refusal
         Assert.IsType<PaymentInitiationFailedException>(refused);
-        Assert.Equal(CheckoutStep.Payment, await CurrentStepAsync(first));
-        Assert.Equal(CheckoutStep.Review, paid.CurrentStep);
+        var firstSession = await _checkouts.SessionAsync(first);
+        Assert.Equal((CheckoutStep.Review, CheckoutSessionStatus.Active), (firstSession.Step, firstSession.Status));
+
+        // And the second customer sees the confirmation
+        Assert.Equal(CheckoutSessionStatus.Confirmed, placed.Status);
     }
 
     [Fact]
-    public async Task ASecondAttemptAfterARefusalNamesTheSameCheckout()
+    public async Task ASecondPlaceOrderAfterARefusalNamesTheSameCheckout()
     {
-        var checkout = await CheckoutAtThePaymentStepAsync();
-        _provider.Given(Request.Create().WithPath("/payments").UsingPost()).RespondWith(Response.Create().WithStatusCode(402));
-        await Assert.ThrowsAsync<PaymentInitiationFailedException>(() => PayAsync(checkout));
+        // Given a checkout session at the review
+        _provider.AuthorizesPayments();
+        var checkout = await _checkouts.AtTheReviewAsync("standard", ("Domain-Driven Design", 1));
+        _provider.ResetLogEntries();
+
+        // And the customer's first "Place Order" was refused by the payment provider
+        _provider.RefusesPayments();
+        await Assert.ThrowsAsync<PaymentInitiationFailedException>(() => _checkouts.PlaceOrderAsync(checkout));
         _provider.ResetMappings();
-        ProviderAuthorizesEveryPayment();
+        _provider.AuthorizesPayments();
 
-        await PayAsync(checkout);
+        // When the customer presses "Place Order" again
+        await _checkouts.PlaceOrderAsync(checkout);
 
-        var references = MerchantReferences();
+        // Then the payment provider received two payment requests for that checkout session
+        var references = _provider.PaymentRequests().Select(request => request.MerchantReference).ToList();
         Assert.Equal(2, references.Count(reference => reference == checkout.SessionId.ToString()));
+
+        // And both carry the same merchantReference
         Assert.Equal(checkout.SessionId.ToString(), Assert.Single(references.Distinct()));
     }
-
-    private void ProviderAuthorizesEveryPayment() =>
-        _provider.Given(Request.Create().WithPath("/payments").UsingPost()).AtPriority(10)
-            .RespondWith(Response.Create().WithStatusCode(201).WithBodyAsJson(new { reference = "pay-" + Guid.NewGuid() }));
-
-    private void ProviderRefusesThePaymentOf(Guid sessionId) =>
-        _provider.Given(Request.Create().WithPath("/payments").UsingPost().WithBody(new JsonPartialMatcher(new { merchantReference = sessionId.ToString() })))
-            .AtPriority(1)
-            .RespondWith(Response.Create().WithStatusCode(402));
-
-    /// <summary>The <c>merchantReference</c> of every payment request the provider received, in order; null where a request carried none.</summary>
-    private List<string?> MerchantReferences() =>
-        _provider.LogEntries
-            .Select(entry => entry.RequestMessage!)
-            .Where(request => request.Method == "POST" && request.Path == "/payments")
-            .Select(request =>
-            {
-                using var body = JsonDocument.Parse(request.Body!);
-                return body.RootElement.TryGetProperty("merchantReference", out var reference) ? reference.GetString() : null;
-            })
-            .ToList();
-
-    private async Task<SubmitPaymentResult> PayAsync(CustomersCheckout checkout)
-    {
-        using var scope = _shop.Services.CreateScope();
-        return await scope.ServiceProvider.GetRequiredService<ISubmitPaymentInputPort>()
-            .ExecuteAsync(new SubmitPaymentCommand(checkout.SessionId, checkout.CustomerId, ProviderId));
-    }
-
-    private async Task<CheckoutStep> CurrentStepAsync(CustomersCheckout checkout)
-    {
-        using var scope = _shop.Services.CreateScope();
-        var found = await scope.ServiceProvider.GetRequiredService<IGetCheckoutSessionInputPort>()
-            .ExecuteAsync(new GetCheckoutSessionQuery(checkout.SessionId, checkout.CustomerId));
-        return found.Session!.Step;
-    }
-
-    /// <summary>A customer of their own whose checkout of one item has passed the buyer and the delivery step.</summary>
-    private async Task<CustomersCheckout> CheckoutAtThePaymentStepAsync()
-    {
-        var customerId = $"payer-{Guid.NewGuid()}";
-        using var scope = _shop.Services.CreateScope();
-        var services = scope.ServiceProvider;
-
-        var cart = await services.GetRequiredService<IGetOrCreateActiveCartInputPort>().ExecuteAsync(new GetOrCreateActiveCartCommand(customerId));
-        var product = (await services.GetRequiredService<IGetAllProductsInputPort>().ExecuteAsync(new GetAllProductsQuery())).Products[0];
-        await services.GetRequiredService<IAddItemToCartInputPort>().ExecuteAsync(new AddItemToCartCommand(cart.CartId, customerId, product.ProductId.Value, 1));
-        var sessionId = (await services.GetRequiredService<IStartCheckoutInputPort>().ExecuteAsync(new StartCheckoutCommand(cart.CartId, customerId))).SessionId;
-
-        await services.GetRequiredService<ISubmitBuyerInfoInputPort>().ExecuteAsync(
-            new SubmitBuyerInfoCommand(sessionId, customerId, "ada@example.com", "Ada", "Lovelace", "+1-555-0100"));
-        await services.GetRequiredService<ISubmitDeliveryInputPort>().ExecuteAsync(
-            new SubmitDeliveryCommand(sessionId, customerId, "Analytical Engine Way 1", null, "London", "12345", "UK", null, "standard"));
-
-        return new CustomersCheckout(sessionId, customerId);
-    }
-
-    private sealed record CustomersCheckout(Guid SessionId, string CustomerId);
 
     public void Dispose()
     {

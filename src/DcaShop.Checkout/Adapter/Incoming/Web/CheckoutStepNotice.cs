@@ -30,11 +30,14 @@ internal enum CheckoutStepNotice
     /// <summary>"Place Order" was refused for any other reason.</summary>
     OrderNotPlaced = 5,
 
-    /// <summary>Paying again found the payment already authorized for the total; informs, refuses nothing.</summary>
-    PaymentAlreadyAuthorized = 6,
-
     /// <summary>"Place Order" found a line the stock no longer covers; names its product.</summary>
     StockRanShort = 7,
+
+    /// <summary>"Place Order" met a payment the provider refused.</summary>
+    PaymentRefused = 8,
+
+    /// <summary>"Place Order" met a payment provider that is not taking payments or did not answer in time.</summary>
+    PaymentProviderUnavailable = 9,
 }
 
 /// <summary>Each notice's code, the sentence its page shows, and where a step's page finds the notice left for it.</summary>
@@ -54,8 +57,9 @@ internal static class CheckoutStepNotices
         CheckoutStepNotice.PricesChanged => "prices-changed",
         CheckoutStepNotice.ReviewFirst => "review-first",
         CheckoutStepNotice.OrderNotPlaced => "order-not-placed",
-        CheckoutStepNotice.PaymentAlreadyAuthorized => "payment-already-authorized",
         CheckoutStepNotice.StockRanShort => "stock-ran-short",
+        CheckoutStepNotice.PaymentRefused => "payment-refused",
+        CheckoutStepNotice.PaymentProviderUnavailable => "payment-provider-unavailable",
         _ => throw new ArgumentOutOfRangeException(nameof(notice)),
     };
 
@@ -70,10 +74,11 @@ internal static class CheckoutStepNotices
             : null,
         CheckoutStepNotice.ReviewFirst => "Please review your order before placing it.",
         CheckoutStepNotice.OrderNotPlaced => "Your order could not be placed. Please try again.",
-        CheckoutStepNotice.PaymentAlreadyAuthorized => "Your payment is already authorized.",
         CheckoutStepNotice.StockRanShort => product is { } name
             ? $"Not enough stock left for '{name}'. Please adjust your order."
             : null,
+        CheckoutStepNotice.PaymentRefused => "The payment was refused. Please choose another way to pay.",
+        CheckoutStepNotice.PaymentProviderUnavailable => "The payment provider is not available right now. Please try again later.",
         _ => throw new ArgumentOutOfRangeException(nameof(notice)),
     };
 
@@ -111,24 +116,6 @@ internal static class CheckoutStepNotices
     /// </summary>
     public static (CheckoutStepNotice? Notice, int? Count, string? Product) TakeCheckoutStepNotice(this ITempDataDictionary tempData, CheckoutStep step) =>
         (FromCode(tempData[KeyOf(step)] as string), tempData[KeyOf(step) + CountSuffix] as int?, tempData[KeyOf(step) + ProductSuffix] as string);
-
-    /// <summary>
-    /// The sentence of a notice left for the step's page that informs rather than refuses, if that is the one left —
-    /// reading it removes it; a refusal stays for <see cref="TakeCheckoutStepNotice"/>.
-    /// </summary>
-    public static string? TakeCheckoutStepInformation(this ITempDataDictionary tempData, CheckoutStep step)
-    {
-        if (FromCode(tempData.Peek(KeyOf(step)) as string) is not { } notice || !notice.Informs())
-        {
-            return null;
-        }
-
-        tempData.Remove(KeyOf(step));
-        return notice.Sentence();
-    }
-
-    /// <summary>Whether the notice informs the customer rather than says why a step was refused.</summary>
-    private static bool Informs(this CheckoutStepNotice notice) => notice == CheckoutStepNotice.PaymentAlreadyAuthorized;
 
     /// <summary>The TempData key of the notice addressed to a step's page, written out per step.</summary>
     private static string KeyOf(CheckoutStep step) => step switch

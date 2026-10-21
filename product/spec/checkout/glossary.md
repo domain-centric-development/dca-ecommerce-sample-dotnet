@@ -56,13 +56,18 @@ claim of durable distributed transactions or universal rollback of unenlisted re
 **Operations:**
 - `Start` — the session comes into existence over a snapshot of the cart's positions, quantities and prices
 - `Supersede` — kept with status superseded when a new checkout action replaces it; no event; only an active session can be superseded
-- `SubmitBuyerInfo`, `SubmitDelivery`, `SubmitPayment` — record the step's data and move on to the next step when standing on it
-- `AssertReadyForPayment` — a question: the preconditions of `SubmitPayment`, checked without changing anything
-- `IsTotalCoveredBy` — a question: whether the session's payment, authorized by the given provider, covers its current total
-- `ReleasePayment` — the session forgets the payment the provider cancelled; a session past the payment step goes back to it
+- `SubmitBuyerInfo`, `SubmitDelivery`, `SubmitPayment` — record the step's data and move on to the next step when standing on it.
+  `SubmitPayment` records only the chosen provider: no payment is requested and no event is published; a total of zero
+  is refused (`NothingToPay`)
 - `GoBackTo` — moves the current step back; data already submitted stays
 - `AssertReadyForConfirmation` — a question: the preconditions of `Confirm` against a pricing verdict, checked without changing anything
-- `Confirm` — status confirmed, totals recomputed at current prices; refused while the pricing verdict reports a changed price or a shortage. Before it, `ConfirmCheckout` reserves the session's stock in Inventory: a line the stock no longer covers refuses the confirmation as a shortage, and a confirmation that then fails releases the reservation
+- `Confirm` — status confirmed, totals recomputed at current prices, the authorized payment recorded; publishes
+  `PaymentSubmitted`, then `CheckoutConfirmed`. Refused while the pricing verdict reports a changed price or a
+  shortage, and for a payment that does not pay exactly the confirmed total through the chosen provider
+  (`PaymentDoesNotCoverTotal`). Place Order (`ConfirmCheckout`) checks the session, reserves its stock in Inventory,
+  has the chosen provider authorize the session's total, then confirms: a line the stock no longer covers refuses the
+  confirmation as a shortage and requests no payment; a payment refused or unanswered, or a confirmation that then
+  fails, releases the reservation
 - `Complete` — after payment: status completed, with the order reference
 - `Abandon` — kept with status abandoned; the cart's contents stay
 - `Expire` — kept with status expired, for inactivity; the cart's contents stay
@@ -116,24 +121,22 @@ and shipping cost.
 
 ### PaymentSelection
 
-**Definition:** Selected payment method consisting of `PaymentProviderId` and the provider
-reference (e.g. payment intent ID) the provider returned when the payment was initiated, plus the authorized
-amount.
+**Definition:** Selected payment method: the `PaymentProviderId` chosen at the payment step and, once the provider
+authorized the payment at Place Order, the provider reference (e.g. payment intent ID) and the authorized amount.
 
 **Type:** Value Object
 
 **Related terms:** `PaymentProviderId`, `PaymentSubmitted`, Authorized amount, Payment cancellation.
 
-**Operations:** `WithReference`, `HasReference`, `Covers` — whether the payment, authorized by the given provider,
+**Operations:** `Authorized` — the chosen way to pay with the reference and the amount its provider authorized;
+`WithReference`, `HasReference`, `Covers` — whether the payment, authorized by the given provider,
 pays exactly the given total: it needs a payment reference, the same provider and an authorized amount equal to the
 total.
 
 ### Authorized amount (AuthorizedAmount)
 
-**Definition:** The total a `PaymentSelection`'s payment was authorized for. The payment covers the checkout only
-while it equals the checkout's current total: paying again for the same total requests nothing new and the customer
-sees "Your payment is already authorized."; a changed total (another shipping method) cancels the payment and
-requests a new one with the same checkout reference.
+**Definition:** The total the review showed, authorized by the payment provider at Place Order. The order is
+confirmed only when it covers the confirmed total (`PaymentDoesNotCoverTotal` otherwise).
 
 **Type:** Value Object (`Money`, part of `PaymentSelection`)
 
@@ -352,7 +355,8 @@ Kernel should be used here.
 
 ### PaymentSubmitted
 
-**Definition:** Payment method has been selected and submitted in the payment step.
+**Definition:** The payment provider authorized the order's total at Place Order; raised with `CheckoutConfirmed`,
+just before it.
 
 **Type:** Domain Event
 
@@ -521,6 +525,15 @@ confirmation step was navigated to directly.
 
 ---
 
+### PaymentDoesNotCoverTotal
+
+**Definition:** An order would be confirmed with a payment that does not pay exactly its total through the provider
+the customer chose. Carries the authorized amount and the total.
+
+**Type:** Domain failure (`DomainException`) · **Related terms:** `PaymentSelection`, Authorized amount
+
+---
+
 ### CheckoutValidation
 
 **Definition:** At confirmation time a line item no longer passes validation — price moved, stock ran out. Carries
@@ -547,7 +560,7 @@ carries their product ids, in cart order.
 cannot be reached, does not answer in time or answers outside its contract); or it refused to open a payment. The
 provider's reason travels on the failure and into the log. The customer sees the shop's own text: "The payment was
 refused. Please choose another way to pay." for a refusal, "The payment provider is not available right now. Please
-try again later." when the provider is unavailable.
+try again later." when the provider is unavailable — at the payment step or, for Place Order, on the review.
 
 **Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IPaymentProviderRegistry`, `IPaymentProvider`,
 `PaymentResult`
@@ -571,11 +584,12 @@ request carries the checkout session's total amount and currency and the checkou
 its outcome is one of:
 
 - `Succeeded` — an **authorized payment**: the provider accepted it and gave a payment reference. Only then
-  does the session record its `PaymentSelection` and publish `PaymentSubmitted`.
-- `Refused` — a **refused payment**: the provider answered and declined. The checkout stays at the payment
-  step (`PaymentInitiationFailed`).
+  does Place Order confirm the session, which records the authorized `PaymentSelection` and publishes
+  `PaymentSubmitted`.
+- `Refused` — a **refused payment**: the provider answered and declined. The checkout stays at the review, no
+  order is placed and the reserved stock is released (`PaymentInitiationFailed`).
 - `Unavailable` — an **unavailable provider**: no answer within 2 seconds, no connection, or an answer outside
-  the provider's contract. The checkout stays at the payment step (`PaymentProviderUnavailable`).
+  the provider's contract. The checkout stays at the review, as for a refusal (`PaymentProviderUnavailable`).
 
 **Type:** Concept (result of the `IPaymentProvider` output port)
 
@@ -590,15 +604,11 @@ cancellation).
 
 **Definition:** Releases an authorized payment at the payment provider by its payment reference, so the provider
 no longer holds it for the checkout. The REST adapter sends `POST /payments/{payment reference}/cancel`; `204`
-cancels the payment, any other answer, no answer in time or no connection counts as `Unavailable`. Paying again
-for a checkout whose payment no longer covers its total cancels that payment before the new one is requested; once
-the provider cancelled it, the session releases its `PaymentSelection` (`ReleasePayment`) and its payment step is
-open again. A cancellation the provider does not grant is logged and the new request goes ahead.
+cancels the payment, any other answer, no answer in time or no connection counts as `Unavailable`. No checkout step
+asks for a cancellation: Place Order checks the session and the stock before it requests the payment, and when the
+confirmation fails after the authorization, the reserved stock is released and no cancellation is sent.
 
 **Type:** Concept (operation `CancelPaymentAsync` of the `IPaymentProvider` output port)
-
-**Synonyms (avoid):** release — the session's side of a cancellation (`CheckoutSession.ReleasePayment`), not a
-second operation at the provider.
 
 **Related terms:** `PaymentResult`, `PaymentSelection`, Authorized amount.
 

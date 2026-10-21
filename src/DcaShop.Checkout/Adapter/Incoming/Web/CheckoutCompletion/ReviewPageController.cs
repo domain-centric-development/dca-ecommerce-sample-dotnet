@@ -28,12 +28,9 @@ public sealed class ReviewPageController : Controller
     }
 
     [HttpGet("review")]
-    public Task<IActionResult> Review(CancellationToken cancellationToken)
-    {
-        var information = TempData.TakeCheckoutStepInformation(CheckoutStep.Review);
-        return _page.ShowAsync(CheckoutStep.Review, (session, error) => Render(session, error, information), cancellationToken);
-    }
+    public Task<IActionResult> Review(CancellationToken cancellationToken) =>
+        _page.ShowAsync(CheckoutStep.Review, Render, cancellationToken);
 
-    private Task<IActionResult> Render(CheckoutCartSnapshot session, string? error, string? information) =>
-        Task.FromResult<IActionResult>(View("~/Views/Checkout/Review.cshtml", new ReviewPageViewModel(session, error, information)));
+    private Task<IActionResult> Render(CheckoutCartSnapshot session, string? error) =>
+        Task.FromResult<IActionResult>(View("~/Views/Checkout/Review.cshtml", new ReviewPageViewModel(session, error)));
 }
