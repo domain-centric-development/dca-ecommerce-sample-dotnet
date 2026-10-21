@@ -78,7 +78,7 @@ public sealed class CheckoutOwnershipTest : IClassFixture<WebApplicationFactory<
         Assert.Contains("Session not found", payment.Message, StringComparison.Ordinal);
 
         var confirmation = await Assert.ThrowsAsync<CheckoutSessionNotFoundException>(() => confirm.ExecuteAsync(
-            new ConfirmCheckoutCommand(sessionId, stranger)));
+            new ConfirmCheckoutCommand(sessionId, stranger, string.Empty)));
         Assert.Contains("Session not found", confirmation.Message, StringComparison.Ordinal);
     }
 

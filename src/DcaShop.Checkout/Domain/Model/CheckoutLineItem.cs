@@ -4,7 +4,10 @@ using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Checkout.Domain.Model;
 
-/// <summary>A line of the checkout session: product reference, label, unit price at the time of addition, quantity, image.</summary>
+/// <summary>
+/// A line of the checkout session: product reference, label, unit price — captured when the checkout started, the price
+/// the order was placed at once it is confirmed — quantity, image.
+/// </summary>
 public sealed record CheckoutLineItem : IValue
 {
     public CheckoutLineItem(CheckoutLineItemId id, ProductId productId, string productName, Money unitPrice, int quantity, string? imageUrl, string positionSnapshot = "")
@@ -45,4 +48,7 @@ public sealed record CheckoutLineItem : IValue
     public Money LineTotal => UnitPrice.Multiply(Quantity);
 
     public CheckoutLineItem WithQuantity(int newQuantity) => new(Id, ProductId, ProductName, UnitPrice, newQuantity, ImageUrl, PositionSnapshot);
+
+    /// <summary>The same line at <paramref name="newUnitPrice"/>.</summary>
+    public CheckoutLineItem WithUnitPrice(Money newUnitPrice) => new(Id, ProductId, ProductName, newUnitPrice, Quantity, ImageUrl, PositionSnapshot);
 }

@@ -101,6 +101,6 @@ public sealed class CheckoutPaymentAuthorizationTest
     {
         var pricing = new CheckoutPricing();
         var facts = session.LineItems.ToDictionary(i => i.ProductId, _ => new ArticlePrice(Money.Euro(10m), true, 5));
-        session.Confirm(pricing.ValidateItems(session, facts), pricing.CalculateOrderTotal(session, facts), authorizedPayment);
+        session.Confirm(pricing.ValidateItems(session, facts), facts, session.FingerprintAt(facts), authorizedPayment);
     }
 }

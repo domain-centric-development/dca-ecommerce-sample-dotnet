@@ -27,9 +27,7 @@ public sealed record CheckoutCartSnapshot(
     public static CheckoutCartSnapshot From(CheckoutSession session)
     {
         ArgumentNullException.ThrowIfNull(session);
-        var lineItems = session.LineItems
-            .Select(i => new LineItemSnapshot(i.Id, i.ProductId, i.ProductName, i.UnitPrice, i.Quantity, i.ImageUrl))
-            .ToList();
+        var lineItems = session.LineItems.Select(LineOf).ToList();
 
         return new CheckoutCartSnapshot(
             session.Id,
@@ -45,6 +43,18 @@ public sealed record CheckoutCartSnapshot(
             session.ShippingOption,
             session.PaymentSelection,
             session.OrderReference);
+    }
+
+    /// <summary>The session as the review shows it: its lines and totals at today's prices, as the article <paramref name="facts"/> state them.</summary>
+    public static CheckoutCartSnapshot AtTodaysPrices(CheckoutSession session, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
+    {
+        var totals = session.TotalsAt(facts);
+        return From(session) with
+        {
+            LineItems = session.LinesAt(facts).Select(LineOf).ToList(),
+            Subtotal = totals.Subtotal,
+            Totals = totals,
+        };
     }
 
     public int ItemCount => LineItems.Count;
@@ -105,6 +115,9 @@ public sealed record CheckoutCartSnapshot(
 
         return IsSkippingAhead(targetStep) ? StepAccess.RedirectTo(Step) : StepAccess.Grant();
     }
+
+    private static LineItemSnapshot LineOf(CheckoutLineItem line) =>
+        new(line.Id, line.ProductId, line.ProductName, line.UnitPrice, line.Quantity, line.ImageUrl);
 
     private StepAccess TerminalStateAccess(CheckoutStep targetStep) => Status switch
     {

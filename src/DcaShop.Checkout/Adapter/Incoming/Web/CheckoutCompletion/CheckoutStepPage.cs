@@ -193,14 +193,19 @@ internal sealed class CheckoutStepPage(
     }
 
     /// <summary>
-    /// The refused "Place Order" carried to the review, which renders it at its own address. A line the stock no longer
-    /// covers is named by its product; lines whose prices changed are counted.
+    /// The refused "Place Order" carried to the review, which renders it at its own address — and with it the order as
+    /// it is now. A line the stock no longer covers and a price changed since the review are named by their product;
+    /// lines whose prices changed are counted.
     /// </summary>
     private RedirectResult BackToTheReview(Exception refusal)
     {
         if (refusal is CheckoutValidationException { Validation.ShortOfStock: { } shortLine })
         {
             page.TempData.Leave(CheckoutStep.Review, CheckoutStepNotice.StockRanShort, product: shortLine.ProductName);
+        }
+        else if (refusal is PriceChangedSinceReviewException repriced)
+        {
+            page.TempData.Leave(CheckoutStep.Review, CheckoutStepNotice.PriceChangedSinceReview, product: repriced.ProductName);
         }
         else if (refusal is CheckoutValidationException invalid)
         {
@@ -224,6 +229,7 @@ internal sealed class CheckoutStepPage(
         CheckoutNotModifiableException => CheckoutStepNotice.CheckoutNotModifiable,
         CheckoutStepNotCompletedException => CheckoutStepNotice.EarlierStepsFirst,
         CheckoutStepOutOfOrderException => CheckoutStepNotice.ReviewFirst,
+        OrderChangedSinceReviewException => CheckoutStepNotice.OrderChangedSinceReview,
         PaymentInitiationFailedException => CheckoutStepNotice.PaymentRefused,
         PaymentProviderUnavailableException => CheckoutStepNotice.PaymentProviderUnavailable,
         _ => CheckoutStepNotice.OrderNotPlaced,

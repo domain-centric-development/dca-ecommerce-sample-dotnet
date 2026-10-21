@@ -47,3 +47,14 @@ A checkout step page that finds no session of the customer then resumes the open
 cart, read through Cart's Open Host Service, and hands that session to the customer. This is the one place a step
 page's GET updates a session; it never creates one, so a step page without an open session of the cart still leads
 to the cart. Cart never calls Checkout. A login with items in both carts is not covered here.
+
+## 2026-10-21 amendment: "Place Order" orders what the review showed
+
+The captured prices are the ones the checkout started with, not the ones it is placed at. The review page reads the
+session through `GetReview`, a query: the lines and totals at today's prices, as the article facts state them, and an
+`OrderFingerprint` over the lines (product, quantity, unit price), the buyer, the address, the shipping method and its
+price, the payment method and the total. Opening the review changes nothing. "Place Order" posts that fingerprint;
+`ConfirmCheckout` works it out again from the facts of that moment, before the stock is reserved and again in
+`CheckoutSession.Confirm`. A line that differs refuses with `PriceChangedSinceReviewException`, any other difference
+with `OrderChangedSinceReviewException`; state, totals and events stay unchanged. A confirmation that holds stores the
+lines at today's prices and their total. A changed price no longer needs a fresh checkout.

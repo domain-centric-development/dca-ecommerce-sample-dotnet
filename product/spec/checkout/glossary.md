@@ -17,7 +17,7 @@ The Checkout context groups its use cases into three features — domain-named n
 | Feature | Meaning | Use cases |
 |---------|---------|-----------|
 | `Session` | Starting a checkout session from a cart and reading it back in its lifecycle states | `StartCheckout`, `GetActiveCheckoutSession`, `GetCheckoutSession`, `GetConfirmedCheckoutSession` |
-| `CheckoutCompletion` | The steps that complete a checkout: buyer information, delivery, payment, confirmation — and resuming the cart's open checkout on a step page | `ResumeCheckout`, `SubmitBuyerInfo`, `GetShippingOptions`, `SubmitDelivery`, `GetPaymentProviders`, `SubmitPayment`, `ConfirmCheckout` |
+| `CheckoutCompletion` | The steps that complete a checkout: buyer information, delivery, payment, confirmation — and resuming the cart's open checkout on a step page | `ResumeCheckout`, `SubmitBuyerInfo`, `GetShippingOptions`, `SubmitDelivery`, `GetPaymentProviders`, `SubmitPayment`, `GetReview`, `ConfirmCheckout` |
 | `CartSync` | Following changes of the underlying cart while the session is active | `SyncCheckoutWithCart` |
 
 `Application/Shared/` stays context-wide. The web adapter mirrors the features: `Adapter/Incoming/Web/Session/`
@@ -34,7 +34,7 @@ sits in `Adapter/Incoming/Event/CartSync/`.
 
 ### CheckoutSession
 
-An explicit checkout action captures immutable positions, quantities and prices into a session. Cart edits do not
+An explicit checkout action captures immutable positions and quantities, and the prices of that moment, into a session. Cart edits do not
 create or mutate sessions. A new action supersedes the previous OPEN/Active session; confirmed/completed orders remain.
 Confirmation and replacement serialize through the same repository operation, including transaction completion.
 Superseded confirmation has no completion effect. Abandonment/expiry closes only an open session and leaves cart contents.
@@ -46,9 +46,11 @@ retains the same domain state. Legacy CheckedOut/Completed cart statuses remain 
 an active cart editable and never completes the whole cart.
 
 Confirmation retrieves current price/availability/stock facts before its local transaction. Pure domain services consume
-immutable line/fact snapshots. Any changed price or shortage reports affected lines and leaves state, totals and events
-unchanged. The buyer explicitly starts a fresh checkout against the new prices. Success stores the recomputed total and
-publishes the same total; there is no no-argument confirmation path. Local in-memory repository serialization is not a
+immutable line/fact snapshots. The review shows the order at today's prices and changes nothing; "Place Order" carries
+the order fingerprint the review showed. A shortage, or an order whose fingerprint at today's prices differs from the one
+shown, is refused and leaves state, totals and events unchanged; the review then shows today's order, and pressing
+"Place Order" again orders it. Success stores the lines at today's prices with their total and publishes the same total;
+there is no confirmation without a fingerprint. Local in-memory repository serialization is not a
 claim of durable distributed transactions or universal rollback of unenlisted resources.
 
 **Type:** Aggregate Root
@@ -60,14 +62,17 @@ claim of durable distributed transactions or universal rollback of unenlisted re
   `SubmitPayment` records only the chosen provider: no payment is requested and no event is published; a total of zero
   is refused (`NothingToPay`)
 - `GoBackTo` — moves the current step back; data already submitted stays
-- `AssertReadyForConfirmation` — a question: the preconditions of `Confirm` against a pricing verdict, checked without changing anything
-- `Confirm` — status confirmed, totals recomputed at current prices, the authorized payment recorded; publishes
-  `PaymentSubmitted`, then `CheckoutConfirmed`. Refused while the pricing verdict reports a changed price or a
-  shortage, and for a payment that does not pay exactly the confirmed total through the chosen provider
-  (`PaymentDoesNotCoverTotal`). Place Order (`ConfirmCheckout`) checks the session, reserves its stock in Inventory,
-  has the chosen provider authorize the session's total, then confirms: a line the stock no longer covers refuses the
-  confirmation as a shortage and requests no payment; a payment refused or unanswered, or a confirmation that then
-  fails, releases the reservation
+- `LinesAt`, `TotalsAt`, `FingerprintAt` — questions: the lines, the totals and the order fingerprint at today's prices, as the article facts state them; a line whose article is not available keeps its own price
+- Get review (`GetReview`) — the use case the review page reads: the session at today's prices with its order fingerprint; no transaction, nothing stored
+- `AssertReadyForConfirmation` — a question: the preconditions of `Confirm` against a pricing verdict and the order fingerprint shown, checked without changing anything
+- `Confirm` — status confirmed, the lines and totals at today's prices, the authorized payment recorded; publishes
+  `PaymentSubmitted`, then `CheckoutConfirmed`. Refused while the pricing verdict reports a shortage, when the order
+  fingerprint at today's prices differs from the one the review showed (`PriceChangedSinceReview` names the first line
+  that differs, `OrderChangedSinceReview` anything else), and for a payment that does not pay exactly the confirmed
+  total through the chosen provider (`PaymentDoesNotCoverTotal`). Place Order (`ConfirmCheckout`) checks the session
+  and the fingerprint, reserves its stock in Inventory, has the chosen provider authorize the total the review showed,
+  then confirms: an order changed since the review, or a line the stock no longer covers, is refused and requests no
+  payment; a payment refused or unanswered, or a confirmation that then fails, releases the reservation
 - `Complete` — after payment: status completed, with the order reference
 - `Abandon` — kept with status abandoned; the cart's contents stay
 - `Expire` — kept with status expired, for inactivity; the cart's contents stay
@@ -145,7 +150,8 @@ confirmed only when it covers the confirmed total (`PaymentDoesNotCoverTotal` ot
 ### CheckoutLineItem
 
 **Definition:** A line item within the checkout session — contains product reference, label,
-unit price (at the time of addition), quantity, and an optional product image.
+unit price (captured when the checkout started; once confirmed, the price the order was placed at), quantity, and an
+optional product image.
 
 **Type:** Value Object
 
@@ -153,7 +159,7 @@ unit price (at the time of addition), quantity, and an optional product image.
 
 **Related terms:** `CheckoutSession`, `EnrichedCheckoutLineItem`, `LineItemSnapshot`.
 
-**Operations:** `LineTotal`, `WithQuantity`.
+**Operations:** `LineTotal`, `WithQuantity`, `WithUnitPrice`.
 
 **Notes:** Deliberately modelled as a Value Object (no separate entity) because identity is only
 relevant within the `CheckoutSession`. Conflict: `LineItemInfo` (in the `CheckoutConfirmed` event)
@@ -219,7 +225,7 @@ total (`Total`) — the amount of the order, not an amount paid: the payment is 
 
 ### CheckoutValidationResult
 
-**Definition:** Result of validating the line items against current price and availability data;
+**Definition:** Result of validating the line items against current availability and stock data;
 contains a list of `ValidationError` entries.
 
 **Type:** Value Object
@@ -227,7 +233,7 @@ contains a list of `ValidationError` entries.
 **Related terms:** `ValidationError`, `ICheckoutArticlePriceResolver`, `CheckoutSession`.
 
 **Operations:** `IsValid`, `Valid`, `WithErrors`, `WithError`, `ShortOfStock` (the first line, in line
-order, that is unavailable or short of stock; none when only prices changed).
+order, that is unavailable or short of stock).
 
 ### ValidationError
 
@@ -324,6 +330,19 @@ Kernel should be used here.
 **Type:** Value Object
 
 **Related terms:** `ICheckoutArticlePriceResolver`.
+
+### Order fingerprint (OrderFingerprint)
+
+**Definition:** What the review showed: each line's product, quantity and unit price, the buyer, the address, the
+shipping method and its price, the payment method and the total — carried by "Place Order". A different one at that
+moment refuses the order; a missing or garbled one matches no order.
+
+**Type:** Value Object
+
+**Related terms:** `CheckoutSession`, Get review, `PriceChangedSinceReview`, `OrderChangedSinceReview`.
+
+**Operations:** `Of`, `From`, `FirstChangedLine` — the first line whose digest differs from the fingerprint shown; none
+when the lines agree or their number differs.
 
 ---
 
@@ -429,7 +448,7 @@ denied access sends the customer to the step still open, which says that the ear
 
 ### CheckoutArticlePriceResolver
 
-Legacy application/test lookup abstraction. CheckoutSession accepts supplied article facts; CheckoutPricing owns cross-article validation and calculation. No repository or remote callback enters the aggregate.
+Legacy application/test lookup abstraction. CheckoutSession accepts supplied article facts; CheckoutPricing owns cross-article validation of availability and stock. No repository or remote callback enters the aggregate.
 
 ### CheckoutCartFactory
 
@@ -455,7 +474,7 @@ and read purposes.
 
 **Related terms:** `CheckoutSession`, `LineItemSnapshot`.
 
-**Operations:** `From`, `ItemCount`, `TotalQuantity`, `HasBuyerInfo`, `HasDeliveryAddress`,
+**Operations:** `From`, `AtTodaysPrices` (the session as the review shows it), `ItemCount`, `TotalQuantity`, `HasBuyerInfo`, `HasDeliveryAddress`,
 `HasShippingOption`, `HasPaymentSelection`, `HasTotals`, `HasOrderReference`, `IsActive`,
 `IsCompleted`, `IsConfirmed`.
 
@@ -536,10 +555,21 @@ the customer chose. Carries the authorized amount and the total.
 
 ### CheckoutValidation
 
-**Definition:** At confirmation time a line item no longer passes validation — price moved, stock ran out. Carries
+**Definition:** At confirmation time a line item no longer passes validation — unavailable, or short of stock. Carries
 the per-item result.
 
 **Type:** Domain failure (`DomainException`) · **Related terms:** `CheckoutValidationResult`
+
+---
+
+### PriceChangedSinceReview / OrderChangedSinceReview
+
+**Definition:** "Place Order" met an order whose fingerprint differs from the one the review showed. A line that
+differs names its product: "The price of '<product>' has changed. Please check your order and place it again."; any
+other change since — in another tab, say — refuses the order as a whole: "Your order has changed since you reviewed it.
+Please check it and place it again." Either way the review shows today's order.
+
+**Type:** Domain failure (`DomainException`) · **Related terms:** Order fingerprint, `CheckoutSession`
 
 ---
 

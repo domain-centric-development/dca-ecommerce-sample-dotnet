@@ -111,10 +111,10 @@ public sealed class CheckoutCartSnapshotAccessTest
         Assert.False(access.IsBackToCart);
         Assert.Equal(CheckoutStep.BuyerInfo, access.RedirectStep);
     }
-    /// <summary>What the use case does: the pricing judges, the session confirms.</summary>
+    /// <summary>What the use case does: the pricing judges, the session confirms the order the review showed.</summary>
     private static void ConfirmWith(CheckoutSession session, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
         var pricing = new CheckoutPricing();
-        session.Confirm(pricing.ValidateItems(session, facts), pricing.CalculateOrderTotal(session, facts), new PaymentSelection(session.PaymentSelection!.ProviderId, "pay-1", session.Totals.Total));
+        session.Confirm(pricing.ValidateItems(session, facts), facts, session.FingerprintAt(facts), new PaymentSelection(session.PaymentSelection!.ProviderId, "pay-1", session.TotalsAt(facts).Total));
     }
 }

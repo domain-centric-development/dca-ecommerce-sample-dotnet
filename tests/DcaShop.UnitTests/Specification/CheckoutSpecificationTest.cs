@@ -62,7 +62,6 @@ public sealed class CheckoutSpecificationTest
                 {
                     await f.Confirm(session); session.Complete("order"); await f.Start(); Assert.Equal(CheckoutSessionStatus.Completed, session.Status); break;
                 }
-            case "checkout.confirm.price-changed":
             case "checkout.confirm.out-of-stock":
                 {
                     var totals = session.Totals; var events = f.Events.Published.Count;
@@ -72,6 +71,16 @@ public sealed class CheckoutSpecificationTest
                     Assert.Equal(f.Product, Assert.Single(failure.Validation.Errors).ProductId);
                     Assert.False(v.GetProperty("accept").GetBoolean());
                     Assert.Equal(v.GetProperty("errors").GetInt32(), failure.Validation.Errors.Count);
+                    Assert.Equal(CheckoutSessionStatus.Active, session.Status);
+                    Assert.Equal(totals, session.Totals); Assert.Empty(session.DomainEvents); Assert.Equal(events, f.Events.Published.Count); break;
+                }
+            case "checkout.confirm.price-changed":
+                {
+                    // The review showed the price the checkout started with; a price changed since refuses the order
+                    var totals = session.Totals; var events = f.Events.Published.Count; var shown = f.Review(session);
+                    f.Price = Money.Euro(decimal.Parse(v.GetProperty("newUnitPrice").GetString()!, System.Globalization.CultureInfo.InvariantCulture));
+                    await Assert.ThrowsAsync<PriceChangedSinceReviewException>(() => f.Confirm(session, shown));
+                    Assert.False(v.GetProperty("accept").GetBoolean());
                     Assert.Equal(CheckoutSessionStatus.Active, session.Status);
                     Assert.Equal(totals, session.Totals); Assert.Empty(session.DomainEvents); Assert.Equal(events, f.Events.Published.Count); break;
                 }
@@ -124,7 +133,10 @@ public sealed class CheckoutSpecificationTest
                 .ExecuteAsync(new StartCheckoutCommand(Cart.Id.Value, Cart.CustomerId.Value));
             return (await Repository.FindByIdAsync(new CheckoutSessionId(result.SessionId)))!;
         }
-        public Task<ConfirmCheckoutResult> Confirm(CheckoutSession session) => new ConfirmCheckoutUseCase(Repository, this, this, new InMemoryPaymentProviderRegistry([new StandIn()]), new CheckoutPricing(), Events, new InMemoryTransactionBoundary(), NullLogger<ConfirmCheckoutUseCase>.Instance).ExecuteAsync(new ConfirmCheckoutCommand(session.Id.Value, session.CustomerId.Value));
+        /// <summary>Places the order with the fingerprint the review <paramref name="shown"/> — by default the one it shows now.</summary>
+        public Task<ConfirmCheckoutResult> Confirm(CheckoutSession session, string? shown = null) => new ConfirmCheckoutUseCase(Repository, this, this, new InMemoryPaymentProviderRegistry([new StandIn()]), new CheckoutPricing(), Events, new InMemoryTransactionBoundary(), NullLogger<ConfirmCheckoutUseCase>.Instance).ExecuteAsync(new ConfirmCheckoutCommand(session.Id.Value, session.CustomerId.Value, shown ?? Review(session)));
+        /// <summary>The fingerprint the review shows for the session at the fixture's price and stock.</summary>
+        public string Review(CheckoutSession session) => session.FingerprintAt(session.LineItems.ToDictionary(l => l.ProductId, _ => new ArticlePrice(Price, true, Stock))).Value;
         public Task<IReadOnlyList<IStockReservationPort.Shortage>> ReserveAsync(IReadOnlyCollection<CheckoutLineItem> lines, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<IStockReservationPort.Shortage>>([]);
         public Task ReleaseAsync(IReadOnlyCollection<CheckoutLineItem> lines, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<CartData?> FindByIdAsync(CartId cartId, CustomerId customerId, CancellationToken cancellationToken = default) => Task.FromResult<CartData?>(new CartData(cartId, customerId, Cart.Items.Select(i => new CartData.CartItemData(i.ProductId, i.PriceAtAddition.Value, i.Quantity.Value, i.PositionSnapshot)).ToArray(), Cart.IsActive));

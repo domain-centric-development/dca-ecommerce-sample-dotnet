@@ -4,23 +4,13 @@ using DcaShop.SharedKernel.Domain.Model;
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 namespace DcaShop.Checkout.Domain.Service;
 
+/// <summary>
+/// Judges whether a session's lines can still be bought, against the article facts of this moment: available, and in
+/// stock for the quantity. A price that moved is no reason to refuse here — whether the customer saw it is the order
+/// fingerprint's to say.
+/// </summary>
 public sealed class CheckoutPricing : IDomainService
 {
-    public Money CalculateOrderTotal(CheckoutSession session, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
-    {
-        var lines = session.LineItems;
-        var currency = session.Totals.Subtotal.Currency;
-        ArgumentNullException.ThrowIfNull(facts);
-        var total = Money.Zero(currency);
-        foreach (var item in lines)
-        {
-            total = total.Add(facts[item.ProductId].Price.Multiply(item.Quantity));
-        }
-
-        return total;
-
-    }
-
     public CheckoutValidationResult ValidateItems(CheckoutSession session, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
         var lines = session.LineItems;
@@ -32,10 +22,6 @@ public sealed class CheckoutPricing : IDomainService
             if (article is null || !article.IsAvailable)
             {
                 errors.Add(ValidationError.ProductUnavailable(item.ProductId, item.ProductName));
-            }
-            else if (article.Price != item.UnitPrice)
-            {
-                errors.Add(new ValidationError(item.ProductId, ErrorType.PriceChanged, $"Product {item.ProductId}: price changed; start a fresh checkout to accept it", item.ProductName));
             }
             else if (article.AvailableStock < item.Quantity)
             {

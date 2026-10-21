@@ -345,7 +345,7 @@ Product creation and Pricing use strictly positive Price. Product-created v1 is 
 in the local payload ADR. Invalid default quantities are rejected at entry/reconstitution; account role observations
 are immutable snapshots. Aggregate creation owns event registration.
 
-An explicit checkout action captures immutable positions, quantities and prices into a session. Cart edits do not
+An explicit checkout action captures immutable positions and quantities, and the prices of that moment, into a session. Cart edits do not
 create or mutate sessions. A new action supersedes the previous OPEN/Active session; confirmed/completed orders remain.
 Confirmation and replacement serialize through the same repository operation, including transaction completion.
 Superseded confirmation has no completion effect. Abandonment/expiry closes only an open session and leaves cart contents.
@@ -357,9 +357,10 @@ retains the same domain state. The legacy Completed cart status remains readable
 an active cart editable and never completes the whole cart.
 
 Confirmation retrieves current price/availability/stock facts before its local transaction. Pure domain services consume
-immutable line/fact snapshots. Any changed price or shortage reports affected lines and leaves state, totals and events
-unchanged. The buyer explicitly starts a fresh checkout against the new prices. Success stores the recomputed total and
-publishes the same total; there is no no-argument confirmation path. Local in-memory repository serialization is not a
+immutable line/fact snapshots. The review shows the order at today's prices; "Place Order" carries the order fingerprint
+the review showed. A shortage, or a fingerprint that differs at that moment, is refused and leaves state, totals and
+events unchanged; the review then shows today's order. Success stores the lines at today's prices with their total and
+publishes the same total; there is no confirmation without a fingerprint. Local in-memory repository serialization is not a
 claim of durable distributed transactions or universal rollback of unenlisted resources.
 
 The language-neutral specification is an independently owned, currently unpublished repository. It is **not part of the

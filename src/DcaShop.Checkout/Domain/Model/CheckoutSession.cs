@@ -126,26 +126,71 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
     }
 
     /// <summary>
-    /// Confirms the checkout with the payment its provider authorized at "Place Order", once the checkout pricing has
-    /// judged the current line items. The verdict and the recomputed subtotal are handed in by the use case: deciding
-    /// them needs article facts the session does not own. The session refuses an invalid verdict, and a payment that
-    /// does not pay exactly the confirmed total through the provider the customer chose.
+    /// The lines at today's prices, as the article <paramref name="facts"/> state them: a line whose article is
+    /// available takes its current price, any other keeps its own. Positions and quantities stay as captured.
     /// </summary>
-    public void Confirm(CheckoutValidationResult validation, Money recomputedSubtotal, PaymentSelection authorizedPayment)
+    public IReadOnlyList<CheckoutLineItem> LinesAt(IReadOnlyDictionary<ProductId, ArticlePrice> facts) =>
+        _lineItems
+            .Select(line => facts.GetValueOrDefault(line.ProductId) is { IsAvailable: true } article ? line.WithUnitPrice(article.Price) : line)
+            .ToList();
+
+    /// <summary>The totals of the lines at today's prices, with the shipping chosen.</summary>
+    public CheckoutTotals TotalsAt(IReadOnlyDictionary<ProductId, ArticlePrice> facts) => TotalsOf(LinesAt(facts));
+
+    /// <summary>The fingerprint of the order at today's prices — what the review shows.</summary>
+    public OrderFingerprint FingerprintAt(IReadOnlyDictionary<ProductId, ArticlePrice> facts) => FingerprintOf(LinesAt(facts));
+
+    /// <summary>
+    /// Confirms the checkout as the review showed it, with the payment its provider authorized at "Place Order": once the
+    /// checkout pricing has judged the lines, and only when the order at today's prices still has the fingerprint the
+    /// review <paramref name="shown"/>. The session then holds the lines at those prices and their totals. The verdict
+    /// and the article facts are handed in by the use case: they are the facts of this moment, which the session does
+    /// not own. The session refuses a payment that does not pay exactly that total through the provider the customer chose.
+    /// </summary>
+    public void Confirm(
+        CheckoutValidationResult validation,
+        IReadOnlyDictionary<ProductId, ArticlePrice> facts,
+        OrderFingerprint shown,
+        PaymentSelection authorizedPayment)
     {
-        AssertReadyForConfirmation(validation);
-        var totals = CheckoutTotals.Calculate(recomputedSubtotal, Totals.Shipping);
+        AssertReadyForConfirmation(validation, facts, shown);
+        var lines = LinesAt(facts);
+        var totals = TotalsOf(lines);
         if (!authorizedPayment.Covers(PaymentSelection!.ProviderId, totals.Total))
         {
             throw new PaymentDoesNotCoverTotalException(Id, authorizedPayment.AuthorizedAmount, totals.Total);
         }
 
         Totals = totals;
+        _lineItems.Clear();
+        _lineItems.AddRange(lines);
         PaymentSelection = authorizedPayment;
         Status = CheckoutSessionStatus.Confirmed;
         CurrentStep = CheckoutStep.Confirmation;
         RegisterEvent(PaymentSubmitted.Now(Id, authorizedPayment));
         RegisterEvent(CheckoutConfirmed.Now(Id, CartId, CustomerId, Totals.Total, _lineItems));
+    }
+
+    /// <summary>
+    /// Asserts that the order the review <paramref name="shown"/> may be confirmed right now — the same preconditions
+    /// <see cref="Confirm"/> enforces, without changing anything. A line whose price changed since the review is named;
+    /// any other change since refuses the order as a whole.
+    /// </summary>
+    public void AssertReadyForConfirmation(CheckoutValidationResult validation, IReadOnlyDictionary<ProductId, ArticlePrice> facts, OrderFingerprint shown)
+    {
+        AssertReadyForConfirmation(validation);
+        var reviewed = FingerprintAt(facts);
+        if (reviewed == shown)
+        {
+            return;
+        }
+
+        if (reviewed.FirstChangedLine(shown) is { } line)
+        {
+            throw new PriceChangedSinceReviewException(Id, _lineItems[line].ProductName);
+        }
+
+        throw new OrderChangedSinceReviewException(Id);
     }
 
     /// <summary>
@@ -266,6 +311,16 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
             throw new CheckoutStepOutOfOrderException(Id, step, CurrentStep);
         }
     }
+
+    /// <summary>The totals of <paramref name="lines"/> with the shipping chosen.</summary>
+    private CheckoutTotals TotalsOf(IReadOnlyList<CheckoutLineItem> lines)
+    {
+        var subtotal = lines.Aggregate(Money.Zero(Totals.Subtotal.Currency), (sum, line) => sum.Add(line.LineTotal));
+        return CheckoutTotals.Calculate(subtotal, Totals.Shipping);
+    }
+
+    private OrderFingerprint FingerprintOf(IReadOnlyList<CheckoutLineItem> lines) =>
+        OrderFingerprint.Of(lines, BuyerInfo, DeliveryAddress, ShippingOption, PaymentSelection, TotalsOf(lines).Total);
 
     private void EnsureAllStepsCompleted()
     {

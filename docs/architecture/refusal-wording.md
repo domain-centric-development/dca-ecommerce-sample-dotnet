@@ -200,7 +200,8 @@ Placing the order (`/checkout/confirm`):
 | Refusal | Sentence |
 |---|---|
 | `CheckoutValidationException`, a line unavailable or short of stock — at the check or at the reservation | Not enough stock left for '{product}'. Please adjust your order. |
-| `CheckoutValidationException`, only prices changed | Cannot place the order, {count} item(s) unavailable or out of stock. |
+| `PriceChangedSinceReviewException` — a line differs from what the review showed | The price of '{product}' has changed. Please check your order and place it again. |
+| `OrderChangedSinceReviewException` — anything else differs from what the review showed | Your order has changed since you reviewed it. Please check it and place it again. |
 | `CheckoutStepNotCompletedException` | Please complete the previous checkout steps first. |
 | `CheckoutStepOutOfOrderException` | Please review your order before placing it. |
 | `PaymentInitiationFailedException` | The payment was refused. Please choose another way to pay. |

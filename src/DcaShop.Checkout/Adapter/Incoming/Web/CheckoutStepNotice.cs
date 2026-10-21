@@ -38,6 +38,12 @@ internal enum CheckoutStepNotice
 
     /// <summary>"Place Order" met a payment provider that is not taking payments or did not answer in time.</summary>
     PaymentProviderUnavailable = 9,
+
+    /// <summary>"Place Order" found a price changed since the review showed the order; names its product.</summary>
+    PriceChangedSinceReview = 10,
+
+    /// <summary>"Place Order" found the order changed since the review showed it, in anything but a price.</summary>
+    OrderChangedSinceReview = 11,
 }
 
 /// <summary>Each notice's code, the sentence its page shows, and where a step's page finds the notice left for it.</summary>
@@ -60,6 +66,8 @@ internal static class CheckoutStepNotices
         CheckoutStepNotice.StockRanShort => "stock-ran-short",
         CheckoutStepNotice.PaymentRefused => "payment-refused",
         CheckoutStepNotice.PaymentProviderUnavailable => "payment-provider-unavailable",
+        CheckoutStepNotice.PriceChangedSinceReview => "price-changed-since-review",
+        CheckoutStepNotice.OrderChangedSinceReview => "order-changed-since-review",
         _ => throw new ArgumentOutOfRangeException(nameof(notice)),
     };
 
@@ -79,6 +87,10 @@ internal static class CheckoutStepNotices
             : null,
         CheckoutStepNotice.PaymentRefused => "The payment was refused. Please choose another way to pay.",
         CheckoutStepNotice.PaymentProviderUnavailable => "The payment provider is not available right now. Please try again later.",
+        CheckoutStepNotice.PriceChangedSinceReview => product is { } repriced
+            ? $"The price of '{repriced}' has changed. Please check your order and place it again."
+            : null,
+        CheckoutStepNotice.OrderChangedSinceReview => "Your order has changed since you reviewed it. Please check it and place it again.",
         _ => throw new ArgumentOutOfRangeException(nameof(notice)),
     };
 

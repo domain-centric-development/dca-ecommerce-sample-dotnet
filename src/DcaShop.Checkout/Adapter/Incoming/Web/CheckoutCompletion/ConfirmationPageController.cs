@@ -40,10 +40,10 @@ public sealed class ConfirmationPageController : Controller
     /// review's form says it was sent from there; a "Place Order" sent from any other page places nothing.
     /// </summary>
     [HttpPost("confirm")]
-    public Task<IActionResult> Confirm([FromForm] string? placedFrom, CancellationToken cancellationToken) =>
+    public Task<IActionResult> Confirm([FromForm] string? placedFrom, [FromForm] string? fingerprint, CancellationToken cancellationToken) =>
         _page.PlacingTheOrderAsync(
             placedFrom == FromTheReview,
-            id => _confirm.ExecuteAsync(new ConfirmCheckoutCommand(id, _page.CurrentCustomerId()), cancellationToken),
+            id => _confirm.ExecuteAsync(new ConfirmCheckoutCommand(id, _page.CurrentCustomerId(), fingerprint ?? string.Empty), cancellationToken),
             cancellationToken);
 
     [HttpGet("confirmation")]

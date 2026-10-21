@@ -4,6 +4,7 @@ using System.Text.Json;
 using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
+using DcaShop.Checkout.Application.CheckoutCompletion.GetReview;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitBuyerInfo;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
@@ -83,12 +84,14 @@ internal sealed class PortCheckouts(WebApplicationFactory<Program> shop)
             .ExecuteAsync(new SubmitPaymentCommand(checkout.SessionId, checkout.CustomerId, Provider));
     }
 
-    /// <summary>The customer presses "Place Order".</summary>
+    /// <summary>The customer presses "Place Order" on the review, which carries the fingerprint of the order it showed.</summary>
     public async Task<ConfirmCheckoutResult> PlaceOrderAsync(CustomersCheckout checkout)
     {
         using var scope = shop.Services.CreateScope();
+        var review = await scope.ServiceProvider.GetRequiredService<IGetReviewInputPort>()
+            .ExecuteAsync(new GetReviewQuery(checkout.SessionId, checkout.CustomerId));
         return await scope.ServiceProvider.GetRequiredService<IConfirmCheckoutInputPort>()
-            .ExecuteAsync(new ConfirmCheckoutCommand(checkout.SessionId, checkout.CustomerId));
+            .ExecuteAsync(new ConfirmCheckoutCommand(checkout.SessionId, checkout.CustomerId, review.Fingerprint));
     }
 
     /// <summary>The checkout session as it is stored now.</summary>

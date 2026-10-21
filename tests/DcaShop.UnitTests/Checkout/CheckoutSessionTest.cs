@@ -126,11 +126,14 @@ public sealed class CheckoutSessionTest
     [Fact]
     public void CannotStartWithoutLineItems() =>
         Assert.Throws<EmptyCheckoutException>(() => CheckoutSession.Start(new CartId(Guid.NewGuid()), CustomerId.Of("g"), Array.Empty<CheckoutLineItem>(), Money.Euro(0m)));
-    /// <summary>What the use case does: the pricing judges, the provider authorizes the total, the session confirms.</summary>
+    /// <summary>
+    /// What the use case does: the pricing judges, the provider authorizes the total the review showed, the session
+    /// confirms the order the review showed.
+    /// </summary>
     private static void ConfirmWith(CheckoutSession session, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
         var pricing = new CheckoutPricing();
-        var authorized = new PaymentSelection(session.PaymentSelection!.ProviderId, "pay-1", session.Totals.Total);
-        session.Confirm(pricing.ValidateItems(session, facts), pricing.CalculateOrderTotal(session, facts), authorized);
+        var authorized = new PaymentSelection(session.PaymentSelection!.ProviderId, "pay-1", session.TotalsAt(facts).Total);
+        session.Confirm(pricing.ValidateItems(session, facts), facts, session.FingerprintAt(facts), authorized);
     }
 }

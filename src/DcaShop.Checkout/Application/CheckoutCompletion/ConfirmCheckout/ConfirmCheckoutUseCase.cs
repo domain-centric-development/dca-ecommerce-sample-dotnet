@@ -1,6 +1,7 @@
 using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.Service;
+using DcaShop.SharedKernel.Domain.Model;
 
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
@@ -10,9 +11,10 @@ using Microsoft.Extensions.Logging;
 namespace DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
 
 /// <summary>
-/// Places the order: checks every line against the facts of this moment, reserves the order's stock in Inventory, has
-/// the payment provider authorize the total the review showed and only then confirms the session. Of two orders placed
-/// at once, the one whose reservation the stock no longer covers is refused, naming the line, requests no payment and
+/// Places the order the review showed: checks every line against the facts of this moment and the order at today's
+/// prices against the fingerprint the review showed, reserves the order's stock in Inventory, has the payment provider
+/// authorize the total the review showed and only then confirms the session at those prices. Of two orders placed at
+/// once, the one whose reservation the stock no longer covers is refused, naming the line, requests no payment and
 /// changes nothing; a refused or unanswered payment gives the reservation back and places no order.
 /// </summary>
 public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
@@ -58,10 +60,11 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
         var current = await LoadAsync(sessionId, customerId, cancellationToken).ConfigureAwait(false);
         var articles = await _articleData.GetArticleDataAsync(current.LineItems.Select(i => i.ProductId).ToArray(), cancellationToken).ConfigureAwait(false);
         var facts = articles.ToDictionary(e => e.Key, e => new ArticlePrice(e.Value.CurrentPrice, e.Value.IsAvailable, e.Value.AvailableStock));
+        var shown = OrderFingerprint.From(command.Fingerprint);
 
-        // Everything the session itself can refuse is refused before the stock is reserved: no order that cannot be
-        // placed holds stock back from another
-        current.AssertReadyForConfirmation(_pricing.ValidateItems(current, facts));
+        // Everything the session itself can refuse — an order changed since the review among it — is refused before the
+        // stock is reserved: no order that cannot be placed holds stock back from another
+        current.AssertReadyForConfirmation(_pricing.ValidateItems(current, facts), facts, shown);
         await ReserveStockAsync(current, cancellationToken).ConfigureAwait(false);
 
         // The payment comes last, outside the transaction (the provider is remote): for exactly the total the review
@@ -70,12 +73,12 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
         // superseded by a new checkout or confirmed in another tab.
         try
         {
-            var payment = await AuthorizePaymentAsync(current, cancellationToken).ConfigureAwait(false);
+            var payment = await AuthorizePaymentAsync(current, current.TotalsAt(facts).Total, cancellationToken).ConfigureAwait(false);
             return await _sessions.InCartSessionAsync(current.CartId, () => _transactionBoundary.InTransactionAsync(
                 async ct =>
                 {
                     var session = await LoadAsync(sessionId, customerId, ct).ConfigureAwait(false);
-                    session.Confirm(_pricing.ValidateItems(session, facts), _pricing.CalculateOrderTotal(session, facts), payment);
+                    session.Confirm(_pricing.ValidateItems(session, facts), facts, shown, payment);
                     await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                     await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
                     return ConfirmCheckoutResult.From(session);
@@ -90,11 +93,11 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
     }
 
     /// <summary>
-    /// Has the provider the customer chose authorize the session's total, under the checkout's reference, and answers the
-    /// chosen way to pay with that authorization. A provider the shop no longer knows, one that is not taking payments or
-    /// does not answer, and one that refuses are each refused by their own failure.
+    /// Has the provider the customer chose authorize <paramref name="amount"/> — the total the review showed — under the
+    /// checkout's reference, and answers the chosen way to pay with that authorization. A provider the shop no longer
+    /// knows, one that is not taking payments or does not answer, and one that refuses are each refused by their own failure.
     /// </summary>
-    private async Task<PaymentSelection> AuthorizePaymentAsync(CheckoutSession session, CancellationToken cancellationToken)
+    private async Task<PaymentSelection> AuthorizePaymentAsync(CheckoutSession session, Money amount, CancellationToken cancellationToken)
     {
         var chosen = session.PaymentSelection!;
         var provider = await _providers.FindAsync(chosen.ProviderId, cancellationToken).ConfigureAwait(false)
@@ -104,7 +107,6 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
             throw new PaymentProviderUnavailableException(chosen.ProviderId);
         }
 
-        var amount = session.Totals.Total;
         var initiation = await provider.InitiatePaymentAsync(session.Id, amount, cancellationToken).ConfigureAwait(false);
         if (initiation.Outcome == IPaymentProvider.PaymentOutcome.Unavailable)
         {

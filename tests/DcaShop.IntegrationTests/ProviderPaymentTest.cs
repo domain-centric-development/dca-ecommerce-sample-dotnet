@@ -180,7 +180,7 @@ public sealed class ProviderPaymentTest : IClassFixture<WebApplicationFactory<Pr
     {
         var token = Regex.Match(renderedPage, @"name=""__RequestVerificationToken"" type=""hidden"" value=""([^""]+)""").Groups[1].Value;
         Assert.NotEmpty(token);
-        return new(fields.Append(("__RequestVerificationToken", token)).Select(f => new KeyValuePair<string, string>(f.Item1, f.Item2)));
+        return new(fields.Append(("__RequestVerificationToken", token)).Concat(ReviewForm.Fingerprint(renderedPage)).Select(f => new KeyValuePair<string, string>(f.Item1, f.Item2)));
     }
 
     public void Dispose() => _provider.Stop();

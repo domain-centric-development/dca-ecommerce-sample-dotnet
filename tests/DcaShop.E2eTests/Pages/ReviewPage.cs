@@ -41,6 +41,27 @@ public sealed class ReviewPage : BasePage
     /// <summary>The error the review shows, as written.</summary>
     public Task<string> ErrorMessageAsync() => VisibleTextAsync(ErrorMessage);
 
+    /// <summary>
+    /// The order's lines, each as "name xquantity price", once the summary shows. The price carries no data-test; it is
+    /// read by its class.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> OrderLinesAsync()
+    {
+        var items = Page.Locator("[data-test='order-summary-item']");
+        await Assertions.Expect(items.First).ToBeVisibleAsync();
+        var lines = new List<string>();
+        for (var i = 0; i < await items.CountAsync(); i++)
+        {
+            var item = items.Nth(i);
+            lines.Add(string.Join(' ',
+                (await item.Locator("[data-test='order-summary-item-name']").InnerTextAsync()).Trim(),
+                (await item.Locator("[data-test='order-summary-item-qty']").InnerTextAsync()).Trim(),
+                (await item.Locator(".order-summary__item-price").InnerTextAsync()).Trim()));
+        }
+
+        return lines;
+    }
+
     /// <summary>Follows the review's "Back" link to the payment step.</summary>
     public async Task<PaymentPage> BackToPaymentAsync()
     {
