@@ -1,7 +1,9 @@
 ---
 id: the-cart-shows-a-changed-price
 epic: prices
-status: approved
+status: delivered
+delivered: 2026-10-21T11:43:29Z
+delivered_by: gate
 created: 2026-10-15T08:00:59Z
 context: cart
 feature: shopping
@@ -36,6 +38,7 @@ it changed, so that I am not surprised at the checkout.
 ## Assumptions
 
 - answered: after a price change the cart shows today's price (planning/questions-2026-10-15.md Q4.7)
+- answered: The story becomes `adopted`: the plan maps the scenario to where it lives, the test stage writes the browser test (the-cart-shows-a-changed-price-01)
 
 ## Notes
 
