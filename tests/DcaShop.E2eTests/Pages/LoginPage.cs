@@ -9,6 +9,7 @@ public sealed class LoginPage : BasePage
     private const string ErrorMessage = "login-error-message";
     private const string EmailInput = "login-email-input";
     private const string PasswordInput = "login-password-input";
+    private const string RegisterLink = "login-register-link";
 
     private LoginPage(IPage page) : base(page)
     {
@@ -20,7 +21,7 @@ public sealed class LoginPage : BasePage
         return await OpenAsync(page);
     }
 
-    /// <summary>Opens the login page with the shop page the login returns to, as a link to it carries it.</summary>
+    /// <summary>Opens the login page with the page the login returns to, as a link to it carries it.</summary>
     public static async Task<LoginPage> NavigateToAsync(IPage page, string returnUrl)
     {
         await page.GotoAsync($"{BaseUrl}/login?returnUrl={returnUrl}");
@@ -62,4 +63,8 @@ public sealed class LoginPage : BasePage
 
     /// <summary>What the Password field holds.</summary>
     public Task<string> PasswordValueAsync() => Page.Locator($"[data-test='{PasswordInput}']").InputValueAsync();
+
+    /// <summary>Where the "Register here" link leads, as the page writes it.</summary>
+    public async Task<string> RegisterLinkTargetAsync() =>
+        await Page.Locator($"[data-test='{RegisterLink}']").GetAttributeAsync("href") ?? string.Empty;
 }

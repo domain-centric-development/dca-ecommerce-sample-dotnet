@@ -66,4 +66,12 @@ public sealed class LoginE2eTest : BaseE2eTest
         Assert.True(await login.HeaderOffersLoginAsync(), "the header still offers to log in");
         Assert.True(await login.HeaderOffersRegisterAsync(), "the header still offers to register");
     }
+
+    [E2eFact(DisplayName = "The register link drops an outside return page")]
+    public async Task TheRegisterLinkOfALoginOpenedForAnotherSiteLeadsToTheRegistrationAlone()
+    {
+        var login = await LoginPage.NavigateToAsync(Page, "https://elsewhere.example/");
+
+        Assert.Equal("/register", await login.RegisterLinkTargetAsync());
+    }
 }

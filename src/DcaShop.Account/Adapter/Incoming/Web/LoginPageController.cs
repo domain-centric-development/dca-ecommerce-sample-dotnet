@@ -43,7 +43,7 @@ public sealed class LoginPageController : Controller
 
     [HttpGet("")]
     public IActionResult Show([FromQuery] string? returnUrl, [FromQuery] string? logout) =>
-        View("~/Views/Account/Login.cshtml", new LoginPageViewModel(returnUrl, null, null, logout is not null));
+        View("~/Views/Account/Login.cshtml", new LoginPageViewModel(ShopPage(returnUrl), null, null, logout is not null));
 
     [HttpPost("")]
     public async Task<IActionResult> Login(
@@ -99,5 +99,11 @@ public sealed class LoginPageController : Controller
     };
 
     private IActionResult Rejected(string email, string? returnUrl, string error) =>
-        View("~/Views/Account/Login.cshtml", new LoginPageViewModel(returnUrl, email, error, false));
+        View("~/Views/Account/Login.cshtml", new LoginPageViewModel(ShopPage(returnUrl), email, error, false));
+
+    /// <summary>
+    /// The return page the page hands on — to its form and its "Register here" link — only when it is a page of the
+    /// shop; another site's is dropped, so no link built elsewhere leads a visitor off the shop through this page.
+    /// </summary>
+    private string? ShopPage(string? returnUrl) => Url.IsLocalUrl(returnUrl) ? returnUrl : null;
 }
