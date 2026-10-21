@@ -194,3 +194,25 @@ Test: DcaShop.E2eTests.RegistrationE2eTest#TheHomePageARegistrationLeadsToSaysTh
 - When they submit a valid registration for "anna.schmidt@example.com"
 - Then the catalogue page `/products` opens and shows "Account created successfully! Welcome!"
 Test: DcaShop.IntegrationTests.RegistrationPageTest#ARegistrationOpenedForTheCatalogueSaysThereOnceThatTheAccountWasCreated
+
+### Rule: A return page outside the shop is not followed; the registration then leads to the home page
+
+#### an-outside-return-page-leads-home-after-registering
+- Given a visitor with no cookies who opened `/register?returnUrl=https://elsewhere.example/`
+- When they submit a valid registration for "anna.schmidt@example.com"
+- Then the home page `/` opens and shows "Account created successfully! Welcome!"
+Test: DcaShop.E2eTests.RegistrationE2eTest#ARegistrationOpenedForAnotherSiteLeadsHomeAndSaysTheAccountWasCreated
+
+#### a-scheme-relative-return-page-leads-home-after-registering
+- Given a visitor with no cookies who opened `/register?returnUrl=//elsewhere.example/`
+- When they submit a valid registration for "anna.schmidt@example.com"
+- Then the home page `/` opens and shows "Account created successfully! Welcome!"
+Test: DcaShop.IntegrationTests.RegistrationPageTest#ARegistrationOpenedForASchemeRelativeAddressLeadsHomeAndSaysTheAccountWasCreated
+
+### Rule: The "Login here" link carries a return page on only when it is a page of the shop
+
+#### the-login-link-drops-an-outside-return-page
+- Given a visitor with no cookies
+- When they open `/register?returnUrl=https://elsewhere.example/`
+- Then the "Login here" link leads to `/login`
+Test: DcaShop.IntegrationTests.RegistrationPageTest#TheLoginLinkOfARegistrationOpenedForAnotherSiteLeadsToTheLoginAlone
