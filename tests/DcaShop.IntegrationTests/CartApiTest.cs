@@ -205,6 +205,31 @@ public sealed class CartApiTest : IDisposable
     }
 
     [Fact]
+    public async Task RemovingAProductAnswersTheRestOfTheCartAtTodaysPrice()
+    {
+        var ada = await _factory.CustomerClientAsync("ada@example.com");
+        var opened = await (await ada.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
+        var cartId = opened.GetProperty("cartId").GetString();
+        var domainDrivenDesign = await _factory.ProductIdAsync("Domain-Driven Design");
+        var cleanArchitecture = await _factory.ProductIdAsync("Clean Architecture");
+        await AddAsync(ada, cartId!, domainDrivenDesign, 1);
+        await AddAsync(ada, cartId!, cleanArchitecture, 1);
+        var staff = await _factory.StaffClientAsync("operator@example.com");
+        var priceChanged = await staff.PutAsync(
+            $"/api/products/{domainDrivenDesign}/price", new StringContent("""{"price":49.99}""", Encoding.UTF8, "application/json"));
+        Assert.Equal(HttpStatusCode.NoContent, priceChanged.StatusCode);
+
+        var response = await ada.DeleteAsync($"/api/carts/{cartId}/items/{cleanArchitecture}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var cart = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var item = Assert.Single(cart.GetProperty("items").EnumerateArray());
+        Assert.Equal(domainDrivenDesign, item.GetProperty("productId").GetString());
+        Assert.Equal(49.99m, item.GetProperty("price").GetDecimal());
+        Assert.Equal(49.99m, cart.GetProperty("total").GetDecimal());
+    }
+
+    [Fact]
     public async Task AProductIdNoProductHasIsAnArticleThatIsNotAvailable()
     {
         var client = await _factory.CustomerClientAsync("ada@example.com");

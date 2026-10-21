@@ -84,6 +84,39 @@ public sealed class CartApiE2eTest
         Assert.Equal(0, cart.GetProperty("items").GetArrayLength());
     }
 
+    [OwnShopFact(DisplayName = "Adding answers at todays prices")]
+    public async Task AddingAProductAnswersEveryItemOfTheCartAtTodaysPrice()
+    {
+        using var shop = SideShop.Start();
+        var ada = Staff.Client(shop.BaseUrl, await CustomerTokenAsync($"ada-{Guid.NewGuid():N}@example.com", shop.BaseUrl));
+        var opened = await ada.PostAsync("/api/carts", new StringContent(string.Empty, Encoding.UTF8, "application/json"));
+        Assert.Equal(HttpStatusCode.Created, opened.StatusCode);
+        var cartId = (await opened.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("cartId").GetString();
+        var domainDrivenDesign = await ProductIdAsync(ada, "Domain-Driven Design");
+        var cleanArchitecture = await ProductIdAsync(ada, "Clean Architecture");
+        var first = await ada.PostAsync($"/api/carts/{cartId}/items", new StringContent(
+            $$"""{"productId":"{{domainDrivenDesign}}","quantity":1}""", Encoding.UTF8, "application/json"));
+        Assert.Equal(54.99m, ItemOf(await first.Content.ReadFromJsonAsync<JsonElement>(), domainDrivenDesign).GetProperty("price").GetDecimal());
+        var staff = Staff.Client(shop.BaseUrl, await Staff.TokenAsync(shop.BaseUrl, "price-keeper@example.com"));
+        var priceChanged = await staff.PutAsync($"/api/products/{domainDrivenDesign}/price", new StringContent(
+            """{"price":49.99}""", Encoding.UTF8, "application/json"));
+        Assert.Equal(HttpStatusCode.NoContent, priceChanged.StatusCode);
+
+        var response = await ada.PostAsync($"/api/carts/{cartId}/items", new StringContent(
+            $$"""{"productId":"{{cleanArchitecture}}","quantity":1}""", Encoding.UTF8, "application/json"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var cart = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(49.99m, ItemOf(cart, domainDrivenDesign).GetProperty("price").GetDecimal());
+        Assert.Equal(89.98m, cart.GetProperty("total").GetDecimal());
+        Assert.Equal(2, cart.GetProperty("items").GetArrayLength());
+        Assert.All(cart.GetProperty("items").EnumerateArray(), item => Assert.False(item.TryGetProperty("priceAtAddition", out _)));
+    }
+
+    /// <summary>The item of the cart answer that holds the product.</summary>
+    private static JsonElement ItemOf(JsonElement cart, string productId) =>
+        Assert.Single(cart.GetProperty("items").EnumerateArray(), item => item.GetProperty("productId").GetString() == productId);
+
     /// <summary>The id the catalogue gives the product of that name.</summary>
     private static async Task<string> ProductIdAsync(HttpClient client, string name)
     {
@@ -92,9 +125,9 @@ public sealed class CartApiE2eTest
             .GetProperty("id").GetString()!;
     }
 
-    private static async Task<string> CustomerTokenAsync(string email)
+    private static async Task<string> CustomerTokenAsync(string email, string? shopUrl = null)
     {
-        using var client = new HttpClient { BaseAddress = new Uri(ShopUnderTest.BaseUrl) };
+        using var client = new HttpClient { BaseAddress = new Uri(shopUrl ?? ShopUnderTest.BaseUrl) };
         var registered = await client.PostAsJsonAsync("/api/auth/register", new
         {
             email,
