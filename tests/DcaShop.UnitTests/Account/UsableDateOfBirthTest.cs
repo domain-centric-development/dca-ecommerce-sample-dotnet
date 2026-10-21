@@ -9,8 +9,12 @@ public sealed class UsableDateOfBirthTest
         Assert.True(UsableDateOfBirth.Rule.IsSatisfiedBy(new DateOnly(1990, 5, 17)));
 
     [Fact]
-    public void TodayIsUsable() =>
-        Assert.True(UsableDateOfBirth.Rule.IsSatisfiedBy(DateOnly.FromDateTime(DateTime.UtcNow)));
+    public void TodayIsNot() =>
+        Assert.False(UsableDateOfBirth.Rule.IsSatisfiedBy(DateOnly.FromDateTime(DateTime.UtcNow)));
+
+    [Fact]
+    public void YesterdayIsUsable() =>
+        Assert.True(UsableDateOfBirth.Rule.IsSatisfiedBy(DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1)));
 
     [Fact]
     public void AFutureDateIsNot() =>
@@ -27,11 +31,19 @@ public sealed class UsableDateOfBirthTest
             Assert.Throws<ArgumentException>(() => UsableDateOfBirth.Rule.RequireSatisfiedBy(null)).Message);
 
         Assert.Equal(
-            "Date of birth cannot be in the future",
+            "Date of birth must lie in the past",
             Assert.Throws<ArgumentException>(
                 () => UsableDateOfBirth.Rule.RequireSatisfiedBy(DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1)))
                 .Message);
     }
+
+    [Fact]
+    public void TodayIsRefusedAsNotInThePast() =>
+        Assert.Equal(
+            "Date of birth must lie in the past",
+            Assert.Throws<ArgumentException>(
+                () => UsableDateOfBirth.Rule.RequireSatisfiedBy(DateOnly.FromDateTime(DateTime.UtcNow)))
+                .Message);
 
     [Fact]
     public void ANoAgeLimitIsDeliberate() =>

@@ -64,6 +64,7 @@ public sealed class AuthResource : ControllerBase
     }
 
     [HttpPost("register")]
+    [UnacceptableValueProblem]
     public async Task<ActionResult<RegisterResponse>> Register(
         [FromBody] RegisterRequest request, CancellationToken cancellationToken)
     {

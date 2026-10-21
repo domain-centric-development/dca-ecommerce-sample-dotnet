@@ -69,7 +69,7 @@ Its **full name** is the first and the last name joined by one space, as the pro
 
 **Notes:** Names are trimmed but never otherwise normalized — capitalization, particles and spelling
 of a person's own name are not the account's to correct — and are limited to 100 characters. A date
-of birth is mandatory and may not lie in the future. Immutability of the name is a property of the
+of birth is mandatory and must lie in the past. Immutability of the name is a property of the
 type rather than a rule callers must remember: there is no setter, and the one derivation
 (`WithDateOfBirth`) copies the names. The date rule itself lives in the **Usable Date of Birth**
 specification below.
@@ -109,7 +109,8 @@ characters, so a multi-byte password within that hint can still be refused by th
 
 ### Usable Date of Birth
 
-**Definition:** A date of birth is usable when it is known and does not lie in the future.
+**Definition:** A date of birth is usable when it is known and lies in the past — before today (UTC);
+today is refused.
 
 **Type:** Specification (`DcaShop.Account.Domain.Specification.UsableDateOfBirth`, implements
 `ISpecification<DateOnly?>`)
@@ -118,9 +119,10 @@ characters, so a multi-byte password within that hint can still be refused by th
 
 **Operations:** `IsSatisfiedBy`, `RequireSatisfiedBy`.
 
-**Notes:** A first-class rule because two components evaluate it: `Owner` refuses to exist without a
-usable date, and `ChangeProfileUseCase` rejects a submitted one **before** touching the aggregate, so
-a refused submission cannot leave a half-applied change behind. `RequireSatisfiedBy` carries the
+**Notes:** A first-class rule because several components evaluate it: `Owner` refuses to exist without a
+usable date, `ChangeProfileUseCase` rejects a submitted one **before** touching the aggregate, so
+a refused submission cannot leave a half-applied change behind, and the API registration request
+(`UsableDateOfBirthAttribute`) refuses one before the use case is called. `RequireSatisfiedBy` carries the
 user-facing message and names which half of the rule failed. Deliberately says nothing about
 plausible ages — an arbitrary upper bound would refuse real people.
 

@@ -60,6 +60,15 @@ validation's own messages; the shop words none of them.
 | `productId` | missing |
 | `quantity` | less than 1 |
 
+### Registration request (`POST /api/auth/register`)
+
+A body its request validation refuses answers the same way: 400, titled "Unacceptable value", without a `detail`;
+its `errors` maps each refused field, spelled as the request's JSON spells it, to the reasons.
+
+| Field | Refused when | Reason |
+|---|---|---|
+| `dateOfBirth` | not before today (UTC) | The date of birth must lie in the past. |
+
 ## Pages
 
 ### Password rules

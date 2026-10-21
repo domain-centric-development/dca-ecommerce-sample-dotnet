@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using DcaShop.E2eTests.Pages;
 
 namespace DcaShop.E2eTests;
@@ -24,5 +26,17 @@ public sealed class RegistrationRefusalE2eTest : BaseE2eTest
         Assert.Equal("This email address is already registered", error);
         Assert.Equal(string.Empty, await register.HeaderGreetingAsync());
         Assert.True(await register.HeaderOffersRegisterAsync(), "the header still offers to register");
+    }
+
+    [E2eFact(DisplayName = "Todays date of birth is refused")]
+    public async Task TodayAsDateOfBirthIsRefused()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        var register = await RegisterPage.NavigateToAsync(Page);
+        var error = await register.RegisterRefusedAsync(
+            "Anna", "Schmidt", today, $"anna.today-{Guid.NewGuid():N}@example.com", "Secret123", "Secret123");
+
+        Assert.Equal("Please check the email address, your name and your date of birth.", error);
     }
 }
