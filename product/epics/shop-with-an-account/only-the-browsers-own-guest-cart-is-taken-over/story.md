@@ -1,7 +1,9 @@
 ---
 id: only-the-browsers-own-guest-cart-is-taken-over
 epic: shop-with-an-account
-status: approved
+status: delivered
+delivered: 2026-10-21T11:45:50Z
+delivered_by: gate
 created: 2026-10-14T23:44:13Z
 context: cart
 feature: cartrecovery

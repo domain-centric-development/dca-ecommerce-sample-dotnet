@@ -117,3 +117,32 @@ Test: DcaShop.IntegrationTests.CartTakeOverPageTest#OpeningThePageAfterTheLoginO
 - Then the cart page `/cart` opens and shows "Welcome back!"
 - And the cart shows one line `"Ubiquitous Language" Mug` with quantity 1
 Test: DcaShop.E2eTests.GuestCartTakeOverE2eTest#PressingContinueAfterTheLoginBringsTheGuestsCartIntoTheAccount
+
+### Rule: The take-over and the merge move only the cart of the guest this browser was before the login
+
+#### another-guests-cart-is-not-taken-over
+- Given the account "anna.schmidt@example.com", whose cart holds nothing, logged in in a browser that had an empty
+  guest cart
+- And in another browser a guest added "Clean Architecture" to the cart
+- When Anna's browser sends the cart take-over for the other browser's guest cart
+- Then the cart page `/cart` opens and Anna's cart holds nothing
+- And the other guest's cart still holds "Clean Architecture" with quantity 1
+Test: DcaShop.E2eTests.AnotherGuestsCartE2eTest#SendingTheTakeOverForAnotherBrowsersGuestCartLeavesBothCartsAsTheyWere
+
+#### another-guests-cart-is-not-merged
+- Given the account "anna.schmidt@example.com", whose cart holds "Clean Architecture" once, logged in in a browser
+  that had an empty guest cart
+- And in another browser a guest added `"Ubiquitous Language" Mug` to the cart
+- When Anna's browser sends the merge choice "Merge Both Carts" for the other browser's guest cart
+- Then the cart page `/cart` opens and Anna's cart holds only "Clean Architecture" with quantity 1
+- And the other guest's cart still holds `"Ubiquitous Language" Mug` with quantity 1
+Test: DcaShop.IntegrationTests.CartRecoveryOnLoginTest#MergingAnotherBrowsersGuestCartLeavesBothCartsAsTheyWere
+
+### Rule: The merge page leads only to pages of the shop
+
+#### an-outside-return-page-after-the-merge-opens-the-cart
+- Given the two carts, and the guest opened `/login?returnUrl=https://elsewhere.example/`, logged in and is on the
+  merge page
+- When they press "Continue" with "Merge Both Carts" chosen
+- Then the cart page `/cart` opens and shows "Carts merged successfully!"
+Test: DcaShop.IntegrationTests.CartRecoveryOnLoginTest#MergingAfterALoginWithAnOutsideReturnPageOpensTheCart
