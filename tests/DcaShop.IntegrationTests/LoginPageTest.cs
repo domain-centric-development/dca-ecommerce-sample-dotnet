@@ -76,6 +76,28 @@ public sealed class LoginPageTest : IClassFixture<WebApplicationFactory<Program>
     }
 
     [Fact]
+    public async Task ALoginOpenedForASchemeRelativeAddressOpensTheCartWithTheWelcome()
+    {
+        var shop = _factory.WithWebHostBuilder(_ => { });
+        Assert.Equal(HttpStatusCode.Redirect, (await RegisterAsync(Visitor(shop), "anna.schmidt@example.com")).StatusCode);
+        var client = Visitor(shop);
+        var page = await client.GetStringAsync("/login?returnUrl=//elsewhere.example/");
+
+        var loggedIn = await client.PostAsync(
+            "/login",
+            Forms.AsRendered(
+                Element(page, "login-form", "</form>"), ("email", "anna.schmidt@example.com"), ("password", Password)));
+
+        // Each redirect is asserted rather than followed: a scheme-relative one would leave the shop.
+        Assert.Equal(HttpStatusCode.Redirect, loggedIn.StatusCode);
+        var afterLogin = await client.GetAsync(loggedIn.Headers.Location);
+        Assert.Equal(HttpStatusCode.Redirect, afterLogin.StatusCode);
+        Assert.Equal("/cart", afterLogin.Headers.Location!.ToString());
+        var cart = await client.GetStringAsync("/cart");
+        Assert.Equal("Welcome back!", Text(cart, @"data-test=""cart-success-message"">([^<]*)</div>"));
+    }
+
+    [Fact]
     public async Task TheRegisterLinkOfALoginOpenedForTheCatalogueKeepsTheCatalogue()
     {
         var client = Visitor(_factory);

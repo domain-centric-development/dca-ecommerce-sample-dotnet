@@ -32,6 +32,23 @@ public sealed class LoginE2eTest : BaseE2eTest
         Assert.False(await cart.HeaderOffersRegisterAsync(), "the header no longer offers to register");
     }
 
+    [E2eFact(DisplayName = "An outside return page opens the cart after login")]
+    public async Task ALoginOpenedForAnotherSiteOpensTheCartInstead()
+    {
+        var email = $"anna.schmidt-{Guid.NewGuid():N}@example.com";
+        var register = await RegisterPage.NavigateToAsync(Page);
+        await register.RegisterAsync("Anna", "Schmidt", "1990-05-17", email, Password, Password);
+        await ClearCookiesAsync();
+        // The address lies under a reserved name that resolves nowhere: a browser sent there anyway reaches no site.
+        var login = await LoginPage.NavigateToAsync(Page, "https://elsewhere.example/");
+
+        await login.LoginAsync(email, Password);
+
+        Assert.Equal("/cart", CurrentPath);
+        var cart = await CartPage.OpenAsync(Page);
+        Assert.Equal("Welcome back!", await cart.SuccessMessageAsync());
+    }
+
     [E2eFact(DisplayName = "Wrong password is refused")]
     public async Task AWrongPasswordKeepsTheTypedEmailAndSaysOnlyThatTheLoginFailed()
     {
