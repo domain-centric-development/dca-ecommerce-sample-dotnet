@@ -36,6 +36,20 @@ public sealed class RegistrationE2eTest : BaseE2eTest
         Assert.Equal(["Account created successfully! Welcome!"], await home.NoticesAsync());
     }
 
+    [E2eFact(DisplayName = "An outside return page leads home after registering")]
+    public async Task ARegistrationOpenedForAnotherSiteLeadsHomeAndSaysTheAccountWasCreated()
+    {
+        var email = $"anna.schmidt-{Guid.NewGuid():N}@example.com";
+        // The address lies under a reserved name that resolves nowhere: a browser sent there anyway reaches no site.
+        var register = await RegisterPage.NavigateToAsync(Page, "https://elsewhere.example/");
+
+        await register.RegisterAsync("Anna", "Schmidt", "1990-05-17", email, "Secret123", "Secret123");
+
+        Assert.Equal("/", CurrentPath);
+        var home = await HomePage.OpenAsync(Page);
+        Assert.Equal(["Account created successfully! Welcome!"], await home.NoticesAsync());
+    }
+
     [E2eFact(DisplayName = "Differing passwords are refused")]
     public async Task DifferingPasswordsAreRefusedAndKeepEverythingButThePasswords()
     {

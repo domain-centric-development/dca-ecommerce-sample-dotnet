@@ -129,6 +129,45 @@ public sealed class RegistrationPageTest : IClassFixture<WebApplicationFactory<P
     }
 
     [Fact]
+    public async Task ARegistrationOpenedForASchemeRelativeAddressLeadsHomeAndSaysTheAccountWasCreated()
+    {
+        using var shop = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(s => s.AddSingleton<IRegisterAccountInputPort>(new SucceedingRegistration())));
+        var client = Visitor(shop);
+        var page = await client.GetStringAsync("/register?returnUrl=//elsewhere.example/");
+
+        var registered = await client.PostAsync(
+            "/register",
+            Forms.AsRendered(
+                Element(page, "register-form", "</form>"),
+                ("firstName", "Anna"),
+                ("lastName", "Schmidt"),
+                ("dateOfBirth", "1990-05-17"),
+                ("email", "anna.schmidt@example.com"),
+                ("password", "Secret123"),
+                ("confirmPassword", "Secret123"),
+                // Posted as well, whether or not the page carries it on: a form built elsewhere can send it.
+                ("returnUrl", "//elsewhere.example/")));
+
+        Assert.Equal("/", registered.Headers.Location!.ToString());
+        var home = await client.GetStringAsync(registered.Headers.Location);
+        Assert.Equal(
+            ["Account created successfully! Welcome!"],
+            Regex.Matches(home, @"data-test=""account-notice"">([^<]*)</div>").Select(m => Rendered(m.Groups[1].Value)));
+    }
+
+    [Fact]
+    public async Task TheLoginLinkOfARegistrationOpenedForAnotherSiteLeadsToTheLoginAlone()
+    {
+        var client = Visitor();
+
+        var page = await client.GetStringAsync("/register?returnUrl=https://elsewhere.example/");
+
+        var login = Link(page, "register-login-link");
+        Assert.Equal("/login", login.Target);
+    }
+
+    [Fact]
     public async Task APasswordShorterThanEightCharactersIsRefused()
     {
         var refusal = await RefusalOfAsync("anna.short@example.com", ("password", "Sec123"), ("confirmPassword", "Sec123"));

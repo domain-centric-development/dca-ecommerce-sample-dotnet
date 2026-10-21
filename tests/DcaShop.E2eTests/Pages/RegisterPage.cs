@@ -23,6 +23,13 @@ public sealed class RegisterPage : BasePage
         return await OpenAsync(page);
     }
 
+    /// <summary>Opens the registration page with the page the registration returns to, as a link to it carries it.</summary>
+    public static async Task<RegisterPage> NavigateToAsync(IPage page, string returnUrl)
+    {
+        await page.GotoAsync($"{BaseUrl}/register?returnUrl={returnUrl}");
+        return await OpenAsync(page);
+    }
+
     public static async Task<RegisterPage> OpenAsync(IPage page)
     {
         var register = new RegisterPage(page);

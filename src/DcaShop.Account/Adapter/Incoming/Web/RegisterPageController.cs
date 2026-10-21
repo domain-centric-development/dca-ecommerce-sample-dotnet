@@ -37,7 +37,7 @@ public sealed class RegisterPageController : Controller
 
     [HttpGet("")]
     public IActionResult Show([FromQuery] string? returnUrl) =>
-        View("~/Views/Account/Register.cshtml", RegisterPageViewModel.Blank(returnUrl));
+        View("~/Views/Account/Register.cshtml", RegisterPageViewModel.Blank(ShopPage(returnUrl)));
 
     [HttpPost("")]
     public async Task<IActionResult> Register(
@@ -50,7 +50,7 @@ public sealed class RegisterPageController : Controller
         [FromForm] string? returnUrl,
         CancellationToken cancellationToken)
     {
-        var submission = new RegisterPageViewModel(email, firstName, lastName, dateOfBirth, returnUrl, null);
+        var submission = new RegisterPageViewModel(email, firstName, lastName, dateOfBirth, ShopPage(returnUrl), null);
 
         if (password != confirmPassword)
         {
@@ -82,7 +82,7 @@ public sealed class RegisterPageController : Controller
             _identitySession.SetRegisteredIdentity(
                 _tokenService.GenerateRegisteredToken(UserId.Of(result.UserId), result.Email, result.Roles));
 
-            var target = string.IsNullOrWhiteSpace(returnUrl) ? "/" : returnUrl;
+            var target = submission.ReturnUrl ?? "/";
             TempData.Leave(AccountPageNotices.AddressedTo(target), AccountPageNotice.AccountCreated);
             return Redirect(target);
         }
@@ -109,4 +109,11 @@ public sealed class RegisterPageController : Controller
 
     private IActionResult Rejected(RegisterPageViewModel submission, string error) =>
         View("~/Views/Account/Register.cshtml", submission with { ErrorMessage = error });
+
+    /// <summary>
+    /// The return page the page hands on — to its form, its "Login here" link and the redirect after the registration
+    /// — only when it is a page of the shop; another site's is dropped, so no link built elsewhere leads a new customer
+    /// off the shop through this page.
+    /// </summary>
+    private string? ShopPage(string? returnUrl) => Url.IsLocalUrl(returnUrl) ? returnUrl : null;
 }
