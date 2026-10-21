@@ -10,6 +10,7 @@ public sealed class CartPage : BasePage
     private const string SuccessMessage = "cart-success-message";
     private const string ErrorMessage = "cart-error-message";
     private const string RemoveButton = "cart-item-remove";
+    private const string PriceChangeNotice = "price-change-summary";
 
     private CartPage(IPage page) : base(page)
     {
@@ -107,6 +108,18 @@ public sealed class CartPage : BasePage
         await Assertions.Expect(item).ToHaveCountAsync(1);
         return (await item.Locator("[data-test='stock-alert']").AllInnerTextsAsync()).Select(t => t.Trim()).ToList();
     }
+
+    /// <summary>The price changes the line of the named product shows, as written; empty when it shows none.</summary>
+    public async Task<IReadOnlyList<string>> PriceChangesAsync(string productName)
+    {
+        var item = Page.Locator($"[data-test='{CartItem}']")
+            .Filter(new LocatorFilterOptions { Has = Page.Locator("[data-test='cart-item-name']", new PageLocatorOptions { HasTextString = productName }) });
+        await Assertions.Expect(item).ToHaveCountAsync(1);
+        return (await item.Locator("[data-test='price-change-alert']").AllInnerTextsAsync()).Select(t => t.Trim()).ToList();
+    }
+
+    /// <summary>The notice above the lines that some prices changed, waited for until it is visible.</summary>
+    public Task<string> PriceChangeNoticeAsync() => VisibleTextAsync(PriceChangeNotice);
 
     /// <summary>
     /// Presses "Remove" on the line of the named product and waits until the cart page the shop answers with has loaded
