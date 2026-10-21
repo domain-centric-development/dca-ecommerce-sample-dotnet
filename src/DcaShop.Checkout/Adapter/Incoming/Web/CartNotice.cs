@@ -25,8 +25,8 @@ internal static class CartNotices
     /// <summary>The TempData key of the notice addressed to the cart page.</summary>
     private const string CartPage = "notice.cart";
 
-    /// <summary>The TempData key of the number the cart page's notice names.</summary>
-    private const string CartPageCount = CartPage + ".count";
+    /// <summary>The TempData key of the numbers the cart page's notice names.</summary>
+    private const string CartPageNumbers = CartPage + ".numbers";
 
     public static string Code(this CartNotice notice) => notice switch
     {
@@ -41,17 +41,20 @@ internal static class CartNotices
         _ => throw new ArgumentOutOfRangeException(nameof(notice)),
     };
 
-    /// <summary>Leaves the notice's code — and the number it names — for the cart page the redirect leads to.</summary>
+    /// <summary>
+    /// Leaves the notice's code — and the number it names, as the list of numbers the cart page reads beside the code —
+    /// for the cart page the redirect leads to.
+    /// </summary>
     public static void LeaveForTheCart(this ITempDataDictionary tempData, CartNotice notice, int? count = null)
     {
         tempData[CartPage] = notice.Code();
         if (count is { } number)
         {
-            tempData[CartPageCount] = number;
+            tempData[CartPageNumbers] = new[] { number };
         }
         else
         {
-            tempData.Remove(CartPageCount);
+            tempData.Remove(CartPageNumbers);
         }
     }
 }

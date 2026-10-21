@@ -240,6 +240,28 @@ public sealed class CartApiTest : IDisposable
     }
 
     [Fact]
+    public async Task AddingPastTheStockWithWhatTheCartHoldsIsAConflictAndLeavesTheLine()
+    {
+        var client = await _factory.CustomerClientAsync("ada@example.com");
+        var opened = await (await client.PostAsync("/api/carts", Empty())).Content.ReadFromJsonAsync<JsonElement>();
+        var cartId = opened.GetProperty("cartId").GetString();
+        var hexagon = await _factory.ProductIdAsync("Wooden Hexagon Desk Model");
+        await AddAsync(client, cartId!, hexagon, 5);
+
+        var response = await client.PostAsJsonAsync($"/api/carts/{cartId}/items", new { productId = hexagon, quantity = 4 });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Not enough stock", problem.GetProperty("title").GetString());
+        Assert.Equal($"Requested 4 of product {hexagon}, more than is in stock.", problem.GetProperty("detail").GetString());
+        var cart = await client.GetFromJsonAsync<JsonElement>($"/api/carts/{cartId}");
+        var item = Assert.Single(cart.GetProperty("items").EnumerateArray());
+        Assert.Equal(hexagon, item.GetProperty("productId").GetString());
+        Assert.Equal(5, item.GetProperty("quantity").GetInt32());
+    }
+
+    [Fact]
     public async Task AddingExactlyWhatIsInStockIsAccepted()
     {
         var client = await _factory.CustomerClientAsync("ada@example.com");

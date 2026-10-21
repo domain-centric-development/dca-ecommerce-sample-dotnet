@@ -5,8 +5,8 @@ namespace DcaShop.Cart.Adapter.Incoming.Web;
 /// <summary>
 /// The notices a redirect leaves for a cart page. A notice travels in TempData — a cookie sealed with the key ring every
 /// instance shares — as its fixed code, never the sentence and never in a server session, so any instance that answers
-/// the next request shows it. A notice that names a number carries it beside the code; the page words the sentence. It
-/// is addressed to one page: only that page reads it, and reading removes it.
+/// the next request shows it. A notice whose sentence names numbers carries them beside the code; the page words the
+/// sentence. It is addressed to one page: only that page reads it, and reading removes it.
 /// </summary>
 /// <remarks>
 /// The checkout sends the customer back to the cart with some of these codes; it knows them, and the cart page's key,
@@ -47,8 +47,8 @@ internal static class CartPageNotices
     /// <summary>The TempData key of the notice addressed to the cart merge page.</summary>
     public const string MergePage = "notice.cart.merge";
 
-    /// <summary>Beside a page's key, the key of the number its notice names.</summary>
-    private const string CountSuffix = ".count";
+    /// <summary>Beside a page's key, the key of the numbers its notice names, in the order the sentence names them.</summary>
+    private const string NumbersSuffix = ".numbers";
 
     public static string Code(this CartPageNotice notice) => notice switch
     {
@@ -80,13 +80,13 @@ internal static class CartPageNotices
         or CartPageNotice.RecentCartUsed;
 
     /// <summary>
-    /// The sentence the page shows; none for a notice that names a number it was not left with.
+    /// The sentence the page shows; none for a notice that names numbers it was not left with.
     /// </summary>
-    public static string? Sentence(this CartPageNotice notice, int? count = null) => notice switch
+    public static string? Sentence(this CartPageNotice notice, IReadOnlyList<int>? numbers = null) => notice switch
     {
         CartPageNotice.ProductAdded => "Product added to cart!",
-        CartPageNotice.NotEnoughStock => count is { } requested
-            ? $"There is not enough stock to add {requested} of this product."
+        CartPageNotice.NotEnoughStock => numbers is [var requested, var held, var inStock]
+            ? $"There is not enough stock to add {requested} of this product — your cart already holds {held}, and {inStock} are in stock."
             : null,
         CartPageNotice.ProductUnavailable => "This product is no longer available.",
         CartPageNotice.CartNotFound => "Your cart could not be found.",
@@ -103,7 +103,7 @@ internal static class CartPageNotices
         CartPageNotice.CartNotCheckable => "This cart can no longer be checked out.",
         CartPageNotice.EmptyCart => "Cannot check out an empty cart.",
         CartPageNotice.CartProductUnavailable => "A product in your cart is no longer available.",
-        CartPageNotice.ItemsUnavailable => count is { } unavailable
+        CartPageNotice.ItemsUnavailable => numbers is [var unavailable]
             ? $"Cannot start checkout, {unavailable} item(s) unavailable or out of stock."
             : null,
         CartPageNotice.CheckoutNotStarted => "The checkout could not be started. Please try again.",
@@ -114,21 +114,21 @@ internal static class CartPageNotices
     public static CartPageNotice? FromCode(string? code) =>
         Enum.GetValues<CartPageNotice>().Cast<CartPageNotice?>().FirstOrDefault(notice => notice?.Code() == code);
 
-    /// <summary>Leaves the notice's code — and the number it names — for the page the redirect leads to.</summary>
-    public static void Leave(this ITempDataDictionary tempData, string page, CartPageNotice notice, int? count = null)
+    /// <summary>Leaves the notice's code — and the numbers it names — for the page the redirect leads to.</summary>
+    public static void Leave(this ITempDataDictionary tempData, string page, CartPageNotice notice, params int[] numbers)
     {
         tempData[page] = notice.Code();
-        if (count is { } number)
+        if (numbers.Length > 0)
         {
-            tempData[page + CountSuffix] = number;
+            tempData[page + NumbersSuffix] = numbers;
         }
         else
         {
-            tempData.Remove(page + CountSuffix);
+            tempData.Remove(page + NumbersSuffix);
         }
     }
 
-    /// <summary>The notice left for this page and the number it names, if any — reading them removes them.</summary>
-    public static (CartPageNotice? Notice, int? Count) TakeCartPageNotice(this ITempDataDictionary tempData, string page) =>
-        (FromCode(tempData[page] as string), tempData[page + CountSuffix] as int?);
+    /// <summary>The notice left for this page and the numbers it names, if any — reading them removes them.</summary>
+    public static (CartPageNotice? Notice, IReadOnlyList<int> Numbers) TakeCartPageNotice(this ITempDataDictionary tempData, string page) =>
+        (FromCode(tempData[page] as string), tempData[page + NumbersSuffix] as int[] ?? []);
 }

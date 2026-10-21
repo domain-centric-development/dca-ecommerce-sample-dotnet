@@ -43,6 +43,25 @@ public sealed class ShoppingCartTest
     }
 
     [Fact]
+    public void QuantityOfAnswersTheQuantityOfTheLineHoldingTheProduct()
+    {
+        var cart = NewCart();
+        var productId = ProductId.Generate();
+        cart.AddItem(productId, Quantity.Of(5), Ten);
+
+        Assert.Equal(5, cart.QuantityOf(productId));
+    }
+
+    [Fact]
+    public void QuantityOfIsZeroForAProductTheCartDoesNotHold()
+    {
+        var cart = NewCart();
+        cart.AddItem(ProductId.Generate(), Quantity.Of(5), Ten);
+
+        Assert.Equal(0, cart.QuantityOf(ProductId.Generate()));
+    }
+
+    [Fact]
     public void RemoveItemRaisesProductRemovedFromCart()
     {
         var cart = NewCart();

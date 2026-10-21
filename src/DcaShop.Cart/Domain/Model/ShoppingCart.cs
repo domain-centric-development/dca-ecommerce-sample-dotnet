@@ -203,6 +203,9 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
 
     public bool ContainsProduct(ProductId productId) => _items.Any(i => i.ProductId == productId);
 
+    /// <summary>The quantity of the line holding the product; 0 for a product the cart does not hold.</summary>
+    public int QuantityOf(ProductId productId) => _items.FirstOrDefault(i => i.ProductId == productId)?.Quantity.Value ?? 0;
+
     private CartItem FindItem(CartItemId itemId) =>
         _items.FirstOrDefault(i => i.Id == itemId)
         ?? throw CartItemNotFoundException.ForItem(itemId);

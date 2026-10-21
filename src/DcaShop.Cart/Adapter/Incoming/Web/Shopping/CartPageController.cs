@@ -44,10 +44,10 @@ public sealed class CartPageController : Controller
     [HttpGet("")]
     public async Task<IActionResult> Show(CancellationToken cancellationToken)
     {
-        var (notice, count) = TempData.TakeCartPageNotice(CartPageNotices.CartPage);
+        var (notice, numbers) = TempData.TakeCartPageNotice(CartPageNotices.CartPage);
         var result = await _getActiveCart.ExecuteAsync(new GetActiveCartQuery(CurrentCustomerId), cancellationToken);
         var viewModel = result is { Cart: { } cart, Totals: { } totals } ? ToViewModel(cart, totals) : CartPageViewModel.Empty;
-        return View("~/Views/Cart/View.cshtml", WithNotice(viewModel, notice, count));
+        return View("~/Views/Cart/View.cshtml", WithNotice(viewModel, notice, numbers));
     }
 
     [HttpPost("add-product")]
@@ -66,7 +66,8 @@ public sealed class CartPageController : Controller
             // with.
             if (e is InsufficientArticleStockException insufficient)
             {
-                TempData.Leave(CartPageNotices.CartPage, CartPageNotice.NotEnoughStock, insufficient.Requested);
+                TempData.Leave(
+                    CartPageNotices.CartPage, CartPageNotice.NotEnoughStock, insufficient.Requested, insufficient.Held, insufficient.InStock);
             }
             else
             {
@@ -115,8 +116,8 @@ public sealed class CartPageController : Controller
     };
 
     /// <summary>The page with the sentence a redirect's notice names, in the slot of its kind.</summary>
-    private static CartPageViewModel WithNotice(CartPageViewModel page, CartPageNotice? notice, int? count) =>
-        notice is not { } named || named.Sentence(count) is not { } sentence
+    private static CartPageViewModel WithNotice(CartPageViewModel page, CartPageNotice? notice, IReadOnlyList<int> numbers) =>
+        notice is not { } named || named.Sentence(numbers) is not { } sentence
             ? page
             : named.IsSuccess() ? page with { SuccessMessage = sentence } : page with { ErrorMessage = sentence };
 

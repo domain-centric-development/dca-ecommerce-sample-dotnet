@@ -31,19 +31,21 @@ public sealed class AddItemToCartUseCase : IAddItemToCartInputPort
         // Remote-capable read (Product Catalog via ACL) — outside the transaction
         var article = await _articles.GetArticleDataAsync(productId, cancellationToken).ConfigureAwait(false)
                       ?? throw new ArticleNotAvailableException(productId);
-        if (!article.HasStockFor(quantity.Value))
-        {
-            throw new InsufficientArticleStockException(productId, quantity.Value);
-        }
-
         var priceAtAddition = Price.Of(article.CurrentPrice);
 
-        // Short transaction: load, mutate, save, publish
+        // Short transaction: load, check what the line would hold against the article facts read above, mutate,
+        // save, publish
         return await _transactionBoundary.InTransactionAsync(
             async ct =>
             {
                 var cart = await _carts.FindByIdForCustomerAsync(cartId, CustomerId.Of(command.CustomerId), ct).ConfigureAwait(false)
                            ?? throw new CartNotFoundException(cartId);
+                var held = cart.QuantityOf(productId);
+                if (!article.HasStockFor(held + quantity.Value))
+                {
+                    throw new InsufficientArticleStockException(productId, quantity.Value, held, article.AvailableStock);
+                }
+
                 cart.AddItem(productId, quantity, priceAtAddition);
                 await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);

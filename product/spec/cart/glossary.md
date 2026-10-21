@@ -46,6 +46,7 @@ An editable collection of stable positions. Checkout copies a snapshot through t
 - Take over the guest cart (`RecoverCart`) — the Cart recovery use case that moves the guest cart's lines into the
   account's cart when only the guest cart holds items; sent by the form of the page after the login
   (`POST /cart/merge/take-over`), never on opening that page. `GetCartMergeOptions` answers when the take-over is due
+- `QuantityOf` — the quantity of the position holding a product; 0 for a product the cart does not hold
 - `Clear` — every position is gone; the cart itself stays, active
 - `ReconcileCheckout` — the units a checkout bought are taken out of their positions, positions left without units are gone; the cart stays active and editable
 - `Abandon` — the cart is kept with status abandoned and rejects edits; it is not deleted
@@ -367,8 +368,10 @@ contract: only the store sees every cart at once.
 
 ### ArticleNotAvailable / InsufficientArticleStock
 
-**Definition:** The article facts a position needs are missing for a product, or do not cover the quantity asked
-for. Read through the cart's own port, so a statement about the request rather than about the cart. Both carry
+**Definition:** The article facts a position needs are missing for a product, or do not cover what the position
+would hold — what the cart already holds of the product plus the quantity asked for. InsufficientArticleStock
+carries the quantity asked for (`Requested`), what the cart already holds (`Held`, 0 without a position) and the
+stock (`InStock`). Read through the cart's own port, so a statement about the request rather than about the cart. Both carry
 the `ProductId`, never the caller's text: a reference that does not even parse into a product id is answered by
 the adapter that received it (`ProductId.TryOf`) and never reaches the use case.
 
