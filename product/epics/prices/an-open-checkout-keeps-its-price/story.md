@@ -88,6 +88,8 @@ Title: Place Order after a price change since the review is refused and the revi
   and place it again." (the user, 2026-10-21)
 - answered: correction: none of a/b/c — the review's GET stays a read and shows today's prices; "Place Order" carries a fingerprint of everything the review showed (lines with product, quantity and unit price, buyer details, delivery address, shipping method and price, payment method, total) and works out the same at that moment; a different result refuses the order and the review shows today's. No DCA-HEX-014 exception; what was built to store prices on the GET goes. The story is rewritten accordingly (2026-10-21). (an-open-checkout-keeps-its-price-03)
 - answered: correction: the payment is authorized at "Place Order", after the fingerprint and the stock are checked, for exactly the total the review showed — not on the payment step; the confirmation shows the prices of the moment the order was placed and nothing changes them afterwards. Written as its own story, `the-payment-is-authorized-at-place-order`, which this story depends on; a refused "Place Order" requests no payment, and the order after the refusal is authorized at today's total (the user, 2026-10-21) (an-open-checkout-keeps-its-price-accept-1)
+- answered: Accept the rewritten helpers as the resolution: the three lines stay replaced by their merged form, and the (an-open-checkout-keeps-its-price-04)
+- answered: a — the pipeline's check learns it: from dca-factory 0.87.7 `main-tests` leaves out a test file that an answered integrate decision names (here decision 04), so the three helper lines keep their merged form; nothing in the files changes, run the integrate step again. (an-open-checkout-keeps-its-price-05)
 
 ## Notes
 
