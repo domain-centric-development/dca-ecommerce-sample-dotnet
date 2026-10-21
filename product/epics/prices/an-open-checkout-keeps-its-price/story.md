@@ -1,7 +1,9 @@
 ---
 id: an-open-checkout-keeps-its-price
 epic: prices
-status: approved
+status: delivered
+delivered: 2026-10-21T20:00:47Z
+delivered_by: gate
 created: 2026-10-15T08:00:59Z
 context: checkout
 feature: ordering
@@ -90,6 +92,7 @@ Title: Place Order after a price change since the review is refused and the revi
 - answered: correction: the payment is authorized at "Place Order", after the fingerprint and the stock are checked, for exactly the total the review showed — not on the payment step; the confirmation shows the prices of the moment the order was placed and nothing changes them afterwards. Written as its own story, `the-payment-is-authorized-at-place-order`, which this story depends on; a refused "Place Order" requests no payment, and the order after the refusal is authorized at today's total (the user, 2026-10-21) (an-open-checkout-keeps-its-price-accept-1)
 - answered: Accept the rewritten helpers as the resolution: the three lines stay replaced by their merged form, and the (an-open-checkout-keeps-its-price-04)
 - answered: a — the pipeline's check learns it: from dca-factory 0.87.7 `main-tests` leaves out a test file that an answered integrate decision names (here decision 04), so the three helper lines keep their merged form; nothing in the files changes, run the integrate step again. (an-open-checkout-keeps-its-price-05)
+- answered: Keep the helper line in its merged form, as decision 04 did, and let this record name the file for `main-tests`. (an-open-checkout-keeps-its-price-06)
 
 ## Notes
 
