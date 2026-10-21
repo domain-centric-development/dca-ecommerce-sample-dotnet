@@ -1,7 +1,9 @@
 ---
 id: a-date-of-birth-lies-in-the-past
 epic: shop-api
-status: approved
+status: delivered
+delivered: 2026-10-21T18:35:08Z
+delivered_by: gate
 created: 2026-10-15T08:00:59Z
 context: account
 feature: registration
