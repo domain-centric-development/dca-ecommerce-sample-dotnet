@@ -1,0 +1,16 @@
+---
+story: logging-in-from-the-checkout-returns-to-it
+epic: shop-with-an-account
+---
+
+# Findings — logging-in-from-the-checkout-returns-to-it
+
+The judge's confirmed defects that did not block the story, kept for a later story or a person's look. The pipeline appends; a person sets `Status` to `done` or `wont-fix`.
+
+| # | Perspective | File:line | Severity | In plain words | Defect | Fix | Status |
+|---|---|---|---|---|---|---|---|
+| 1 | ddd | `src/DcaShop.Checkout/Adapter/Incoming/Web/CheckoutCompletion/CheckoutStepPage.cs:47` | minor | An account that still has an old open checkout from a cart it emptied sees that one after the login, not the guest's. | `ShowAsync` asks the customer's latest active session before the cart's; after the hand-over deleted the empty account cart (`RecoverCartUseCase.cs:86`) the account's older session on it still answers (`InMemoryCheckoutSessionRepository.cs:38`), so `ResumedSessionAsync` never runs. Outside the criterion's scenario. | Supersede the customer's other active sessions inside `ResumeCheckout`'s transaction when handing over, as `StartCheckoutUseCase.cs:74` does per cart; reword the class remark at `:20` to "resolved from the customer". | open |
+| 2 | ddd | `src/DcaShop.Cart/Domain/Model/ShoppingCart.cs:208` | minor | A cart and a checkout change hands without saying so, and both use cases then publish nothing. | `HandOverTo` here and in `CheckoutSession.cs:237` registers no event, unlike the other transitions; `RecoverCartUseCase.cs:93` and `ResumeCheckoutUseCase.cs:53` call `PublishAndClearEventsAsync` on an aggregate that registered nothing. | Register `CartHandedOver` / `CheckoutHandedOver` in `HandOverTo`, or say in its doc comment that the hand-over is silent and drop the two publish calls. | open |
+| 3 | clean-code | `src/DcaShop.Cart/Application/CartRecovery/RecoverCart/RecoverCartUseCase.cs:63` | minor | The cart recovery's summary names one outcome while the method still carries a second one inline. | The summary (`:9`) says the guest cart itself becomes the account's; the copy branch (`:63-74`) that appends lines into a non-empty account cart stays inline beside the extracted `HandOverAsync`, and re-implements `ShoppingCart.Merge`. | Extract the copy branch into `AppendToAccountCartAsync` using `accountCart.Merge(anonymousCart)`, and name both branches in the summary. | open |
+| 4 | clean-code | `tests/DcaShop.IntegrationTests/CartRecoveryOnLoginTest.cs:359` | minor | The order-summary scraper now exists three times in the integration tests. | `SummaryItems` is identical to `CartStaysWithThePersonTest.cs:195` and `CheckoutRestartTest.cs:78`. | Move it to `AvailabilityPages.SummaryItems` and call it from the three tests. | open |
+| 5 | hexagonal | `src/DcaShop.Checkout/Application/CheckoutCompletion/ResumeCheckout/ResumeCheckoutUseCase.cs:43` | minor | The resume looks a session up without the customer and does not say why that is safe. | `FindActiveByCartIdAsync` is the unscoped lookup the repository's remark reserves for system paths; it is right here because Cart scoped the cart to the customer, but nothing says so. | One sentence on that line: the cart was scoped to the customer by Cart's Open Host Service, so no second ownership check. | open |

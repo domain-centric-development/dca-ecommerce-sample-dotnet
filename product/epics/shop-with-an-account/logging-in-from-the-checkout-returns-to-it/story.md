@@ -1,7 +1,9 @@
 ---
 id: logging-in-from-the-checkout-returns-to-it
 epic: shop-with-an-account
-status: approved
+status: delivered
+delivered: 2026-10-21T06:36:20Z
+delivered_by: gate
 created: 2026-10-15T08:00:59Z
 context: cart
 feature: cartrecovery
