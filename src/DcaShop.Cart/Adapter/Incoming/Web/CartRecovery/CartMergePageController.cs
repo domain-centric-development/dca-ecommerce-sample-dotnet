@@ -3,6 +3,7 @@ using System.Net;
 using DcaShop.Cart.Application.CartRecovery.GetCartMergeOptions;
 using DcaShop.Cart.Application.CartRecovery.MergeCarts;
 using DcaShop.Cart.Application.CartRecovery.RecoverCart;
+using DcaShop.Cart.Application.Shared;
 using DcaShop.SharedKernel.Application.Shared;
 
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +21,9 @@ namespace DcaShop.Cart.Adapter.Incoming.Web.CartRecovery;
 /// is what keeps Account free of a dependency on Cart.
 /// </para>
 /// <para>
-/// State travels in the URL rather than in a session, so the page works on a stateless chain.
+/// The guest travels in the URL and the form. The merge and the take-over carry the guest the identity says the
+/// visitor was before the login beside it, and act only when the two match; a refusal opens the cart page without
+/// a notice.
 /// </para>
 /// </remarks>
 [Route("cart/merge")]
@@ -95,9 +98,18 @@ public sealed class CartMergePageController : Controller
                 string.IsNullOrWhiteSpace(returnUrl) ? back : $"{back}&returnUrl={WebUtility.UrlEncode(returnUrl)}");
         }
 
-        await _mergeCarts.ExecuteAsync(
-            new MergeCartsCommand(anonymousUserId, _identityProvider.GetCurrentIdentity().UserId.Value, chosen),
-            cancellationToken);
+        var identity = _identityProvider.GetCurrentIdentity();
+        try
+        {
+            await _mergeCarts.ExecuteAsync(
+                new MergeCartsCommand(
+                    anonymousUserId, identity.UserId.Value, chosen, identity.GuestBeforeLogin?.Value),
+                cancellationToken);
+        }
+        catch (GuestCartNotOwnedException)
+        {
+            return Redirect(CartPage);
+        }
 
         return RedirectWithNoticeForTheCart(Destination(returnUrl), chosen switch
         {
@@ -113,15 +125,24 @@ public sealed class CartMergePageController : Controller
         [FromForm] string? returnUrl,
         CancellationToken cancellationToken)
     {
-        await _recoverCart.ExecuteAsync(
-            new RecoverCartCommand(anonymousUserId, _identityProvider.GetCurrentIdentity().UserId.Value),
-            cancellationToken);
+        var identity = _identityProvider.GetCurrentIdentity();
+        try
+        {
+            await _recoverCart.ExecuteAsync(
+                new RecoverCartCommand(anonymousUserId, identity.UserId.Value, identity.GuestBeforeLogin?.Value),
+                cancellationToken);
+        }
+        catch (GuestCartNotOwnedException)
+        {
+            return Redirect(CartPage);
+        }
 
         return RedirectWithNoticeForTheCart(Destination(returnUrl), CartPageNotice.WelcomeBack);
     }
 
-    private static string Destination(string? returnUrl) =>
-        string.IsNullOrWhiteSpace(returnUrl) ? CartPage : returnUrl;
+    /// <summary>The return page when it is a page of the shop; the cart page otherwise.</summary>
+    private string Destination(string? returnUrl) =>
+        Url.IsLocalUrl(returnUrl) ? returnUrl : CartPage;
 
     /// <summary>
     /// To the destination, leaving the notice when it is the cart page — the one page that says it; any other page the

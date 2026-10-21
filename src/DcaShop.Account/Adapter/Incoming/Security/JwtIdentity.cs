@@ -10,6 +10,9 @@ public sealed record JwtIdentity(
     string? Email,
     IReadOnlySet<Role> Roles) : IIdentityProvider.IIdentity
 {
+    /// <inheritdoc />
+    public UserId? GuestBeforeLogin { get; init; }
+
     /// <summary>
     /// A visitor with an identity but no session. The <see cref="UserId"/> is deliberately the one the browser
     /// already carried: expiry ends the session, not the identity (ADR-029).

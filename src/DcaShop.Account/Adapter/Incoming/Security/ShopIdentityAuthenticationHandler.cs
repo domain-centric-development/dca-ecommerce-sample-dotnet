@@ -169,8 +169,20 @@ public sealed class ShopIdentityAuthenticationHandler : AuthenticationHandler<Sh
             return JwtIdentity.Anonymous(identityUserId);
         }
 
-        return valid.Identity;
+        return valid.Identity is JwtIdentity registered
+            ? registered with { GuestBeforeLogin = ResolveGuestBeforeLogin() }
+            : valid.Identity;
     }
+
+    /// <summary>
+    /// The visitor the browser was before its login, from the cookie the login left. Only a valid anonymous token
+    /// counts; anything else names no guest.
+    /// </summary>
+    private UserId? ResolveGuestBeforeLogin() =>
+        ReadCookie(_jwtOptions.GuestCookieName) is { } token
+        && _tokenService.Validate(token) is JwtTokenService.TokenValidation.Valid { Identity.IsAnonymous: true } guest
+            ? guest.Identity.UserId
+            : null;
 
     /// <summary>
     /// The identity for a token-only endpoint: whatever the Bearer token says, or a throwaway anonymous identity

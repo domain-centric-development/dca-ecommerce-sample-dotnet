@@ -107,3 +107,18 @@ ports at all. Resolved, for both samples alike:
   authentication handler calls through its input port.
 
 The behaviour of the two cookies is unchanged.
+
+## 2026-10-21 amendment: the guest before the login
+
+A login moves `shop-identity` onto the account, so nothing would be left to say which guest cart was this
+browser's own. A third cookie keeps it:
+
+| Cookie | Carries | Lifetime | Ends when |
+|---|---|---|---|
+| `shop-guest` | the visitor the browser was before its login, as a signed anonymous token | as long as `shop-session` (7 days) | logout deletes it |
+
+`LoginPageController.Login` writes it through `IIdentitySession.KeepGuestBeforeLogin`; the name is
+`JwtOptions.GuestCookieName`. For a registered session `ShopIdentityAuthenticationHandler` reads it, accepts only a
+valid anonymous token, and sets `IIdentityProvider.IIdentity.GuestBeforeLogin`. The Cart context's merge and
+take-over carry that value in their commands and refuse any other guest (`GuestCartNotOwnedException`, ADR-007).
+The cookie is written by `CookieWriter` with the same hardening as the other two.

@@ -17,9 +17,9 @@ namespace DcaShop.Account.Adapter.Incoming.Web;
 /// Driving adapter for the login page.
 /// </summary>
 /// <remarks>
-/// It depends on no other context. After a successful login it always redirects to the cart's merge page with
-/// the previous anonymous identity as a parameter, and the Cart context decides for itself whether anything has
-/// to be merged or recovered — which is what keeps Account free of a dependency on Cart.
+/// It depends on no other context. After a successful login it keeps the previous anonymous identity for the session
+/// and always redirects to the cart's merge page with it as a parameter, and the Cart context decides for itself
+/// whether anything has to be merged or recovered — which is what keeps Account free of a dependency on Cart.
 /// </remarks>
 [Route("login")]
 public sealed class LoginPageController : Controller
@@ -53,7 +53,7 @@ public sealed class LoginPageController : Controller
         CancellationToken cancellationToken)
     {
         // Captured before authentication, which replaces the identity with the account's own.
-        var anonymousUserId = _identityProvider.GetCurrentIdentity().UserId.Value;
+        var guest = _identityProvider.GetCurrentIdentity().UserId;
 
         AuthenticateAccountResult result;
         try
@@ -75,8 +75,9 @@ public sealed class LoginPageController : Controller
 
         _identitySession.SetRegisteredIdentity(
             _tokenService.GenerateRegisteredToken(UserId.Of(result.UserId!), result.Email!, result.Roles!));
+        _identitySession.KeepGuestBeforeLogin(guest);
 
-        var mergeUrl = $"/cart/merge?anonymousUserId={WebUtility.UrlEncode(anonymousUserId)}";
+        var mergeUrl = $"/cart/merge?anonymousUserId={WebUtility.UrlEncode(guest.Value)}";
         if (!string.IsNullOrWhiteSpace(returnUrl))
         {
             mergeUrl += $"&returnUrl={WebUtility.UrlEncode(returnUrl)}";

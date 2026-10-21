@@ -2,7 +2,8 @@ namespace DcaShop.Account.Adapter.Incoming.Security;
 
 /// <summary>
 /// Configuration of the token and cookie design of ADR-029/030: one cookie carries the visitor identity the cart
-/// is keyed on, a second carries the authenticated session, and the two have different lifetimes.
+/// is keyed on, a second carries the authenticated session, and the two have different lifetimes. A third, living as
+/// long as the session, names the guest the browser was before its login.
 /// </summary>
 public sealed class JwtOptions
 {
@@ -12,6 +13,8 @@ public sealed class JwtOptions
     public const string DefaultIdentityCookieName = "shop-identity";
 
     public const string DefaultSessionCookieName = "shop-session";
+
+    public const string DefaultGuestCookieName = "shop-guest";
 
     /// <summary>
     /// The signing secret the sample ships with, so it starts without configuration.
@@ -43,6 +46,12 @@ public sealed class JwtOptions
     public string IdentityCookieName { get; set; } = DefaultIdentityCookieName;
 
     public string SessionCookieName { get; set; } = DefaultSessionCookieName;
+
+    /// <summary>
+    /// The cookie that names the visitor the browser was before its login, for as long as the session lasts: the login
+    /// moves the identity onto the account, and this is what is left to tell which guest cart is this browser's own.
+    /// </summary>
+    public string GuestCookieName { get; set; } = DefaultGuestCookieName;
 
     /// <summary>
     /// Whether the cookies are marked <c>Secure</c>. It comes from configuration so that local HTTP development

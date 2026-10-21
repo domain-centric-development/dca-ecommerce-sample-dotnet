@@ -1,3 +1,5 @@
+using DcaShop.SharedKernel.Domain.Model;
+
 namespace DcaShop.Account.Adapter.Incoming.Security;
 
 /// <summary>
@@ -20,8 +22,14 @@ public interface IIdentitySession
     void SetRegisteredIdentity(string token);
 
     /// <summary>
-    /// Ends the session and rotates the visitor identity: the next person on a shared device must not inherit
-    /// this cart, while the account's own cart returns at the next login.
+    /// Remembers, for the session a login starts, the visitor this browser was before it — the one guest whose cart
+    /// may follow into the account.
+    /// </summary>
+    void KeepGuestBeforeLogin(UserId guest);
+
+    /// <summary>
+    /// Ends the session, forgets the guest before the login and rotates the visitor identity: the next person on a
+    /// shared device must not inherit this cart, while the account's own cart returns at the next login.
     /// </summary>
     void LogOut();
 }

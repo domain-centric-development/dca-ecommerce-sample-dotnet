@@ -2,8 +2,11 @@ using System.Net;
 using System.Text.RegularExpressions;
 
 using DcaShop.Account.Application.AuthenticateAccount;
+using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.GetActiveCart;
+using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Cart.Domain.Model;
+using DcaShop.SharedKernel.Domain.Model;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -195,13 +198,78 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         Assert.Equal("Invalid merge option selected", AvailabilityPages.Text(refused, @"data-test=""merge-error-message"">([^<]*)</div>"));
     }
 
+    [Fact]
+    public async Task MergingAnotherBrowsersGuestCartLeavesBothCartsAsTheyWere()
+    {
+        var email = UniqueEmail();
+        var otherBrowser = NewBrowser();
+        await RegisterAsync(otherBrowser, email);
+        await AddOneUnitAsync(otherBrowser, CleanArchitecture);
+        var annasBrowser = NewBrowser();
+        Assert.Equal("/cart", await LogInAsync(annasBrowser, email));
+        var annasCart = await annasBrowser.GetStringAsync("/cart");
+        var otherGuest = await AnotherGuestWithOneUnitAsync(annasBrowser, Mug);
+
+        var decided = await annasBrowser.PostAsync(
+            "/cart/merge",
+            Forms.Submission(annasCart, ("strategy", "MERGE_BOTH"), ("anonymousUserId", otherGuest)));
+
+        Assert.Equal(HttpStatusCode.Redirect, decided.StatusCode);
+        Assert.Equal("/cart", decided.Headers.Location!.ToString());
+        var cartPage = await annasBrowser.GetStringAsync("/cart");
+        Assert.Equal([$"{CleanArchitecture} x1"], CartLines(cartPage));
+        Assert.DoesNotContain(@"data-test=""cart-success-message""", cartPage, StringComparison.Ordinal);
+        Assert.Equal([$"{Mug} x1"], await GuestCartLinesAsync(otherGuest));
+    }
+
+    [Fact]
+    public async Task MergingAfterALoginWithAnOutsideReturnPageOpensTheCart()
+    {
+        var (guest, mergePage) = await LogInWithTwoCartsAsync(loginPage: "/login?returnUrl=https://elsewhere.example/");
+
+        var mergeForm = AvailabilityPages.Section(mergePage, "merge-form");
+        var decided = await guest.PostAsync(
+            "/cart/merge", Forms.AsRendered(mergeForm[..mergeForm.IndexOf("</form>", StringComparison.Ordinal)], ("strategy", "MERGE_BOTH")));
+
+        Assert.Equal(HttpStatusCode.Redirect, decided.StatusCode);
+        Assert.Equal("/cart", decided.Headers.Location!.ToString());
+        var cartPage = await guest.GetStringAsync("/cart");
+        Assert.Equal("Carts merged successfully!", AvailabilityPages.Text(cartPage, @"data-test=""cart-success-message"">([^<]*)</div>"));
+    }
+
     private static string UniqueEmail() => $"anna.schmidt-{Guid.NewGuid():N}@example.com";
 
     /// <summary>
-    /// The two carts — the account's holds one "Clean Architecture", added in another browser; a cookie-less guest holds
-    /// two of it and the mug — and the guest logging in. Answers the guest's browser and the merge page it lands on.
+    /// A guest in another browser who added one unit of <paramref name="productName"/> to the cart, arranged through the
+    /// Cart's own ports; answers the guest's identity. <paramref name="anyBrowser"/> only finds the product's id.
     /// </summary>
-    private async Task<(HttpClient Guest, string MergePage)> LogInWithTwoCartsAsync()
+    private async Task<string> AnotherGuestWithOneUnitAsync(HttpClient anyBrowser, string productName)
+    {
+        var guest = UserId.GenerateAnonymous().Value;
+        var productPath = await AvailabilityPages.ProductPathAsync(anyBrowser, productName);
+        using var scope = _factory.Services.CreateScope();
+        var cart = await scope.ServiceProvider.GetRequiredService<IGetOrCreateActiveCartInputPort>()
+            .ExecuteAsync(new GetOrCreateActiveCartCommand(guest));
+        await scope.ServiceProvider.GetRequiredService<IAddItemToCartInputPort>()
+            .ExecuteAsync(new AddItemToCartCommand(cart.CartId, guest, Guid.Parse(productPath["/products/".Length..]), 1));
+        return guest;
+    }
+
+    /// <summary>The lines of <paramref name="guest"/>'s cart as <c>name xquantity</c>, read through the Cart's own query.</summary>
+    private async Task<IReadOnlyList<string>> GuestCartLinesAsync(string guest)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var cart = await scope.ServiceProvider.GetRequiredService<IGetActiveCartInputPort>()
+            .ExecuteAsync(new GetActiveCartQuery(guest));
+        return (cart.Cart?.Items ?? []).Select(item => $"{item.Article.Name} x{item.Quantity.Value}").ToList();
+    }
+
+    /// <summary>
+    /// The two carts — the account's holds one "Clean Architecture", added in another browser; a cookie-less guest holds
+    /// two of it and the mug — and the guest logging in from <paramref name="loginPage"/> with the return page it
+    /// carries. Answers the guest's browser and the merge page it lands on.
+    /// </summary>
+    private async Task<(HttpClient Guest, string MergePage)> LogInWithTwoCartsAsync(string loginPage = "/login")
     {
         var email = UniqueEmail();
         var otherBrowser = NewBrowser();
@@ -212,9 +280,11 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         await AddOneUnitAsync(guest, CleanArchitecture);
         await AddOneUnitAsync(guest, Mug);
 
-        var page = await guest.GetStringAsync("/login");
+        var page = await guest.GetStringAsync(loginPage);
+        var returnUrl = WebUtility.HtmlDecode(
+            Regex.Match(page, @"<input type=""hidden"" name=""returnUrl"" value=""([^""]*)"">").Groups[1].Value);
         var loggedIn = await guest.PostAsync(
-            "/login", Form(page, ("email", email), ("password", Password), ("returnUrl", string.Empty)));
+            "/login", Form(page, ("email", email), ("password", Password), ("returnUrl", returnUrl)));
         Assert.Equal(HttpStatusCode.Redirect, loggedIn.StatusCode);
         var merge = await guest.GetAsync(loggedIn.Headers.Location);
         Assert.Equal(HttpStatusCode.OK, merge.StatusCode);

@@ -327,7 +327,7 @@ product-created v1 exposes only eventId, occurredOn, productId, amount, currency
 
 ## Failures
 
-Named refusals. The first three are rules of the cart itself; the last two are failures of a request, raised by
+Named refusals. The first three are rules of the cart itself; the rest are failures of a request, raised by
 the use case or by the store that sees every cart of a customer.
 
 ### CartNotModifiable
@@ -361,6 +361,17 @@ the identity the caller used: the `CartItemId` or the `ProductId`.
 exist" and "belongs to somebody else" (ADR-007).
 
 **Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IShoppingCartRepository.FindByIdForCustomerAsync`
+
+---
+
+### Guest cart not owned (GuestCartNotOwned)
+
+**Definition:** A merge or a take-over names a guest other than the one the visitor was before the login — the guest
+before the login (`GuestBeforeLogin`), which the identity carries for the session. Only that guest's cart follows
+into the account; a refused request changes no cart, and the merge page answers it with the cart page, without a
+notice.
+
+**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `MergeCarts`, Take over the guest cart (`RecoverCart`), ADR-007
 
 ---
 

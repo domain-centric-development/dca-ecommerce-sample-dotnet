@@ -36,6 +36,11 @@ public sealed class RecoverCartUseCase : IRecoverCartInputPort
         var anonymousCustomerId = CustomerId.Of(command.AnonymousUserId);
         var registeredCustomerId = CustomerId.Of(command.RegisteredUserId);
 
+        if (command.GuestBeforeLogin != command.AnonymousUserId)
+        {
+            throw new GuestCartNotOwnedException(anonymousCustomerId);
+        }
+
         if (anonymousCustomerId == registeredCustomerId)
         {
             return RecoverCartResult.NoRecoveryNeeded(registeredCustomerId.Value);

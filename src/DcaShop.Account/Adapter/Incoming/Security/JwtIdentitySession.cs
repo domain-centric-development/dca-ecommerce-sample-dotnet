@@ -6,8 +6,8 @@ using Microsoft.Extensions.Options;
 namespace DcaShop.Account.Adapter.Incoming.Security;
 
 /// <summary>
-/// Writes the two cookies of ADR-030 on the current response. It is request-scoped because it needs that
-/// response.
+/// Writes the two cookies of ADR-030 on the current response, and beside them the guest the browser was before its
+/// login. It is request-scoped because it needs that response.
 /// </summary>
 public sealed class JwtIdentitySession : IIdentitySession
 {
@@ -45,10 +45,19 @@ public sealed class JwtIdentitySession : IIdentitySession
         }
     }
 
+    public void KeepGuestBeforeLogin(UserId guest) =>
+        CookieWriter.Write(
+            CurrentResponse(),
+            _options,
+            _options.GuestCookieName,
+            _tokenService.GenerateAnonymousToken(guest),
+            _options.SessionLifetime);
+
     public void LogOut()
     {
         var response = CurrentResponse();
         CookieWriter.Delete(response, _options, _options.SessionCookieName);
+        CookieWriter.Delete(response, _options, _options.GuestCookieName);
 
         // Rotate rather than delete: the next person on a shared device must not inherit this cart, while the
         // account's own cart is restored on the next login (ADR-029).

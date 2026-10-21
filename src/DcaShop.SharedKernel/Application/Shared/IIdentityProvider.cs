@@ -38,6 +38,12 @@ public interface IIdentityProvider : IOutputPort
 
         IReadOnlySet<Role> Roles { get; }
 
+        /// <summary>
+        /// The anonymous identity the login that started the current session replaced. Absent for an anonymous
+        /// visitor and wherever the session does not record it.
+        /// </summary>
+        UserId? GuestBeforeLogin { get; }
+
         bool IsAnonymous => Type == IdentityType.Anonymous;
 
         bool IsRegistered => Type == IdentityType.Registered;
