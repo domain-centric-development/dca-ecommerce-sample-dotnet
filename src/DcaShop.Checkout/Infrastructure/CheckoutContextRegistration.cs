@@ -9,6 +9,7 @@ using DcaShop.Checkout.Application.CartSync.SyncCheckoutWithCart;
 using DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
 using DcaShop.Checkout.Application.CheckoutCompletion.GetPaymentProviders;
 using DcaShop.Checkout.Application.CheckoutCompletion.GetShippingOptions;
+using DcaShop.Checkout.Application.CheckoutCompletion.ResumeCheckout;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitBuyerInfo;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
@@ -42,6 +43,7 @@ public static class CheckoutContextRegistration
         services.AddScoped<IStartCheckoutInputPort, StartCheckoutUseCase>();
         services.AddScoped<IGetCheckoutSessionInputPort, GetCheckoutSessionUseCase>();
         services.AddScoped<IGetActiveCheckoutSessionInputPort, GetActiveCheckoutSessionUseCase>();
+        services.AddScoped<IResumeCheckoutInputPort, ResumeCheckoutUseCase>();
         services.AddScoped<IGetConfirmedCheckoutSessionInputPort, GetConfirmedCheckoutSessionUseCase>();
         services.AddScoped<ISubmitBuyerInfoInputPort, SubmitBuyerInfoUseCase>();
         services.AddScoped<ISubmitDeliveryInputPort, SubmitDeliveryUseCase>();

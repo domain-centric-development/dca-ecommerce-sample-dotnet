@@ -1,3 +1,4 @@
+using DcaShop.Checkout.Application.CheckoutCompletion.ResumeCheckout;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitBuyerInfo;
 using DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
 using DcaShop.Checkout.Application.Session.GetCheckoutSession;
@@ -20,12 +21,13 @@ public sealed class BuyerInfoPageController : Controller
     public BuyerInfoPageController(
         IGetActiveCheckoutSessionInputPort active,
         IGetCheckoutSessionInputPort session,
+        IResumeCheckoutInputPort resume,
         ISubmitBuyerInfoInputPort submitBuyerInfo,
         IIdentityProvider identityProvider)
     {
         _submitBuyerInfo = submitBuyerInfo;
         _identityProvider = identityProvider;
-        _page = new CheckoutStepPage(this, active, session, identityProvider);
+        _page = new CheckoutStepPage(this, active, session, resume, identityProvider);
     }
 
     [HttpGet("buyer")]

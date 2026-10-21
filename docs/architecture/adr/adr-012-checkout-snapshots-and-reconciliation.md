@@ -38,3 +38,12 @@ The body keeps a legacy `CheckedOut` cart status readable. That status, the Cart
 case, its REST endpoint and the `CartCheckedOut` / `CartCheckedOutEvent` pair are removed: a cart is
 `Active`, `Completed` (legacy, readable) or `Abandoned`, and Checkout never locks it. Snapshot capture and
 reconciliation are unchanged.
+
+## 2026-10-20 amendment: a session follows its cart at a login
+
+A checkout session belongs to the cart it was captured from, not to the visitor who started it. When a guest logs in
+and the account's cart holds nothing, the guest cart itself — same id, same positions — becomes the account's cart.
+A checkout step page that finds no session of the customer then resumes the open session of the customer's active
+cart, read through Cart's Open Host Service, and hands that session to the customer. This is the one place a step
+page's GET updates a session; it never creates one, so a step page without an open session of the cart still leads
+to the cart. Cart never calls Checkout. A login with items in both carts is not covered here.

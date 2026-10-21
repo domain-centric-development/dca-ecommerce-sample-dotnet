@@ -1,3 +1,4 @@
+using DcaShop.Checkout.Application.CheckoutCompletion.ResumeCheckout;
 using DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
 using DcaShop.Checkout.Application.Session.GetCheckoutSession;
 using DcaShop.Checkout.Application.Shared;
@@ -18,13 +19,15 @@ namespace DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion;
 /// use-case call to <see cref="SubmittingAsync"/> or <see cref="PlacingTheOrderAsync"/> and never catch a refusal
 /// themselves. The checkout session is keyed on the visitor identity, exactly as the cart is — so a guest who
 /// registers mid-checkout keeps the session they started; the current session is resolved from the customer, never
-/// from the URL.
+/// from the URL. A guest who logs in mid-checkout hands the cart to the account, and the step page they return to
+/// resumes the cart's open checkout for the account.
 /// </summary>
 /// <param name="page">The page controller this serves; its TempData carries the notices.</param>
 internal sealed class CheckoutStepPage(
     Controller page,
     IGetActiveCheckoutSessionInputPort active,
     IGetCheckoutSessionInputPort session,
+    IResumeCheckoutInputPort resume,
     IIdentityProvider identityProvider)
 {
     /// <summary>Renders a step's page for a session, with the error it shows, if any.</summary>
@@ -36,11 +39,12 @@ internal sealed class CheckoutStepPage(
     /// A step's page. The notice a redirect left for it is read — and so removed — whatever the page answers: a step
     /// that is denied and redirects passes no earlier notice on, only its own refusal applies. A step's notice is shown
     /// only once step access granted the page; the review's, a refused "Place Order", keeps the review like an error.
+    /// Without a session of the customer the page resumes the open checkout of the customer's cart, if there is one.
     /// </summary>
     public async Task<IActionResult> ShowAsync(CheckoutStep step, Render render, CancellationToken cancellationToken, string? error = null)
     {
         var (notice, count, product) = page.TempData.TakeCheckoutStepNotice(step);
-        var current = await ActiveSessionAsync(cancellationToken);
+        var current = await ActiveSessionAsync(cancellationToken) ?? await ResumedSessionAsync(cancellationToken);
         if (current is null)
         {
             return NoActiveSession();
@@ -260,4 +264,10 @@ internal sealed class CheckoutStepPage(
 
     private async Task<CheckoutCartSnapshot?> ActiveSessionAsync(CancellationToken cancellationToken) =>
         (await active.ExecuteAsync(new GetActiveCheckoutSessionQuery(CurrentCustomerId()), cancellationToken)).Session;
+
+    /// <summary>The open checkout of the customer's cart, now the customer's — null when the cart has none.</summary>
+    private async Task<CheckoutCartSnapshot?> ResumedSessionAsync(CancellationToken cancellationToken) =>
+        (await resume.ExecuteAsync(new ResumeCheckoutCommand(CurrentCustomerId()), cancellationToken)).Resumed
+            ? await ActiveSessionAsync(cancellationToken)
+            : null;
 }

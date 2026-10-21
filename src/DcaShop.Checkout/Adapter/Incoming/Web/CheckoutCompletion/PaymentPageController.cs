@@ -1,4 +1,5 @@
 using DcaShop.Checkout.Application.CheckoutCompletion.GetPaymentProviders;
+using DcaShop.Checkout.Application.CheckoutCompletion.ResumeCheckout;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
 using DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
 using DcaShop.Checkout.Application.Session.GetCheckoutSession;
@@ -21,13 +22,14 @@ public sealed class PaymentPageController : Controller
     public PaymentPageController(
         IGetActiveCheckoutSessionInputPort active,
         IGetCheckoutSessionInputPort session,
+        IResumeCheckoutInputPort resume,
         ISubmitPaymentInputPort submitPayment,
         IGetPaymentProvidersInputPort paymentProviders,
         IIdentityProvider identityProvider)
     {
         _submitPayment = submitPayment;
         _paymentProviders = paymentProviders;
-        _page = new CheckoutStepPage(this, active, session, identityProvider);
+        _page = new CheckoutStepPage(this, active, session, resume, identityProvider);
     }
 
     [HttpGet("payment")]

@@ -20,6 +20,13 @@ public sealed class LoginPage : BasePage
         return await OpenAsync(page);
     }
 
+    /// <summary>Opens the login page with the shop page the login returns to, as a link to it carries it.</summary>
+    public static async Task<LoginPage> NavigateToAsync(IPage page, string returnUrl)
+    {
+        await page.GotoAsync($"{BaseUrl}/login?returnUrl={returnUrl}");
+        return await OpenAsync(page);
+    }
+
     public static async Task<LoginPage> OpenAsync(IPage page)
     {
         var login = new LoginPage(page);

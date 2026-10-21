@@ -1,4 +1,5 @@
 using DcaShop.Checkout.Application.CheckoutCompletion.GetShippingOptions;
+using DcaShop.Checkout.Application.CheckoutCompletion.ResumeCheckout;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
 using DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
 using DcaShop.Checkout.Application.Session.GetCheckoutSession;
@@ -21,13 +22,14 @@ public sealed class DeliveryPageController : Controller
     public DeliveryPageController(
         IGetActiveCheckoutSessionInputPort active,
         IGetCheckoutSessionInputPort session,
+        IResumeCheckoutInputPort resume,
         ISubmitDeliveryInputPort submitDelivery,
         IGetShippingOptionsInputPort shippingOptions,
         IIdentityProvider identityProvider)
     {
         _submitDelivery = submitDelivery;
         _shippingOptions = shippingOptions;
-        _page = new CheckoutStepPage(this, active, session, identityProvider);
+        _page = new CheckoutStepPage(this, active, session, resume, identityProvider);
     }
 
     [HttpGet("delivery")]

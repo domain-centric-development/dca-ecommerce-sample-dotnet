@@ -12,7 +12,7 @@ namespace DcaShop.IntegrationTests;
 
 /// <summary>
 /// Logging in to an existing account through the real HTTP pipeline: the account's cart is shown when the guest
-/// collected nothing, a guest's open checkout stays behind with the guest, and the customer checks out like a guest.
+/// collected nothing, a guest's open checkout follows the cart into the account, and the customer checks out like a guest.
 /// One client is one browser; redirects are not followed, each one is an assertion.
 /// </summary>
 public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactory<Program>>
@@ -63,7 +63,7 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task LoggingInFromTheCheckoutBringsTheCartButNotTheGuestsCheckout()
+    public async Task LoggingInFromTheCheckoutReturnsToTheBuyerStepWithTheGuestsOrder()
     {
         var email = UniqueEmail();
         await RegisterAsync(NewBrowser(), email);
@@ -75,10 +75,9 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         var buyerStep = await guest.GetAsync(landing);
 
         Assert.Equal("/checkout/buyer", landing);
-        Assert.Equal("/cart", buyerStep.Headers.Location!.ToString());
-        var cartPage = await guest.GetStringAsync(buyerStep.Headers.Location);
-        Assert.Equal("No active checkout session found", AvailabilityPages.Text(cartPage, @"data-test=""cart-error-message"">([^<]*)</div>"));
-        Assert.Equal([$"{DomainDrivenDesign} x1"], CartLines(cartPage));
+        Assert.Equal(HttpStatusCode.OK, buyerStep.StatusCode);
+        var summary = AvailabilityPages.Section(await buyerStep.Content.ReadAsStringAsync(), "order-summary-item");
+        Assert.Equal([$"{DomainDrivenDesign} x1"], SummaryItems(summary));
     }
 
     [Fact]
@@ -354,6 +353,14 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
     private static IReadOnlyList<string> CartLines(string cartPage) =>
         CartItem.Matches(cartPage)
             .Select(m => $"{WebUtility.HtmlDecode(m.Groups[1].Value).Trim()} x{m.Groups[2].Value.Trim()}")
+            .ToList();
+
+    /// <summary>A checkout step's order summary as <c>name xquantity</c>, in page order.</summary>
+    private static IReadOnlyList<string> SummaryItems(string summary) =>
+        summary.Split("data-test=\"order-summary-item\"").Skip(1)
+            .Select(entry =>
+                AvailabilityPages.Text(entry, @"data-test=""order-summary-item-name"">([^<]*)</span>") + " " +
+                AvailabilityPages.Text(entry, @"data-test=""order-summary-item-qty"">([^<]*)</span>"))
             .ToList();
 
     private static FormUrlEncodedContent Form(string renderedPage, params (string Key, string Value)[] fields)

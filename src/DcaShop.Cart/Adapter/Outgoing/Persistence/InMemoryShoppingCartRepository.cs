@@ -33,6 +33,7 @@ public sealed class InMemoryShoppingCartRepository : IShoppingCartRepository
 
         if (aggregate.IsActive)
         {
+            ReleaseFormerCustomersClaim(aggregate);
             var claimed = _activeCartByCustomer.GetOrAdd(aggregate.CustomerId, aggregate.Id);
             if (claimed != aggregate.Id)
             {
@@ -46,6 +47,15 @@ public sealed class InMemoryShoppingCartRepository : IShoppingCartRepository
         }
 
         return Task.FromResult(aggregate);
+    }
+
+    /// <summary>A cart handed over to another customer gives up the claim it held for the one before.</summary>
+    private void ReleaseFormerCustomersClaim(ShoppingCart aggregate)
+    {
+        foreach (var former in _activeCartByCustomer.Where(c => c.Value == aggregate.Id && c.Key != aggregate.CustomerId))
+        {
+            _activeCartByCustomer.TryRemove(former);
+        }
     }
 
     public Task DeleteByIdAsync(CartId id, CancellationToken cancellationToken = default)

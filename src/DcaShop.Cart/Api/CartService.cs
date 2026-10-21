@@ -66,6 +66,18 @@ public sealed class CartService
     }
 
     /// <summary>
+    /// The customer's active cart, or <see langword="null"/> when they have none — never creates a cart. Which cart is
+    /// a customer's is this context's to say: a cart handed over at a login answers for the account from then on.
+    /// </summary>
+    public async Task<CartSnapshot?> FindActiveCartAsync(string customerId, CancellationToken cancellationToken = default)
+    {
+        var result = await _getActiveCart.ExecuteAsync(new GetActiveCartQuery(customerId), cancellationToken).ConfigureAwait(false);
+        return result.Cart is { } cart
+            ? await FindCartByIdAsync(cart.CartId.Value, customerId, cancellationToken).ConfigureAwait(false)
+            : null;
+    }
+
+    /// <summary>
     /// Completes a cart after a confirmed checkout. Unscoped on purpose: this one acts on nobody's behalf — it is
     /// the system reacting to its own event, delivered at least once, with no caller to check.
     /// </summary>

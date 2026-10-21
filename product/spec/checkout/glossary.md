@@ -17,15 +17,15 @@ The Checkout context groups its use cases into three features — domain-named n
 | Feature | Meaning | Use cases |
 |---------|---------|-----------|
 | `Session` | Starting a checkout session from a cart and reading it back in its lifecycle states | `StartCheckout`, `GetActiveCheckoutSession`, `GetCheckoutSession`, `GetConfirmedCheckoutSession` |
-| `CheckoutCompletion` | The steps that complete a checkout: buyer information, delivery, payment, confirmation | `SubmitBuyerInfo`, `GetShippingOptions`, `SubmitDelivery`, `GetPaymentProviders`, `SubmitPayment`, `ConfirmCheckout` |
+| `CheckoutCompletion` | The steps that complete a checkout: buyer information, delivery, payment, confirmation — and resuming the cart's open checkout on a step page | `ResumeCheckout`, `SubmitBuyerInfo`, `GetShippingOptions`, `SubmitDelivery`, `GetPaymentProviders`, `SubmitPayment`, `ConfirmCheckout` |
 | `CartSync` | Following changes of the underlying cart while the session is active | `SyncCheckoutWithCart` |
 
 `Application/Shared/` stays context-wide. The web adapter mirrors the features: `Adapter/Incoming/Web/Session/`
 holds `StartCheckoutPageController`, `Adapter/Incoming/Web/CheckoutCompletion/` one page controller per step page
 (`BuyerInfo-`, `Delivery-`, `Payment-`, `Review-`, `ConfirmationPageController`), each with its own view model;
 `CheckoutRoutes`, `CheckoutStepNotice` and `CartNotice` (the codes the cart page knows) stay beside them, shared.
-`CheckoutStepPage` in `CheckoutCompletion/` is the one place a step page is opened or a refused submission
-translated. The event consumer
+`CheckoutStepPage` in `CheckoutCompletion/` is the one place a step page is opened, the cart's open checkout
+resumed when the customer has no session, or a refused submission translated. The event consumer
 sits in `Adapter/Incoming/Event/CartSync/`.
 
 ---
@@ -66,6 +66,13 @@ claim of durable distributed transactions or universal rollback of unenlisted re
 - `Complete` — after payment: status completed, with the order reference
 - `Abandon` — kept with status abandoned; the cart's contents stay
 - `Expire` — kept with status expired, for inactivity; the cart's contents stay
+- Hand over the checkout (`HandOverTo`) — the open session follows its cart to the customer who owns the cart now: a
+  guest's checkout becomes the account's when the guest cart was handed over at a login. Cart, lines and the step
+  reached stay as they are; only an open session is handed over (else `CheckoutNotModifiable`)
+- Resume checkout (`ResumeCheckout`) — the use case a step page runs when the customer has no session of their own:
+  it finds the open session of the customer's active cart (which cart that is, Cart's Open Host Service says) and
+  hands it to the customer. The one step-page GET that updates a session; it never creates one, so a cart without an
+  open checkout still leads to the cart (ADR-012)
 - `SyncLineItems` — exists only to refuse: a session's positions are immutable, a changed cart needs a new session
 
 

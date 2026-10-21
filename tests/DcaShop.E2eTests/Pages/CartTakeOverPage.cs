@@ -21,6 +21,13 @@ public sealed class CartTakeOverPage : BasePage
     /// <summary>The sentence the page says, waited for until it is visible.</summary>
     public Task<string> MessageAsync() => VisibleTextAsync(Message);
 
+    /// <summary>Waits until the take-over the page sent by itself has led on, and answers the path of the page it led to.</summary>
+    public async Task<string> FollowedPathAsync()
+    {
+        await Page.WaitForLoadedUrlAsync(url => !url.Contains("/cart/merge", StringComparison.Ordinal));
+        return CurrentPath;
+    }
+
     /// <summary>Presses "Continue" and follows the take-over to the page it leads to.</summary>
     public async Task<CartPage> ContinueAsync()
     {

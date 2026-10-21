@@ -43,9 +43,16 @@ An editable collection of stable positions. Checkout copies a snapshot through t
   (the cart page's "Remove"); `RemoveItemFromCart` names the item by its product in a cart named by its `CartId` (the cart API)
 - `UpdateItemQuantity` — sets a position's quantity; `IncreaseItemQuantity` / `DecreaseItemQuantity` change it by one
 - `Merge` — the positions of another cart are added to this one; the source cart is left untouched
-- Take over the guest cart (`RecoverCart`) — the Cart recovery use case that moves the guest cart's lines into the
-  account's cart when only the guest cart holds items; sent by the form of the page after the login
-  (`POST /cart/merge/take-over`), never on opening that page. `GetCartMergeOptions` answers when the take-over is due
+- Take over the guest cart (`RecoverCart`) — the Cart recovery use case that makes the guest cart the account's after
+  the login: when the account's cart holds nothing, the guest cart itself is handed over (`HandOverTo`) and an empty
+  cart the account had is deleted; when the account's cart holds items as well, the guest's lines are appended to it
+  and the guest cart is deleted. Sent by the form of the page after the login (`POST /cart/merge/take-over`), never
+  on opening that page. `GetCartMergeOptions` answers when the take-over is due
+- Hand over the cart (`HandOverTo`) — the cart itself, with its id and its positions, becomes another customer's:
+  the account a guest logged in to. Only an active cart is handed over (else `CartNotModifiable`); a checkout
+  captured from the cart stays the checkout of that cart, so the Checkout context finds it through the account's
+  active cart (Resume checkout, in the Checkout glossary). The store releases the active-cart claim the cart held
+  for the former customer (ADR-014)
 - `QuantityOf` — the quantity of the position holding a product; 0 for a product the cart does not hold
 - `Clear` — every position is gone; the cart itself stays, active
 - `ReconcileCheckout` — the units a checkout bought are taken out of their positions, positions left without units are gone; the cart stays active and editable

@@ -14,7 +14,8 @@ carried the same shape and is fixed alike (its ADR-042).
 
 - `InMemoryShoppingCartRepository` keeps an active-cart-per-customer index and claims it in `SaveAsync` with
   `GetOrAdd`; a second active cart is refused with `InvalidOperationException`. `FindActiveByCustomerAsync` reads
-  the index instead of scanning.
+  the index instead of scanning. A cart saved under another customer — handed over at a login — first releases the
+  claim it held for the former one (`ReleaseFormerCustomersClaim`), so the index follows the owner.
 - `InMemoryProductRepository` and `InMemoryAccountRepository` claim the SKU, the email address and the linked
   user id the same way rather than overwriting their index entries.
 - `GetOrCreateActiveCartUseCase` catches the refusal and returns the cart that won the race — what a caller does

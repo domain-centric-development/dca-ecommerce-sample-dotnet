@@ -20,6 +20,12 @@ public sealed class CartDataAdapter : ICartDataPort
         return snapshot is null ? null : Translate(snapshot);
     }
 
+    public async Task<CartData?> FindActiveForCustomerAsync(CustomerId customerId, CancellationToken cancellationToken = default)
+    {
+        var snapshot = await _cartService.FindActiveCartAsync(customerId.Value, cancellationToken).ConfigureAwait(false);
+        return snapshot is null ? null : Translate(snapshot);
+    }
+
     private static CartData Translate(CartService.CartSnapshot snapshot) =>
         new(
             new CartId(snapshot.CartId),

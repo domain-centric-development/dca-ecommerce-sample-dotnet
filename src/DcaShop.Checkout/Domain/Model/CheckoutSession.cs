@@ -43,7 +43,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
 
     public CartId CartId { get; }
 
-    public CustomerId CustomerId { get; }
+    public CustomerId CustomerId { get; private set; }
 
     public IReadOnlyList<CheckoutLineItem> LineItems => _lineItems.AsReadOnly();
 
@@ -228,6 +228,16 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         var expiredAt = CurrentStep;
         Status = CheckoutSessionStatus.Expired;
         RegisterEvent(CheckoutExpired.Now(Id, expiredAt));
+    }
+
+    /// <summary>
+    /// Hands the open checkout to the customer who owns its cart now — a guest's checkout follows the cart into the
+    /// account at a login. Cart, lines and the step reached stay as they are.
+    /// </summary>
+    public void HandOverTo(CustomerId customerId)
+    {
+        EnsureModifiable();
+        CustomerId = customerId;
     }
 
     public void GoBackTo(CheckoutStep step)

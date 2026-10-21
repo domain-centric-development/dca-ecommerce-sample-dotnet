@@ -1,4 +1,5 @@
 using DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
+using DcaShop.Checkout.Application.CheckoutCompletion.ResumeCheckout;
 using DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
 using DcaShop.Checkout.Application.Session.GetCheckoutSession;
 using DcaShop.Checkout.Application.Session.GetConfirmedCheckoutSession;
@@ -24,13 +25,14 @@ public sealed class ConfirmationPageController : Controller
     public ConfirmationPageController(
         IGetActiveCheckoutSessionInputPort active,
         IGetCheckoutSessionInputPort session,
+        IResumeCheckoutInputPort resume,
         IGetConfirmedCheckoutSessionInputPort confirmed,
         IConfirmCheckoutInputPort confirm,
         IIdentityProvider identityProvider)
     {
         _confirmed = confirmed;
         _confirm = confirm;
-        _page = new CheckoutStepPage(this, active, session, identityProvider);
+        _page = new CheckoutStepPage(this, active, session, resume, identityProvider);
     }
 
     /// <summary>

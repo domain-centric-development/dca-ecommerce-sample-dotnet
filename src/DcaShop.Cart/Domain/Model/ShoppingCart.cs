@@ -61,7 +61,7 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
 
     public override CartId Id { get; }
 
-    public CustomerId CustomerId { get; }
+    public CustomerId CustomerId { get; private set; }
 
     public IReadOnlyList<CartItem> Items => _items.AsReadOnly();
 
@@ -199,6 +199,16 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
         }
 
         return mergedCount;
+    }
+
+    /// <summary>
+    /// Hands the cart itself to another customer — the account a guest logged in to. The cart keeps its id and its
+    /// positions, so a checkout captured from it still reconciles against the same positions.
+    /// </summary>
+    public void HandOverTo(CustomerId customerId)
+    {
+        EnsureCartIsActive();
+        CustomerId = customerId;
     }
 
     public bool ContainsProduct(ProductId productId) => _items.Any(i => i.ProductId == productId);

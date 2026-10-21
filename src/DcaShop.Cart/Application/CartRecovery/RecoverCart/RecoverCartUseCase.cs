@@ -8,7 +8,7 @@ namespace DcaShop.Cart.Application.CartRecovery.RecoverCart;
 
 /// <summary>
 /// Carries a guest's cart over to the account at login, for the case where there is nothing to decide: the
-/// account holds no cart of its own, so the guest cart simply becomes the account's.
+/// account's cart holds nothing, so the guest cart itself — its id and its positions — becomes the account's.
 /// </summary>
 /// <remarks>
 /// It is the other half of <see cref="MergeCarts.MergeCartsUseCase"/>: when both carts hold items the visitor is
@@ -53,9 +53,12 @@ public sealed class RecoverCartUseCase : IRecoverCartInputPort
                 }
 
                 var accountCart = await _carts.FindActiveByCustomerAsync(registeredCustomerId, ct)
-                    .ConfigureAwait(false)
-                    ?? await _carts.SaveAsync(ShoppingCart.Create(CartId.Generate(), registeredCustomerId), ct)
-                        .ConfigureAwait(false);
+                    .ConfigureAwait(false);
+
+                if (accountCart is null || accountCart.IsEmpty)
+                {
+                    return await HandOverAsync(anonymousCart, accountCart, registeredCustomerId, ct).ConfigureAwait(false);
+                }
 
                 var itemsRecovered = 0;
                 foreach (var item in anonymousCart.Items)
@@ -68,17 +71,40 @@ public sealed class RecoverCartUseCase : IRecoverCartInputPort
                 await _events.PublishAndClearEventsAsync(accountCart, ct).ConfigureAwait(false);
                 await _carts.DeleteByIdAsync(anonymousCart.Id, ct).ConfigureAwait(false);
 
-                return new RecoverCartResult(
-                    accountCart.Id.Value,
-                    accountCart.CustomerId.Value,
-                    accountCart.Items
-                        .Select(i => new RecoverCartResult.CartItemSummary(
-                            i.Id.Value, i.ProductId.Value, i.Quantity.Value, i.PriceAtAddition.Value))
-                        .ToList(),
-                    accountCart.CalculateTotal(),
-                    itemsRecovered,
-                    AnonymousCartDeleted: true);
+                return Recovered(accountCart, itemsRecovered, anonymousCartDeleted: true);
             },
             cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// The guest cart itself becomes the account's — same id, same positions — so a checkout captured from it is
+    /// still the checkout of the account's cart. An empty cart the account had goes, there is one active cart each.
+    /// </summary>
+    private async Task<RecoverCartResult> HandOverAsync(
+        ShoppingCart anonymousCart, ShoppingCart? emptyAccountCart, CustomerId registeredCustomerId, CancellationToken ct)
+    {
+        if (emptyAccountCart is not null)
+        {
+            await _carts.DeleteByIdAsync(emptyAccountCart.Id, ct).ConfigureAwait(false);
+        }
+
+        anonymousCart.HandOverTo(registeredCustomerId);
+        await _carts.SaveAsync(anonymousCart, ct).ConfigureAwait(false);
+        await _events.PublishAndClearEventsAsync(anonymousCart, ct).ConfigureAwait(false);
+
+        return Recovered(anonymousCart, anonymousCart.ItemCount, anonymousCartDeleted: false);
+    }
+
+    /// <summary>The account's cart after the recovery, whichever way the guest's positions reached it.</summary>
+    private static RecoverCartResult Recovered(ShoppingCart cart, int itemsRecovered, bool anonymousCartDeleted) =>
+        new(
+            cart.Id.Value,
+            cart.CustomerId.Value,
+            cart.Items
+                .Select(i => new RecoverCartResult.CartItemSummary(
+                    i.Id.Value, i.ProductId.Value, i.Quantity.Value, i.PriceAtAddition.Value))
+                .ToList(),
+            cart.CalculateTotal(),
+            itemsRecovered,
+            anonymousCartDeleted);
 }

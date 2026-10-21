@@ -11,6 +11,8 @@ public interface ICartDataPort : IOutputPort
     /// <summary>The named customer's cart — <see langword="null"/> when it does not exist or is not theirs.</summary>
     Task<CartData?> FindByIdAsync(CartId cartId, CustomerId customerId, CancellationToken cancellationToken = default);
 
+    /// <summary>The named customer's active cart — <see langword="null"/> when they have none.</summary>
+    Task<CartData?> FindActiveForCustomerAsync(CustomerId customerId, CancellationToken cancellationToken = default);
 }
 
 public sealed record CartData(CartId CartId, CustomerId CustomerId, IReadOnlyList<CartData.CartItemData> Items, bool Active)

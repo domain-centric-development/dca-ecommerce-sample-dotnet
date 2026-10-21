@@ -1,3 +1,4 @@
+using DcaShop.Checkout.Application.CheckoutCompletion.ResumeCheckout;
 using DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
 using DcaShop.Checkout.Application.Session.GetCheckoutSession;
 using DcaShop.Checkout.Domain.Model;
@@ -20,9 +21,10 @@ public sealed class ReviewPageController : Controller
     public ReviewPageController(
         IGetActiveCheckoutSessionInputPort active,
         IGetCheckoutSessionInputPort session,
+        IResumeCheckoutInputPort resume,
         IIdentityProvider identityProvider)
     {
-        _page = new CheckoutStepPage(this, active, session, identityProvider);
+        _page = new CheckoutStepPage(this, active, session, resume, identityProvider);
     }
 
     [HttpGet("review")]

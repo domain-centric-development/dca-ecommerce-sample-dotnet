@@ -127,6 +127,7 @@ public sealed class CheckoutSpecificationTest
         public Task<IReadOnlyList<IStockReservationPort.Shortage>> ReserveAsync(IReadOnlyCollection<CheckoutLineItem> lines, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<IStockReservationPort.Shortage>>([]);
         public Task ReleaseAsync(IReadOnlyCollection<CheckoutLineItem> lines, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<CartData?> FindByIdAsync(CartId cartId, CustomerId customerId, CancellationToken cancellationToken = default) => Task.FromResult<CartData?>(new CartData(cartId, customerId, Cart.Items.Select(i => new CartData.CartItemData(i.ProductId, i.PriceAtAddition.Value, i.Quantity.Value, i.PositionSnapshot)).ToArray(), Cart.IsActive));
+        public Task<CartData?> FindActiveForCustomerAsync(CustomerId customerId, CancellationToken cancellationToken = default) => FindByIdAsync(new CartId(Cart.Id.Value), customerId, cancellationToken);
         public Task<IReadOnlyDictionary<ProductId, CheckoutArticle>> GetArticleDataAsync(IReadOnlyCollection<ProductId> ids, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyDictionary<ProductId, CheckoutArticle>>(ids.ToDictionary(i => i, i => new CheckoutArticle(i, "Thing", Price, true, Stock, null)));
     }
     private sealed class Publisher : IDomainEventPublisher
