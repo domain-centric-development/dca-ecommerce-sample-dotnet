@@ -177,3 +177,11 @@ Test: DcaShop.E2eTests.LoginE2eTest#ALoginOpenedForAnotherSiteOpensTheCartInstea
 - When the visitor logs in with "anna.schmidt@example.com" and "Secret123"
 - Then the cart page `/cart` opens and shows "Welcome back!"
 Test: DcaShop.IntegrationTests.LoginPageTest#ALoginOpenedForASchemeRelativeAddressOpensTheCartWithTheWelcome
+
+### Rule: The "Register here" link carries a return page on only when it is a page of the shop
+
+#### the-register-link-drops-an-outside-return-page
+- Given a visitor with no cookies
+- When they open `/login?returnUrl=https://elsewhere.example/`
+- Then the "Register here" link leads to `/register`
+Test: DcaShop.E2eTests.LoginE2eTest#TheRegisterLinkOfALoginOpenedForAnotherSiteLeadsToTheRegistrationAlone
