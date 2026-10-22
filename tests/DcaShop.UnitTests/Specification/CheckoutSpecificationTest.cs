@@ -102,8 +102,10 @@ public sealed class CheckoutSpecificationTest
         Task first = confirmationWins ? f.Confirm(session) : f.Start();
         await f.Events.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Task second = confirmationWins ? f.Start() : f.Confirm(session);
-        // Both have fetched facts; the second cannot finish while the first holds the repository operation.
-        Assert.False(second.IsCompleted); f.Events.Release.TrySetResult(); await first;
+        // A start that comes second cannot finish while the confirmation holds the repository operation; a confirmation
+        // that comes second to a replacement may already be refused — it checks the session before it reserves any stock.
+        if (confirmationWins) Assert.False(second.IsCompleted);
+        f.Events.Release.TrySetResult(); await first;
         if (confirmationWins) { await second; Assert.Equal(CheckoutSessionStatus.Confirmed, session.Status); }
         else { await Assert.ThrowsAsync<CheckoutNotModifiableException>(() => second); Assert.Equal(CheckoutSessionStatus.Superseded, session.Status); }
     }
