@@ -1,0 +1,6 @@
+2026-10-23T13:22:03Z	signal	plan	run=20261023T132203.969148Z	open=6	seq=1
+2026-10-23T13:22:03Z	signal	judge	run=20261023T132203.969676Z	sha=77bf0bfba5058d7e	findings=3	seq=2
+2026-10-23T13:22:03Z	finding	domain	run=20261023T132203.969676Z	severity=minor	file=`src/DcaShop.Inventory/Domain/Specification/AvailableQuantityBelow.cs:24`	code=	seq=3
+2026-10-23T13:22:03Z	finding	test	run=20261023T132203.969676Z	severity=minor	file=`tests/DcaShop.IntegrationTests/LowStockOverviewTest.cs:62`	code=	seq=4
+2026-10-23T13:22:03Z	finding	craft	run=20261023T132203.969676Z	severity=minor	file=`src/DcaShop.Inventory/Domain/Specification/IStockLevelSpecificationVisitor.cs:13`	code=	seq=5
+2026-10-23T13:22:03Z	record	1	seq=6
