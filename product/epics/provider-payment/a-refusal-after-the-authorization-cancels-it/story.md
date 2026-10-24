@@ -6,7 +6,7 @@ created: 2026-10-23T21:25:20Z
 context: checkout
 feature: payment
 title: A refusal after the authorization cancels it
-closes: [the-payment-is-authorized-at-place-order#1]
+closes: [the-payment-is-authorized-at-place-order#1, the-payment-is-authorized-at-place-order#2]
 depends_on: [the-take-over-leads-only-to-pages-of-the-shop]
 ---
 
@@ -41,3 +41,4 @@ As a buyer whose order is refused after the provider authorized the payment I wa
 - From the findings triage of 2026-10-23 (WP-151): a finding that changes behaviour is a story, not a task.
 - The replacement happens during the provider's answer, a race a browser cannot bring about on purpose; the plan decides how the end-to-end test provokes it.
 - TODO #167: both shops release the stock on a refusal after the authorization, neither cancels the authorization (`POST /payments/{reference}/cancel` exists). Reachable with a database in a transaction.
+- Closes the-payment-is-authorized-at-place-order#2 too (the user, 2026-10-24): the glossary's "Payment cancellation" entry is rewritten here, to what this story makes true.
