@@ -1,4 +1,4 @@
-contract: 25
+contract: 26
 # Stack profile — the only place in the pipeline that knows how this project builds and tests.
 # The gate and the pre-commit hook read it; a command that is not declared is skipped and named.
 # Architecture tests need a Debug build: ArchUnitNET drops Release async state machines.
@@ -38,6 +38,8 @@ contextMap: docs/architecture/context-map.md
 # What must hold for any change (story-gate.py --change, the commit hook, CI). The end-user suite
 # starts the shop itself on a free port, so it runs whole here too.
 required: compile test test.integration architecture format e2eTest
+# A commit of the backlog alone runs the unit suite only: SharedScenariosTest reads the open stories' titles.
+checks.backlog: test
 format: dotnet format --verify-no-changes
 formatFix: dotnet format
 acceptance: pages
