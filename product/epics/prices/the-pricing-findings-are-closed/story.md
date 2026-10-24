@@ -2,11 +2,11 @@
 id: the-pricing-findings-are-closed
 epic: prices
 kind: task
-status: draft
+status: approved
 created: 2026-10-23T21:25:20Z
 context: pricing
 title: The pricing's open findings are closed
-closes: [an-operator-changes-a-price#1, an-operator-changes-a-price#2]
+closes: [an-operator-changes-a-price#2]
 depends_on: [the-take-over-leads-only-to-pages-of-the-shop]
 ---
 
@@ -19,3 +19,5 @@ A change no actor sees: no acceptance criterion, no test stage. A row that turns
 ## Notes
 
 - WP-151 decision 4 (the user, 2026-10-23): the open rows as clean-up items, one per bounded context, cart and checkout split into tests and code, after the pipeline closes new findings at their source (dca-factory 0.91.0); every item depends on `the-take-over-leads-only-to-pages-of-the-shop`.
+- Finding #1 (a price that rounds to zero) changes what an API client sees; split off on the user's say-so (2026-10-24) into the story `a-price-that-rounds-to-zero-names-the-price`.
+- Twin: the rename `UpdatePrice` → `ChangePrice` is needed in the Java sample too, as its own backlog item there; this task changes this shop and its glossary only.
