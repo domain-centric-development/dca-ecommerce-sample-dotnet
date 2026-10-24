@@ -1,7 +1,7 @@
 ---
 id: a-delivery-counts-its-own-attempts
 epic: run-the-shop
-status: draft
+status: superseded
 created: 2026-10-23T21:25:20Z
 context: backoffice
 title: A delivery counts its own attempts
@@ -10,6 +10,12 @@ depends_on: [the-take-over-leads-only-to-pages-of-the-shop]
 ---
 
 # A delivery counts its own attempts
+
+## Superseded
+
+- Already delivered before its release: `each-listener-counts-its-own-attempts` (2026-10-14) counts each listener's
+  tries in its own entry — two that fail once each read `attempts: 2` each; the finding it closes predates that story —
+  the user, 2026-10-24.
 
 ## Story
 
