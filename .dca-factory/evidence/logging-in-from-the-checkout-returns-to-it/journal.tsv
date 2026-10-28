@@ -199,3 +199,4 @@
 2026-10-23T13:40:31Z	part	document	process=verifier	stream=verifier.190045.out	seconds=136.925	input=164	cache_read=1151700	cache_write=28326	output=15505	cost=1.996357	seq=199
 2026-10-23T13:40:31Z	denied	judge	process=verifier	stream=verifier.190045.out	tool=Bash	call=cd /Users/christoph/Privat/domain-centric-architecture/dca-ecommerce-sample-dotnet && tail -25 .dca-factory/evidence/logging-in-from-the-checkout-returns-to-it…	seq=200
 2026-10-23T13:40:31Z	stream	verifier.190045.out	process=verifier	parts=2	denied=1	version=2	seq=201
+2026-10-28T16:18:29Z	pruned	-	files=19	days=7	seq=202

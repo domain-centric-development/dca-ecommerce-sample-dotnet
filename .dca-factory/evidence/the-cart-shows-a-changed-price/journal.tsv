@@ -53,3 +53,4 @@
 2026-10-23T13:40:31Z	denied	judge	process=verifier	stream=verifier.114009.out	tool=Bash	call=cat .claude/skills/factory-run/reference/stage-common.md; R=.dca-factory/runs/the-cart-shows-a-changed-price; ls -la $R $R/reviews; python3 .agents/factory/fac…	seq=53
 2026-10-23T13:40:31Z	denied	judge	process=verifier	stream=verifier.114009.out	tool=Bash	call=cat .claude/skills/factory-run/reference/stage-common.md; ls -la .dca-factory/runs/the-cart-shows-a-changed-price .dca-factory/runs/the-cart-shows-a-changed-pr…	seq=54
 2026-10-23T13:40:31Z	stream	verifier.114009.out	process=verifier	parts=1	denied=2	version=2	seq=55
+2026-10-28T16:18:29Z	pruned	-	files=8	days=7	seq=56
