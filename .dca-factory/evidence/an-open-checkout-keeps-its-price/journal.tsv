@@ -240,3 +240,4 @@
 2026-10-23T13:40:31Z	part	document	process=verifier	stream=verifier.113048.out	seconds=132.878	input=26	cache_read=1949428	cache_write=44225	output=15936	cost=1.131362	seq=240
 2026-10-23T13:40:31Z	denied	judge	process=verifier	stream=verifier.113048.out	tool=Bash	call=cat .claude/skills/factory-run/reference/stage-common.md; ls -la .dca-factory/runs/an-open-checkout-keeps-its-price/ .dca-factory/runs/an-open-checkout-keeps-i…	seq=241
 2026-10-23T13:40:31Z	stream	verifier.113048.out	process=verifier	parts=2	denied=1	version=2	seq=242
+2026-10-28T20:01:45Z	pruned	-	files=19	days=7	seq=243

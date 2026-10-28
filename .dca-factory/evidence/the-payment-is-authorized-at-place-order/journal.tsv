@@ -206,3 +206,4 @@
 2026-10-23T13:40:31Z	denied	-	process=verifier	stream=verifier.165002.out	tool=Bash	call=cat .claude/skills/factory-run/reference/stage-common.md; ls .dca-factory/runs/the-payment-is-authorized-at-place-order/ 2>/dev/null; ls .dca-factory/runs/the-…	seq=206
 2026-10-23T13:40:31Z	denied	judge	process=verifier	stream=verifier.165002.out	tool=Bash	call=cat .claude/skills/factory-run/reference/stage-common.md; R=.dca-factory/runs/the-payment-is-authorized-at-place-order; ls -la $R $R/reviews	seq=207
 2026-10-23T13:40:31Z	stream	verifier.165002.out	process=verifier	parts=2	denied=2	version=2	seq=208
+2026-10-28T19:42:04Z	pruned	-	files=17	days=7	seq=209
