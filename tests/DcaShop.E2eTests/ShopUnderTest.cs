@@ -33,6 +33,9 @@ public static class ShopUnderTest
             builder
                 .UseSetting("Checkout:PaymentProvider:BaseUrl", PaymentProviderStub.Url)
                 .UseSetting("Checkout:PaymentProvider:Timeout", PaymentProviderStub.Timeout));
+        factory = factory.WithWebHostBuilder(builder => builder
+            .UseSetting("Checkout:MailProvider:BaseUrl", MailProviderStub.Url)
+            .UseSetting("Checkout:MailProvider:Timeout", MailProviderStub.Timeout));
         // A port chosen by the system: port 0 alone leaves Kestrel on its default one, which another shop may hold.
         factory = factory.WithWebHostBuilder(builder => builder.ConfigureKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, 0)));
         factory.UseKestrel(0);

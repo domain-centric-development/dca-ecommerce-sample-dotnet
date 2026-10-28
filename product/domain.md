@@ -67,6 +67,7 @@ those are three answers, not three competing names.
 | `Product` | `Pricing` | Conformist / Events | Partnership | `Product.Events.ProductCreatedEvent` implements `Pricing.Events.IPriceInitializationTrigger`; consumer in `Pricing/Adapter/Incoming/Event/PriceInitializationEventConsumer` |
 | `Product` | `Inventory` | Conformist / Events | Partnership | `Product.Events.ProductCreatedEvent` implements `Inventory.Events.IStockInitializationTrigger`; consumer in `Inventory/Adapter/Incoming/Event/StockInitializationEventConsumer` |
 | Payment Service Provider | `Checkout` | ACL / REST (outbound) | Conformist to the provider's contract | `[ExternalUpstream]` on `CheckoutContext`, behind the caller-owned `IPaymentProviderRegistry` port; `src/DcaShop.Checkout/Adapter/Outgoing/Payment/RestPaymentProvider.cs` translates the provider's REST contract (`POST /payments`: `201` authorizes, `402` refuses, no answer in time counts as unavailable) when `Checkout:PaymentProvider:BaseUrl` is configured; without it `src/DcaShop.Checkout/Adapter/Outgoing/Payment/MockPaymentProvider.cs`, the in-sample stand-in, takes payments |
+| Mail Provider | `Checkout` | ACL / REST (outbound) | Conformist to the provider's contract | `[ExternalUpstream]` on `CheckoutContext`, behind the caller-owned `IOrderConfirmationMailPort` port; `src/DcaShop.Checkout/Adapter/Outgoing/Mail/RestMailProvider.cs` translates the provider's REST contract (`POST /messages` with recipient, template, key and data: `202` accepts, anything else or no answer in time counts as unavailable) when `Checkout:MailProvider:BaseUrl` is configured; without it `src/DcaShop.Checkout/Adapter/Outgoing/Mail/MockMailProvider.cs`, the in-sample stand-in, takes mails and sends nothing |
 | `Account` | `Cart`, `Checkout`, `Product` | not declared — the dependency runs through the shared kernel | Supplier of identity | `SharedKernel.Application.Shared.IIdentityProvider` is implemented only in `Account/Adapter/Outgoing/Security/HttpContextIdentityProvider`; the incoming adapters of Cart, Checkout and Product resolve the caller through that port and hand the customer to their use cases as a command or query field. Invisible to the declared map, which is why it is stated here. Account itself depends on no other context |
 | `Portal` | (all) | not declared | Separate Ways | Composition happens in the UI; no cross-context references |
 | `Backoffice` | (all) | not declared | Separate Ways | Reads the event publication log only; negotiates no contract |
@@ -131,7 +132,7 @@ graph LR
 **Legend:** Solid arrow = synchronous `Api` call; dotted arrow = asynchronous
 integration event. Thick-border nodes = core subdomain; dashed-border nodes =
 Separate Ways (no compile-time cross-context dependency). Partnerships and the
-external payment provider are in the generated map.
+external payment and mail providers are in the generated map.
 
 ## Notable design choices
 

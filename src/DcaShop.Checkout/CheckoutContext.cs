@@ -18,6 +18,9 @@ namespace DcaShop.Checkout;
 [ExternalUpstream("Payment Service Provider", Translation.AntiCorruptionLayer, Interaction.Outbound,
     Protocol = "REST", Exchanges = "payment operations (initiate, confirm, refund)",
     Rationale = "Behind the caller-owned IPaymentProviderRegistry port; RestPaymentProvider translates the provider's REST contract, the in-sample stand-in takes payments where no provider address is configured")]
+[ExternalUpstream("Mail Provider", Translation.AntiCorruptionLayer, Interaction.Outbound,
+    Protocol = "REST", Exchanges = "order confirmation mails",
+    Rationale = "Behind the caller-owned IOrderConfirmationMailPort port; RestMailProvider translates the provider's REST contract, the in-sample stand-in takes mails and sends nothing where no provider address is configured")]
 [Upstream("Inventory", Translation.Conformist, Consumes.Events,
     Rationale = "CheckoutConfirmedEvent implements inventory's consumer-defined IStockReductionTrigger contract as-is")]
 [Partnership("Cart",

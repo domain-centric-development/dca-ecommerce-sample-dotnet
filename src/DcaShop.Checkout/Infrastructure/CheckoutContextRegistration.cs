@@ -1,7 +1,9 @@
 using DcaShop.Checkout.Adapter.Incoming.Event.CartSync;
+using DcaShop.Checkout.Adapter.Incoming.Event.OrderConfirmation;
 using DcaShop.Checkout.Adapter.Outgoing.Cart;
 using DcaShop.Checkout.Adapter.Outgoing.Event;
 using DcaShop.Checkout.Adapter.Outgoing.Inventory;
+using DcaShop.Checkout.Adapter.Outgoing.Mail;
 using DcaShop.Checkout.Adapter.Outgoing.Payment;
 using DcaShop.Checkout.Adapter.Outgoing.Persistence;
 using DcaShop.Checkout.Adapter.Outgoing.Product;
@@ -14,6 +16,7 @@ using DcaShop.Checkout.Application.CheckoutCompletion.ResumeCheckout;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitBuyerInfo;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
 using DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
+using DcaShop.Checkout.Application.OrderConfirmation.SendOrderConfirmation;
 using DcaShop.Checkout.Application.Session.GetActiveCheckoutSession;
 using DcaShop.Checkout.Application.Session.GetCheckoutSession;
 using DcaShop.Checkout.Application.Session.GetConfirmedCheckoutSession;
@@ -54,6 +57,7 @@ public static class CheckoutContextRegistration
         services.AddScoped<IGetReviewInputPort, GetReviewUseCase>();
         services.AddScoped<IConfirmCheckoutInputPort, ConfirmCheckoutUseCase>();
         services.AddScoped<ISyncCheckoutWithCartInputPort, SyncCheckoutWithCartUseCase>();
+        services.AddScoped<ISendOrderConfirmationInputPort, SendOrderConfirmationUseCase>();
 
         // Outgoing adapters (output ports)
         services.AddSingleton<ICheckoutSessionRepository, InMemoryCheckoutSessionRepository>();
@@ -63,11 +67,34 @@ public static class CheckoutContextRegistration
         AddPaymentProvider(services, configuration);
         services.AddSingleton<IPaymentProviderRegistry, InMemoryPaymentProviderRegistry>();
         services.AddScoped<IEventListener, CheckoutConfirmedEventPublisher>();
+        services.AddSingleton<IProcessedEvents, InMemoryProcessedEvents>();
+        AddMailProvider(services, configuration);
 
         // Incoming event consumers
         services.AddScoped<IEventListener, CartChangeEventConsumer>();
+        services.AddScoped<IEventListener, CheckoutConfirmedEventConsumer>();
 
         return services;
+    }
+
+    /// <summary>
+    /// The mail provider when its address is configured, the stand-in that sends nothing otherwise — one provider either way.
+    /// </summary>
+    private static void AddMailProvider(IServiceCollection services, IConfiguration configuration)
+    {
+        var options = configuration.GetSection(MailProviderOptions.SectionName).Get<MailProviderOptions>();
+        if (options?.BaseUrl is not { } baseUrl)
+        {
+            services.AddSingleton<IOrderConfirmationMailPort, MockMailProvider>();
+            return;
+        }
+
+        services.AddHttpClient(RestMailProvider.HttpClientName, client =>
+        {
+            client.BaseAddress = WithTrailingSlash(baseUrl);
+            client.Timeout = options.Timeout;
+        });
+        services.AddSingleton<IOrderConfirmationMailPort, RestMailProvider>();
     }
 
     /// <summary>

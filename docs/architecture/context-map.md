@@ -52,7 +52,9 @@ graph LR
   Product -.->|"Conformist / events"| Inventory
   Product -->|"ACL / api"| Pricing
   Product -.->|"Conformist / events"| Pricing
+  ext_mail_provider[["Mail Provider"]]
   ext_payment_service_provider[["Payment Service Provider"]]
+  Checkout -->|"ACL / REST"| ext_mail_provider
   Checkout -->|"ACL / REST"| ext_payment_service_provider
   Cart ---|"Partnership"| Checkout
   Checkout ---|"Partnership"| Inventory
@@ -88,6 +90,7 @@ Edges labeled `planned` are declared intent without a code dependency yet.
 
 | Consumer | External system | Interaction | Protocol | Exchanges | Translation | Status | Rationale |
 |---|---|---|---|---|---|---|---|
+| Checkout | Mail Provider | outbound | REST | order confirmation mails | ACL | implemented | Behind the caller-owned IOrderConfirmationMailPort port; RestMailProvider translates the provider's REST contract, the in-sample stand-in takes mails and sends nothing where no provider address is configured |
 | Checkout | Payment Service Provider | outbound | REST | payment operations (initiate, confirm, refund) | ACL | implemented | Behind the caller-owned IPaymentProviderRegistry port; RestPaymentProvider translates the provider's REST contract, the in-sample stand-in takes payments where no provider address is configured |
 
 ## Partnerships

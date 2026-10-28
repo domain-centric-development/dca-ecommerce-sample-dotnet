@@ -11,7 +11,7 @@ Sources: `DcaShop.Checkout.Domain.{Model,Event,Service,ReadModel}`.
 
 ## Features (application layer)
 
-The Checkout context groups its use cases into three features — domain-named navigation groups below
+The Checkout context groups its use cases into four features — domain-named navigation groups below
 `Application/`, not model boundaries; every feature works on the one `CheckoutSession` aggregate.
 
 | Feature | Meaning | Use cases |
@@ -19,14 +19,15 @@ The Checkout context groups its use cases into three features — domain-named n
 | `Session` | Starting a checkout session from a cart and reading it back in its lifecycle states | `StartCheckout`, `GetActiveCheckoutSession`, `GetCheckoutSession`, `GetConfirmedCheckoutSession` |
 | `CheckoutCompletion` | The steps that complete a checkout: buyer information, delivery, payment, confirmation — and resuming the cart's open checkout on a step page | `ResumeCheckout`, `SubmitBuyerInfo`, `GetShippingOptions`, `SubmitDelivery`, `GetPaymentProviders`, `SubmitPayment`, `GetReview`, `ConfirmCheckout` |
 | `CartSync` | Following changes of the underlying cart while the session is active | `SyncCheckoutWithCart` |
+| `OrderConfirmation` | Mailing the buyer that the order went through, once the checkout is confirmed | `SendOrderConfirmation` |
 
 `Application/Shared/` stays context-wide. The web adapter mirrors the features: `Adapter/Incoming/Web/Session/`
 holds `StartCheckoutPageController`, `Adapter/Incoming/Web/CheckoutCompletion/` one page controller per step page
 (`BuyerInfo-`, `Delivery-`, `Payment-`, `Review-`, `ConfirmationPageController`), each with its own view model;
 `CheckoutRoutes`, `CheckoutStepNotice` and `CartNotice` (the codes the cart page knows) stay beside them, shared.
 `CheckoutStepPage` in `CheckoutCompletion/` is the one place a step page is opened, the cart's open checkout
-resumed when the customer has no session, or a refused submission translated. The event consumer
-sits in `Adapter/Incoming/Event/CartSync/`.
+resumed when the customer has no session, or a refused submission translated. The event consumers
+sit in `Adapter/Incoming/Event/CartSync/` and `Adapter/Incoming/Event/OrderConfirmation/`.
 
 ---
 
@@ -597,6 +598,16 @@ try again later." when the provider is unavailable — at the payment step or, f
 
 ---
 
+### MailProviderUnavailable
+
+**Definition:** The mail provider did not accept a mail: it answered other than `202`, did not answer in time or
+could not be reached. The failure carries the mail's key; the delivery that asked for the mail is tried again later,
+under the same key. No customer sees it.
+
+**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IOrderConfirmationMailPort`, Order confirmation
+
+---
+
 ### ShippingOptionNotOffered
 
 **Definition:** The shipping method the delivery form names is not one the delivery step offers; the step is refused
@@ -698,3 +709,18 @@ The parts of the context's behaviour its people name; each groups what holds in 
 **Definition:** The open checkout keeps its order while the cart changes.
 
 **Type:** Feature
+
+### Order confirmation (orderconfirmation)
+
+**Definition:** The mail telling the buyer the order went through: sent to the buyer e-mail of the confirmed
+checkout, with the order total, once per order. The order is the confirmed checkout session; its key at the mail
+provider is `order-confirmation-<checkout session id>`, the same for every attempt. A mail provider that does not
+accept the mail delays it — the delivery is tried again later — and never undoes the order.
+
+**Type:** Feature
+
+**Operations:** send the order confirmation (`sendorderconfirmation`) — mails a confirmed checkout's total to its
+buyer e-mail, once per order (`SendOrderConfirmation`, run by `CheckoutConfirmedEventConsumer` after
+`CheckoutConfirmed` is committed).
+
+**Related terms:** `CheckoutConfirmed`, `BuyerInfo`, `CheckoutTotals`, `MailProviderUnavailable`.

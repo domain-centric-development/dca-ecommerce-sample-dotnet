@@ -3,16 +3,19 @@ using System.Text.Json;
 using DcaShop.Backoffice.Application.Shared;
 using DcaShop.SharedKernel.Infrastructure.Events;
 
+using DomainCentric.BuildingBlocks.Ddd.Tactical;
+
 using OutboxStatus = DcaShop.SharedKernel.Infrastructure.Events.PublicationStatus;
 using PublicationStatus = DcaShop.Backoffice.Application.Shared.PublicationStatus;
 
 namespace DcaShop.Backoffice.Adapter.Outgoing.Persistence;
 
 /// <summary>
-/// Reads the publication log out of the integration-event outbox.
+/// Reads the publication log of the integration events out of the event outbox.
 /// </summary>
 /// <remarks>
-/// The outbox retains one immutable integration-event snapshot with per-consumer completion; the log lists one entry
+/// The outbox also holds the domain events a context captures for its own reactions; the log lists only the integration
+/// events. The outbox retains one immutable integration-event snapshot with per-consumer completion; the log lists one entry
 /// per event and listener, each with that listener's own state, as Java's registry does with one row per listener.
 /// Staged records are visible to operators but not eligible for dispatch until commit.
 /// </remarks>
@@ -30,6 +33,7 @@ public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
     public Task<IReadOnlyList<EventPublicationEntry>> FindAllAsync(CancellationToken cancellationToken = default)
     {
         var entries = _outbox.All()
+            .Where(publication => typeof(IIntegrationEvent).IsAssignableFrom(publication.EventType))
             .OrderByDescending(publication => publication.RegisteredOn)
             .SelectMany(ToEntries)
             .ToList();

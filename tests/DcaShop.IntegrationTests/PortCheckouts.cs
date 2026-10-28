@@ -36,6 +36,9 @@ internal sealed class PortCheckouts(WebApplicationFactory<Program> shop)
     /// <summary>The way to pay the shop offers when it is wired to the provider.</summary>
     public const string Provider = "provider";
 
+    /// <summary>The e-mail address every buyer of these checkouts gives on the buyer step.</summary>
+    public string BuyerEmail { get; init; } = "jane@example.com";
+
     /// <summary>The shop wired to <paramref name="provider"/>, awaiting it at most <paramref name="timeout"/>.</summary>
     public static WebApplicationFactory<Program> ShopWith(WebApplicationFactory<Program> factory, WireMockServer provider, string timeout = "00:00:30") =>
         factory.WithWebHostBuilder(builder => builder
@@ -62,7 +65,7 @@ internal sealed class PortCheckouts(WebApplicationFactory<Program> shop)
 
         var sessionId = (await services.GetRequiredService<IStartCheckoutInputPort>().ExecuteAsync(new StartCheckoutCommand(cart.CartId, customerId))).SessionId;
         await services.GetRequiredService<ISubmitBuyerInfoInputPort>().ExecuteAsync(
-            new SubmitBuyerInfoCommand(sessionId, customerId, "jane@example.com", "Jane", "Doe", "+49 30 1234567"));
+            new SubmitBuyerInfoCommand(sessionId, customerId, BuyerEmail, "Jane", "Doe", "+49 30 1234567"));
         await services.GetRequiredService<ISubmitDeliveryInputPort>().ExecuteAsync(
             new SubmitDeliveryCommand(sessionId, customerId, "Hauptstrasse 1", null, "Berlin", "10115", "Germany", null, shippingOption));
         return new CustomersCheckout(sessionId, customerId);

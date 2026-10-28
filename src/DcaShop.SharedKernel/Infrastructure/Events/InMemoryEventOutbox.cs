@@ -24,15 +24,20 @@ public sealed class InMemoryEventOutbox : IEventOutbox
         return Register(@event, @event.EventId);
     }
 
+    /// <remarks>
+    /// A publication of its own, not keyed by the event id: the integration event a translator makes of this domain
+    /// event carries the same event id and is registered in the same transaction, and keyed alike the two would be one
+    /// publication. The consumers' idempotency reads the event id from the event itself.
+    /// </remarks>
     public EventPublication Register(IDomainEvent @event)
     {
         ArgumentNullException.ThrowIfNull(@event);
-        return Register(@event, @event.EventId);
+        return Register(@event, Guid.NewGuid());
     }
 
-    private EventPublication Register(object @event, Guid eventId)
+    private EventPublication Register(object @event, Guid publicationId)
     {
-        var publication = new EventPublication(eventId, JsonSerializer.Serialize(@event, @event.GetType(), EventJson.Options),
+        var publication = new EventPublication(publicationId, JsonSerializer.Serialize(@event, @event.GetType(), EventJson.Options),
             @event.GetType(), _clock.GetUtcNow(), PublicationStatus.Staged, 0, null, null);
         // Validate deserialization before registering an undeliverable snapshot.
         _ = publication.Event;
