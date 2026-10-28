@@ -12,13 +12,13 @@ public sealed record ConsumerDelivery(string ConsumerId, PublicationStatus Statu
     string? LastError, DateTimeOffset? CompletedOn, DateTimeOffset? NextAttemptOn);
 
 /// <summary>Snapshot payload and immutable per-consumer delivery state; the outbox owns transitions.</summary>
-public sealed record IntegrationEventPublication(Guid Id, string Payload, Type EventType, DateTimeOffset RegisteredOn,
+public sealed record EventPublication(Guid Id, string Payload, Type EventType, DateTimeOffset RegisteredOn,
     PublicationStatus Status, int Attempts, string? LastError, DateTimeOffset? CompletedOn)
 {
     public ImmutableDictionary<string, ConsumerDelivery> Consumers { get; init; } = ImmutableDictionary<string, ConsumerDelivery>.Empty;
     public bool ConsumersInitialized { get; init; }
     /// <summary>A fresh deserialization prevents a consumer or caller from changing the retained snapshot.</summary>
-    public IIntegrationEvent Event => (IIntegrationEvent)(JsonSerializer.Deserialize(Payload, EventType, IntegrationEventJson.Options)
+    public object Event => (JsonSerializer.Deserialize(Payload, EventType, EventJson.Options)
         ?? throw new InvalidOperationException("An event snapshot must not deserialize to null"));
 }
 

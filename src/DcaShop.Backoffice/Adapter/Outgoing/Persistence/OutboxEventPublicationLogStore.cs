@@ -21,11 +21,11 @@ public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
     // Before the first dispatch captures consumer identities, display the dispatcher placeholder.
     private const string OutboxListener = "integration-event-dispatcher";
 
-    private static readonly JsonSerializerOptions PayloadFormat = IntegrationEventJson.Indented;
+    private static readonly JsonSerializerOptions PayloadFormat = EventJson.Indented;
 
-    private readonly IIntegrationEventOutbox _outbox;
+    private readonly IEventOutbox _outbox;
 
-    public OutboxEventPublicationLogStore(IIntegrationEventOutbox outbox) => _outbox = outbox;
+    public OutboxEventPublicationLogStore(IEventOutbox outbox) => _outbox = outbox;
 
     public Task<IReadOnlyList<EventPublicationEntry>> FindAllAsync(CancellationToken cancellationToken = default)
     {
@@ -37,16 +37,16 @@ public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
         return Task.FromResult<IReadOnlyList<EventPublicationEntry>>(entries);
     }
 
-    private static IEnumerable<EventPublicationEntry> ToEntries(IntegrationEventPublication publication) =>
+    private static IEnumerable<EventPublicationEntry> ToEntries(EventPublication publication) =>
         Deliveries(publication).Select(delivery => ToEntry(publication, delivery));
 
     /// <summary>Each consumer's delivery; before any is known, the publication's own state under the placeholder.</summary>
-    private static IEnumerable<ConsumerDelivery> Deliveries(IntegrationEventPublication publication) =>
+    private static IEnumerable<ConsumerDelivery> Deliveries(EventPublication publication) =>
         publication.Consumers.Count == 0
             ? [new ConsumerDelivery(OutboxListener, publication.Status, publication.Attempts, publication.LastError, publication.CompletedOn, null)]
             : publication.Consumers.Values.OrderBy(delivery => delivery.ConsumerId, StringComparer.Ordinal);
 
-    private static EventPublicationEntry ToEntry(IntegrationEventPublication publication, ConsumerDelivery delivery) =>
+    private static EventPublicationEntry ToEntry(EventPublication publication, ConsumerDelivery delivery) =>
         new(
             publication.Id,
             publication.Event.GetType().FullName ?? publication.Event.GetType().Name,
@@ -55,7 +55,7 @@ public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
             publication.RegisteredOn,
             delivery.CompletedOn, StatusOf(delivery.Status));
 
-    private static string Payload(IntegrationEventPublication publication, ConsumerDelivery delivery)
+    private static string Payload(EventPublication publication, ConsumerDelivery delivery)
     {
         var heading = $"Status: {Spell(delivery.Status).ToUpperInvariant()}, attempts: {Tries(delivery)}";
         var body = $"{heading}{Environment.NewLine}{Serialize(publication.Event)}";

@@ -139,9 +139,16 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   port's default filters and pages in memory so an adapter can adopt push-down (via `ICartSpecificationVisitor`)
   step by step. What the aggregate cannot see (stock, customer preferences, timestamps) evaluates neutrally in
   memory and belongs to the push-down.
-- Events: domain events are dispatched in-process synchronously (`InProcessDomainEventPublisher`);
-  integration events are registered in `IIntegrationEventOutbox` inside the use case's transaction, released after commit and delivered by `IntegrationEventDispatcherService`
-  — asynchronous, after the publishing use case finished, at least once with retry/backoff; consumers are idempotent. Listeners implement `EventListener<TEvent>` and are registered as `IEventListener`.
+- Events: two listener kinds (guide: *Reacting to an event*). A **synchronous** listener (`EventListener<TEvent>`)
+  runs inside the use case's transaction and calls output ports only — the `*EventPublisher` translators. A
+  **transactional** listener (`TransactionalEventListener<TEvent>`) drives an input port: every `*EventConsumer`,
+  whether it consumes a foreign integration event or this context's own domain event. `DomainEventPublisher`
+  dispatches to the synchronous kind at once and, when a transactional listener listens, captures the domain event in
+  `IEventOutbox` inside the same transaction; integration events are registered there by
+  `OutboxIntegrationEventPublisher`. The outbox makes a publication eligible on commit, discards it on rollback, and
+  `EventDispatcherService` delivers it to the transactional listeners — after the commit, at least once with
+  retry/backoff; consumers are idempotent. Both kinds are registered as `IEventListener`. The outbox is in memory: a
+  process that stops loses what was not yet delivered, which a production outbox table would keep.
 - E2E: `tests/DcaShop.E2eTests` is a one-to-one port of the Java `src/test-e2e` page objects and suites: the same
   `data-test` selectors and, test for test, the scenario titles of `product/spec/**/scenarios.md`, which both shops hold alike. Either suite runs against either shop
   (`./gradlew test-e2e -De2e.baseUrl=http://localhost:5080` in the Java repo; `E2E_BASE_URL=http://localhost:8080`

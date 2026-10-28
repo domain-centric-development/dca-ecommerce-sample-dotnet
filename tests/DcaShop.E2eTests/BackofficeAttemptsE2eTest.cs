@@ -46,7 +46,7 @@ public sealed class BackofficeAttemptsE2eTest : BaseE2eTest
             await scope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>().PublishAsync(@event);
         }
 
-        var outbox = shop.Services.GetRequiredService<IIntegrationEventOutbox>();
+        var outbox = shop.Services.GetRequiredService<IEventOutbox>();
         bool Settled() => outbox.All().Single(p => p.Id == @event.EventId).Status is PublicationStatus.Completed or PublicationStatus.Failed;
         for (var i = 0; i < 200 && !Settled(); i++)
         {
@@ -67,7 +67,7 @@ public sealed class BackofficeAttemptsE2eTest : BaseE2eTest
     }
 
     /// <summary>Fails on the first two deliveries of an event and handles it from then on.</summary>
-    public sealed class TwiceFailingListener : EventListener<BumpyEvent>
+    public sealed class TwiceFailingListener : TransactionalEventListener<BumpyEvent>
     {
         private readonly Deliveries _deliveries;
 
@@ -80,7 +80,7 @@ public sealed class BackofficeAttemptsE2eTest : BaseE2eTest
     }
 
     /// <summary>Fails on the first delivery of an event and handles it from then on.</summary>
-    public sealed class OnceFailingListener : EventListener<BumpyEvent>
+    public sealed class OnceFailingListener : TransactionalEventListener<BumpyEvent>
     {
         private readonly Deliveries _deliveries;
 

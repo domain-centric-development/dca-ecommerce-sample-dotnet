@@ -9,7 +9,7 @@ public sealed class OutboxEligibilityTest
     [Fact]
     public async Task RegisteredUncommittedPublicationIsNotEligibleForStartupReplay()
     {
-        var outbox = new InMemoryIntegrationEventOutbox(TimeProvider.System);
+        var outbox = new InMemoryEventOutbox(TimeProvider.System);
         outbox.Register(new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow));
         using var timeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
         await using var due = outbox.ReadDueAsync(timeout.Token).GetAsyncEnumerator();
@@ -19,7 +19,7 @@ public sealed class OutboxEligibilityTest
     [Fact]
     public async Task AFailedCommitParticipantRollsBackEligibilityBeforeReadersCanObserveIt()
     {
-        var outbox = new InMemoryIntegrationEventOutbox(TimeProvider.System);
+        var outbox = new InMemoryEventOutbox(TimeProvider.System);
         var boundary = new DcaShop.SharedKernel.Infrastructure.Transactions.InMemoryTransactionBoundary();
         var publisher = new DcaShop.SharedKernel.Adapter.Outgoing.Event.OutboxIntegrationEventPublisher(outbox, boundary);
         await Assert.ThrowsAsync<InvalidOperationException>(() => boundary.InTransactionAsync<int>(async ct =>
@@ -34,7 +34,7 @@ public sealed class OutboxEligibilityTest
     [Fact]
     public async Task FailedWakeupCannotUndoACommittedPublication()
     {
-        var outbox = new InMemoryIntegrationEventOutbox(TimeProvider.System);
+        var outbox = new InMemoryEventOutbox(TimeProvider.System);
         var boundary = new DcaShop.SharedKernel.Infrastructure.Transactions.InMemoryTransactionBoundary();
         var publisher = new DcaShop.SharedKernel.Adapter.Outgoing.Event.OutboxIntegrationEventPublisher(outbox, boundary);
         await Assert.ThrowsAsync<InvalidOperationException>(() => boundary.InTransactionAsync<int>(async ct =>
@@ -49,7 +49,7 @@ public sealed class OutboxEligibilityTest
     [Fact]
     public async Task ModeledAggregateParticipantAndInsidePublicationRollBackButOutsidePublicationSurvives()
     {
-        var outbox = new InMemoryIntegrationEventOutbox(TimeProvider.System);
+        var outbox = new InMemoryEventOutbox(TimeProvider.System);
         var boundary = new DcaShop.SharedKernel.Infrastructure.Transactions.InMemoryTransactionBoundary();
         var publisher = new DcaShop.SharedKernel.Adapter.Outgoing.Event.OutboxIntegrationEventPublisher(outbox, boundary);
         DcaShop.Cart.Domain.Model.ShoppingCart? stored = null;

@@ -51,7 +51,7 @@ public sealed class BackofficeListenerAttemptsTest : IClassFixture<WebApplicatio
     /// <summary>Waits until the shop has stopped working on the delivery — or gives up waiting; the page decides.</summary>
     private async Task SettledAsync(Guid eventId)
     {
-        var outbox = _factory.Services.GetRequiredService<IIntegrationEventOutbox>();
+        var outbox = _factory.Services.GetRequiredService<IEventOutbox>();
         for (var i = 0; i < 200; i++)
         {
             var status = outbox.All().Single(p => p.Id == eventId).Status;
@@ -114,14 +114,14 @@ public sealed class BackofficeListenerAttemptsTest : IClassFixture<WebApplicatio
     public sealed record SharedEvent(Guid EventId, DateTimeOffset OccurredOn) : IIntegrationEvent;
 
     /// <summary>Fails on every delivery.</summary>
-    public sealed class GivingUpListener : EventListener<SharedEvent>
+    public sealed class GivingUpListener : TransactionalEventListener<SharedEvent>
     {
         protected override Task OnAsync(SharedEvent @event, CancellationToken cancellationToken) =>
             throw new InvalidOperationException("breakdown");
     }
 
     /// <summary>Handles every delivery.</summary>
-    public sealed class WillingListener : EventListener<SharedEvent>
+    public sealed class WillingListener : TransactionalEventListener<SharedEvent>
     {
         protected override Task OnAsync(SharedEvent @event, CancellationToken cancellationToken) => Task.CompletedTask;
     }

@@ -10,7 +10,7 @@ namespace DcaShop.SharedKernel.Infrastructure.Events;
 /// A <see cref="Currency"/> travels as its ISO 4217 code (<c>"EUR"</c>), the form the Java twin's payload has,
 /// rather than as an object around the code.
 /// </remarks>
-public static class IntegrationEventJson
+public static class EventJson
 {
     /// <summary>The options every snapshot is written and read with.</summary>
     public static JsonSerializerOptions Options { get; } = Create(writeIndented: false);

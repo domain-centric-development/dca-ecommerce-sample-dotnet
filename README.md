@@ -110,7 +110,7 @@ One assembly per bounded context, one for the shared kernel, one for global infr
 
 ```
 src/
-├── DcaShop.SharedKernel/        Money, Price, ProductId, UserId; transaction boundary, event dispatch, integration-event outbox
+├── DcaShop.SharedKernel/        Money, Price, ProductId, UserId; transaction boundary, event dispatch, event outbox (two listener kinds)
 ├── DcaShop.Product/             Product Catalog   (namespace DcaShop.Product)
 ├── DcaShop.Cart/                Shopping Cart     (namespace DcaShop.Cart)
 ├── DcaShop.Checkout/            Checkout          (namespace DcaShop.Checkout)
@@ -276,9 +276,9 @@ must never be the same cookie. Those credentials are committed, so the shop refu
 are not marked `Secure`.
 
 > **What the event log actually shows.** The Java sample reads Spring Modulith's `EVENT_PUBLICATION` table: one
-> row per *domain* event per listener, completed when that listener returned. This shop has no such registry — its
-> domain events are dispatched in-process and leave no record. What it does keep is the **integration-event
-> outbox**: one row per integration event, with each listener's status, attempt count and last error. The page
+> row per *domain* event per listener, completed when that listener returned. This shop keeps an **event outbox**
+> instead: one row per integration event, and per domain event a transactional listener waits for, with each
+> listener's status, attempt count and last error. A domain event that only synchronous listeners hear leaves no record. The page
 > lists one entry per event and listener, as Java does — each with its own badge, completion date and, when it
 > failed, its own "Retry failed listener" button (`data-test="event-retry"`). It shows the same three numbers
 > (total / completed / incomplete, counted per entry) and the same `data-test` hooks, so the Java browser suite
@@ -310,7 +310,7 @@ This is an architecture sample, not a production template. Three pieces are inte
 - **In-memory persistence** shares mutable aggregate instances between requests and has no optimistic
   concurrency; see ADR-001. `InMemoryTransactionBoundary` draws the boundary and runs after-commit/after-rollback hooks,
   but repositories have nothing to roll back; see ADR-004.
-- **The integration-event outbox is in-memory**: at-least-once delivery with retries and a visible `Failed` state,
+- **The event outbox is in-memory**: at-least-once delivery with retries and a visible `Failed` state,
   but durable only within the process — a restart loses outstanding publications; see ADR-002 for the
   database-backed variant.
 - **The staff role has no provisioning path.** `Role.Staff` guards the operator routes of the API, but no

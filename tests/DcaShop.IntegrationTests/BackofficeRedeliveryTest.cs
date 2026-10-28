@@ -84,7 +84,7 @@ public sealed class BackofficeRedeliveryTest : IClassFixture<WebApplicationFacto
     /// <summary>Waits until the shop has stopped working on the delivery — or gives up waiting; the page decides.</summary>
     private async Task SettledAsync(Guid eventId)
     {
-        var outbox = _factory.Services.GetRequiredService<IIntegrationEventOutbox>();
+        var outbox = _factory.Services.GetRequiredService<IEventOutbox>();
         for (var i = 0; i < 200; i++)
         {
             var status = outbox.All().Single(p => p.Id == eventId).Status;
@@ -160,7 +160,7 @@ public sealed class BackofficeRedeliveryTest : IClassFixture<WebApplicationFacto
     }
 
     /// <summary>Fails on the first delivery of an event and handles it from then on.</summary>
-    public sealed class HiccupListener : EventListener<HiccupEvent>
+    public sealed class HiccupListener : TransactionalEventListener<HiccupEvent>
     {
         private readonly Deliveries _deliveries;
 
@@ -171,7 +171,7 @@ public sealed class BackofficeRedeliveryTest : IClassFixture<WebApplicationFacto
     }
 
     /// <summary>Fails on every delivery.</summary>
-    public sealed class BreakdownListener : EventListener<BreakdownEvent>
+    public sealed class BreakdownListener : TransactionalEventListener<BreakdownEvent>
     {
         protected override Task OnAsync(BreakdownEvent @event, CancellationToken cancellationToken) =>
             throw new InvalidOperationException("breakdown");

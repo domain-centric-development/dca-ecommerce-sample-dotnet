@@ -11,7 +11,7 @@ namespace DcaShop.Pricing.Adapter.Incoming.Event;
 /// arrives (today: the catalog's product-created event). It hands the event id on; the use case deduplicates a
 /// redelivery inside its transaction, so it cannot reset a price that changed since.
 /// </summary>
-public sealed class PriceInitializationEventConsumer : EventListener<IPriceInitializationTrigger>
+public sealed class PriceInitializationEventConsumer : TransactionalEventListener<IPriceInitializationTrigger>
 {
     private readonly IProvisionInitialPriceInputPort _provisionInitialPrice;
     private readonly ILogger<PriceInitializationEventConsumer> _logger;

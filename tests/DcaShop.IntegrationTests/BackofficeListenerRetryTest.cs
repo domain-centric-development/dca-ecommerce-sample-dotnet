@@ -108,7 +108,7 @@ public sealed class BackofficeListenerRetryTest : IClassFixture<WebApplicationFa
     /// <summary>Waits until the shop has stopped working on the delivery, whichever state it ended in — or gives up waiting.</summary>
     private async Task StoppedAsync(Guid eventId)
     {
-        var outbox = _factory.Services.GetRequiredService<IIntegrationEventOutbox>();
+        var outbox = _factory.Services.GetRequiredService<IEventOutbox>();
         bool Stopped() => outbox.All().Single(p => p.Id == eventId).Status is PublicationStatus.Completed or PublicationStatus.Failed;
         for (var i = 0; i < 200 && !Stopped(); i++)
         {
@@ -136,7 +136,7 @@ public sealed class BackofficeListenerRetryTest : IClassFixture<WebApplicationFa
     /// <summary>Waits until the shop has stopped working on the delivery in the given state — or gives up waiting.</summary>
     private async Task SettledAsync(Guid eventId, PublicationStatus status)
     {
-        var outbox = _factory.Services.GetRequiredService<IIntegrationEventOutbox>();
+        var outbox = _factory.Services.GetRequiredService<IEventOutbox>();
         for (var i = 0; i < 200 && outbox.All().Single(p => p.Id == eventId).Status != status; i++)
         {
             await Task.Delay(50);
@@ -154,13 +154,13 @@ public sealed class BackofficeListenerRetryTest : IClassFixture<WebApplicationFa
     }
 
     /// <summary>Handles every delivery.</summary>
-    public sealed class SteadyListener : EventListener<SplitEvent>
+    public sealed class SteadyListener : TransactionalEventListener<SplitEvent>
     {
         protected override Task OnAsync(SplitEvent @event, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     /// <summary>Fails on every delivery until it is repaired.</summary>
-    public sealed class BrokenListener : EventListener<SplitEvent>
+    public sealed class BrokenListener : TransactionalEventListener<SplitEvent>
     {
         private readonly Repair _repair;
 

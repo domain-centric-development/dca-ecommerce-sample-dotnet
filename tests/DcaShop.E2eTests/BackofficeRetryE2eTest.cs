@@ -44,7 +44,7 @@ public sealed class BackofficeRetryE2eTest : BaseE2eTest
         }
 
         await QuietAsync(shop);
-        Assert.Equal(PublicationStatus.Failed, shop.Services.GetRequiredService<IIntegrationEventOutbox>().All().Single(p => p.Id == @event.EventId).Status);
+        Assert.Equal(PublicationStatus.Failed, shop.Services.GetRequiredService<IEventOutbox>().All().Single(p => p.Id == @event.EventId).Status);
         shop.Services.GetRequiredService<Repair>().Done = true;
 
         var login = await BackofficeLoginPage.NavigateToAsync(Page, shop.BaseUrl);
@@ -89,7 +89,7 @@ public sealed class BackofficeRetryE2eTest : BaseE2eTest
     /// <summary>Waits until the shop has stopped working on every delivery, whichever state each ended in — or gives up waiting.</summary>
     private static async Task QuietAsync(SideShop shop)
     {
-        var outbox = shop.Services.GetRequiredService<IIntegrationEventOutbox>();
+        var outbox = shop.Services.GetRequiredService<IEventOutbox>();
         bool Quiet() => outbox.All().All(p => p.Status is PublicationStatus.Completed or PublicationStatus.Failed);
         for (var i = 0; i < 200 && !Quiet(); i++)
         {
@@ -108,7 +108,7 @@ public sealed class BackofficeRetryE2eTest : BaseE2eTest
             await scope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>().PublishAsync(@event);
         }
 
-        var outbox = shop.Services.GetRequiredService<IIntegrationEventOutbox>();
+        var outbox = shop.Services.GetRequiredService<IEventOutbox>();
         for (var i = 0; i < 200 && outbox.All().Single(p => p.Id == @event.EventId).Status != PublicationStatus.Failed; i++)
         {
             await Task.Delay(50);
@@ -120,7 +120,7 @@ public sealed class BackofficeRetryE2eTest : BaseE2eTest
     public sealed record UndeliverableEvent(Guid EventId, DateTimeOffset OccurredOn) : IIntegrationEvent;
 
     /// <summary>Fails on every delivery, so the shop uses up its attempts and gives up.</summary>
-    public sealed class BrokenListener : EventListener<UndeliverableEvent>
+    public sealed class BrokenListener : TransactionalEventListener<UndeliverableEvent>
     {
         protected override Task OnAsync(UndeliverableEvent @event, CancellationToken cancellationToken) =>
             throw new InvalidOperationException("listener unavailable");
@@ -135,7 +135,7 @@ public sealed class BackofficeRetryE2eTest : BaseE2eTest
     }
 
     /// <summary>Fails on every delivery until it is repaired.</summary>
-    public sealed class RepairableListener : EventListener<RecoverableEvent>
+    public sealed class RepairableListener : TransactionalEventListener<RecoverableEvent>
     {
         private readonly Repair _repair;
 
@@ -154,7 +154,7 @@ public sealed class BackofficeRetryE2eTest : BaseE2eTest
     }
 
     /// <summary>Begins every delivery and never finishes it while the shop runs, so the delivery stays under way.</summary>
-    public sealed class LingeringListener : EventListener<LingeringEvent>
+    public sealed class LingeringListener : TransactionalEventListener<LingeringEvent>
     {
         private readonly Linger _linger;
 

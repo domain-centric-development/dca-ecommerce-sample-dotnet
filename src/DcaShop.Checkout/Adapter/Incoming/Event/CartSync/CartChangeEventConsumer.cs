@@ -10,7 +10,7 @@ namespace DcaShop.Checkout.Adapter.Incoming.Event.CartSync;
 /// Keeps an active checkout session in step with its cart: every published cart change re-syncs the session.
 /// A cleared cart is only logged — the session keeps its items until the customer acts.
 /// </summary>
-public sealed class CartChangeEventConsumer : EventListener<CartContentsChangedEvent>
+public sealed class CartChangeEventConsumer : TransactionalEventListener<CartContentsChangedEvent>
 {
     private readonly ISyncCheckoutWithCartInputPort _syncCheckoutWithCart;
     private readonly ILogger<CartChangeEventConsumer> _logger;

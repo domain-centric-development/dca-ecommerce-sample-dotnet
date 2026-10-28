@@ -105,7 +105,7 @@ public sealed class CrossContextEventFlowTest : IClassFixture<WebApplicationFact
         await Eventually(() =>
         {
             using var scope = _factory.Services.CreateScope();
-            var publications = scope.ServiceProvider.GetRequiredService<DcaShop.SharedKernel.Infrastructure.Events.IIntegrationEventOutbox>().All()
+            var publications = scope.ServiceProvider.GetRequiredService<DcaShop.SharedKernel.Infrastructure.Events.IEventOutbox>().All()
                 .Where(p => p.EventType.Name == "CartContentsChangedEvent" && p.Payload.Contains(cartId, StringComparison.OrdinalIgnoreCase)).ToArray();
             return Task.FromResult(publications.Length >= 2 && publications.All(p => p.Status == DcaShop.SharedKernel.Infrastructure.Events.PublicationStatus.Completed));
         });

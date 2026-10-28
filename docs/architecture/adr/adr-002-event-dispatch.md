@@ -46,3 +46,14 @@ port and blurs the distinction between commands and events.
   run inside the use case, so a failure there is a failure of the use case — no outbox needed on that leg.
 
 Amended 2026-09-09 by [ADR-009](./adr-009-outbox-transactional-eligibility.md): registration is Staged; an enlisted commit participant establishes Pending eligibility; after-commit release is a wakeup only. Completion/retry are per consumer. The in-memory boundary models enlisted resources, not universal rollback of live repository objects.
+
+## Amendment 2026-10-28 — two listener kinds
+
+A reaction to a domain event of the publishing context runs after the commit, like a reaction to an integration event.
+Listeners come in two kinds: `EventListener<T>` (synchronous, inside the transaction, output ports only — the
+translators) and `TransactionalEventListener<T>` (delivered from the outbox after the commit, drives an input port).
+The publisher of domain events is `DomainEventPublisher`: it dispatches to the synchronous kind and captures the event
+in the outbox when a transactional listener listens. The outbox types lost their `Integration` prefix because they now
+carry both kinds of event: `IEventOutbox`, `InMemoryEventOutbox`, `EventPublication`, `EventJson`,
+`EventDispatcherService`, `EventRetryPolicy`. The decision above stands for everything else.
+

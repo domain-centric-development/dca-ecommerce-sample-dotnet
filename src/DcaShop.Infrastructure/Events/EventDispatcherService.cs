@@ -6,16 +6,20 @@ using Microsoft.Extensions.Logging;
 
 namespace DcaShop.Infrastructure.Events;
 
-/// <summary>Per-consumer delivery with retained retry due times, bounded attempts and intentional failed-work replay.</summary>
-public sealed class IntegrationEventDispatcherService : BackgroundService
+/// <summary>
+/// Delivers outbox publications — domain events and integration events alike — to the transactional listeners, each
+/// in a DI scope of its own after the publishing transaction committed. Per-consumer delivery with retained retry due
+/// times, bounded attempts and intentional failed-work replay.
+/// </summary>
+public sealed class EventDispatcherService : BackgroundService
 {
-    private readonly IIntegrationEventOutbox _outbox;
+    private readonly IEventOutbox _outbox;
     private readonly IServiceScopeFactory _scopes;
-    private readonly IntegrationEventRetryPolicy _retry;
-    private readonly ILogger<IntegrationEventDispatcherService> _logger;
+    private readonly EventRetryPolicy _retry;
+    private readonly ILogger<EventDispatcherService> _logger;
 
-    public IntegrationEventDispatcherService(IIntegrationEventOutbox outbox, IServiceScopeFactory scopes,
-        IntegrationEventRetryPolicy retry, ILogger<IntegrationEventDispatcherService> logger)
+    public EventDispatcherService(IEventOutbox outbox, IServiceScopeFactory scopes,
+        EventRetryPolicy retry, ILogger<EventDispatcherService> logger)
     { _outbox = outbox; _scopes = scopes; _retry = retry; _logger = logger; }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -24,10 +28,10 @@ public sealed class IntegrationEventDispatcherService : BackgroundService
             await DeliverAsync(publication, stoppingToken).ConfigureAwait(false);
     }
 
-    private async Task DeliverAsync(IntegrationEventPublication publication, CancellationToken token)
+    private async Task DeliverAsync(EventPublication publication, CancellationToken token)
     {
         using var discovery = _scopes.CreateScope();
-        var consumers = discovery.ServiceProvider.GetServices<IEventListener>().Where(l => l.Listens(publication.Event))
+        var consumers = discovery.ServiceProvider.GetServices<IEventListener>().OfType<ITransactionalEventListener>().Where(l => l.Listens(publication.Event))
             .Select(l => l.GetType().FullName ?? l.GetType().Name).ToArray();
         publication = _outbox.InitializeConsumers(publication.Id, consumers);
         foreach (var progress in publication.Consumers.Values.Where(c => c.Status == PublicationStatus.Pending))
@@ -36,7 +40,7 @@ public sealed class IntegrationEventDispatcherService : BackgroundService
             try
             {
                 using var scope = _scopes.CreateScope();
-                var listener = scope.ServiceProvider.GetServices<IEventListener>()
+                var listener = scope.ServiceProvider.GetServices<IEventListener>().OfType<ITransactionalEventListener>()
                     .SingleOrDefault(l => (l.GetType().FullName ?? l.GetType().Name) == progress.ConsumerId)
                     ?? throw new InvalidOperationException($"Registered consumer is unavailable: {progress.ConsumerId}");
                 await listener.OnAsync(publication.Event, token).ConfigureAwait(false);

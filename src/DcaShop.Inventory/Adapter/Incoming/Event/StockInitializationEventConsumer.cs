@@ -11,7 +11,7 @@ namespace DcaShop.Inventory.Adapter.Incoming.Event;
 /// arrives (today: the catalog's product-created event). It hands the event id on; the use case deduplicates a
 /// redelivery inside its transaction, so it cannot reset a stock level that changed since.
 /// </summary>
-public sealed class StockInitializationEventConsumer : EventListener<IStockInitializationTrigger>
+public sealed class StockInitializationEventConsumer : TransactionalEventListener<IStockInitializationTrigger>
 {
     private readonly IProvisionInitialStockInputPort _provisionInitialStock;
     private readonly ILogger<StockInitializationEventConsumer> _logger;

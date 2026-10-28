@@ -10,7 +10,7 @@ namespace DcaShop.Cart.Adapter.Incoming.Event.CartCheckout;
 /// Completes the cart when any integration event implementing <see cref="ICartCompletionTrigger"/> arrives. It
 /// hands the event id on; the use case deduplicates a redelivery inside its transaction.
 /// </summary>
-public sealed class CartCompletionEventConsumer : EventListener<ICartCompletionTrigger>
+public sealed class CartCompletionEventConsumer : TransactionalEventListener<ICartCompletionTrigger>
 {
     private readonly ICompleteCartInputPort _completeCart;
     private readonly ILogger<CartCompletionEventConsumer> _logger;

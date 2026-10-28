@@ -95,7 +95,7 @@ public sealed class SharedSpecificationTest
             Assert.Single(product.DomainEvents);
             if (v.TryGetProperty("fields", out var fields))
             {
-                var outbox = new DcaShop.SharedKernel.Infrastructure.Events.InMemoryIntegrationEventOutbox(TimeProvider.System);
+                var outbox = new DcaShop.SharedKernel.Infrastructure.Events.InMemoryEventOutbox(TimeProvider.System);
                 var publisher = new DcaShop.SharedKernel.Adapter.Outgoing.Event.OutboxIntegrationEventPublisher(outbox, new DcaShop.SharedKernel.Infrastructure.Transactions.InMemoryTransactionBoundary());
                 new DcaShop.Product.Adapter.Outgoing.Event.ProductCreatedEventPublisher(publisher).OnAsync((object)product.DomainEvents.Single()).GetAwaiter().GetResult();
                 using var payload = JsonDocument.Parse(outbox.All().Single().Payload);

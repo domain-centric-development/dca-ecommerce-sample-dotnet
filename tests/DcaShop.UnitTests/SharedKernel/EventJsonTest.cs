@@ -11,9 +11,9 @@ public sealed class IntegrationEventJsonTest
     [Fact]
     public void MoneyTravelsWithItsCurrencyCode()
     {
-        var json = JsonSerializer.Serialize(Money.Euro(4.99m), IntegrationEventJson.Options);
+        var json = JsonSerializer.Serialize(Money.Euro(4.99m), EventJson.Options);
 
         Assert.Equal("EUR", JsonDocument.Parse(json).RootElement.GetProperty("Currency").GetString());
-        Assert.Equal(Money.Euro(4.99m), JsonSerializer.Deserialize<Money>(json, IntegrationEventJson.Options));
+        Assert.Equal(Money.Euro(4.99m), JsonSerializer.Deserialize<Money>(json, EventJson.Options));
     }
 }

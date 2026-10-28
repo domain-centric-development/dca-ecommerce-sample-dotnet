@@ -11,17 +11,28 @@ using DomainCentric.BuildingBlocks.Ddd.Tactical;
 namespace DcaShop.SharedKernel.Infrastructure.Events;
 
 /// <summary>Storage survives dispatcher reconstruction within this process; it is not durable across process loss.</summary>
-public sealed class InMemoryIntegrationEventOutbox : IIntegrationEventOutbox
+public sealed class InMemoryEventOutbox : IEventOutbox
 {
-    private readonly ConcurrentDictionary<Guid, IntegrationEventPublication> _publications = new();
+    private readonly ConcurrentDictionary<Guid, EventPublication> _publications = new();
     private readonly Channel<Guid> _due = Channel.CreateUnbounded<Guid>();
     private readonly TimeProvider _clock;
-    public InMemoryIntegrationEventOutbox(TimeProvider clock) => _clock = clock;
+    public InMemoryEventOutbox(TimeProvider clock) => _clock = clock;
 
-    public IntegrationEventPublication Register(IIntegrationEvent @event)
+    public EventPublication Register(IIntegrationEvent @event)
     {
         ArgumentNullException.ThrowIfNull(@event);
-        var publication = new IntegrationEventPublication(@event.EventId, JsonSerializer.Serialize(@event, @event.GetType(), IntegrationEventJson.Options),
+        return Register(@event, @event.EventId);
+    }
+
+    public EventPublication Register(IDomainEvent @event)
+    {
+        ArgumentNullException.ThrowIfNull(@event);
+        return Register(@event, @event.EventId);
+    }
+
+    private EventPublication Register(object @event, Guid eventId)
+    {
+        var publication = new EventPublication(eventId, JsonSerializer.Serialize(@event, @event.GetType(), EventJson.Options),
             @event.GetType(), _clock.GetUtcNow(), PublicationStatus.Staged, 0, null, null);
         // Validate deserialization before registering an undeliverable snapshot.
         _ = publication.Event;
@@ -37,13 +48,13 @@ public sealed class InMemoryIntegrationEventOutbox : IIntegrationEventOutbox
             if (_publications.TryGetValue(id, out var p) && (p.Status == PublicationStatus.Staged || p.Status == PublicationStatus.Pending)) _publications.TryRemove(id, out _);
     }
 
-    public async IAsyncEnumerable<IntegrationEventPublication> ReadDueAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<EventPublication> ReadDueAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         // Every reconstructed dispatcher enumerates retained committed state; wakeups are dispensable.
         foreach (var publication in All().Where(p => p.Status == PublicationStatus.Pending)) Release(publication.Id);
         await foreach (var id in _due.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {
-            IntegrationEventPublication? publication;
+            EventPublication? publication;
             lock (InMemoryTransactionBoundary.CommitGate) _publications.TryGetValue(id, out publication);
             if (publication?.Status != PublicationStatus.Pending) continue;
             var waiting = publication.Consumers.Values.Where(c => c.Status == PublicationStatus.Pending).ToArray();
@@ -59,7 +70,7 @@ public sealed class InMemoryIntegrationEventOutbox : IIntegrationEventOutbox
         catch (OperationCanceledException) { /* eligibility and due time remain in storage */ }
     }
 
-    public IntegrationEventPublication InitializeConsumers(Guid id, IEnumerable<string> consumers) => Update(id, p =>
+    public EventPublication InitializeConsumers(Guid id, IEnumerable<string> consumers) => Update(id, p =>
         p.ConsumersInitialized ? p : p with
         {
             ConsumersInitialized = true,
@@ -72,7 +83,7 @@ public sealed class InMemoryIntegrationEventOutbox : IIntegrationEventOutbox
         Consumers = p.Consumers.SetItem(consumer, p.Consumers[consumer] with { Status = PublicationStatus.Completed, CompletedOn = _clock.GetUtcNow(), LastError = null, NextAttemptOn = null })
     }));
 
-    public IntegrationEventPublication RecordConsumerFailure(Guid id, string consumer, string error, int maxAttempts, TimeSpan nextDelay) => Update(id, p =>
+    public EventPublication RecordConsumerFailure(Guid id, string consumer, string error, int maxAttempts, TimeSpan nextDelay) => Update(id, p =>
     {
         var state = p.Consumers[consumer]; var attempts = state.Attempts + 1;
         return Progress(p with
@@ -92,7 +103,7 @@ public sealed class InMemoryIntegrationEventOutbox : IIntegrationEventOutbox
 
     public void MarkCompleted(Guid id) => Update(id, Progress);
 
-    private IntegrationEventPublication Progress(IntegrationEventPublication p)
+    private EventPublication Progress(EventPublication p)
     {
         bool complete = p.ConsumersInitialized && p.Consumers.Values.All(c => c.Status == PublicationStatus.Completed);
         bool pending = !p.ConsumersInitialized || p.Consumers.Values.Any(c => c.Status == PublicationStatus.Pending);
@@ -119,12 +130,12 @@ public sealed class InMemoryIntegrationEventOutbox : IIntegrationEventOutbox
         Release(id);
     }
 
-    public IReadOnlyList<IntegrationEventPublication> All()
+    public IReadOnlyList<EventPublication> All()
     {
         lock (InMemoryTransactionBoundary.CommitGate) return _publications.Values.OrderByDescending(p => p.RegisteredOn).ToList();
     }
 
-    private IntegrationEventPublication Update(Guid id, Func<IntegrationEventPublication, IntegrationEventPublication> change)
+    private EventPublication Update(Guid id, Func<EventPublication, EventPublication> change)
     {
         lock (InMemoryTransactionBoundary.CommitGate)
         {

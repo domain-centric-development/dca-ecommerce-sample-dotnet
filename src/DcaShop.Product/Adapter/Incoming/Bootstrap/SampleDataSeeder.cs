@@ -52,9 +52,9 @@ public sealed class SampleDataSeeder : IHostedService
     private static readonly TimeSpan DrainTimeout = TimeSpan.FromSeconds(30);
 
     private readonly IServiceScopeFactory _scopes;
-    private readonly IIntegrationEventOutbox _outbox;
+    private readonly IEventOutbox _outbox;
 
-    public SampleDataSeeder(IServiceScopeFactory scopes, IIntegrationEventOutbox outbox)
+    public SampleDataSeeder(IServiceScopeFactory scopes, IEventOutbox outbox)
     {
         _scopes = scopes;
         _outbox = outbox;

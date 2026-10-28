@@ -12,7 +12,7 @@ namespace DcaShop.Inventory.Adapter.Incoming.Event;
 /// remaining lines — the reduction is a reaction, not part of the checkout's transaction. It hands the event id on;
 /// the use case deduplicates a redelivery inside its transaction, so an order never reduces stock twice.
 /// </summary>
-public sealed class StockReductionEventConsumer : EventListener<IStockReductionTrigger>
+public sealed class StockReductionEventConsumer : TransactionalEventListener<IStockReductionTrigger>
 {
     private readonly IReduceStockInputPort _reduceStock;
     private readonly ILogger<StockReductionEventConsumer> _logger;

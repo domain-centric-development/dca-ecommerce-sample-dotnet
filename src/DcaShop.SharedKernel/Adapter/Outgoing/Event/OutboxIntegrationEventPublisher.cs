@@ -11,14 +11,14 @@ namespace DcaShop.SharedKernel.Adapter.Outgoing.Event;
 /// registered <em>inside</em> the use case's transaction — together with the aggregate, so there is no window in
 /// which the aggregate is committed but the event is not recorded. After commit the publication is released to
 /// the dispatcher; after rollback it is discarded (a database outbox rolls the row back by itself). Delivery
-/// happens asynchronously in <c>IntegrationEventDispatcherService</c>; failures are retried, not dropped.
+/// happens asynchronously in <c>EventDispatcherService</c>; failures are retried, not dropped.
 /// </summary>
 public sealed class OutboxIntegrationEventPublisher : IIntegrationEventPublisher
 {
-    private readonly IIntegrationEventOutbox _outbox;
+    private readonly IEventOutbox _outbox;
     private readonly ITransactionHooks _transaction;
 
-    public OutboxIntegrationEventPublisher(IIntegrationEventOutbox outbox, ITransactionHooks transaction)
+    public OutboxIntegrationEventPublisher(IEventOutbox outbox, ITransactionHooks transaction)
     {
         _outbox = outbox;
         _transaction = transaction;

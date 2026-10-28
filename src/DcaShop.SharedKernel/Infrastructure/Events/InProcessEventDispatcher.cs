@@ -3,9 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace DcaShop.SharedKernel.Infrastructure.Events;
 
 /// <summary>
-/// Synchronous in-process dispatch: listeners are resolved from the current DI scope and awaited one
-/// after another. Domain events travel this way (the Java twin's <c>@EventListener</c>); integration
-/// events reach it through the <see cref="IntegrationEventChannel"/> in a background service.
+/// Synchronous in-process dispatch inside the publishing transaction: the synchronous listeners of the current DI
+/// scope are awaited one after another — the Java twin's <c>@EventListener</c>. Transactional listeners
+/// (<see cref="ITransactionalEventListener"/>) are skipped here: the outbox delivers to them after the commit.
 /// </summary>
 public sealed class InProcessEventDispatcher : IEventDispatcher
 {
@@ -21,7 +21,7 @@ public sealed class InProcessEventDispatcher : IEventDispatcher
         ArgumentNullException.ThrowIfNull(@event);
         foreach (var listener in _services.GetServices<IEventListener>())
         {
-            if (listener.Listens(@event))
+            if (listener is not ITransactionalEventListener && listener.Listens(@event))
             {
                 await listener.OnAsync(@event, cancellationToken).ConfigureAwait(false);
             }

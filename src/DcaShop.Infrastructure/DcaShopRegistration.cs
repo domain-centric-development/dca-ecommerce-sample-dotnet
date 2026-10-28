@@ -28,17 +28,17 @@ public static class DcaShopRegistration
     {
         // Event plumbing (shared kernel)
         services.AddScoped<IEventDispatcher, InProcessEventDispatcher>();
-        services.AddScoped<IDomainEventPublisher, InProcessDomainEventPublisher>();
+        services.AddScoped<IDomainEventPublisher, DomainEventPublisher>();
         services.TryAddSingleton(TimeProvider.System);
-        services.AddSingleton<IIntegrationEventOutbox, InMemoryIntegrationEventOutbox>();
+        services.AddSingleton<IEventOutbox, InMemoryEventOutbox>();
         services.AddScoped<IIntegrationEventPublisher, OutboxIntegrationEventPublisher>();
 
         // Transaction boundary: writing use cases run inside ITransactionBoundary.InTransactionAsync
         services.AddScoped<InMemoryTransactionBoundary>();
         services.AddScoped<ITransactionBoundary>(sp => sp.GetRequiredService<InMemoryTransactionBoundary>());
         services.AddScoped<ITransactionHooks>(sp => sp.GetRequiredService<InMemoryTransactionBoundary>());
-        services.TryAddSingleton(IntegrationEventRetryPolicy.Default);
-        services.AddHostedService<IntegrationEventDispatcherService>();
+        services.TryAddSingleton(EventRetryPolicy.Default);
+        services.AddHostedService<EventDispatcherService>();
 
         // Bounded contexts. Account comes first: every other context reads the visitor identity it resolves.
         services.AddAccountContext(configuration);

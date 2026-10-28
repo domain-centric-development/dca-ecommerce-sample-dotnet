@@ -2,7 +2,7 @@ using DcaShop.Backoffice.Application.ReplayFailedPublication;
 using DcaShop.SharedKernel.Infrastructure.Events;
 namespace DcaShop.Backoffice.Adapter.Outgoing.Persistence;
 
-public sealed class OutboxEventPublicationRecoveryAdapter(IIntegrationEventOutbox outbox) : IEventPublicationRecoveryPort
+public sealed class OutboxEventPublicationRecoveryAdapter(IEventOutbox outbox) : IEventPublicationRecoveryPort
 {
     public Task<bool> ReplayFailedAsync(Guid publicationId, string listenerId, CancellationToken cancellationToken = default)
     {

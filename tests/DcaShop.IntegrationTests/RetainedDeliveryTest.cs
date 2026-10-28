@@ -42,7 +42,7 @@ public sealed class RetainedDeliveryTest
     [InlineData(true)]
     public async Task ReconstructedDispatcherReplaysCommittedSnapshotWithOrWithoutWakeup(bool wakeup)
     {
-        var outbox = new InMemoryIntegrationEventOutbox(TimeProvider.System);
+        var outbox = new InMemoryEventOutbox(TimeProvider.System);
         var boundary = new InMemoryTransactionBoundary();
         var probe = new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "captured");
         var publisher = new OutboxIntegrationEventPublisher(outbox, new Hooks(boundary, wakeup));
@@ -69,7 +69,7 @@ public sealed class RetainedDeliveryTest
     [InlineData(true)]
     public async Task UncommittedAndRolledBackWorkCannotBeReplayed(bool rollback)
     {
-        var outbox = new InMemoryIntegrationEventOutbox(TimeProvider.System);
+        var outbox = new InMemoryEventOutbox(TimeProvider.System);
         var boundary = new InMemoryTransactionBoundary();
         var publisher = new OutboxIntegrationEventPublisher(outbox, boundary);
         var observed = new Observed();
@@ -97,7 +97,7 @@ public sealed class RetainedDeliveryTest
     [InlineData(false, 2)]
     public async Task AcceptanceBeforeAcknowledgementRetriesSameConsumerKeyAndSnapshot(bool providerIdempotency, int externalEffects)
     {
-        var outbox = new InMemoryIntegrationEventOutbox(TimeProvider.System);
+        var outbox = new InMemoryEventOutbox(TimeProvider.System);
         var observed = new Observed { CrashAfterAcceptance = true, ProviderIdempotency = providerIdempotency };
         using var services = Services(observed);
         var probe = new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "original");
@@ -118,7 +118,7 @@ public sealed class RetainedDeliveryTest
     [Fact]
     public async Task ExhaustionIsInspectableAndManualReplayTouchesOnlyFailedConsumer()
     {
-        var outbox = new InMemoryIntegrationEventOutbox(TimeProvider.System);
+        var outbox = new InMemoryEventOutbox(TimeProvider.System);
         var observed = new Observed { AlwaysFail = true };
         using var services = Services(observed);
         var id = Guid.NewGuid();
@@ -140,8 +140,8 @@ public sealed class RetainedDeliveryTest
 
     private static ServiceProvider Services(Observed observed) => new ServiceCollection().AddSingleton(observed)
         .AddScoped<IEventListener, FirstListener>().AddScoped<IEventListener, SecondListener>().BuildServiceProvider();
-    private static IntegrationEventDispatcherService Dispatcher(IIntegrationEventOutbox outbox, IServiceProvider services) =>
-        new(outbox, services.GetRequiredService<IServiceScopeFactory>(), new IntegrationEventRetryPolicy(2, TimeSpan.FromMilliseconds(5)), NullLogger<IntegrationEventDispatcherService>.Instance);
+    private static EventDispatcherService Dispatcher(IEventOutbox outbox, IServiceProvider services) =>
+        new(outbox, services.GetRequiredService<IServiceScopeFactory>(), new EventRetryPolicy(2, TimeSpan.FromMilliseconds(5)), NullLogger<EventDispatcherService>.Instance);
     private static async Task Until(Func<bool> condition)
     {
         for (int i = 0; i < 200 && !condition(); i++) await Task.Delay(10);
@@ -160,11 +160,11 @@ public sealed class RetainedDeliveryTest
         public List<string> Keys { get; } = new(); public List<string> Payloads { get; } = new();
         public HashSet<string> Accepted { get; } = new();
     }
-    public sealed class FirstListener(Observed observed) : EventListener<ProbeEvent>
+    public sealed class FirstListener(Observed observed) : TransactionalEventListener<ProbeEvent>
     {
         protected override Task OnAsync(ProbeEvent value, CancellationToken ct) { observed.FirstCalls++; observed.Payloads.Add(value.Content); return Task.CompletedTask; }
     }
-    public sealed class SecondListener(Observed observed) : EventListener<ProbeEvent>
+    public sealed class SecondListener(Observed observed) : TransactionalEventListener<ProbeEvent>
     {
         protected override Task OnAsync(ProbeEvent value, CancellationToken ct)
         {

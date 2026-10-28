@@ -20,7 +20,7 @@ public sealed class IntegrationEventDeliveryTest : IClassFixture<WebApplicationF
     {
         _factory = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
         {
-            services.AddSingleton(new IntegrationEventRetryPolicy(3, TimeSpan.FromMilliseconds(10)));
+            services.AddSingleton(new EventRetryPolicy(3, TimeSpan.FromMilliseconds(10)));
             services.AddSingleton<Attempts>();
             services.AddScoped<IEventListener, FlakyListener>();
             services.AddScoped<IEventListener, PoisonListener>();
@@ -58,7 +58,7 @@ public sealed class IntegrationEventDeliveryTest : IClassFixture<WebApplicationF
         using var scope = _factory.Services.CreateScope();
         var publisher = scope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>();
         var boundary = scope.ServiceProvider.GetRequiredService<ITransactionBoundary>();
-        IntegrationEventPublication? insideTransaction = null;
+        EventPublication? insideTransaction = null;
 
         await boundary.InTransactionAsync(async ct =>
         {
@@ -96,9 +96,9 @@ public sealed class IntegrationEventDeliveryTest : IClassFixture<WebApplicationF
         await scope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>().PublishAsync(@event);
     }
 
-    private IIntegrationEventOutbox Outbox => _factory.Services.GetRequiredService<IIntegrationEventOutbox>();
+    private IEventOutbox Outbox => _factory.Services.GetRequiredService<IEventOutbox>();
 
-    private IntegrationEventPublication Publication(Guid id) => Outbox.All().Single(p => p.Id == id);
+    private EventPublication Publication(Guid id) => Outbox.All().Single(p => p.Id == id);
 
     private static async Task<T> Eventually<T>(Func<T> read, Func<T, bool> condition)
     {
@@ -130,7 +130,7 @@ public sealed class IntegrationEventDeliveryTest : IClassFixture<WebApplicationF
     }
 
     /// <summary>Fails on the first delivery of each event, succeeds afterwards.</summary>
-    public sealed class FlakyListener : EventListener<ProbeEvent>
+    public sealed class FlakyListener : TransactionalEventListener<ProbeEvent>
     {
         private readonly Attempts _attempts;
 
@@ -143,7 +143,7 @@ public sealed class IntegrationEventDeliveryTest : IClassFixture<WebApplicationF
             _attempts.Next(@event.EventId) == 1 ? throw new InvalidOperationException("transient") : Task.CompletedTask;
     }
 
-    public sealed class PoisonListener : EventListener<PoisonEvent>
+    public sealed class PoisonListener : TransactionalEventListener<PoisonEvent>
     {
         protected override Task OnAsync(PoisonEvent @event, CancellationToken cancellationToken) =>
             throw new InvalidOperationException("poison");
