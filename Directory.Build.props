@@ -14,6 +14,6 @@
     <!-- Optional shared sample specification check (local only, not part of the build): -p:SpecificationPath=../dca-sample-specification -->
     <SpecificationRoot>$(MSBuildThisFileDirectory)build/specification/$(MSBuildProjectName)/</SpecificationRoot>
     <DcaBuildingBlocksVersion>0.2.1</DcaBuildingBlocksVersion>
-    <DcaArchRulesVersion>0.9.0</DcaArchRulesVersion>
+    <DcaArchRulesVersion>0.10.0</DcaArchRulesVersion>
   </PropertyGroup>
 </Project>
