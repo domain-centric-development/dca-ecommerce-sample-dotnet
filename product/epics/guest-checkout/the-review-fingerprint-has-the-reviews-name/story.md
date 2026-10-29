@@ -2,7 +2,7 @@
 id: the-review-fingerprint-has-the-reviews-name
 epic: guest-checkout
 kind: task
-status: draft
+status: approved
 created: 2026-10-29T15:12:47Z
 context: checkout
 title: The review fingerprint has the review's name

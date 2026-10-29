@@ -2,7 +2,7 @@
 id: the-mail-port-is-named-for-its-role
 epic: guest-checkout
 kind: task
-status: draft
+status: approved
 created: 2026-10-29T15:12:47Z
 context: checkout
 title: The mail port is named for its role

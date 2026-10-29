@@ -2,12 +2,12 @@
 id: the-payment-differs-from-the-review-has-the-shared-name
 epic: provider-payment
 kind: task
-status: draft
+status: approved
 created: 2026-10-29T15:12:47Z
 context: checkout
 title: The payment differs from the review has the shared name
 closes: []
-depends_on: []
+depends_on: [the-order-changed-since-the-review-is-one-failure]
 ---
 
 # The payment differs from the review has the shared name

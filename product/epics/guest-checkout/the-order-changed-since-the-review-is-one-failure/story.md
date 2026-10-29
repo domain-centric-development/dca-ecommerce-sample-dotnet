@@ -2,7 +2,7 @@
 id: the-order-changed-since-the-review-is-one-failure
 epic: guest-checkout
 kind: task
-status: draft
+status: approved
 created: 2026-10-29T15:12:47Z
 context: checkout
 title: The order changed since the review is one failure
