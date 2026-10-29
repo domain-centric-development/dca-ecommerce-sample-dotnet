@@ -600,7 +600,7 @@ try again later." when the provider is unavailable — at the payment step or, f
 
 ---
 
-### MailProviderUnavailable
+### MailProviderUnavailable (MailProviderUnavailableException)
 
 **Definition:** The mail provider did not accept a mail: it answered other than `202`, did not answer in time or
 could not be reached. The failure carries the mail's key; the delivery that asked for the mail is tried again later,
@@ -726,3 +726,13 @@ buyer e-mail, once per order (`SendOrderConfirmation`, run by `CheckoutConfirmed
 `CheckoutConfirmed` is committed).
 
 **Related terms:** `CheckoutConfirmed`, `BuyerInfo`, `CheckoutTotals`, `MailProviderUnavailable`.
+
+### Mail provider
+
+**Definition:** The outside service that sends the shop's mails; it accepts a mail under a key and sends one
+mail per key. Behind the output port `IOrderConfirmationMailPort`; with no provider address configured, a stand-in
+accepts every mail and sends nothing.
+
+**Type:** Concept
+
+**Related terms:** Order confirmation, `MailProviderUnavailable`.

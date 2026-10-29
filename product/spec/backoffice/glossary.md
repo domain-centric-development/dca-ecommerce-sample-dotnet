@@ -136,6 +136,39 @@ delivery is completed (`OutboxEventPublicationLogStore.Tries`).
 
 ---
 
+### Failed (`Failed`)
+
+**Definition:** A delivery whose attempts are used up: Publication Status `Failed` with no
+automatic retry left (attempts at or above `EventRetryPolicy.MaxAttempts`). Only a failed
+entry offers "Retry failed listener" in the event log; an entry whose delivery is still under
+way, or that waits for its automatic retry, has not failed and offers none.
+
+**Type:** Concept (derived attribute)
+
+**Related terms:** `Publication Status`, `Attempt`, `EventPublicationPageViewModel.Failed`
+
+**Notes:** The outbox sets the Publication Status `Failed` only once the attempts are used up;
+while attempts are left the delivery stays `Pending` with its next attempt scheduled
+(`InMemoryEventOutbox.RecordConsumerFailure`).
+
+---
+
+### Operator
+
+**Definition:** The person who logs in to the back office (`/backoffice/login`) to run the
+shop — not a shopper. A back-office page's header is the operator's: the shop's name,
+"Back office" and the operator's Logout, nothing of a shopper logged in to the shop in
+the same browser.
+
+**Type:** Concept (actor)
+
+**Related terms:** `BackofficeOptions` (the operator's credentials and session),
+`Views/Backoffice/_BackofficeLayout.cshtml` (the operator's actions in the header)
+
+**Synonyms (avoid):** "admin" — the name of the development operator account, not the role.
+
+---
+
 ## Store / Repository — Distinction
 
 **Store** is used in Backoffice instead of **Repository** because the data has
