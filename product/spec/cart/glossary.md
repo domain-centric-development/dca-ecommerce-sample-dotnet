@@ -317,6 +317,18 @@ when the checkout is priced).
 **Notes:** Open question: which price is binding for the customer — the one
 at the time of adding or the current one? Clarify the business policy.
 
+### Guest before login (GuestBeforeLogin)
+
+**Definition:** The guest identity this browser carried when it logged in, kept for the session. Its cart is the
+only guest cart the take-over and the merge may move; a request that names another guest's cart is refused
+(`GuestCartNotOwned`) and changes no cart.
+
+**Type:** Concept (read through the Shared Kernel's `IIdentityProvider.IIdentity.GuestBeforeLogin`)
+
+**Related terms:** `RecoverCart`, `MergeCarts`, `UserId`, Guest cart not owned
+
+---
+
 ### Shared contract revision (2026-09-09)
 
 Price wraps strictly positive Money; Money is ISO 4217, non-negative, two decimals half-up, maximum 999999999999.99.
