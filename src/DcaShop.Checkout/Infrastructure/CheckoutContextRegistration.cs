@@ -85,7 +85,7 @@ public static class CheckoutContextRegistration
         var options = configuration.GetSection(MailProviderOptions.SectionName).Get<MailProviderOptions>();
         if (options?.BaseUrl is not { } baseUrl)
         {
-            services.AddSingleton<IOrderConfirmationMailPort, MockMailProvider>();
+            services.AddSingleton<IOrderConfirmationMailer, MockMailProvider>();
             return;
         }
 
@@ -94,7 +94,7 @@ public static class CheckoutContextRegistration
             client.BaseAddress = WithTrailingSlash(baseUrl);
             client.Timeout = options.Timeout;
         });
-        services.AddSingleton<IOrderConfirmationMailPort, RestMailProvider>();
+        services.AddSingleton<IOrderConfirmationMailer, RestMailProvider>();
     }
 
     /// <summary>

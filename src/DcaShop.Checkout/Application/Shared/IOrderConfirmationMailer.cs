@@ -8,7 +8,7 @@ namespace DcaShop.Checkout.Application.Shared;
 /// Output port for the order confirmation mail. The checkout says to whom, with which total and under which key; how
 /// the mail is rendered and delivered is the mail provider's.
 /// </summary>
-public interface IOrderConfirmationMailPort : IOutputPort
+public interface IOrderConfirmationMailer : IOutputPort
 {
     /// <summary>
     /// Hands the mail to the mail provider. Answers whether the provider accepted it; a provider that did not accept it

@@ -606,7 +606,7 @@ try again later." when the provider is unavailable — at the payment step or, f
 could not be reached. The failure carries the mail's key; the delivery that asked for the mail is tried again later,
 under the same key. No customer sees it.
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IOrderConfirmationMailPort`, Order confirmation
+**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IOrderConfirmationMailer`, Order confirmation
 
 ---
 
@@ -730,7 +730,7 @@ buyer e-mail, once per order (`SendOrderConfirmation`, run by `CheckoutConfirmed
 ### Mail provider
 
 **Definition:** The outside service that sends the shop's mails; it accepts a mail under a key and sends one
-mail per key. Behind the output port `IOrderConfirmationMailPort`; with no provider address configured, a stand-in
+mail per key. Behind the output port `IOrderConfirmationMailer`; with no provider address configured, a stand-in
 accepts every mail and sends nothing.
 
 **Type:** Concept

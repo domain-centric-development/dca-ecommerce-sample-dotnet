@@ -16,13 +16,13 @@ public sealed class SendOrderConfirmationUseCase : ISendOrderConfirmationInputPo
 
     private readonly ICheckoutSessionRepository _sessions;
     private readonly IProcessedEvents _processedEvents;
-    private readonly IOrderConfirmationMailPort _mail;
+    private readonly IOrderConfirmationMailer _mailer;
 
-    public SendOrderConfirmationUseCase(ICheckoutSessionRepository sessions, IProcessedEvents processedEvents, IOrderConfirmationMailPort mail)
+    public SendOrderConfirmationUseCase(ICheckoutSessionRepository sessions, IProcessedEvents processedEvents, IOrderConfirmationMailer mailer)
     {
         _sessions = sessions;
         _processedEvents = processedEvents;
-        _mail = mail;
+        _mailer = mailer;
     }
 
     public async Task<SendOrderConfirmationResult> ExecuteAsync(SendOrderConfirmationCommand command, CancellationToken cancellationToken = default)
@@ -39,8 +39,8 @@ public sealed class SendOrderConfirmationUseCase : ISendOrderConfirmationInputPo
                       ?? throw new CheckoutSessionNotFoundException(sessionId);
         var buyer = session.BuyerInfo ?? throw new InvalidOperationException($"Confirmed checkout {sessionId} has no buyer");
 
-        var mail = new IOrderConfirmationMailPort.OrderConfirmationMail(buyer.Email, session.Totals.Total, $"order-confirmation-{sessionId}");
-        if (!await _mail.SendAsync(mail, cancellationToken).ConfigureAwait(false))
+        var mail = new IOrderConfirmationMailer.OrderConfirmationMail(buyer.Email, session.Totals.Total, $"order-confirmation-{sessionId}");
+        if (!await _mailer.SendAsync(mail, cancellationToken).ConfigureAwait(false))
         {
             throw new MailProviderUnavailableException(mail.Key);
         }

@@ -14,7 +14,7 @@ namespace DcaShop.Checkout.Adapter.Outgoing.Mail;
 /// accepts it, and anything else — another status, no answer in time, no connection — counts as the provider being
 /// unavailable. The provider's request shape stays inside this class.
 /// </summary>
-public sealed class RestMailProvider : IOrderConfirmationMailPort
+public sealed class RestMailProvider : IOrderConfirmationMailer
 {
     public const string HttpClientName = "mail-provider";
 
@@ -29,7 +29,7 @@ public sealed class RestMailProvider : IOrderConfirmationMailPort
         _logger = logger;
     }
 
-    public async Task<bool> SendAsync(IOrderConfirmationMailPort.OrderConfirmationMail mail, CancellationToken cancellationToken = default)
+    public async Task<bool> SendAsync(IOrderConfirmationMailer.OrderConfirmationMail mail, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(mail);
         var request = new MailRequest(mail.To, Template, mail.Key, new Dictionary<string, string>
