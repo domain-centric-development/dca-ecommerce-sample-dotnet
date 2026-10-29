@@ -12,7 +12,7 @@ namespace DcaShop.ArchitectureTests;
 /// <remarks>
 /// The reference implementation runs the catalog unabridged — every rule at
 /// <see cref="DcaSeverity.Error"/>, the experimental rules included (<c>dca.rules.experimental = true</c>
-/// in <c>dca-archunit.properties</c>); the file turns off only DCA-HEX-015, which the libraries retire. A project adopting DCA on an existing code base rarely can, and
+/// in <c>dca-archunit.properties</c>); the file turns off only DCA-TAC-025, until the domain types hold values instead of bare primitives. A project adopting DCA on an existing code base rarely can, and
 /// does not have to: <see cref="DcaRuleSelection"/> narrows the run, lowers a rule to a warning, or
 /// tolerates a documented exception. Configure it in <c>dca-archunit.properties</c> next to the test
 /// assembly, in <c>AdditionalSelection</c>, or both — the file is the base, the property is applied
@@ -24,10 +24,18 @@ public sealed class ArchitectureRulesTest : DcaArchitectureTest
     /// <summary>
     /// The shop names its REST adapters <c>*Resource</c>, as the Java sample does, rather than taking the .NET
     /// default suffix <c>Controller</c>. The suffix is layout configuration precisely so a project can make that
-    /// call; <c>DCA-NAM-006</c> then holds the shop to it.
+    /// call; <c>DCA-NAM-006</c> then holds the shop to it. The platform has no standard event-listener type, so
+    /// the shop names its own two kinds; <c>DCA-HEX-017</c> then demands the transactional kind on every listener
+    /// that drives an input port.
     /// </summary>
     protected override DcaLayout Layout =>
-        DcaLayout.ForRootNamespace("DcaShop").WithRestControllerSuffix("Resource");
+        DcaLayout.ForRootNamespace("DcaShop")
+            .WithRestControllerSuffix("Resource")
+            .WithFrameworkTypes(FrameworkTypes.AspNetCore() with
+            {
+                EventListenerTypes = ["DcaShop.SharedKernel.Infrastructure.Events.IEventListener"],
+                TransactionalEventListenerTypes = ["DcaShop.SharedKernel.Infrastructure.Events.ITransactionalEventListener"],
+            });
 
     /// <summary>
     /// Applied on top of <c>dca-archunit.properties</c> — the reference implementation adds nothing.
