@@ -114,10 +114,12 @@ postal code, country, and optional state. Captured in the delivery step.
 
 **Operations:** `FormattedAddress`.
 
-### ShippingOption
+### Shipping option (ShippingOption)
 
-**Definition:** Selectable shipping method with identifier, display name, estimated delivery time,
-and shipping cost.
+**Definition:** A way of shipping the shop offers at checkout — its title (for example "Standard",
+"Express"), the estimated delivery and the cost the shop sets, never one the buyer sends. The buyer
+selects one. Agent commerce protocols call it a fulfillment option of type shipping (UCP, ACP) or a
+shipping option (W3C Payment Request); a carrier, where one is named, is a field of its own.
 
 **Type:** Value Object
 
@@ -335,7 +337,7 @@ Kernel should be used here.
 ### Order fingerprint (OrderFingerprint)
 
 **Definition:** What the review showed: each line's product, quantity and unit price, the buyer, the address, the
-shipping method and its price, the payment method and the total — carried by "Place Order". A different one at that
+shipping option and its price, the payment method and the total — carried by "Place Order". A different one at that
 moment refuses the order; a missing or garbled one matches no order.
 
 **Type:** Value Object
@@ -608,9 +610,9 @@ under the same key. No customer sees it.
 
 ---
 
-### ShippingOptionNotOffered
+### ShippingOptionNotOffered (ShippingOptionNotOfferedException)
 
-**Definition:** The shipping method the delivery form names is not one the delivery step offers; the step is refused
+**Definition:** The shipping option the delivery form names is not one the delivery step offers; the step is refused
 and asks for another choice. The failure carries the refused identifier. The customer sees "This shipping method is
 not offered. Please choose another one."
 
@@ -688,7 +690,7 @@ The parts of the context's behaviour its people name; each groups what holds in 
 
 ### Delivery (delivery)
 
-**Definition:** The delivery address and the shipping method.
+**Definition:** The delivery address and the shipping option.
 
 **Type:** Feature
 
