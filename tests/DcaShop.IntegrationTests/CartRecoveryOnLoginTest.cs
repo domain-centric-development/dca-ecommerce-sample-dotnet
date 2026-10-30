@@ -237,6 +237,29 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         Assert.Equal("Carts merged successfully!", AvailabilityPages.Text(cartPage, @"data-test=""cart-success-message"">([^<]*)</div>"));
     }
 
+    [Fact]
+    public async Task TakingTheCartOverAfterALoginWithAnOutsideReturnPageOpensTheCart()
+    {
+        var email = UniqueEmail();
+        await RegisterAsync(NewBrowser(), email);
+        var guest = NewBrowser();
+        await AddOneUnitAsync(guest, CleanArchitecture);
+        var takeOverPage = await LogInToTheTakeOverPageAsync(guest, email, loginPage: "/login?returnUrl=https://elsewhere.example/");
+
+        // The take-over carries the return page the login was opened for — the login's own form drops it already, so
+        // sent as rendered it would never reach the take-over.
+        var takeOverForm = AvailabilityPages.Section(takeOverPage, "take-over-form");
+        var takenOver = await guest.PostAsync(
+            "/cart/merge/take-over",
+            Forms.AsRendered(
+                takeOverForm[..takeOverForm.IndexOf("</form>", StringComparison.Ordinal)],
+                ("returnUrl", "https://elsewhere.example/")));
+
+        Assert.Equal(HttpStatusCode.Redirect, takenOver.StatusCode);
+        Assert.Equal("/cart", takenOver.Headers.Location!.ToString());
+        Assert.Equal([$"{CleanArchitecture} x1"], CartLines(await guest.GetStringAsync("/cart")));
+    }
+
     private static string UniqueEmail() => $"anna.schmidt-{Guid.NewGuid():N}@example.com";
 
     /// <summary>
@@ -387,6 +410,24 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         var takenOver = await TakeOverForm.SendAsync(browser, await takeOverPage.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.Redirect, takenOver.StatusCode);
         return takenOver.Headers.Location!.ToString();
+    }
+
+    /// <summary>
+    /// Logs in from <paramref name="loginPage"/> with a guest cart the account takes over, and answers the page after
+    /// the login as rendered — the take-over not yet sent.
+    /// </summary>
+    private static async Task<string> LogInToTheTakeOverPageAsync(HttpClient browser, string email, string loginPage)
+    {
+        var page = await browser.GetStringAsync(loginPage);
+        var returnUrl = WebUtility.HtmlDecode(
+            Regex.Match(page, @"<input type=""hidden"" name=""returnUrl"" value=""([^""]*)""").Groups[1].Value);
+        var loggedIn = await browser.PostAsync(
+            "/login", Form(page, ("email", email), ("password", Password), ("returnUrl", returnUrl)));
+        Assert.Equal(HttpStatusCode.Redirect, loggedIn.StatusCode);
+
+        var takeOverPage = await browser.GetAsync(loggedIn.Headers.Location);
+        Assert.Equal(HttpStatusCode.OK, takeOverPage.StatusCode);
+        return await takeOverPage.Content.ReadAsStringAsync();
     }
 
     /// <summary>The lines of the cart of the account <paramref name="email"/> holds, read through the Cart's own query.</summary>
