@@ -2,7 +2,9 @@
 id: the-confirmation-page-marks-the-order-reference
 epic: guest-checkout
 kind: task
-status: approved
+status: delivered
+delivered: 2026-10-30T03:40:12Z
+delivered_by: gate
 created: 2026-10-28T20:41:46Z
 context: checkout
 title: The confirmation page marks the order reference for tests
