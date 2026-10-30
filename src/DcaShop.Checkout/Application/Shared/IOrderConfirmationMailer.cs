@@ -11,10 +11,17 @@ namespace DcaShop.Checkout.Application.Shared;
 public interface IOrderConfirmationMailer : IOutputPort
 {
     /// <summary>
-    /// Hands the mail to the mail provider. Answers whether the provider accepted it; a provider that did not accept it
-    /// or did not answer is unavailable, and asking again later with the same key is the sensible answer.
+    /// Hands the mail to the mail provider and answers what the provider made of it: accepted, or unavailable — it did
+    /// not accept the mail or did not answer, and asking again later with the same key is the sensible answer.
     /// </summary>
-    Task<bool> SendAsync(OrderConfirmationMail mail, CancellationToken cancellationToken = default);
+    Task<MailOutcome> SendAsync(OrderConfirmationMail mail, CancellationToken cancellationToken = default);
+
+    /// <summary>What the mail provider made of a mail: taken for sending, or no usable answer from it.</summary>
+    public enum MailOutcome
+    {
+        Accepted,
+        Unavailable,
+    }
 
     /// <summary>
     /// One order confirmation: the buyer's address, the order total, and the key that is the same for every attempt of

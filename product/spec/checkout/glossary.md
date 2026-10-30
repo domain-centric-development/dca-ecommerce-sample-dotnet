@@ -606,7 +606,17 @@ try again later." when the provider is unavailable — at the payment step or, f
 could not be reached. The failure carries the mail's key; the delivery that asked for the mail is tried again later,
 under the same key. No customer sees it.
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IOrderConfirmationMailer`, Order confirmation
+**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IOrderConfirmationMailer`, Order confirmation, Mail outcome
+
+---
+
+### BuyerInfoNotSubmitted (BuyerInfoNotSubmittedException)
+
+**Definition:** The order confirmation was asked for a checkout session that has no buyer info: its first step was
+never submitted. A confirmed checkout always has one, so only a session that was never confirmed reaches this. The
+failure carries the session id; the log says it by name, no customer sees it.
+
+**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `BuyerInfo`, Order confirmation, `CheckoutNotConfirmed`
 
 ---
 
@@ -725,7 +735,7 @@ accept the mail delays it — the delivery is tried again later — and never un
 buyer e-mail, once per order (`SendOrderConfirmation`, run by `CheckoutConfirmedEventConsumer` after
 `CheckoutConfirmed` is committed).
 
-**Related terms:** `CheckoutConfirmed`, `BuyerInfo`, `CheckoutTotals`, `MailProviderUnavailable`.
+**Related terms:** `CheckoutConfirmed`, `BuyerInfo`, `CheckoutTotals`, `MailProviderUnavailable`, `BuyerInfoNotSubmitted`.
 
 ### Mail provider
 
@@ -735,4 +745,16 @@ accepts every mail and sends nothing.
 
 **Type:** Concept
 
-**Related terms:** Order confirmation, `MailProviderUnavailable`.
+**Related terms:** Order confirmation, Mail outcome, `MailProviderUnavailable`.
+
+### Mail outcome (MailOutcome)
+
+**Definition:** The mail provider's answer to a mail, as checkout understands it — one of:
+
+- `Accepted` — the provider took the mail for sending (it answered `202`).
+- `Unavailable` — no usable answer: the provider answered other than `202`, did not answer in time or could not be
+  reached. The mail is asked for again later under the same key (`MailProviderUnavailable`).
+
+**Type:** Concept (answer of the `IOrderConfirmationMailer` output port)
+
+**Related terms:** Mail provider, Order confirmation, `MailProviderUnavailable`, `PaymentResult`.

@@ -29,7 +29,7 @@ public sealed class RestMailProvider : IOrderConfirmationMailer
         _logger = logger;
     }
 
-    public async Task<bool> SendAsync(IOrderConfirmationMailer.OrderConfirmationMail mail, CancellationToken cancellationToken = default)
+    public async Task<IOrderConfirmationMailer.MailOutcome> SendAsync(IOrderConfirmationMailer.OrderConfirmationMail mail, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(mail);
         var request = new MailRequest(mail.To, Template, mail.Key, new Dictionary<string, string>
@@ -48,7 +48,7 @@ public sealed class RestMailProvider : IOrderConfirmationMailer
                 return Unavailable($"The mail provider answered {(int)response.StatusCode}", mail.Key);
             }
 
-            return true;
+            return IOrderConfirmationMailer.MailOutcome.Accepted;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -61,10 +61,10 @@ public sealed class RestMailProvider : IOrderConfirmationMailer
         }
     }
 
-    private bool Unavailable(string reason, string key)
+    private IOrderConfirmationMailer.MailOutcome Unavailable(string reason, string key)
     {
         _logger.LogWarning("Mail {Key} not accepted: {Reason}", key, reason);
-        return false;
+        return IOrderConfirmationMailer.MailOutcome.Unavailable;
     }
 
     /// <summary>The provider's mail: the values in <c>data</c> as text, the key the same for every attempt of the mail.</summary>

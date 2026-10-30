@@ -17,10 +17,10 @@ public sealed class MockMailProvider : IOrderConfirmationMailer
         _logger = logger;
     }
 
-    public Task<bool> SendAsync(IOrderConfirmationMailer.OrderConfirmationMail mail, CancellationToken cancellationToken = default)
+    public Task<IOrderConfirmationMailer.MailOutcome> SendAsync(IOrderConfirmationMailer.OrderConfirmationMail mail, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(mail);
         _logger.LogInformation("Order confirmation {Key} taken by the stand-in mail provider, not sent", mail.Key);
-        return Task.FromResult(true);
+        return Task.FromResult(IOrderConfirmationMailer.MailOutcome.Accepted);
     }
 }

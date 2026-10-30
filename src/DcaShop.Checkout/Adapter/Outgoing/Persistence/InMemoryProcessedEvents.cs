@@ -6,7 +6,7 @@ namespace DcaShop.Checkout.Adapter.Outgoing.Persistence;
 
 /// <summary>
 /// In-memory record of produced effects, keyed by effect and event id — demo stand-in for a table with that
-/// composite key (ADR-001).
+/// composite key.
 /// </summary>
 public sealed class InMemoryProcessedEvents : IProcessedEvents
 {
