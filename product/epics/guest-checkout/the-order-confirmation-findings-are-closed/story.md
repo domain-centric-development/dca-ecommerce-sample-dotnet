@@ -2,7 +2,9 @@
 id: the-order-confirmation-findings-are-closed
 epic: guest-checkout
 kind: task
-status: approved
+status: delivered
+delivered: 2026-10-30T04:06:46Z
+delivered_by: gate
 created: 2026-10-28T20:41:46Z
 context: checkout
 title: The order confirmation's open findings are closed
