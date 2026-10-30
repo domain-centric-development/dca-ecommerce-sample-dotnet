@@ -47,3 +47,6 @@ run: dotnet run --project src/DcaShop.Web
 carrier.plan: dca-modelling
 carrier.discover: product-discovery
 covers.test: **
+
+# The model every Claude stage runs with; without it a stage takes the tool default of the moment.
+model.claude: opus
