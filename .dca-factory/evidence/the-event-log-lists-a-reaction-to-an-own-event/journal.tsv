@@ -3,3 +3,17 @@
 2026-10-28T20:41:48.637Z	usage	backlog	tool=claude-session	window=2026-10-28T20:41:48.328Z/2026-10-28T20:41:48.637Z	session=claude:e8493306-8deb-460e-8ffd-c38e0cf66d22	seq=3
 2026-10-28T20:41:48.637Z	usage	backlog	tool=claude-session	model=	input=0	cache_read=0	cache_write=0	output=0	window=2026-10-28T20:41:48.328Z/2026-10-28T20:41:48.637Z	seq=4
 2026-10-29T22:23:26Z	record	1	seq=5
+2026-10-30T04:06:51Z	signal	plan	run=20261030T040651.835800Z	open=0	seq=6
+2026-10-30T04:06:51Z	gate	plan	exit=0	by=runner	seq=7
+2026-10-30T04:06:52Z	stage-start	builder	tool=claude	stages=plan,test,build,tidy	seq=8
+2026-10-30T04:13:46Z	wrote	plan.md	sha=9c55fcab76b4e2e981218c6dc2084e5524ef30483793466173dea76bc9c8221f	seq=9
+2026-10-30T04:13:46Z	gate	plan	exit=1	fail=decisions	by=builder	backlog=c50ce897d7491134bcfe20bbce9fbdc0497168b0388ed8a5f7d2e85e60784da2	seq=10
+2026-10-30T04:13:56Z	usage	builder	tool=claude	model=claude-fable-5-1	input=418	cache_read=1535985	cache_write=200646	output=35674	cost=6.1848	seconds=423	seq=11
+2026-10-30T04:13:56Z	part	plan	process=builder	stream=builder.040651.out	seconds=13.947	input=98	cache_read=115319	cache_write=36407	output=4873	cost=0.917242	seq=12
+2026-10-30T04:13:56Z	part	test	process=builder	stream=builder.040651.out	seconds=1.097	input=0	cache_read=0	cache_write=0	output=0	cost=0.000000	seq=13
+2026-10-30T04:13:56Z	part	build	process=builder	stream=builder.040651.out	seconds=1.109	input=0	cache_read=0	cache_write=0	output=0	cost=0.000000	seq=14
+2026-10-30T04:13:56Z	part	tidy	process=builder	stream=builder.040651.out	seconds=389.702	input=320	cache_read=1420666	cache_write=164239	output=30801	cost=5.267554	seq=15
+2026-10-30T04:13:56Z	denied	-	process=builder	stream=builder.040651.out	tool=Bash	call=for s in plan test build tidy; do echo "===== CONTRACT $s"; python3 .agents/factory/factory-cli.py --contract $s; done	seq=16
+2026-10-30T04:13:56Z	denied	plan	process=builder	stream=builder.040651.out	tool=Bash	call=echo "===== PLAN SKELETON"; python3 .agents/factory/factory-cli.py --plan-skeleton the-event-log-lists-a-reaction-to-an-own-event; for s in plan test build tid…	seq=17
+2026-10-30T04:13:56Z	stream	builder.040651.out	process=builder	parts=4	denied=2	version=2	seq=18
+2026-10-30T04:13:56Z	stage-end	builder	exit=0	seq=19

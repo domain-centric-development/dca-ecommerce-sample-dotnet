@@ -1,7 +1,9 @@
 ---
 id: the-take-over-leads-only-to-pages-of-the-shop
 epic: shop-with-an-account
-status: adopted
+status: delivered
+delivered: 2026-10-30T08:26:30Z
+delivered_by: gate
 created: 2026-10-23T21:25:20Z
 context: cart
 feature: cartrecovery
