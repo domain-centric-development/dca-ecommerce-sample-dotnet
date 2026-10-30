@@ -6,6 +6,7 @@ public sealed class ConfirmationPage : BasePage
 {
     private const string UrlPattern = "/checkout/confirmation";
     private const string ConfirmationTitle = "confirmation-title";
+    private const string OrderReference = "order-reference";
 
     private ConfirmationPage(IPage page) : base(page)
     {
@@ -41,11 +42,6 @@ public sealed class ConfirmationPage : BasePage
         return ((await parts.Nth(0).InnerTextAsync()).Trim(), (await parts.Nth(1).InnerTextAsync()).Trim());
     }
 
-    /// <summary>The order reference the confirmation names, without its label. The line carries no data-test; it is read by its class.</summary>
-    public async Task<string> OrderReferenceAsync()
-    {
-        var line = Page.Locator(".confirmation__reference");
-        await Assertions.Expect(line).ToBeVisibleAsync();
-        return (await line.InnerTextAsync()).Replace("Order Reference:", string.Empty, StringComparison.Ordinal).Trim();
-    }
+    /// <summary>The order reference the confirmation names, without its label, once it is shown.</summary>
+    public Task<string> OrderReferenceAsync() => VisibleTextAsync(OrderReference);
 }
