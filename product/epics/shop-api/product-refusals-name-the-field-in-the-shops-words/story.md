@@ -160,6 +160,9 @@ messages — and one rule answers one way, whether the value is missing, blank o
   value object): `CreateProductRequest` checks blank and positive with request validation and the value objects
   check them again, so one rule answers twice — the blank name names `name`, the overlong name carries no detail.
 - .NET answers a missing SKU or category with the framework's sentence, a long name without the field, an unreadable value with the serializer's message.
+- The findings this story closes name request annotations as their fix (`ErrorMessage`, `[StringLength]`); WP-170
+  replaces that fix — the value objects carry the rule, the request carries none, and an unreadable body is
+  refused as "Unacceptable value" without the serializer's message (the person, 2026-11-01).
 - A request with several refused values names the first refusal the creation meets; which one is not part of the
   contract.
 - Spec (`product/assortment`): changes the refusal scenarios under their rules; adds `a-missing-sku-is-refused`,
