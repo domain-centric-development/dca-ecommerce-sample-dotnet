@@ -6,7 +6,7 @@ created: 2026-11-01T12:00:08Z
 context: pricing
 title: Price refusals name the field in the shop's words
 closes: [an-operator-changes-a-price#1]
-depends_on: [product-refusals-name-the-field-in-the-shops-words]
+depends_on: [product-refusals-name-the-field-in-the-shops-words, the-pricing-findings-are-closed]
 ---
 
 # Price refusals name the field in the shop's words
