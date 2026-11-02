@@ -36,9 +36,9 @@ PAGE = r"""<!doctype html>
 @font-face { font-family: "JetBrains Mono"; font-weight: 100 800; font-display: swap; src: url(/fonts/jetbrains-mono-latin.woff2) format("woff2"); }
 :root {
   --teal: #148f96; --deep: #171d29; --mist: #e8eaf0;
-  --bg: #f7f6f3; --panel: #ffffff; --ink: #1c2433; --muted: #5b6472; --line: #dedbd3; --soft: #eef4f4; --code: #f0eee9;
+  --bg: #f7f6f3; --panel: #ffffff; --ink: #1c2433; --muted: #5b6472; --line: #dedbd3; --soft: #eef4f4; --group: #e4efef; --group-line: #cfe0e0; --code: #f0eee9;
   --accent: #0d6b70; --accent-hover: #0b5b60; --on-accent: #ffffff; --fill: #0d6b70; --fill-hover: #0b5b60;
-  --done: #0d6b70; --wait: #93600f; --stop: #a33a2a; --run: #148f96;
+  --done: #0d6b70; --wait: #93600f; --stop: #c96a5a; --run: #148f96; --shared: #4b47b8;
   --shadow: 0 6px 24px rgba(28, 36, 51, .10);
   --display: "Space Grotesk", "Avenir Next", "Trebuchet MS", sans-serif;
   --body: "Newsreader", Georgia, "Times New Roman", serif;
@@ -47,22 +47,24 @@ PAGE = r"""<!doctype html>
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #12171f; --panel: #1a2130; --ink: #e8eaf0; --muted: #9aa3b2; --line: #2b3445; --soft: #172a30; --code: #222a39;
+    --bg: #12171f; --panel: #1a2130; --ink: #e8eaf0; --muted: #9aa3b2; --line: #2b3445; --soft: #172a30; --group: #233d45; --group-line: #33545d; --code: #222a39;
     --accent: #3cbcc3; --accent-hover: #5fcdd3; --on-accent: #ffffff; --fill: #0d6b70; --fill-hover: #0b5b60;
-    --done: #3cbcc3; --wait: #e2ab55; --stop: #e8806e; --run: #3cbcc3; --shadow: 0 6px 24px rgba(0, 0, 0, .35);
+    --done: #3cbcc3; --wait: #e2ab55; --stop: #d9826f; --run: #3cbcc3; --shared: #b3b0f2; --shadow: 0 6px 24px rgba(0, 0, 0, .35);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #12171f; --panel: #1a2130; --ink: #e8eaf0; --muted: #9aa3b2; --line: #2b3445; --soft: #172a30; --code: #222a39;
+  --bg: #12171f; --panel: #1a2130; --ink: #e8eaf0; --muted: #9aa3b2; --line: #2b3445; --soft: #172a30; --group: #233d45; --group-line: #33545d; --code: #222a39;
   --accent: #3cbcc3; --accent-hover: #5fcdd3; --on-accent: #ffffff; --fill: #0d6b70; --fill-hover: #0b5b60;
-  --done: #3cbcc3; --wait: #e2ab55; --stop: #e8806e; --run: #3cbcc3; --shadow: 0 6px 24px rgba(0, 0, 0, .35);
+  --done: #3cbcc3; --wait: #e2ab55; --stop: #d9826f; --run: #3cbcc3; --shared: #b3b0f2; --shadow: 0 6px 24px rgba(0, 0, 0, .35);
   color-scheme: dark;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font: 17px/1.55 var(--body); min-height: 100vh; }
 a, .link { color: var(--accent); cursor: pointer; text-decoration: none; }
 .link:hover { text-decoration: underline; }
+.link:not(.title), .way-link { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent); }
 button.link { background: none; border: 0; padding: 0; text-align: left; } button.link:not(.title) { font: inherit; }
 button:focus-visible, a:focus-visible, textarea:focus-visible, select:focus-visible, input:focus-visible {
   outline: 3px solid var(--teal); outline-offset: 2px; border-radius: 4px; }
@@ -138,13 +140,23 @@ tr:last-child td { border-bottom: 0; }
 .state { font: 400 12px var(--mono); padding: 2px 8px; border-radius: 999px; background: var(--code); white-space: nowrap; }
 .st-queued { color: var(--accent); } .st-running { color: var(--run); } .st-waiting { color: var(--wait); } .st-failed { color: var(--stop); }
 
-.btn { font: 500 14px var(--display); padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel);
-  color: var(--ink); cursor: pointer; white-space: nowrap; }
+/* a control is pressed, a display is read: a control is a raised rectangle in the display face, a display flat, in the mono
+   face, never with an edge — teal alone tells neither (the brand's controls and displays, branding/README.md) */
+.btn { font: 600 14px var(--display); padding: 7px 14px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel);
+  color: var(--ink); cursor: pointer; white-space: nowrap; box-shadow: 0 1px 0 var(--line), 0 1px 3px rgba(28, 36, 51, .06); }
+.btn:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
 .btn:hover { border-color: var(--teal); color: var(--accent); }
-.btn.primary { background: var(--fill); border-color: var(--fill); color: var(--on-accent); }
+.btn.primary { background: var(--fill); border-color: var(--fill); color: var(--on-accent);
+  box-shadow: 0 1px 0 var(--fill-hover), 0 2px 6px color-mix(in srgb, var(--teal) 30%, transparent); }
+.btn.primary::after { content: "→"; font-weight: 400; margin-left: 6px; }
 .btn.primary:hover { background: var(--fill-hover); border-color: var(--fill-hover); color: var(--on-accent); }
 .btn.danger:hover { border-color: var(--stop); color: var(--stop); }
 .btn:disabled { opacity: .5; cursor: default; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; background: var(--panel); }
+.seg button { font: 500 13px var(--display); color: var(--ink); background: none; border: 0; padding: 5px 11px; cursor: pointer; white-space: nowrap; }
+.seg button + button { border-left: 1px solid var(--line); } .seg button:hover { color: var(--accent); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.seg .n { font: 400 11px var(--mono); margin-left: 4px; opacity: .7; }
 .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
 td .acts { margin-top: 0; justify-content: flex-end; }
 .ask { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; margin-top: 12px; }
@@ -158,32 +170,214 @@ td .acts { margin-top: 0; justify-content: flex-end; }
 .hint { font: 400 12.5px var(--mono); color: var(--muted); }
 .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin-top: 12px; font-size: 16px; }
 .kv dt { font: 400 12.5px var(--mono); color: var(--muted); padding-top: 3px; }
-pre.out { font: 12.5px/1.5 var(--mono); background: var(--code); border-radius: 8px; padding: 12px; max-height: 460px; overflow: auto;
+pre.out { font: 12.5px/1.5 var(--mono); background: #0f141d; color: #c9ced8; border-radius: 8px; padding: 12px; max-height: 460px; overflow: auto;
   white-space: pre-wrap; word-break: break-word; margin-top: 12px; }
 pre.out:empty { display: none; }
 .step b { font: 600 14px var(--display); color: var(--accent); margin-right: 6px; }
 
-/* the rules: a column per stage, the gates as barriers across it, a rule a chip */
-.flow { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(128px, 1fr); gap: 10px; margin-top: 14px; overflow-x: auto; padding-bottom: 6px; }
-.col { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.col > h3 { margin: 0; font: 700 15px var(--display); } .col .win { font: 400 11.5px var(--mono); color: var(--muted); }
-.slot { border-radius: 8px; padding: 6px; background: var(--soft); }
-.slot.gate { background: var(--code); border-top: 3px solid var(--deep); }
-.slot .lbl { font: 500 10.5px var(--mono); letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
-.chips { display: flex; flex-wrap: wrap; gap: 4px; }
-.chip { font: 400 11px var(--mono); padding: 2px 6px; border-radius: 5px; border: 1px solid var(--line); background: var(--panel);
-  color: var(--ink); cursor: pointer; max-width: 100%; overflow-wrap: anywhere; text-align: left; }
-.slot details summary { cursor: pointer; list-style: none; } .slot details summary::-webkit-details-marker { display: none; }
-.chip:hover, .chip[aria-pressed="true"] { border-color: var(--teal); color: var(--accent); }
-.chip.e-gate { border-left: 3px solid var(--deep); } .chip.e-runner { border-left: 3px solid var(--run); } .chip.e-instructed { border-left: 3px solid var(--wait); }
-.chip.f-pass { background: color-mix(in srgb, var(--done) 18%, var(--panel)); } .chip.f-fail { background: color-mix(in srgb, var(--stop) 22%, var(--panel)); }
-.chip.f-skip, .chip.f-note { background: color-mix(in srgb, var(--wait) 16%, var(--panel)); } .chip.f-wait { background: color-mix(in srgb, var(--wait) 30%, var(--panel)); }
-.chip .x { font-weight: 700; color: var(--stop); margin-left: 3px; }
+/* the flow, drawn by the factory: a way back shown on a hover, a step, a gate or an edge picked by a click */
+.flowsvg { overflow-x: auto; margin-top: 12px; }
+.flowsvg svg { display: block; width: 100%; min-width: 880px; height: auto; }
+.flowsvg .f text { fill: var(--ink); } .flowsvg .f text.small { fill: var(--muted); stroke: var(--panel); }
+.flowsvg .f .on-line { stroke: color-mix(in srgb, var(--muted) 70%, transparent); } .flowsvg .f .tip-on { fill: color-mix(in srgb, var(--muted) 70%, transparent); }
+.flowsvg .f .gate circle, .flowsvg .f .tip-again { fill: var(--teal); } .flowsvg .f .way-again path.vis { stroke: var(--teal); }
+.flowsvg .f .way-again text.small { fill: var(--teal); } .flowsvg .f .way-back path.vis { stroke: var(--ink); } .flowsvg .f .tip-back { fill: var(--ink); }
+.flowsvg .f .mark-stop circle { fill: var(--stop); } .flowsvg .f .mark-waits circle { fill: var(--muted); } .flowsvg .f .done { stroke: var(--ink); }
+.flowsvg .way, .flowsvg .gate { cursor: pointer; }
+.flowsvg .way-back { opacity: 0; pointer-events: none; transition: opacity .15s; }
+.flowsvg .way-back.show, .flowsvg .way-back.sel { opacity: 1; pointer-events: auto; }
+/* what is picked stands out, the rest steps back: a band behind the picked way, a ring round the picked gate */
+.flowsvg.has-pick .way:not(.sel):not(.way-back), .flowsvg.has-pick .gate:not(.sel), .flowsvg.has-pick [data-stage]:not(.sel) { opacity: .35; }
+.flowsvg .way.sel path.vis { stroke-dasharray: none; stroke-width: 2.4; }
+.flowsvg .way-again.sel path.hit { stroke: color-mix(in srgb, var(--teal) 22%, transparent); }
+.flowsvg .way-back.sel path.hit { stroke: color-mix(in srgb, var(--ink) 14%, transparent); }
+.flowsvg .way.sel text.small { font-weight: 700; }
+.flowsvg .gate.sel circle { stroke: color-mix(in srgb, var(--teal) 30%, transparent); stroke-width: 10px; }
+.flowsvg .mark.sel circle { stroke: color-mix(in srgb, var(--stop) 30%, transparent); stroke-width: 8px; }
+.flowsvg [data-stage].sel { paint-order: stroke; stroke: color-mix(in srgb, var(--teal) 22%, transparent); stroke-width: 10px; stroke-linejoin: round; }
+.flowsvg [data-stage].has-back:hover { fill: var(--teal); }
+@media (prefers-reduced-motion: reduce) { .flowsvg .way-back { transition: none; } }
+
+/* the domain: the open context's row as an ink head, a teal course with numbered nodes, the model as a profile, features as cards */
+.dm { margin: 4px 0 8px; }
+table.epics tr.ctx-row.open td, table.epics tr.ctx-row.open:hover td { background: var(--ink); color: var(--bg); border-bottom: 0;
+  box-shadow: inset 0 4px 0 var(--teal); }
+table.epics tr.ctx-row.open td:first-child { border-radius: 4px 0 0 0; } table.epics tr.ctx-row.open td:last-child { border-radius: 0 4px 0 0; }
+table.epics tr.ctx-row.open .id, table.epics tr.ctx-row.open .hint, table.epics tr.ctx-row.open .caret { color: color-mix(in srgb, var(--bg) 70%, transparent); }
+table.epics tr.ctx-row.open .title { font-weight: 700; }
+.pill { font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.core { background: color-mix(in srgb, var(--teal) 28%, transparent); box-shadow: inset 0 0 0 1.5px var(--teal); color: var(--teal); }
+.pill.sup { box-shadow: inset 0 0 0 1.5px var(--teal); color: var(--teal); }
+.pill.gen { box-shadow: inset 0 0 0 1.5px currentColor; opacity: .7; } .sd { margin: 4px 0 0 18px; }
+.dm-track { border-left: 2px solid var(--line); margin: 10px 0 0 12px; padding-left: 20px; }
+.dm-node { position: relative; margin: 16px 0 8px; font: 600 15px var(--display); }
+.dm-node .n { position: absolute; left: -33px; top: -1px; width: 22px; height: 22px; border-radius: 50%; background: var(--teal); color: var(--on-accent); font: 600 12px var(--mono); display: grid; place-items: center; }
+.dm-node .hint { font: 400 13px var(--body); margin-left: 6px; }
+.dm-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; margin: 2px 0 0; }
+.dm-facts dt { font: 600 11px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding-top: 3px; }
+.dm-facts dd { margin: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font: 500 12px var(--mono); padding: 2px 8px; border-radius: 3px; background: color-mix(in srgb, var(--teal) 14%, transparent); color: var(--accent); white-space: nowrap; cursor: help; }
+.chip.minor { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1px var(--teal); }
+/* a term of the shared kernel, in a context or in the kernel's own block: indigo, never a context's teal */
+.chip.shared { background: color-mix(in srgb, var(--shared) 14%, transparent); color: var(--shared); }
+.chip.shared::before { content: "⇄ "; font-size: 10px; }
+.dm-kernel { border: 1px solid color-mix(in srgb, var(--shared) 35%, var(--line)); border-top: 4px solid var(--shared); border-radius: 4px 4px 9px 9px;
+  padding: 10px 14px 12px; margin: 12px 0 4px; background: color-mix(in srgb, var(--shared) 5%, var(--panel)); }
+.dm-kernel .top { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 8px; }
+.dm-kernel .top b { font: 700 18px var(--display); color: var(--shared); }
+details.dm-group { border: 1px solid var(--group-line); border-radius: 6px; margin-top: 6px; background: var(--panel); }
+details.dm-group > summary { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 10px; background: var(--group); border-radius: 6px; cursor: pointer; list-style: none; font: 600 15px var(--display); }
+details.dm-group > summary::-webkit-details-marker { display: none; } details.dm-group > summary::before { content: "▸"; color: var(--muted); font: 400 12px var(--mono); margin-right: 8px; }
+details.dm-group[open] > summary { border-radius: 6px 6px 0 0; } details.dm-group[open] > summary::before { content: "▾"; color: var(--accent); }
+details.dm-group > summary span { font: 400 12px var(--mono); color: var(--muted); margin-left: auto; }
+details.dm-group > summary { justify-content: flex-start; }
+.dm-rule { padding: 8px 10px 2px; font: italic 500 14px var(--body); color: var(--muted); }
+.dm-rule::before { content: "Rule · "; font: normal 600 11px var(--mono); color: var(--accent); letter-spacing: .06em; }
+.dm .rrow { border-top: 0; } .dm .rrow + .rrow { border-top: 1px solid var(--line); }
+.dm .rhead { padding: 5px 10px 5px 20px; }
+.dm .rrow.open { box-shadow: inset 3px 0 0 var(--teal); background: color-mix(in srgb, var(--teal) 7%, transparent); }
+.dm .spec-act { padding: 6px 10px 10px; }
+
+/* displays every page shares: an outcome event, a state in its colour */
+.event { font: 500 12px var(--mono); padding: 1px 9px 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--teal) 13%, transparent);
+  color: var(--accent); white-space: nowrap; }
+.event::before { content: "◆"; font-size: 8.5px; margin-right: 5px; vertical-align: 1px; }
+.tone { font: 600 10.5px var(--mono); letter-spacing: .07em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.tone.ok { color: var(--accent); background: color-mix(in srgb, var(--teal) 13%, transparent); }
+.tone.wait { color: var(--wait); background: color-mix(in srgb, var(--wait) 15%, transparent); }
+.tone.bad { color: var(--stop); background: color-mix(in srgb, var(--stop) 15%, transparent); }
+.tone.mute { color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
+.small-btn .btn, .btn.small { font-size: 12.5px; padding: 4px 9px; }
+
+/* backlog: an epic as a strip of its stories, opened into lanes by where each stands */
+.erows { display: grid; gap: 8px; margin-top: 12px; }
+.erow { border-radius: 8px; background: var(--soft); }
+.ehead { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 9px 12px; cursor: pointer; align-items: baseline; }
+.ehead:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; border-radius: 8px; }
+.ehead .name { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; min-width: 0; }
+.ehead .name b { font: 600 15.5px var(--display); } .ehead .caret { color: var(--muted); font: 400 12px var(--mono); }
+.ehead .meta { display: flex; gap: 8px; align-items: center; font: 400 12.5px var(--mono); color: var(--muted); white-space: nowrap; }
+.strip { display: flex; gap: 2px; grid-column: 1 / -1; } .strip i { flex: 1; height: 5px; border-radius: 1px; background: var(--line); }
+.strip i.l-delivered { background: var(--teal); } .strip i.l-running { background: var(--wait); } .strip i.l-stopped { background: var(--stop); }
+.strip i.l-approved { background: color-mix(in srgb, var(--teal) 40%, var(--line)); }
+.ebody { padding: 0 12px 12px; } .ebody > .about { margin: 0 0 8px; }
+.lanes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 760px) { .lanes { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.lane { background: var(--bg); border-radius: 8px; padding: 8px; min-width: 0; }
+.lane h4 { font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 6px; }
+.scard { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; margin-bottom: 6px; font-size: 14px; line-height: 1.35; }
+.scard .link.title { font: 500 14px var(--display); } .scard .id { margin-top: 3px; }
+.scard.hot { box-shadow: inset 3px 0 0 var(--wait); } .scard.ok { box-shadow: inset 3px 0 0 var(--teal); } .scard.bad { box-shadow: inset 3px 0 0 var(--stop); }
+.scard .acts { margin-top: 6px; } .scard .btn { font-size: 12.5px; padding: 4px 9px; }
+.lane details > summary { cursor: pointer; font: 500 12px var(--mono); color: var(--accent); }
+
+/* run: what waits as tickets, a running story as its course of stages */
+.queue { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.ticket { border: 1px dashed var(--line); border-radius: 7px; padding: 6px 10px; font-size: 14px; display: grid; gap: 4px; min-width: 0; }
+.ticket .what { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.ticket .what b { font: 600 12px var(--mono); color: var(--accent); }
+.ticket .acts { margin-top: 0; }
+.live { border: 1px solid var(--line); border-radius: 9px; overflow: hidden; margin-top: 12px; }
+.live .top { display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; align-items: baseline; flex-wrap: wrap; }
+.live .top .right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.stepper { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; padding: 0 12px 10px; }
+.st { text-align: center; font: 500 11px var(--mono); color: var(--muted); }
+.st i { display: block; height: 8px; border-radius: 4px; background: var(--line); margin-bottom: 4px; }
+.st.done i { background: var(--teal); } .st.stopped i { background: var(--stop); } .st.stopped { color: var(--stop); font-weight: 600; } .st.now i { background: var(--wait); animation: pulse 1.5s infinite; } .st.now { color: var(--ink); font-weight: 600; }
+@keyframes pulse { 50% { opacity: .45; } } @media (prefers-reduced-motion: reduce) { .st.now i { animation: none; } }
+.live .doing { padding: 6px 12px; font: 400 12.5px var(--mono); color: var(--muted); border-top: 1px solid var(--line); }
+
+/* decide: the question on a tinted head, its answers as tiles, the recommended one framed */
+.card.decision { padding: 0; overflow: hidden; }
+.decision .q { padding: 12px 18px; background: color-mix(in srgb, var(--wait) 12%, var(--panel)); border-bottom: 1px solid var(--line); }
+.decision.accept .q { background: color-mix(in srgb, var(--teal) 10%, var(--panel)); }
+.decision .q b { font: 600 17px/1.3 var(--display); display: block; margin-top: 2px; }
+.decision .dbody { padding: 10px 18px 16px; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 10px; }
+.opt { border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; font-size: 15px; display: grid; gap: 8px; align-content: start; }
+.opt.advised { border-color: var(--teal); box-shadow: inset 0 0 0 1px var(--teal); }
+.decision details.more > summary::before { content: "▸ "; color: var(--muted); } .decision details.more[open] > summary::before { content: "▾ "; }
+.decision .id .link.title { font: inherit; }
+.opt .rec-word { font: 600 10.5px var(--mono); color: var(--accent); text-transform: uppercase; letter-spacing: .07em; }
+
+/* delivered: the figures as tiles, the deliveries as a line of days */
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+@media (max-width: 760px) { .tiles { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.tile { border-radius: 9px; padding: 10px 12px; background: var(--soft); }
+.tile b { font: 700 24px/1.1 var(--display); display: block; } .tile.lead b { color: var(--accent); }
+.tile span { font: 500 11px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.days { border-left: 2px solid var(--line); margin: 16px 0 0 6px; padding-left: 16px; display: grid; gap: 12px; }
+.day { position: relative; } .day::before { content: ""; position: absolute; left: -22px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--teal); }
+.day h4 { font: 600 12px var(--mono); color: var(--muted); margin-bottom: 2px; }
+.dl { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.dl .right { display: flex; gap: 8px; align-items: baseline; white-space: nowrap; }
+
+/* discover: the problem with an amber edge, the proposed epics as cards */
+.report { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px; margin-top: 10px; }
+@media (max-width: 860px) { .report { grid-template-columns: minmax(0, 1fr); } }
+.problem { border-left: 4px solid var(--wait); padding: 2px 0 2px 12px; align-self: start; }
+.problem b { font: 600 17px var(--display); display: block; } .problem p { margin: 4px 0 0; font-size: 15px; }
+.proposal { border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; margin-bottom: 8px; display: grid; gap: 5px; }
+.proposal > b { font: 600 15px var(--display); } .proposal .ev { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.proposal .acts { margin-top: 2px; }
+
+/* the rules: one detail under the drawing, a rule a row that opens where it stands */
+.rgroup { margin-top: 14px; } .rgroup .lbl { font: 500 10.5px var(--mono); letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.rgroup .lbl .n { color: var(--ink); margin-left: 4px; }
+.rrow { border-top: 1px solid var(--line); } .rrow:last-child { border-bottom: 1px solid var(--line); }
+.rhead { display: grid; grid-template-columns: 14px minmax(0, 1fr) max-content; gap: 10px; align-items: baseline; width: 100%;
+  background: none; border: 0; padding: 7px 2px; text-align: left; color: var(--ink); cursor: pointer; font: 400 14px var(--body); }
+.rhead:hover .rid, .rhead:focus-visible .rid { color: var(--accent); } .rhead:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+.rhead .caret { color: var(--muted); font: 400 12px var(--mono); } .rhead .rid { font: 500 12.5px var(--mono); padding-left: 6px; }
+.rhead .rid.e-gate { border-left: 3px solid var(--deep); } .rhead .rid.e-runner { border-left: 3px solid var(--run); } .rhead .rid.e-instructed { border-left: 3px solid var(--wait); }
+.rhead .rid.f-pass { background: color-mix(in srgb, var(--done) 18%, transparent); } .rhead .rid.f-fail { background: color-mix(in srgb, var(--stop) 22%, transparent); }
+.rhead .rgist { color: var(--ink); min-width: 0; font-size: 15px; } .rhead .rid { color: var(--muted); font-size: 11.5px; }
+.rbody .why { font: 400 15px var(--body); color: var(--muted); margin: 2px 0 8px; }
+.rbody .said { margin: 4px 0; font: 400 15px var(--body); line-height: 1.45; }
+.rbody .said .kw { font: 600 12.5px var(--mono); color: var(--ink); margin-right: 6px; white-space: nowrap; }
+.mk { width: 15px; height: 15px; vertical-align: -3px; margin-right: 2px; }
+.mk circle { stroke: none; } .mk path { fill: none; stroke: #ffffff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mk-pass circle { fill: var(--teal); } .mk-fail circle { fill: var(--stop); } .mk-wait circle, .mk-ask circle { fill: var(--muted); }
+.mk-minor path { stroke: var(--muted); }
+.rbody .goes { font: 500 12.5px var(--mono); color: var(--accent); white-space: nowrap; }
+.rbody details.src summary { cursor: pointer; font: 400 11.5px var(--mono); color: var(--muted); margin-top: 8px; }
+.rbody { padding: 2px 4px 12px 26px; } .rbody .kv { margin-top: 0; }
+.part { border-left: 2px solid var(--line); padding: 2px 0 6px 14px; margin-top: 14px; }
+.part-head { font: 600 15px var(--display); display: flex; gap: 8px; align-items: baseline; }
+.part-head .num { font: 600 12px var(--mono); color: var(--accent); } .part-head .hint { font: 400 13px var(--body); }
+.part .rgroup:first-of-type { margin-top: 6px; } .then { margin: 6px 0 0; font: 400 14px var(--body); color: var(--muted); }
+details.fold > summary { cursor: pointer; font: 500 12px var(--mono); color: var(--accent); margin-top: 6px; }
+.storyline { font: 400 15px var(--body); margin: 12px 0 0; } .storyline .hint { display: block; }
+.flowsvg.has-story [data-stage]:not(.ov-reached) { opacity: .35; }
+.flowsvg [data-stage].ov-now { fill: var(--teal); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.flowsvg .gate.ov-failed circle { stroke: var(--stop); stroke-width: 4px; }
+.flowsvg .ov-badge { font: 700 11px var(--mono); fill: var(--stop); }
+table.epics tr.epic-row { cursor: pointer; } table.epics tr.epic-row:hover td { background: var(--soft); }
+table.epics tr.epic-row:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
+table.epics .caret { color: var(--muted); font: 400 12px var(--mono); }
+table.epics tr.epic-body > td { padding-top: 0; } table.epics tr.epic-body table { margin-top: 4px; }
+.bar { height: 6px; border-radius: 3px; background: var(--line); min-width: 80px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--done); }
+.show-s { display: none; } @media (max-width: 760px) { .show-s { display: block; } }
+.spec-act { margin-top: 8px; } .spec-act .ask textarea { min-height: 64px; }
+.terms { display: flex; flex-wrap: wrap; gap: 4px 6px; } .term { font: 400 12.5px var(--mono); padding: 2px 7px; border-radius: 3px; background: color-mix(in srgb, var(--teal) 14%, transparent); color: var(--accent); cursor: help; }
+details.feature { border-top: 1px solid var(--line); padding: 6px 0; } details.feature > summary { cursor: pointer; font: 500 15px var(--display); }
+details.feature > summary .hint { font: 400 13px var(--body); margin-left: 6px; }
+.rule-head { font: 600 14px var(--display); margin: 10px 0 2px; }
+.pend { font: 500 11.5px var(--mono); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.pend.p-gone { background: color-mix(in srgb, var(--stop) 22%, transparent); }
+.pend.p-changes { background: color-mix(in srgb, var(--wait) 22%, transparent); } .pend.p-adds { background: color-mix(in srgb, var(--teal) 18%, transparent); }
+.way-link { background: none; border: 0; padding: 2px 0; font: 500 13px var(--mono); color: var(--accent); cursor: pointer; }
+details.more > summary { cursor: pointer; list-style: none; } details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary h2::before { content: "▸ "; color: var(--muted); } details.more[open] > summary h2::before { content: "▾ "; }
+.flowsvg [data-stage] { cursor: pointer; } .flowsvg [data-stage].sel { fill: var(--teal); }
+
+.rid .x { font-weight: 700; color: var(--stop); margin-left: 3px; }
 .back { font: 400 11.5px var(--mono); color: var(--muted); }
 .pick { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
 .pick select { font: 400 13px var(--mono); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
 .outcome { margin: 4px 0; } .outcome b { font: 600 13px var(--mono); margin-right: 6px; }
-.banner { display: none; background: var(--stop); color: #fff; font: 500 14px var(--display); padding: 8px 0; }
+.banner { display: none; background: var(--deep); color: var(--mist); border-bottom: 3px solid var(--stop); font: 500 14px var(--display); padding: 8px 0; }
 #toasts { position: fixed; right: 16px; bottom: 16px; z-index: 40; display: flex; flex-direction: column; gap: 8px; max-width: min(440px, calc(100% - 32px)); }
 .toast { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-left: 4px solid var(--teal); border-radius: 8px;
   padding: 10px 14px; box-shadow: var(--shadow); font-size: 15px; white-space: pre-wrap; }
@@ -229,7 +423,7 @@ pre.out:empty { display: none; }
 "use strict";
 const TOKEN = new URLSearchParams(location.search).get("t") || "";
 const TABS = [
-  ["describe", "0 describe", "Once", "The project description", "What is built, how, and in which domain — written once, changed when things move."],
+  ["describe", "0 describe", "Once", "The project description", "What is built, how, and in which domain — and in each context what holds today. You write the description; what holds changes by a story the gate delivers."],
   ["discover", "1 discover", "Cycle", "Discovery", "Which problem is worth solving — a report with its sources and the epics it proposes."],
   ["backlog", "2 backlog", "Cycle", "Backlog", "Epics and their stories, newest first. A story runs once released."],
   ["run", "3 run", "Cycle", "The factory at work", "Your requests first, then the stories — one stage after the other, a gate between them."],
@@ -239,11 +433,12 @@ const TABS = [
 const MARKS = {look: "!", question: "?", stopped: "✗", running: "▶", done: "✓", none: "·", next: "→"};
 const S = {tab: "backlog", status: null, decisions: null, discover: null, requests: null, follow: null, followSource: null,
            followLines: [], drawer: null, opener: null, drafts: {}, folded: {},
-           rules: null, rulesFor: null, ruleKind: "story", rule: null, ruleStory: ""};
+           rules: null, rulesFor: null, ruleKind: "story", rule: null, ruleStory: "", flowPick: null};
 const stored = key => { try { return localStorage.getItem(key) || ""; } catch (e) { return ""; } };
 const store = (key, value) => { try { localStorage.setItem(key, value); } catch (e) {} };
 S.tab = stored("factory.tab") || S.tab;
 if (TABS.some(([id]) => id === location.hash.slice(1))) S.tab = location.hash.slice(1);
+if (location.hash === "#spec" || S.tab === "spec") S.tab = "describe";                // what holds is part of the description
 // `#rules:<story>[:<rule>]` opens the rules with that story's gate runs marked, and the rule read
 if (location.hash.startsWith("#rules:")) {
   const [story, rule] = decodeURIComponent(location.hash.slice(7)).split(":");
@@ -322,7 +517,8 @@ function act(action, scope) {
   if (r.open === "words") {
     const choices = (r.choices || []).length ? `<select aria-label="why"><option value="">why? (optional)</option>${r.choices.map(c => `<option>${esc(c)}</option>`).join("")}</select>` : "";
     // what the person typed outlives a redraw: kept by the action's command, until its request is written
-    return `<div class="ask" data-ask="${id}"><textarea data-draft="${esc(action.skill)}" placeholder="${esc(action.text)}" aria-label="${esc(action.label)}">${esc(S.drafts[action.skill] || "")}</textarea>${choices}
+    const draft = r.draft || action.skill;
+    return `<div class="ask" data-ask="${id}"><textarea data-draft="${esc(draft)}" placeholder="${esc(action.text)}" aria-label="${esc(action.label)}">${esc(S.drafts[draft] || "")}</textarea>${choices}
       <button class="${cls}" data-press="${id}">${esc(action.label)}</button></div>`;
   }
   if (r.open === "record") return `<button class="${cls}" data-tab="decide">${esc(action.label)}</button>`;
@@ -341,11 +537,12 @@ async function press(button) {
     const pick = box.querySelector("select");
     if (pick && pick.value) fields.option = pick.value;
     if (!words) { toast(`${action.label}: ${action.text}`, true); return; }
+    if (r.prefix) words = `${r.prefix}\n\n${words}`;
   }
   try {
     const data = await api("/api/request", Object.assign({kind: r.kind, words, by: by()}, fields));
     toast(data.duplicate ? `queued already: ${data.id}` : `request written: ${data.id}`);
-    if (box) { box.querySelector("textarea").value = ""; delete S.drafts[action.skill]; }
+    if (box) { box.querySelector("textarea").value = ""; delete S.drafts[r.draft || action.skill]; }
     refresh();
     if (S.drawer) openStory(S.drawer);
   } catch (e) { toast(e.message, true); }
@@ -379,7 +576,7 @@ const CALLS = {
 };
 
 document.addEventListener("click", async event => {
-  const target = event.target.closest("[data-press],[data-call],[data-story],[data-tab],[data-pick],[data-rule],[data-kind]");
+  const target = event.target.closest("[data-press],[data-call],[data-story],[data-tab],[data-pick],[data-rule],[data-flow]");
   if (!target) return;
   if (target.dataset.rule) {
     S.rule = S.rule === target.dataset.rule ? null : target.dataset.rule;
@@ -388,7 +585,7 @@ document.addEventListener("click", async event => {
     if (read) read.scrollIntoView({block: "nearest", behavior: "smooth"});
     return;
   }
-  if (target.dataset.kind) { S.ruleKind = target.dataset.kind; return render(); }
+  if (target.dataset.flow) { S.ruleKind = target.dataset.flow; return render(); }
   if (target.dataset.pick) return theme(target.dataset.pick);
   if (target.dataset.tab) return show(target.dataset.tab);
   if (target.dataset.story) return openStory(target.dataset.story);
@@ -460,12 +657,13 @@ function render() {
   const editing = document.activeElement && ["TEXTAREA", "SELECT"].includes(document.activeElement.tagName)
     && $("main").contains(document.activeElement);
   if (editing) return;                                   // a person typing is not redrawn under their hands
-  forget("m");
+  forget("m"); forget("s");
   const [, , eyebrow, title, lede] = TABS.find(([id]) => id === S.tab) || TABS[2];
   const view = {describe, discover, backlog, run, decide, delivered, rules: rulesTab}[S.tab] || backlog;
   $("main").innerHTML = `<div class="eyebrow">${esc(eyebrow)}</div><h1>${esc(title)}</h1><p class="lede">${esc(lede)}</p>`
     + (S.status ? endedLine(S.status) + view(S.status) : `<section class="card"><p class="empty">Reading the factory…</p></section>`);
   if (S.tab === "run") paintFollow();
+  if (S.tab === "rules") paintFlow();
 }
 
 // --- the rules: the factory's rulebook, drawn as it says it ------------------------------------------------------------
@@ -476,65 +674,353 @@ async function loadRules() {
   if (await load("rules", "/api/view/rules" + (want ? `?id=${encodeURIComponent(want)}` : ""))) render();
 }
 
-function chip(id, rules, fired, refused, stage) {
-  const r = rules[id] || {enforcement: ""};
-  // in a stage's column, how it came out there; elsewhere, how it came out anywhere
-  const got = (fired[id] || []).filter(f => !stage || f.stage === stage), state = got.some(f => f.state === "fail") ? "fail" : got.length ? got[got.length - 1].state : "";
-  const n = refused[id];
-  return `<button type="button" class="chip e-${esc(r.enforcement)}${state ? " f-" + esc(state) : ""}" data-rule="${esc(id)}"
-    aria-pressed="${S.rule === id}" title="${esc(r.when || r.text || "")}">${esc(id)}${n ? `<span class="x">×${n}</span>` : ""}</button>`;
+// one place for what is picked in the drawing: a step, a gate or an edge; each rule a row that opens where it stands
+const pickedRules = () => S.openRules || (S.openRules = new Set(S.rule ? [S.rule] : []));
+
+// a rule read as sentences: its title, why, when, and each outcome after its keyword, where it sends the story
+// the marks are the drawing's: a gate's check for a pass, a stop's cross for a fail, a pause where a person answers
+const MARK = {
+  pass: '<path d="M6 10.4l2.7 2.7L14.2 7.6"/>', fail: '<path d="M6.6 6.6l6.8 6.8M13.4 6.6l-6.8 6.8"/>',
+  wait: '<path d="M8 6.5v7M12 6.5v7"/>', ask: '<path d="M7.6 7.6a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.6M10 14.4v.1"/>'};
+const icon = state => MARK[state] ? `<svg class="mk mk-${state}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10"/>${MARK[state]}</svg>`
+  : `<svg class="mk mk-minor" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 10h8"/></svg>`;
+const SAYS = {pass: "Passes when", fail: "Fails when", skip: "Skips when", note: "Notes when", wait: "Waits when", ask: "Asks when"};
+const sentence = t => { const s = String(t || "").trim(); return s ? s[0].toUpperCase() + s.slice(1) + (/[.!?)]$/.test(s) ? "" : ".") : ""; };
+const clause = t => { const s = String(t || "").trim(); return s + (/[.!?)]$/.test(s) ? "" : "."); };
+const going = goes => (goes || []).length ? ` <span class="goes">→ ${goes.map(g => g === "stop" ? "stop" : g === "again" ? "once more" : "back to " + g).map(esc).join(" or ")}</span>` : "";
+
+function ruleRow(id, rules, story, stage) {
+  const r = rules[id] || {id, enforcement: "", outcomes: []}, open = pickedRules().has(id);
+  const fired = story && story.fired[id] ? story.fired[id].filter(f => !stage || f.stage === stage) : [];
+  const state = fired.some(f => f.state === "fail") ? "fail" : fired.length ? fired[fired.length - 1].state : "";
+  const refused = story && story.refused[id];
+  const head = r.title ? sentence(r.title).replace(/\.$/, "") : r.text ? r.text.replace(/\s+/g, " ").slice(0, 140) + (r.text.length > 140 ? "…" : "") : sentence(r.why || r.when);
+  const body = !open ? "" : `<div class="rbody">` + (r.text
+      ? `<p class="said"><span class="kw">Where</span> ${inline(clause(r.when))}</p>${prose(r.text)}`
+      : (r.why ? `<p class="why">${inline(sentence(r.why))}</p>` : "")
+        + `<p class="said"><span class="kw">When</span> ${inline(clause(r.when))}</p>`
+        + (r.outcomes || []).map(o => `<p class="said s-${esc(o.state)}"><span class="kw">${icon(o.state)} ${esc(SAYS[o.state] || o.state)}</span> ${inline(clause(o.said))}${going(o.goes)}</p>`).join(""))
+    + (fired.length ? `<p class="rec">this story: ${esc(fired.map(f => `${f.stage}: ${f.state}`).join(" · "))}${refused ? ` · refused ${refused}×` : ""}</p>` : "")
+    + `<details class="src" data-fold="src:${esc(id)}"${foldOpen("src:" + id)}><summary>source</summary><p class="hint">${esc(r.source || "")}${r.bound ? (r.part === "instruction" ? " · placed in " : " · bound in ") + esc(r.bound) : ""}</p></details></div>`;
+  return `<div class="rrow${open ? " open" : ""}"><button type="button" class="rhead" data-open-rule="${esc(id)}" aria-expanded="${open}">
+    <span class="caret" aria-hidden="true">${open ? "▾" : "▸"}</span><span class="rgist">${inline(head)}</span>
+    <span class="rid e-${esc(r.enforcement)}${state ? " f-" + esc(state) : ""}">${esc(id)}${refused ? `<span class="x">×${refused}</span>` : ""}</span></button>${body}</div>`;
 }
 
-function slot(label, ids, cls, rules, fired, refused, folded, stage) {
-  if (!ids.length) return "";
-  const chips = `<div class="chips">${ids.map(i => chip(i, rules, fired, refused, stage)).join("")}</div>`;
-  // what a stage is told is long: folded to its count unless a rule of it is open
-  const open = !folded || ids.includes(S.rule);
-  return `<div class="slot${cls ? " " + cls : ""}">` + (folded ? `<details${open ? " open" : ""}><summary class="lbl">${esc(label)} (${ids.length}) ▾</summary>${chips}</details>`
-    : `<div class="lbl">${esc(label)}</div>${chips}`) + `</div>`;
+function ruleGroup(label, ids, rules, story, stage) {
+  if (!ids || !ids.length) return "";
+  return `<div class="rgroup">${label ? `<div class="lbl">${esc(label)} <span class="n">${ids.length}</span></div>` : ""}${ids.map(id => ruleRow(id, rules, story, stage)).join("")}</div>`;
 }
 
-function ruleDetail(r, story) {
-  if (!r) return "";
-  const where = (r.stages || []).join(", ") || "outside the stages", kinds = (r.kinds || []).join(", ") || "every kind";
-  const got = story && story.fired[r.id] ? story.fired[r.id].map(f => `${f.stage}: ${f.state}`).join(" · ") : "";
-  const body = r.text ? `<dl class="kv"><dt>where</dt><dd>${inline(r.when)}</dd></dl>${prose(r.text)}`
-    : `<dl class="kv"><dt>when</dt><dd>${inline(r.when)}</dd><dt>why</dt><dd>${inline(r.why)}</dd></dl>`
-      + (r.outcomes || []).map(o => `<div class="outcome"><b>${esc(o.state)}</b>${inline(o.said)}${(o.goes || []).length ? ` <span class="back">→ ${esc(o.goes.join(", "))}</span>` : ""}</div>`).join("");
-  return `<div id="rule-detail">` + card(esc(r.id), `${esc(r.enforcement)} · ${esc(r.part)} · ${esc(where)} · ${esc(kinds)}`,
-    body + (got ? `<p class="rec">this story: ${esc(got)}${story.refused[r.id] ? ` · refused ${story.refused[r.id]}×` : ""}</p>` : "")
-    + `<p class="hint">${esc(r.source)}${r.bound ? (r.part === "instruction" ? " · placed in " : " · bound in ") + esc(r.bound) : ""}${(r.reports || []).length ? " · reports as " + esc(r.reports.join(", ")) : ""}</p>`) + `</div>`;
+function waysLine(edges, title, rules) {
+  if (!edges.length) return "";
+  const named = id => (rules && rules[id] && rules[id].title) || id;
+  return `<div class="rgroup"><div class="lbl">${esc(title)}</div>${edges.map(e => `<button type="button" class="way-link" data-edge="${esc(e.source)}>${esc(e.target)}>${esc(e.way)}">
+    ${esc(e.source)} → ${esc(e.target)}</button> <span class="hint">${esc([...new Set(e.rules.map(r => named(r.rule)))].join(" · "))}</span>`).join("<br>")}</div>`;
+}
+
+function picked(flow, rules, story) {
+  const graph = flow.graph || {edges: [], every_gate: [], anywhere: []}, p = S.flowPick;
+  const ids = es => [...new Set(es.flatMap(e => e.rules.map(r => r.rule)))];
+  if (!p) {
+    return card("", "", `<p class="empty">Pick a step, a gate or a way in the drawing — its rules show here.</p>
+      <p class="hint"><b>Four kinds of rule.</b> A <b>check</b> (GATE-…) is a question a gate asks after a stage — it passes or refuses. A <b>decision</b> (RUN-…) says where the story goes then: on, once more, back, or stop. A <b>pass</b> rule says what a passing gate does. What a stage is <b>told</b> (STAGE-…) is its instruction; no gate asks it directly.</p>
+      <p class="hint">A teal dot is a gate: the checks between two steps. A dashed arc above is a round — a refused gate sends the story back into its step, three times at most. A way back appears below while the pointer is on its step. A red mark stops the run; a grey one waits for a person.</p>`);
+  }
+  if (p.type === "stage") {
+    // a stage told as it runs: what it is told, the gate that asks, what a pass does, where a refusal sends it
+    const step = flow.steps.find(s => s.stage === p.stage) || {gate_before: [], told: [], gate_after: [], passed: [], decided: []};
+    const at = flow.steps.findIndex(s => s.stage === p.stage), next = (flow.steps[at + 1] || {}).stage || "delivered";
+    const own = e => e.source === p.stage;
+    const round = graph.edges.find(e => own(e) && e.way === "again"), on = graph.edges.find(e => own(e) && e.way === "on" && e.rules.length);
+    const out = graph.edges.filter(e => own(e) && e.way === "back"), into = graph.edges.filter(e => e.target === p.stage && e.way === "back");
+    const stops = graph.edges.filter(e => own(e) && (e.way === "stop" || e.way === "waits"));
+    const named = new Set([round, on, ...out, ...stops].filter(Boolean).flatMap(e => e.rules.map(r => r.rule)));
+    const rest = (step.decided || []).filter(id => !named.has(id));
+    let n = 0;
+    const part = (title, body) => body ? `<div class="part"><div class="part-head"><span class="num">${++n}</span>${title}</div>${body}</div>` : "";
+    return card(esc(p.stage), (step.window || "") + (step.gate === "none" ? " · decides with its verdict, no gate" : ""),
+      part("Before it — the gate before the stage asks; a refusal keeps it from starting", ruleGroup("", step.gate_before, rules, story, p.stage))
+      + part(`It is told <span class="hint">— ${(step.told || []).length} instructions</span>`, foldGroup(`told:${p.stage}`, "show what it is told", step.told, rules, story, p.stage))
+      + part(`The gate after it asks <span class="hint">— ${(step.gate_after || []).length} checks, each can refuse</span>`, foldGroup(`checks:${p.stage}`, "show the checks", step.gate_after, rules, story, p.stage))
+      + part(step.gate === "none" ? "Its verdict decides" : "When the gate passes",
+          ruleGroup("", [...(step.passed || []), ...(on ? on.rules.map(r => r.rule) : [])], rules, story, p.stage)
+          + `<p class="then">→ on to <b>${esc(next)}</b></p>`)
+      + part(step.gate === "none" ? "When it asks for changes" : "When a check refuses",
+          (round ? ruleGroup("once more into this stage", ids([round]), rules, story, p.stage) : "")
+          + waysLine(out, "back to an earlier stage", rules) + (stops.length ? ruleGroup("stop, or wait for a person", ids(stops), rules, story, p.stage) : ""))
+      + part("The runner also decides here", ruleGroup("", rest, rules, story, p.stage))
+      + (into.length ? `<div class="part">${waysLine(into, "ways back to this stage", rules)}</div>` : ""));
+  }
+  if (p.type === "gate") {
+    const [where, stage] = p.gate.split(":"), step = flow.steps.find(s => s.stage === stage) || {};
+    const round = graph.edges.find(e => e.source === stage && e.target === stage && e.way === "again");
+    return card(`gate ${esc(where === "gate-before" ? "before" : "after")} ${esc(stage)}`,
+      where === "gate-before" ? "a refused check keeps the stage from starting" : "a refused check sends the story once more into its step",
+      ruleGroup("1 · its checks — each can refuse", (where === "gate-before" ? step.gate_before : step.gate_after) || [], rules, story, stage)
+      + (where === "gate-after" && round ? ruleGroup("2 · when one refuses — what decides where the story goes", ids([round]), rules, story, stage) : "")
+      + ruleGroup("also at every gate", flow.every_gate, rules, story, stage));
+  }
+  const edge = graph.edges.concat(graph.every_gate || [], graph.anywhere || []).find(e => `${e.source}>${e.target}>${e.way}` === p.key);
+  if (p.way === "again") {
+    const step = flow.steps.find(s => s.stage === p.source) || {};
+    return card(`${esc(p.source)} once more`, step.gate === "after" ? "a refused check of its gate sends the story back into it" : "the stage runs again",
+      ruleGroup("what sends it once more", edge ? ids([edge]) : [], rules, story, p.source)
+      + (step.gate === "after" ? ruleGroup(`the checks of the gate after ${p.source} — each can refuse`, step.gate_after, rules, story, p.source) : ""));
+  }
+  return card(`${esc(p.source)} → ${esc(p.target)}`, esc(p.way), ruleGroup("the rules that take it", edge ? ids([edge]) : [], rules, story, p.source));
+}
+
+// a folded part stays as the person left it: the page draws itself again on every refresh
+const folds = () => S.folds || (S.folds = new Set());
+const foldOpen = key => folds().has(key) ? " open" : "";
+document.addEventListener("toggle", event => {
+  const at = event.target;
+  if (!at.dataset || !at.dataset.fold) return;
+  if (at.open) folds().add(at.dataset.fold); else folds().delete(at.dataset.fold);
+}, true);
+
+function foldGroup(key, label, ids, rules, story, stage) {
+  if (!ids || !ids.length) return "";
+  return `<details class="fold" data-fold="${esc(key)}"${foldOpen(key)}><summary>${esc(label)} (${ids.length})</summary>${ruleGroup("", ids, rules, story, stage)}</details>`;
+}
+
+function folded(title, sub, ids, rules, story) {
+  if (!ids || !ids.length) return "";
+  return `<details class="card more" data-fold="${esc(title)}"${foldOpen(title)}><summary><h2>${esc(title)} <span class="sub">${ids.length} rules — ${esc(sub)}</span></h2></summary>`
+    + ruleGroup("", ids, rules, story) + `</details>`;
+}
+
+// a story laid over the drawing: the steps its gates ran at, where it stands, which gate refused it and how often
+function storyMarks(flow, story) {
+  if (!story) return null;
+  // the steps run in order: every step before the last one the story's gates ran at was reached too (a judge has none)
+  const ran = new Set(Object.values(story.fired).flat().map(f => f.stage));
+  const last = Math.max(-1, ...flow.steps.map((s, i) => ran.has(s.stage) ? i : -1));
+  const reached = new Set([...ran, ...flow.steps.slice(0, last + 1).map(s => s.stage)]);
+  const at = story.refused_at || {};
+  const gates = flow.steps.filter(s => s.gate === "after").map(s => {
+    const refused = Object.values(at[s.stage] || {}).reduce((n, k) => n + k, 0);
+    const failed = (s.gate_after || []).some(id => (story.fired[id] || []).some(f => f.stage === s.stage && f.state === "fail"));
+    return {stage: s.stage, refused, failed};
+  });
+  return {reached, gates};
+}
+
+function storyLine(st, flow, story) {
+  if (!story) return "";
+  const row = (st.rows || []).find(r => r.story === story.id) || {};
+  const marks = storyMarks(flow, story), refused = marks.gates.filter(g => g.refused);
+  const other = [...marks.reached].filter(name => !flow.steps.some(s => s.stage === name));
+  return `<p class="storyline"><b>${esc(story.id)}</b> — ${esc(row.state || "")}${row.stage && row.stage !== "—" ? `, now at <b>${esc(row.stage)}</b>` : ""}.
+    ${refused.length ? "Refused: " + refused.map(g => `${esc(g.stage)} ×${g.refused}`).join(", ") + "." : "No gate refused it."}
+    ${other.length ? `<span class="hint">It also ran ${esc(other.join(", "))} — another kind's steps; pick that kind to see them.</span>` : ""}</p>`;
 }
 
 function rulesTab(st) {
   if (!S.rules) { loadRules(); return card("", "", `<p class="empty">Reading the rules…</p>`); }
   const v = S.rules, rules = Object.fromEntries((v.rules || []).map(r => [r.id, r]));
-  const story = v.story || null, fired = story ? story.fired : {}, refused = story ? story.refused : {};
-  const kinds = Object.keys(v.flow || {}), kind = kinds.includes(S.ruleKind) ? S.ruleKind : kinds[0];
+  const story = v.story || null;
+  const kinds = Object.keys(v.flow || {});
+  if (story && S.kindFor !== story.id) {
+    S.kindFor = story.id;
+    const ran = new Set(Object.values(story.fired).flat().map(f => f.stage));
+    const fits = kinds.filter(k => [...ran].every(st => v.flow[k].steps.some(s => s.stage === st)))
+      .sort((a, b) => v.flow[a].steps.length - v.flow[b].steps.length);
+    if (fits.length) S.ruleKind = fits[0];
+  }
+  const kind = kinds.includes(S.ruleKind) ? S.ruleKind : kinds[0];
   const flow = (v.flow || {})[kind] || {steps: [], edges: [], every_gate: []};
-  const back = {}, at = Object.fromEntries(flow.steps.map((s, i) => [s.stage, i]));
-  for (const e of flow.edges) if (e.target in at && at[e.target] < at[e.source]) (back[e.target] = back[e.target] || new Set()).add(`${e.source} (${e.rule} ${e.state})`);
-  const again = {};
-  for (const e of flow.edges) if (e.target === e.source) (again[e.source] = again[e.source] || []).push(e.rule);
-  const stageOf = Object.fromEntries((v.stages || []).map(s => [s.name, s]));
-  const cols = flow.steps.map(s => `<div class="col"><h3 title="${esc([(stageOf[s.stage] || {}).about, (stageOf[s.stage] || {}).source].filter(Boolean).join(" — "))}">${esc(s.stage)}</h3><div class="win">${esc(s.window || "")}${s.gate === "none" ? " · no gate" : ""}</div>
-    ${back[s.stage] ? `<div class="back">↩ from ${esc([...back[s.stage]].join(", "))}</div>` : ""}
-    ${slot("gate before", s.gate_before, "gate", rules, fired, refused, false, s.stage)}${slot("told", s.told, "", rules, fired, refused, true)}
-    ${slot("gate after", s.gate_after, "gate", rules, fired, refused, false, s.stage)}${slot("a pass does", s.passed, "", rules, fired, refused, false, s.stage)}
-    ${slot("the runner decides", s.decided, "", rules, fired, refused)}
-    ${again[s.stage] ? `<div class="back">⟲ again: ${esc([...new Set(again[s.stage])].join(", "))}</div>` : ""}</div>`).join("");
   const stories = (st.rows || []).map(r => r.story);
-  const picks = `<div class="pick">${kinds.map(k => `<button class="btn${k === kind ? " primary" : ""}" data-kind="${esc(k)}">${esc(k)}</button>`).join("")}
+  const picks = `<div class="pick"><span class="seg">${kinds.map(k => `<button aria-pressed="${k === kind}" data-flow="${esc(k)}">${esc(k)}</button>`).join("")}</span>
     <select data-overlay aria-label="a story's gate runs"><option value="">no story</option>${stories.map(id => `<option${id === S.ruleStory ? " selected" : ""}>${esc(id)}</option>`).join("")}</select></div>`;
-  const outside = {};
-  for (const id of v.outside || []) { const r = rules[id]; if (r) (outside[r.enforcement] = outside[r.enforcement] || []).push(id); }
-  return card(`${esc(kind)}`, `${(v.rules || []).length} rules`, picks
-      + slot("every gate", flow.every_gate, "gate", rules, fired, refused) + `<div class="flow">${cols}</div>`)
-    + ruleDetail(rules[S.rule], story)
-    + card("Outside the stages", "the whole run, the commit hook, every stage alike",
-      Object.entries(outside).map(([e, ids]) => slot(e, ids, e === "gate" ? "gate" : "", rules, fired, refused)).join(""))
+  return card(`${esc(kind)}`, `${(v.rules || []).length} rules`, picks + storyLine(st, flow, story) + (flow.svg_one_at_a_time ? `<div class="flowsvg">${flow.svg_one_at_a_time}</div>` : ""))
+    + picked(flow, rules, story)
+    + folded("At every gate", "the checks each gate of this flow runs as well", flow.every_gate, rules, story)
+    + folded("Anywhere in a run", "what stops a run or waits for a person at any step",
+             [...new Set(((flow.graph || {}).anywhere || []).flatMap(e => e.rules.map(r => r.rule)))], rules, story)
+    + `<details class="card more" data-fold="outside"${foldOpen("outside")}><summary><h2>Outside the stages <span class="sub">${(v.outside || []).length} rules — the whole run, the commit hook, every stage alike</span></h2></summary>`
+    + ruleGroup("", v.outside || [], rules, story) + `</details>`
     + ((v.problems || []).length ? card("Problems", "the rulebook itself", `<ul>${v.problems.map(p => `<li>${esc(p)}</li>`).join("")}</ul>`) : "");
 }
+
+// the drawing: a way back shows while its step is hovered; what is picked stays marked
+function showBacks(test) {
+  document.querySelectorAll(".flowsvg .way-back").forEach(g => g.classList.toggle("show", test(g)));
+}
+// a gate after a step and its round are one thing: the gate, and where a refusal of it sends the story
+const gated = stage => { const f = S.rules && S.rules.flow && S.rules.flow[S.ruleKind]; const s = f && f.steps.find(x => x.stage === stage); return !!s && s.gate === "after"; };
+const flowKey = g => g.dataset.gate ? "gate:" + g.dataset.gate : g.dataset.stage && !g.dataset.way ? "stage:" + g.dataset.stage
+  : g.dataset.way === "again" && gated(g.dataset.source) ? "gate:gate-after:" + g.dataset.source
+  : `${g.dataset.source}>${g.dataset.target}>${g.dataset.way}`;
+function paintFlow() {
+  const backs = new Set([...document.querySelectorAll(".flowsvg .way-back")].map(g => g.dataset.source));
+  document.querySelectorAll(".flowsvg [data-stage]").forEach(t => t.classList.toggle("has-back", backs.has(t.dataset.stage)));
+  const key = S.flowPick ? S.flowPick.key : "";
+  document.querySelectorAll(".flowsvg").forEach(f => f.classList.toggle("has-pick", !!key));
+  document.querySelectorAll(".flowsvg .way, .flowsvg .gate, .flowsvg [data-stage]").forEach(g => g.classList.toggle("sel", !!key && flowKey(g) === key));
+  const v = S.rules, flow = v && v.flow && v.flow[S.ruleKind], marks = flow ? storyMarks(flow, v.story) : null;
+  const row = marks && S.status ? (S.status.rows || []).find(r => r.story === v.story.id) : null;
+  document.querySelectorAll(".flowsvg").forEach(f => f.classList.toggle("has-story", !!marks));
+  document.querySelectorAll(".flowsvg .ov-badge").forEach(t => t.remove());
+  document.querySelectorAll(".flowsvg [data-stage]").forEach(t => {
+    t.classList.toggle("ov-reached", !!marks && marks.reached.has(t.dataset.stage));
+    t.classList.toggle("ov-now", !!row && row.stage === t.dataset.stage);
+  });
+  document.querySelectorAll(".flowsvg .gate").forEach(g => {
+    const [, stage] = (g.dataset.gate || "").split(":"), at = marks ? marks.gates.find(x => x.stage === stage) : null;
+    g.classList.toggle("ov-failed", !!at && at.failed);
+    if (at && at.refused) {
+      const c = g.querySelector("circle"), t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      t.setAttribute("x", +c.getAttribute("cx") + 14); t.setAttribute("y", +c.getAttribute("cy") - 12);
+      t.setAttribute("class", "ov-badge"); t.textContent = `×${at.refused}`; g.appendChild(t);
+    }
+  });
+  if (S.flowPick && S.flowPick.type === "stage") showBacks(g => g.dataset.source === S.flowPick.stage);
+  else if (S.flowPick && S.flowPick.way === "back") showBacks(g => flowKey(g) === S.flowPick.key);
+}
+document.addEventListener("mouseover", event => {
+  const at = event.target.closest && event.target.closest(".flowsvg [data-stage]");
+  if (at) showBacks(g => g.dataset.source === at.dataset.stage);
+});
+document.addEventListener("mouseout", event => {
+  const at = event.target.closest && event.target.closest(".flowsvg [data-stage]");
+  if (at) { showBacks(() => false); paintFlow(); }
+});
+function pickInFlow(at) {
+  const key = flowKey(at);
+  if (S.flowPick && S.flowPick.key === key) S.flowPick = null;
+  else if (at.dataset.gate) S.flowPick = {key, type: "gate", gate: at.dataset.gate};
+  else if (key.startsWith("gate:")) S.flowPick = {key, type: "gate", gate: key.slice(5)};
+  else if (at.dataset.stage && !at.dataset.way) S.flowPick = {key, type: "stage", stage: at.dataset.stage};
+  else S.flowPick = {key, type: "edge", source: at.dataset.source, target: at.dataset.target, way: at.dataset.way};
+  render();
+}
+document.addEventListener("click", event => {
+  const rule = event.target.closest && event.target.closest("[data-open-rule]");
+  if (rule) {
+    event.stopPropagation();
+    const id = rule.dataset.openRule, open = pickedRules();
+    if (open.has(id)) open.delete(id); else open.add(id);
+    return render();
+  }
+  const edge = event.target.closest && event.target.closest("[data-edge]");
+  if (edge) {
+    event.stopPropagation();
+    const [source, target, way] = edge.dataset.edge.split(">");
+    S.flowPick = {key: edge.dataset.edge, type: "edge", source, target, way};
+    return render();
+  }
+  const at = event.target.closest && event.target.closest(".flowsvg [data-rules], .flowsvg [data-stage]");
+  if (!at) return;
+  event.stopPropagation();
+  pickInFlow(at);
+}, true);
+
+// --- the spec: what holds, per context — its domain model, its features, rules and scenarios ---------------------------
+async function loadSpec() {
+  if (S.spec || S.specLoading) return;
+  S.specLoading = true;
+  if (await load("spec", "/api/view/spec")) render();
+  S.specLoading = false;
+}
+
+// a scenario's step as a sentence: its Gherkin keyword set apart
+const step = line => { const m = String(line).match(/^\s*-\s*(Given|When|Then|And|But)\b\s*(.*)$/);
+  return m ? `<p class="said"><span class="kw">${esc(m[1])}</span> ${inline(m[2])}</p>` : `<p class="said">${inline(String(line).replace(/^\s*-\s*/, ""))}</p>`; };
+
+function scenario(item) {
+  const open = (S.openScenarios || (S.openScenarios = new Set())).has(item.key);
+  const heading = item.form === "line" ? item.lines.join(" ").replace(/\s+/g, " ").replace(/^-\s*[a-z0-9-]+:\s*/, "") : item.key.replace(/-/g, " ");
+  const h = item.health || null;
+  const proof = !h ? "" : h.proof === "orphaned" ? `<span class="pend p-gone" title="${esc(h.missing.join(", "))}">test gone</span>`
+    : h.proof === "untested" ? `<span class="pend p-gone">no test</span>` : "";
+  const changes = proof + item.changed_by.map(c => `<span class="pend p-${esc(c.verdict)}" title="${esc(c.title)} (${esc(c.status)})">${esc(c.verdict)} by ${esc(c.story)}</span>`).join(" ");
+  const body = !open ? "" : `<div class="rbody">${item.form === "scenario" ? item.lines.slice(1).map(step).join("") : ""}
+    <p class="hint">${item.tests.length ? "test: " + item.tests.map(t => esc(t) + (h && h.missing.includes(t) ? " <b>— not in the code</b>" : "")).join(", ") : "no test named"} · <code>${esc(item.key)}</code>
+      · ${h && h.delivered_by ? `delivered by ${esc(h.delivered_by.story)}${h.delivered_by.how ? " (" + esc(h.delivered_by.how) + ")" : ""}` : "no delivered story brought it"}</p>
+    ${item.fix ? `<div class="spec-act">${act(item.fix, "s")}</div>` : ""}
+    ${item.change ? `<div class="spec-act">${act(item.change, "s")}</div>` : ""}</div>`;
+  return `<div class="rrow${open ? " open" : ""}"><button type="button" class="rhead" data-open-scenario="${esc(item.key)}" aria-expanded="${open}">
+    <span class="caret" aria-hidden="true">${open ? "▾" : "▸"}</span><span class="rgist">${inline(heading)}</span><span>${changes}</span></button>${body}</div>`;
+}
+
+// a context as the designed domain and the spec hold it: an ink head with its numbers, then its course — 1 its model
+// as a profile by kind, 2 its features as cards, each rule a line above its criteria
+const KIND_LABEL = {"aggregate": "aggregate", "entity": "entities", "identity": "ids", "value object": "values", "domain event": "events",
+  "domain service": "services", "domain gateway": "gateways", "specification": "specifications", "factory": "factories",
+  "read model": "read models", "failure": "failures", "concept": "concepts", "other": "other"};
+const subdomainClass = sd => /core/i.test(sd) ? "core" : /generic/i.test(sd) ? "gen" : "sup";
+
+function specContext(c) {
+  const facts = modelFacts(c.model);
+  const features = c.features.map(f => {
+    const key = `feature:${c.context}:${f.feature}`, count = f.rules.reduce((n, r) => n + r.criteria.length, 0);
+    const pending = f.rules.reduce((n, r) => n + r.criteria.filter(x => x.changed_by.length).length, 0);
+    return `<details class="dm-group" data-fold="${esc(key)}"${foldOpen(key)}><summary><b>${esc(f.feature || "the context itself")}</b>
+      <span>${count}${pending ? ` · ${pending} changed` : ""}</span></summary>`
+      + f.rules.map(r => (r.rule ? `<div class="dm-rule">${inline(r.rule)}</div>` : "") + r.criteria.map(scenario).join("")).join("")
+      + (f.add ? `<div class="spec-act">${act(f.add, "s")}</div>` : "") + `</details>`;
+  }).join("");
+  const coming = c.coming.length ? `<div class="rgroup"><div class="lbl">coming — new criteria of open stories</div>${c.coming.map(s =>
+    `<p class="said"><span class="pend p-adds">${esc(s.status)}</span> ${story(s.story)} — ${s.keys.map(k => `<code>${esc(k.key)}</code>`).join(", ")}</p>`).join("")}</div>` : "";
+  return `<div class="dm"><div class="dm-track">
+    <div class="dm-node"><span class="n">1</span>Domain model<span class="hint">from its glossary</span></div>
+    ${facts ? `<dl class="dm-facts">${facts}</dl>` : `<p class="hint">The glossary names no term of a model.</p>`}
+    <div class="dm-node"><span class="n">2</span>Features<span class="hint">what holds, by rule</span></div>
+    ${features || `<p class="hint">No criterion holds yet.</p>`}${coming}
+    ${c.add ? `<details class="fold" data-fold="addfeature:${esc(c.context)}"${foldOpen("addfeature:" + c.context)}><summary>add a feature</summary><div class="spec-act">${act(c.add, "s")}</div></details>` : ""}
+  </div></div>`;
+}
+
+// how a context stands over the whole of it: tests gone or missing, criteria no delivered story brought
+function healthCell(h) {
+  if (!h) return "";
+  const bad = [h.orphaned ? `<span class="pend p-gone">${h.orphaned} test gone</span>` : "", h.untested ? `<span class="pend p-gone">${h.untested} no test</span>` : ""].filter(Boolean);
+  return (bad.length ? bad.join(" ") : `<span class="hint">all tested</span>`) + (h.undelivered ? ` <span class="hint" title="adopted, delivered by hand without a story, or written before the factory">· ${h.undelivered} not from a story</span>` : "");
+}
+
+// a model as its kinds, each a row of chips; a shared term in the kernel's colour, saying who uses it
+const modelFacts = model => model.map(g => `<dt>${esc(KIND_LABEL[g.kind] || g.kind)}</dt><dd>${g.terms.map(t =>
+  `<span class="chip${t.shared ? " shared" : ["concept", "other"].includes(g.kind) ? " minor" : ""}" title="${esc([t.meaning, t.shared ? "shared kernel" : "", (t.used_by || []).length ? "used by " + t.used_by.join(", ") : ""].filter(Boolean).join(" — "))}">${esc(t.name)}</span>`).join("")}</dd>`).join("");
+function kernelBlock(k) {
+  if (!k) return "";
+  return `<div class="dm-kernel"><div class="top"><b>Shared kernel</b><span class="hint">what every context shares, the same in each — no context of its own</span></div>
+    <dl class="dm-facts">${modelFacts(k.model)}</dl></div>`;
+}
+
+function domainCard() {
+  if (!S.spec) { loadSpec(); return card("Domain", "", `<p class="empty">Reading the contexts…</p>`); }
+  const open = S.openContexts || (S.openContexts = new Set());
+  const rows = (S.spec.contexts || []).map(c => {
+    const isOpen = open.has(c.context), pending = c.features.reduce((n, f) => n + f.rules.reduce((m, r) => m + r.criteria.filter(x => x.changed_by.length).length, 0), 0) + c.coming.length;
+    return `<tr class="epic-row ctx-row${isOpen ? " open" : ""}" data-context="${esc(c.context)}" tabindex="0" aria-expanded="${isOpen}">
+      <td><span class="caret" aria-hidden="true">${isOpen ? "▾" : "▸"}</span> <span class="title">${esc(c.context)}</span>${c.subdomain ? `<div class="sd"><span class="pill ${subdomainClass(c.subdomain)}">${esc(c.subdomain)}</span></div>` : ""}</td>
+      <td class="hide-s">${esc(c.purpose)}</td><td class="num">${c.features.length}</td><td class="num">${c.criteria}</td>
+      <td class="num">${pending ? `<span class="pend p-changes">${pending}</span>` : "—"}</td>
+      <td class="hide-s">${healthCell(c.health)}</td></tr>`
+      + (isOpen ? `<tr class="epic-body"><td colspan="6">${specContext(c)}</td></tr>` : "");
+  }).join("");
+  return card("Domain", "the contexts as designed, and what holds in each — the model from its glossary, the features as the gate delivered them",
+    kernelBlock(S.spec.shared_kernel) + (rows ? `<table class="epics"><tr><th>context</th><th class="hide-s">what it is for</th><th class="num">features</th><th class="num">criteria</th><th class="num">open changes</th><th class="hide-s">health</th></tr>${rows}</table>`
+      : `<p class="empty">No spec yet — what holds is written by the stories the gate delivers.</p>`));
+}
+document.addEventListener("click", event => {
+  const row = event.target.closest && event.target.closest("tr.ctx-row");
+  if (row && !event.target.closest("button, a")) {
+    event.stopPropagation();
+    const open = S.openContexts || (S.openContexts = new Set()), id = row.dataset.context;
+    if (open.has(id)) open.delete(id); else open.add(id);
+    return render();
+  }
+  const sc = event.target.closest && event.target.closest("[data-open-scenario]");
+  if (sc) {
+    event.stopPropagation();
+    const open = S.openScenarios || (S.openScenarios = new Set()), id = sc.dataset.openScenario;
+    if (open.has(id)) open.delete(id); else open.add(id);
+    render();
+  }
+}, true);
 
 // on every tab: the factory that ended on its own, and why
 function endedLine(st) {
@@ -555,26 +1041,61 @@ function card(title, sub, body) {
 }
 
 // --- 0 describe ----------------------------------------------------------------------------------------------------
+// a part of the description opens in place and reads as written, section by section
+async function loadPart(name) {
+  try { S.partText[name] = await api(`/api/view/part?id=${encodeURIComponent(name)}`); }
+  catch (e) { S.partText[name] = {error: e.message}; }
+  render();
+}
+function partBody(name) {
+  const v = S.partText[name];
+  if (!v || v.loading) {          // one read at a time, whatever redraws meanwhile
+    if (!v) { S.partText[name] = {loading: true}; loadPart(name); }
+    return `<p class="empty">Reading ${esc(name)}…</p>`;
+  }
+  if (v.error) return `<p class="m-stopped">${esc(v.error)}</p>`;
+  return v.sections.length ? v.sections.map(sec => `<h3>${esc(sec.heading)}</h3><div class="prose">${prose(sec.text) || `<p class="empty">empty</p>`}</div>`).join("")
+    : `<p class="empty">${esc(v.path)} is missing.</p>`;
+}
+
 function describe(st) {
-  const parts = (st.description || []).map(p => `<tr><td>${mark(p.mark)}</td>
-    <td><div class="title">${esc(p.part)}</div><div class="id">${esc(p.path)}</div></td>
+  const open = S.openParts || (S.openParts = new Set());
+  S.partText = S.partText || {};
+  const parts = (st.description || []).map(p => {
+    const isOpen = open.has(p.part);
+    return `<tr class="epic-row part-row${isOpen ? " open" : ""}" data-part="${esc(p.part)}" tabindex="0" aria-expanded="${isOpen}"><td>${mark(p.mark)}</td>
+    <td><span class="caret" aria-hidden="true">${isOpen ? "▾" : "▸"}</span> <span class="title">${esc(p.part)}</span><div class="id">${esc(p.path)}</div></td>
     <td>${p.present ? esc((p.sections || []).join(" · ")) : `<span class="empty">missing</span>`}
     ${(p.missing || []).length ? `<div class="rec">missing: ${esc(p.missing.join(", "))}</div>` : ""}
-    ${(p.empty || []).length ? `<div class="rec">empty: ${esc(p.empty.join(", "))}</div>` : ""}</td></tr>`).join("");
-  return card("The parts", "", `<table><tr><th><span class="sr">state</span></th><th>part</th><th>sections</th></tr>${parts}</table>`)
+    ${(p.empty || []).length ? `<div class="rec">empty: ${esc(p.empty.join(", "))}</div>` : ""}</td></tr>`
+      + (isOpen ? `<tr class="epic-body"><td></td><td colspan="2">${partBody(p.part)}</td></tr>` : "");
+  }).join("");
+  return card("The parts", "written by you, through the description — what is built, how, and in which domain; open one to read it", `<table class="epics"><tr><th><span class="sr">state</span></th><th>part</th><th>sections</th></tr>${parts}</table>`)
+    + domainCard()
     + card("Change the description", "", `<p class="about">In your words — <code>&lt;part&gt;: &lt;change&gt;</code> where it is one part. Where it needs a decision of yours, it asks under Decide.</p>${act((st.entries || {}).describe)}`);
 }
+document.addEventListener("click", event => {
+  const row = event.target.closest && event.target.closest("tr.part-row");
+  if (!row || event.target.closest("button, a")) return;
+  const open = S.openParts || (S.openParts = new Set()), name = row.dataset.part;
+  if (open.has(name)) open.delete(name); else { open.add(name); delete (S.partText || {})[name]; }
+  render();
+});
 
 // --- 1 discover ----------------------------------------------------------------------------------------------------
 function discover(st) {
   const topics = (S.discover || {}).topics || [];
   const cards = topics.map(t => {
-    const proposals = t.proposals.map(p => `<tr><td><div class="title">${esc(p.goal || p.intent || p.id)}</div><div class="id">${esc(p.id)}</div></td>
-      <td>${esc(p.metric)}</td><td>${p.epic ? `<span class="hint">epic ${esc(p.epic)}</span>` : `<div class="acts">${acts(p.actions)}</div>`}</td></tr>`).join("");
+    const proposals = t.proposals.map(p => `<div class="proposal"><b>${esc(p.goal || p.intent || p.id)}</b>
+      ${p.goal && p.intent ? `<span>${esc(p.intent)}</span>` : ""}
+      <div class="ev">${p.metric ? `<span class="event">${esc(p.metric)}</span>` : ""}${p.domain_contact ? `<span>asks ${esc(p.domain_contact)}</span>` : ""}<span class="id">${esc(p.id)}</span></div>
+      ${p.epic ? `<div><span class="tone ok">epic ${esc(p.epic)}</span></div>` : `<div class="acts">${acts(p.actions)}</div>`}</div>`).join("");
     const changes = t.description_changes.map(c => `<tr><td><div class="title">${esc(c.target)}</div></td>
       <td>${esc(c.change)}<div class="id">${esc(c.why)}</div></td><td class="act"><div class="acts">${acts(c.actions)}</div></td></tr>`).join("");
-    return card(esc(t.title), esc(t.report),
-      (proposals ? `<table><tr><th>proposal</th><th>outcome event</th><th><span class="sr">actions</span></th></tr>${proposals}</table>` : `<p class="empty">No proposed work.</p>`)
+    const problem = `<div class="problem"><span class="hint">topic · ${esc(t.topic)}</span><b>${esc(t.title)}</b>
+      <p class="hint">${t.proposals.length} proposed · ${t.description_changes.length} description change${t.description_changes.length === 1 ? "" : "s"}</p>
+      <p class="id">${esc(t.report)}</p></div>`;
+    return card("", "", `<div class="report">${problem}<div>${proposals || `<p class="empty">No proposed work.</p>`}</div></div>`
       + (changes ? `<h3>Changes to the description</h3><table>${changes}</table>` : ""));
   }).join("");
   return card("A new discovery", "", act((st.entries || {}).discover))
@@ -588,19 +1109,78 @@ function storyRow(r) {
     <td class="num hide-s">${esc(r.tokens_text)}</td><td class="act"><div class="acts">${acts(r.actions)}</div></td></tr>`;
 }
 
+// where a story stands, as a lane of its epic: its state and its mark, as the factory gives them
+const LANES = ["draft", "approved", "running", "delivered"];
+const laneOf = r => r.state === "draft" ? "draft" : ["delivered", "superseded"].includes(r.state) ? "delivered"
+  : ["running", "stopped", "look", "question"].includes(r.mark) || r.state === "can continue" ? "running" : "approved";
+const heat = r => r.mark === "stopped" ? "bad" : ["running", "look", "question"].includes(r.mark) ? "hot" : r.state === "ready" ? "ok" : "";
+function storyCard(r) {
+  const stage = r.stage && r.stage !== "—" ? ` · ${r.stage}` : "";
+  return `<div class="scard ${heat(r)}">${story(r.story, r.title)}<div class="id">${esc(r.state)}${esc(stage)}${r.delivered_text ? ` · ${esc(r.delivered_text)}` : ""}</div>
+    ${(r.actions || []).length ? `<div class="acts">${acts(r.actions)}</div>` : ""}</div>`;
+}
+function lane(name, rows, order) {
+  if (name === "delivered") rows = rows.slice().sort((a, b) => order.indexOf(a.story) - order.indexOf(b.story));
+  const shown = name === "delivered" ? rows.slice(0, 3) : rows, rest = rows.slice(shown.length);
+  return `<div class="lane"><h4>${name} <span>${rows.length}</span></h4>${shown.map(storyCard).join("")}
+    ${rest.length ? `<details><summary>${rest.length} more</summary>${rest.map(storyCard).join("")}</details>` : ""}</div>`;
+}
+function epicTone(e) {
+  const n = m => e.rows.filter(r => r.mark === m).length, ready = e.rows.filter(r => r.state === "ready").length;
+  if (n("stopped")) return `<span class="tone bad">${n("stopped")} stopped</span>`;
+  if (n("look") + n("question")) return `<span class="tone wait">${n("look") + n("question")} to look at</span>`;
+  if (n("running")) return `<span class="tone wait">running</span>`;
+  if (e.total && e.delivered === e.total) return `<span class="tone ok">delivered</span>`;
+  return ready ? `<span class="tone mute">${ready} ready</span>` : "";
+}
+
 function backlog(st) {
-  const epics = (st.epics || []).map(e => card(esc(e.title || e.epic),
-    `${esc(e.epic)} · ${e.delivered}/${e.total} delivered${e.metric ? " · " + esc(e.metric) : ""}`,
-    (e.goal ? `<p class="about">${esc(e.goal)}</p>` : "")
-    + ((st.journeys || []).filter(j => j.epic === e.epic).map(j => `<p class="rec">${esc(j.text)}</p>`).join(""))
-    + (e.rows.length ? `<table><tr><th><span class="sr">mark</span></th><th>story</th><th>state</th><th class="hide-s">stage</th><th class="num hide-s">tokens</th><th><span class="sr">actions</span></th></tr>${e.rows.map(storyRow).join("")}</table>` : `<p class="empty">No story yet.</p>`)
-    + `<div class="acts">${acts(e.actions)}</div>`)).join("");
+  // the epics as one list, as the cockpit shows them; an epic opens its stories in place, and stays open on a redraw
+  const open = S.openEpics || (S.openEpics = new Set()), filter = S.backlogFilter || "all", order = st.delivered_order || [];
+  const keep = r => filter === "all" || (filter === "drafts" ? r.state === "draft" : !["delivered", "superseded"].includes(r.state));
+  const shown = (st.epics || []).map(e => Object.assign({}, e, {rows: e.rows.filter(keep)}))
+    .filter(e => filter === "all" || e.rows.length);
+  const counts = {all: (st.epics || []).length,
+    open: (st.epics || []).filter(e => e.rows.some(r => !["delivered", "superseded"].includes(r.state))).length,
+    drafts: (st.epics || []).filter(e => e.rows.some(r => r.state === "draft")).length};
+  const filters = `<div class="pick"><span class="seg">${["all", "open", "drafts"].map(f => `<button aria-pressed="${f === filter}" data-filter="${f}">${f}<span class="n">${counts[f]}</span></button>`).join("")}</span></div>`;
+  const epics = shown.map(e => {
+    const isOpen = open.has(e.epic) !== (filter !== "all"), full = (st.epics || []).find(x => x.epic === e.epic) || e;
+    const head = `<div class="ehead" data-epic="${esc(e.epic)}" tabindex="0" role="button" aria-expanded="${isOpen}">
+      <div class="name"><span class="caret" aria-hidden="true">${isOpen ? "▾" : "▸"}</span><b>${esc(e.title || e.epic)}</b><span class="id">${esc(e.epic)}</span>${e.metric ? `<span class="event">${esc(e.metric)}</span>` : ""}</div>
+      <div class="meta">${epicTone(full)}<span>${full.delivered}/${full.total}</span></div>
+      <div class="strip" title="${full.delivered} of ${full.total} delivered">${full.rows.map(r => `<i class="l-${r.mark === "stopped" ? "stopped" : laneOf(r)}"></i>`).join("")}</div></div>`;
+    const body = !isOpen ? "" : `<div class="ebody">`
+      + (e.goal ? `<p class="about">${esc(e.goal)}</p>` : "")
+      + ((st.journeys || []).filter(j => j.epic === e.epic).map(j => `<p class="rec">${esc(j.text)}</p>`).join(""))
+      + (e.rows.length ? `<div class="lanes">${LANES.map(name => lane(name, e.rows.filter(r => laneOf(r) === name), order)).join("")}</div>` : `<p class="empty">No story yet.</p>`)
+      + `<div class="acts">${acts(e.actions)}</div></div>`;
+    return `<div class="erow">${head}${body}</div>`;
+  }).join("");
   const findings = (st.findings || []).map(f => `<tr><td><span class="state">${esc(f.severity)}</span></td>
     <td>${esc(f.plain || f.defect)}<div class="id">${esc(f.row)} · ${esc(f.where)}</div></td><td class="act"><div class="acts">${act(f.action)}</div></td></tr>`).join("");
   return nextLine(st) + card("A wish", "your words become a story, kept as a draft until you release it", act((st.entries || {}).wish))
-    + (epics || card("", "", `<p class="empty">The backlog is empty.</p>`))
-    + (findings ? card("Findings", "what the judge kept open", `<table>${findings}</table>`) : "");
+    + (epics || filter !== "all" ? card("Epics", filter === "all" ? "newest first — open one to see its stories by where they stand" : filter === "drafts" ? "the drafts, waiting for your release" : "what is not delivered yet",
+        filters + (epics ? `<div class="erows">${epics}</div>` : `<p class="empty">Nothing here.</p>`))
+      : card("", "", `<p class="empty">The backlog is empty.</p>`))
+    + (findings ? `<details class="card more" data-fold="findings"${foldOpen("findings")}><summary><h2>Findings <span class="sub">${(st.findings || []).length} the judge kept open — each to the backlog or done</span></h2></summary><table>${findings}</table></details>` : "");
 }
+document.addEventListener("click", event => {
+  const row = event.target.closest && event.target.closest(".ehead");
+  if (!row || event.target.closest("button, a")) return;
+  const open = S.openEpics || (S.openEpics = new Set()), id = row.dataset.epic;
+  if (open.has(id)) open.delete(id); else open.add(id);
+  render();
+});
+document.addEventListener("click", event => {
+  const f = event.target.closest && event.target.closest("[data-filter]");
+  if (!f) return;
+  S.backlogFilter = f.dataset.filter; S.openEpics = new Set(); render();
+});
+document.addEventListener("keydown", event => {
+  const row = event.target.closest && event.target.closest("tr.epic-row, .ehead");
+  if (row && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); row.click(); }
+});
 
 // --- 3 run ---------------------------------------------------------------------------------------------------------
 function run(st) {
@@ -610,23 +1190,34 @@ function run(st) {
       ${w.alive && !w.stopping ? `<div class="acts"><button class="btn" data-call="down">down — after the running stage</button>
       <button class="btn danger" data-call="down" data-now="1">down now</button></div>` : ""}`
     : `<p class="about">The factory is down. Requests wait in the queue until it is up.</p><div class="acts"><button class="btn primary" data-call="up">up</button></div>`;
-  const ops = r => (r.operations || []).map(op => `<button class="btn${op.name === "drop" ? " danger" : ""}" data-call="${esc(op.name)}"
+  const ops = r => (r.operations || []).map(op => `<button class="btn small${op.name === "drop" ? " danger" : ""}" data-call="${esc(op.name)}"
     data-kind="request" data-id="${esc(r.id)}">${esc(op.label)}</button>`).join("");
-  const requests = reqs.map(r => `<tr><td><span class="state st-${esc(r.state)}">${esc(r.state)}</span></td>
-    <td><span class="title">${esc(r.kind)}</span> ${esc(r.target)}<div class="id">${esc(r.id)} · ${esc(r.by)}</div>
+  const tone = {queued: "mute", running: "wait", waiting: "wait", failed: "bad"};
+  const tickets = reqs.map(r => `<div class="ticket"><div class="what"><b>${esc(r.kind)}</b><span>${esc(r.target)}</span><span class="tone ${tone[r.state] || "mute"}">${esc(r.state)}</span></div>
+    <div class="id">${esc(r.id)} · ${esc(r.by)}</div>
     ${r.error ? `<div class="m-stopped">${esc(r.error)}</div>` : ""}
-    ${r.record ? `<div class="rec">asks: <code>${esc(r.record)}</code> — answer it under Decide</div>` : ""}</td>
-    <td class="act"><div class="acts">${ops(r)}</div></td></tr>`).join("");
-  const running = (st.running || []).map(r => `<tr><td>${mark(r.interrupted ? "stopped" : "running")}</td>
-    <td class="nowrap">${story(r.story)}</td><td class="nowrap">${esc(r.stage)}${r.part ? " · " + esc(r.part) : ""}</td>
-    <td class="hide-s nowrap">${esc(r.ago || "")}</td><td class="hide-s id">${esc(r.activity || "")}</td>
-    <td class="act"><div class="acts"><button class="btn" data-call="follow" data-kind="story" data-id="${esc(r.story)}">follow</button></div></td></tr>`).join("");
+    ${r.record ? `<div class="rec">asks: <code>${esc(r.record)}</code> — answer it under Decide</div>` : ""}
+    ${ops(r) ? `<div class="acts">${ops(r)}</div>` : ""}</div>`).join("");
+  const titles = Object.fromEntries((st.rows || []).map(r => [r.story, r.title]));
+  // a story in flight as its course: running, or stopped where it goes on from, with why and what goes on
+  const course = (id, tone, label, extra, acts) => `<div class="live"><div class="top"><div>${story(id, titles[id])}<div class="id">${esc(id)}</div></div>
+      <div class="right"><span class="tone ${tone}">${esc(label)}</span>${acts}</div></div>
+      ${extra.course && extra.course.length ? `<div class="stepper">${extra.course.map(c => `<div class="st ${c.state}"><i></i>${esc(c.stage)}</div>`).join("")}</div>` : ""}
+      ${extra.doing ? `<div class="doing">${esc(extra.doing)}</div>` : ""}</div>`;
+  const follows = id => `<button class="btn small" data-call="follow" data-kind="story" data-id="${esc(id)}">follow</button>`;
+  const live = (st.running || []).map(r => course(r.story, r.interrupted ? "bad" : "wait",
+      r.interrupted ? "interrupted" : `${r.part || r.stage}${r.round > 1 ? ` · round ${r.round}` : ""}`,
+      {course: r.course, doing: r.activity}, `<span class="hint">${esc(r.ago || "")}</span>${follows(r.story)}`)).join("")
+    + (st.waiting || []).filter(w => w.mark === "stopped" && !(st.running || []).some(r => r.story === w.story))
+      .map(w => course(w.story, "bad", "stopped", {course: w.course, doing: (w.action && w.action.text) || w.what},
+        `${act(w.action)}${follows(w.story)}`)).join("");
   const ready = (st.rows || []).filter(r => st.queue && st.queue.ready.includes(r.story)).map(storyRow).join("");
-  return nextLine(st) + card("The factory", "", factory)
-    + card("Requests", "worked before the next story, oldest first", requests ? `<table>${requests}</table>` : `<p class="empty">No request waits.</p>`)
-    + card("Running", "", (running ? `<table>${running}</table>` : `<p class="empty">No stage runs.</p>`)
-      + (ready ? `<h3>Ready</h3><table>${ready}</table>` : ""))
-    + card("Output", `<span id="follow-title"></span>`, `<div class="acts" id="follow-acts"></div><pre class="out" id="follow-out"></pre>`);
+  return nextLine(st)
+    + card("Running", "a story's course through its stages — running, or stopped where it goes on", live || `<p class="empty">No stage runs.</p>`)
+    + card("Output", `<span id="follow-title"></span>`, `<div class="acts" id="follow-acts"></div><pre class="out" id="follow-out"></pre>`)
+    + card("Requests", "worked before the next story, oldest first", tickets ? `<div class="queue">${tickets}</div>` : `<p class="empty">No request waits.</p>`)
+    + (ready ? card("Next in line", "ready, in the order the factory takes them", `<table>${ready}</table>`) : "")
+    + card("The factory", "", factory);
 }
 
 function follow(kind, id) {
@@ -643,7 +1234,10 @@ function follow(kind, id) {
     source.addEventListener("end", () => { S.followLines.push("— the output ended —"); paintFollow(); source.close(); });
     S.followSource = source;
   }
+  // the output is a card of the run page: the story's drawer would hide it, so it closes, and the card comes into view
+  if (S.drawer) CALLS.close();
   if (S.tab !== "run") show("run"); else paintFollow();
+  if (kind) requestAnimationFrame(() => { const out = $("follow-out"); if (out) out.closest(".card").scrollIntoView({behavior: "smooth", block: "start"}); });
 }
 
 function paintFollow() {
@@ -658,16 +1252,22 @@ function paintFollow() {
 
 // --- 4 decide ------------------------------------------------------------------------------------------------------
 function recordCard(r) {
-  const offered = (r.actions || []).filter(a => !a.waits_on);
-  const options = offered.filter(a => a.request.open !== "words" && r.kind !== "acceptance");
+  const offered = (r.actions || []).filter(a => !a.waits_on), accept = r.kind === "acceptance";
+  const options = offered.filter(a => a.request.open !== "words" && !accept);
   const words = offered.filter(a => a.request.open === "words");
-  const body = `<p class="hint">${esc(r.path)}${r.story ? ` · ${story(r.story, "the story")}` : ""}</p>`
-    + ((r.sections || []).length ? `<details class="more" data-more="${esc(r.id)}"${S.folded[r.id] ? "" : " open"}><summary>${r.kind === "acceptance" ? "what to look at" : "the question in full"}</summary>${r.sections.map(one => section(one)).join("")}</details>` : "")
-    + (r.kind === "acceptance"
+  const head = `<div class="q"><span class="hint">${accept ? "acceptance" : "question"} · ${esc(r.id)}${r.story ? ` · ${esc(r.stage)}` : ""}</span><b>${inline(r.text)}</b></div>`;
+  // what to look at is the acceptance itself and stands open; a question's full text folds under its answers
+  const isOpen = r.id in S.folded ? !S.folded[r.id] : accept;
+  const full = (r.sections || []).length ? `<details class="more" data-more="${esc(r.id)}"${isOpen ? " open" : ""}><summary>${accept ? "what to look at" : "the question in full"}</summary>${r.sections.map(one => section(one)).join("")}</details>` : "";
+  const body = (accept ? full : "")
+    + (accept
       ? `<div class="acts">${acts(offered.filter(a => a.request.open !== "words"))}</div>`
-      : options.map(a => `<div class="option">${act(a)}<span>${inline(a.text)}${a.note ? ` <span class="hint">— ${esc(a.note)}</span>` : ""}</span></div>`).join(""))
-    + words.map(a => `<h3>${r.kind === "acceptance" ? "or correct it" : options.length ? "or in your words" : "your answer"}</h3>${act(a)}`).join("");
-  return card(`${mark(r.kind === "acceptance" ? "look" : "question")} ${esc(r.text)}`, esc(`${r.story || "project"} · ${r.stage}`), body);
+      : options.length ? `<div class="opts">${options.map(a => `<div class="opt${a.primary ? " advised" : ""}">${a.primary ? `<span class="rec-word">recommended</span>` : ""}
+          <span>${inline(a.text)}${a.note ? ` <span class="hint">— ${esc(a.note)}</span>` : ""}</span><div>${act(a)}</div></div>`).join("")}</div>` : "")
+    + words.map(a => `<h3>${accept ? "or correct it" : options.length ? "or in your words" : "your answer"}</h3>${act(a)}`).join("")
+    + (accept ? "" : full)
+    + `<p class="id" style="margin-top:10px">${r.story ? `${story(r.story, r.story)} · ` : ""}${esc(r.path)}</p>`;
+  return `<section class="card decision${accept ? " accept" : ""}">${head}<div class="dbody">${body}</div></section>`;
 }
 
 function decide(st) {
@@ -683,13 +1283,19 @@ function decide(st) {
 
 // --- 5 delivered ---------------------------------------------------------------------------------------------------
 function delivered(st) {
-  const rows = Object.fromEntries((st.rows || []).map(r => [r.story, r]));
-  const list = (st.delivered_order || []).map(id => rows[id]).filter(Boolean).map(r => `<tr><td>${mark("done")}</td>
-    <td>${story(r.story, r.title)}<div class="id">${esc(r.epic)} · ${esc(r.story)}</div></td>
-    <td class="hide-s num">${esc(r.delivered_text)}</td><td class="num hide-s">${esc(r.seconds_text)}</td>
-    <td class="num">${esc(r.tokens_text)}</td><td class="num hide-s">${esc(r.cost_text)}</td></tr>`).join("");
-  return card(`${st.delivered} of ${st.total}`, [st.tokens_text && `${st.tokens_text} tokens`, st.seconds_text, st.cost_text].filter(Boolean).map(esc).join(" · "),
-    list ? `<table><tr><th><span class="sr">mark</span></th><th>story</th><th class="hide-s num">delivered (UTC)</th><th class="num hide-s">worked</th><th class="num">tokens</th><th class="num hide-s">cost</th></tr>${list}</table>` : `<p class="empty">Nothing delivered yet.</p>`);
+  const rows = Object.fromEntries((st.rows || []).map(r => [r.story, r])), events = Object.fromEntries((st.epics || []).map(e => [e.epic, e.metric]));
+  const tiles = [[`${st.delivered}`, `of ${st.total} stories delivered`, "lead"], [st.seconds_text, "worked"], [st.tokens_text, "tokens"], [st.cost_text, "cost"]]
+    .filter(([n]) => n).map(([n, label, cls]) => `<div class="tile ${cls || ""}"><b>${esc(n)}</b><span>${esc(label)}</span></div>`).join("");
+  const days = [];
+  for (const r of (st.delivered_order || []).map(id => rows[id]).filter(Boolean)) {
+    const day = (r.delivered_text || "").slice(0, 10) || "undated";
+    if (!days.length || days[days.length - 1].day !== day) days.push({day, rows: []});
+    days[days.length - 1].rows.push(r);
+  }
+  const line = r => `<div class="dl"><span>${story(r.story, r.title)}<span class="id"> ${esc(r.epic)} · ${esc((r.delivered_text || "").slice(11))}</span></span>
+    <span class="right">${events[r.epic] ? `<span class="event">${esc(events[r.epic])}</span>` : ""}<span class="hint">${esc([r.seconds_text, r.cost_text].filter(Boolean).join(" · "))}</span></span></div>`;
+  return card("Delivered", "what is delivered, by day, with the outcome event its epic is measured by",
+    `<div class="tiles">${tiles}</div>` + (days.length ? `<div class="days">${days.map(d => `<div class="day"><h4>${esc(d.day)}</h4>${d.rows.map(line).join("")}</div>`).join("")}</div>` : `<p class="empty">Nothing delivered yet.</p>`));
 }
 
 // --- one story -----------------------------------------------------------------------------------------------------

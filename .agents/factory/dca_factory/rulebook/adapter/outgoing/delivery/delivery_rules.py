@@ -36,7 +36,7 @@ def translated(published: typing.Mapping[str, typing.Any]) -> Rule:
               for o in published["outcomes"]),
         Words(published["why"]), Words(""), tuple(Words(r) for r in published["reports"]),
         Source(published["source"]), RuleState.RETIRED if published["retired"] else RuleState.ACTIVE,
-        Source(published.get("bound", "")))
+        Source(published.get("bound", "")), Words(published.get("title", "")))
 
 
 class DeliveryRules:
@@ -68,5 +68,6 @@ class DeliveryFindings:
                      for stage, items in found.items() for item in items)
 
     def refused(self, story: str) -> typing.Tuple[Refused, ...]:
-        return tuple(Refused(Words(check), Count(times))
-                     for check, times in story_gate_findings(self._cwd, story)["refused"].items())
+        found = story_gate_findings(self._cwd, story)
+        return tuple(Refused(Words(check), Count(times), StageName(stage))
+                     for stage, checks in found.get("refused_at", {}).items() for check, times in checks.items())

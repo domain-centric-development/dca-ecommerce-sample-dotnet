@@ -58,6 +58,10 @@ class StatusFacts(OutputPort, typing.Protocol):
         """The shared processes that carry several stages, with the stages each carries."""
         ...
 
+    def stage_course(self, kind: str) -> typing.Tuple[str, ...]:
+        """The stages a story of <kind> passes, in their order — the integration after the run order too."""
+        ...
+
     def window_part(self, story_id: str, window: str) -> str:
         """The stage a running shared window is in — '' before it loaded one."""
         ...

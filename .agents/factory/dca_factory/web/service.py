@@ -140,6 +140,8 @@ VIEWS = {
     "requests": lambda q: ["--requests", "--format", "json"],
     "help": lambda q: ["--help-view", "--format", "json"],
     "spec-delta": lambda q: ["--spec-delta", q["id"], "--format", "json"],
+    "spec": lambda q: ["--spec", "--format", "json", "--health"],
+    "part": lambda q: ["--description-part", q["id"], "--format", "json"],
     "rules": lambda q: ["--rules", "--format", "json"] + (["--story", q["id"]] if q.get("id") else []),
     "output": lambda q: ["--follow", "--once", "--format", "json", "--lines", "400"]
                         + (["--story", q["id"]] if q.get("id") else [])

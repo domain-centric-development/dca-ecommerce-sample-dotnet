@@ -1,7 +1,11 @@
 ---
 id: RUN-ROUTE-5
+title: A changed test is recorded red again before building
 part: decision
-fail: the run starts at the test stage instead — no round
+stages:
+- build
+- tidy
+fail: the test changed since its red proof — the run starts at the test stage instead, no round is spent
 goes.fail: test
 ---
 
