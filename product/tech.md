@@ -13,6 +13,21 @@ Server-rendered Razor views, translated one to one from the Java sample's templa
 stylesheet and no client framework. The REST API and the MCP server are separate surfaces over the
 same use cases.
 
+Browsers: a broad public, older phones and browsers included.
+
+Styling: BEM names with cascade layers — `@scope` drops a whole component in a browser without it, and a shop
+serves older ones.
+
+Gallery: none yet — Storybook's server renderer when the shop gets one.
+
+Measured against the frontend craft that follows these three lines, the shop keeps: BEM blocks with modifiers
+in one stylesheet taken over from the Java sample; semantic tokens as custom properties on `:root` with brand
+themes chosen by `data-theme`; `data-test` attributes as the browser tests' only selectors;
+`prefers-reduced-motion`. It does not keep yet: cascade layers, container queries and named widths (the
+stylesheet has several viewport breakpoints), three token tiers (hex values also stand outside the token
+block), a light/dark scheme, and structural checks over the stylesheet. Closing a gap is a story through the
+factory, not a side change.
+
 ## Persistence
 
 In-memory only, behind the same ports as in the Java sample. No database.
