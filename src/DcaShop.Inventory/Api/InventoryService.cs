@@ -86,7 +86,11 @@ public sealed class InventoryService
         var reservation = await _reserveStock.ExecuteAsync(
             new ReserveStockCommand(lines.Select(line => new ReserveStockCommand.Line(line.ProductId.Value, line.Quantity)).ToList()),
             cancellationToken).ConfigureAwait(false);
-        return reservation.Shortages.Select(shortage => new StockShortage(new ProductId(shortage.ProductId), shortage.Unreserved)).ToList();
+        return reservation.Match<IReadOnlyList<StockShortage>>(
+            reserved => [],
+            insufficient => insufficient.Shortages
+                .Select(shortage => new StockShortage(new ProductId(shortage.ProductId), shortage.Unreserved))
+                .ToList());
     }
 
     /// <summary>Gives back what <see cref="ReserveStockAsync"/> reserved for an order that was then not placed.</summary>

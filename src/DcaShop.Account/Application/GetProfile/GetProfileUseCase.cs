@@ -20,10 +20,10 @@ public sealed class GetProfileUseCase : IGetProfileInputPort
 
         if (account is null || !account.Status.CanLogin())
         {
-            return GetProfileResult.NotFound();
+            return new GetProfileResult.AccountNotAccessible();
         }
 
-        return new GetProfileResult(new GetProfileResult.ProfileView(
+        return new GetProfileResult.Found(new GetProfileResult.ProfileView(
             account.Email.Value,
             account.Owner.FirstName,
             account.Owner.LastName,

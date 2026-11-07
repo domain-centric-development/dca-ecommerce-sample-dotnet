@@ -68,7 +68,7 @@ public sealed class ProductCreationResourceTest : IClassFixture<WebApplicationFa
         public Task<CreateProductResult> ExecuteAsync(CreateProductCommand command, CancellationToken cancellationToken = default)
         {
             Commands.Add(command);
-            return Task.FromResult(new CreateProductResult(Guid.NewGuid(), command.Sku, command.Name, Money.Euro(command.PriceAmount)));
+            return Task.FromResult<CreateProductResult>(new CreateProductResult.Created(Guid.NewGuid(), command.Sku, command.Name, Money.Euro(command.PriceAmount)));
         }
     }
 }

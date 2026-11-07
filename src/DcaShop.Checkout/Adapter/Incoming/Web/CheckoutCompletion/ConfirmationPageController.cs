@@ -43,7 +43,7 @@ public sealed class ConfirmationPageController : Controller
     public Task<IActionResult> Confirm([FromForm] string? placedFrom, [FromForm] string? fingerprint, CancellationToken cancellationToken) =>
         _page.PlacingTheOrderAsync(
             placedFrom == FromTheReview,
-            id => _confirm.ExecuteAsync(new ConfirmCheckoutCommand(id, _page.CurrentCustomerId(), fingerprint ?? string.Empty), cancellationToken),
+            async id => RefusalOf(await _confirm.ExecuteAsync(new ConfirmCheckoutCommand(id, _page.CurrentCustomerId(), fingerprint ?? string.Empty), cancellationToken)),
             cancellationToken);
 
     [HttpGet("confirmation")]
@@ -57,4 +57,18 @@ public sealed class ConfirmationPageController : Controller
 
         return View("~/Views/Checkout/Confirmation.cshtml", new ConfirmationPageViewModel(session));
     }
+
+    /// <summary>The refusal of "Place Order", or none when the order was placed.</summary>
+    private static StepRefusal? RefusalOf(ConfirmCheckoutResult result) => result.Match<StepRefusal?>(
+        confirmed => null,
+        notFound => StepRefusal.SessionNotFound,
+        notModifiable => StepRefusal.NotModifiable,
+        notCompleted => StepRefusal.StepNotCompleted,
+        outOfOrder => StepRefusal.StepOutOfOrder,
+        invalid => StepRefusal.Invalid(invalid.Validation),
+        repriced => StepRefusal.PriceChangedSinceReview(repriced.ProductName),
+        changed => StepRefusal.OrderChangedSinceReview,
+        providerNotFound => StepRefusal.PaymentProviderNotFound,
+        providerUnavailable => StepRefusal.PaymentProviderUnavailable,
+        refused => StepRefusal.PaymentRefused);
 }

@@ -1,4 +1,4 @@
-using DcaShop.Checkout.Application.Shared;
+using DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
 using DcaShop.Checkout.Domain.Model;
 
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -34,7 +34,7 @@ public sealed class PaymentReferenceTest : IClassFixture<WebApplicationFactory<P
 
         // And the payment provider authorizes payments
         // When the customer presses "Place Order"
-        await _checkouts.PlaceOrderAsync(checkout);
+        await _checkouts.PlacedOrderAsync(checkout);
 
         // Then the payment provider received one payment request for the checkout session's total
         var request = Assert.Single(_provider.PaymentRequests());
@@ -54,8 +54,8 @@ public sealed class PaymentReferenceTest : IClassFixture<WebApplicationFactory<P
         _provider.ResetLogEntries();
 
         // When both press "Place Order"
-        await _checkouts.PlaceOrderAsync(first);
-        await _checkouts.PlaceOrderAsync(second);
+        await _checkouts.PlacedOrderAsync(first);
+        await _checkouts.PlacedOrderAsync(second);
 
         // Then the payment provider received two payment requests with two different merchantReference values
         var references = _provider.PaymentRequests().Select(request => request.MerchantReference).ToList();
@@ -76,11 +76,11 @@ public sealed class PaymentReferenceTest : IClassFixture<WebApplicationFactory<P
         _provider.RefusesThePaymentOf(first);
 
         // When both press "Place Order"
-        var refused = await Record.ExceptionAsync(() => _checkouts.PlaceOrderAsync(first));
-        var placed = await _checkouts.PlaceOrderAsync(second);
+        var refused = await _checkouts.PlaceOrderAsync(first);
+        var placed = await _checkouts.PlacedOrderAsync(second);
 
         // Then the first customer stays at the review with the refusal
-        Assert.IsType<PaymentInitiationFailedException>(refused);
+        Assert.IsType<ConfirmCheckoutResult.PaymentInitiationFailed>(refused.Value);
         var firstSession = await _checkouts.SessionAsync(first);
         Assert.Equal((CheckoutStep.Review, CheckoutSessionStatus.Active), (firstSession.Step, firstSession.Status));
 
@@ -98,12 +98,12 @@ public sealed class PaymentReferenceTest : IClassFixture<WebApplicationFactory<P
 
         // And the customer's first "Place Order" was refused by the payment provider
         _provider.RefusesPayments();
-        await Assert.ThrowsAsync<PaymentInitiationFailedException>(() => _checkouts.PlaceOrderAsync(checkout));
+        Assert.IsType<ConfirmCheckoutResult.PaymentInitiationFailed>((await _checkouts.PlaceOrderAsync(checkout)).Value);
         _provider.ResetMappings();
         _provider.AuthorizesPayments();
 
         // When the customer presses "Place Order" again
-        await _checkouts.PlaceOrderAsync(checkout);
+        await _checkouts.PlacedOrderAsync(checkout);
 
         // Then the payment provider received two payment requests for that checkout session
         var references = _provider.PaymentRequests().Select(request => request.MerchantReference).ToList();

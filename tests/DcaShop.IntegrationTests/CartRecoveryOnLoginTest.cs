@@ -273,8 +273,8 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         using var scope = _factory.Services.CreateScope();
         var cart = await scope.ServiceProvider.GetRequiredService<IGetOrCreateActiveCartInputPort>()
             .ExecuteAsync(new GetOrCreateActiveCartCommand(guest));
-        await scope.ServiceProvider.GetRequiredService<IAddItemToCartInputPort>()
-            .ExecuteAsync(new AddItemToCartCommand(cart.CartId, guest, Guid.Parse(productPath["/products/".Length..]), 1));
+        Assert.IsType<AddItemToCartResult.Added>((await scope.ServiceProvider.GetRequiredService<IAddItemToCartInputPort>()
+            .ExecuteAsync(new AddItemToCartCommand(cart.CartId, guest, Guid.Parse(productPath["/products/".Length..]), 1))).Value);
         return guest;
     }
 
@@ -436,8 +436,9 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
         using var scope = _factory.Services.CreateScope();
         var account = await scope.ServiceProvider.GetRequiredService<IAuthenticateAccountInputPort>()
             .ExecuteAsync(new AuthenticateAccountCommand(email, Password));
+        var authenticated = Assert.IsType<AuthenticateAccountResult.Authenticated>(account.Value);
         var cart = await scope.ServiceProvider.GetRequiredService<IGetActiveCartInputPort>()
-            .ExecuteAsync(new GetActiveCartQuery(account.UserId!));
+            .ExecuteAsync(new GetActiveCartQuery(authenticated.UserId));
         return cart.Cart?.Items ?? [];
     }
 

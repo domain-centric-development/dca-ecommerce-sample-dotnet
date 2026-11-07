@@ -10,7 +10,9 @@ namespace DcaShop.Account.Application.RegisterAccount;
 
 /// <summary>
 /// Registers a new account under the visitor's current identity. The <see cref="UserId"/> is deliberately kept:
-/// a guest who registers mid-checkout keeps cart and checkout session.
+/// a guest who registers mid-checkout keeps cart and checkout session. Every refusal is returned as a case of
+/// <see cref="RegisterAccountResult"/>, decided before the account is written; the model's password rule is caught
+/// once, here.
 /// </summary>
 public sealed class RegisterAccountUseCase : IRegisterAccountInputPort
 {
@@ -38,26 +40,34 @@ public sealed class RegisterAccountUseCase : IRegisterAccountInputPort
         var currentUserId = UserId.Of(command.CurrentUserId);
         var owner = Owner.Of(command.FirstName, command.LastName, command.DateOfBirth);
 
-        return await _transactionBoundary.InTransactionAsync(
+        return await _transactionBoundary.InTransactionAsync<RegisterAccountResult>(
             async ct =>
             {
                 if (await _accounts.ExistsByEmailAsync(email, ct).ConfigureAwait(false))
                 {
-                    throw new EmailAlreadyRegisteredException(email);
+                    return new RegisterAccountResult.EmailAlreadyRegistered(email);
                 }
 
                 if (await _accounts.FindByLinkedUserIdAsync(currentUserId, ct).ConfigureAwait(false) is not null)
                 {
-                    throw new AccountAlreadyExistsException(currentUserId);
+                    return new RegisterAccountResult.AccountAlreadyExists(currentUserId);
                 }
 
-                var account = Domain.Model.Account.Register(
-                    email, owner, command.Password, currentUserId, _passwordHasher);
+                Domain.Model.Account account;
+                try
+                {
+                    account = Domain.Model.Account.Register(
+                        email, owner, command.Password, currentUserId, _passwordHasher);
+                }
+                catch (PasswordTooWeakException weak)
+                {
+                    return new RegisterAccountResult.PasswordTooWeak(weak.Rule);
+                }
 
                 await _accounts.SaveAsync(account, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(account, ct).ConfigureAwait(false);
 
-                return new RegisterAccountResult(
+                return new RegisterAccountResult.Registered(
                     account.Id.ToString(), account.LinkedUserId.Value, account.Email.Value, account.Roles);
             },
             cancellationToken).ConfigureAwait(false);

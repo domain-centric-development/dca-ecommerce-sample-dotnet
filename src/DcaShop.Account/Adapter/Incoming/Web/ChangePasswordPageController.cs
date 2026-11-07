@@ -37,15 +37,12 @@ public sealed class ChangePasswordPageController : Controller
     {
         var notice = TempData.TakeAccountPageNotice(AccountPageNotices.ChangePasswordPage);
         var identity = _identityProvider.GetCurrentIdentity();
-        var accessible = (await _getAccountOverview.ExecuteAsync(
-            new GetAccountOverviewQuery(identity.UserId.Value), cancellationToken)).Found;
+        var overview = await _getAccountOverview.ExecuteAsync(
+            new GetAccountOverviewQuery(identity.UserId.Value), cancellationToken);
 
-        if (!accessible)
-        {
-            return LoginRedirect();
-        }
-
-        return View(ViewName, ChangePasswordPageViewModel.Blank(notice?.Sentence()));
+        return overview.Match(
+            found => View(ViewName, ChangePasswordPageViewModel.Blank(notice?.Sentence())),
+            notAccessible => LoginRedirect());
     }
 
     [HttpPost("")]
@@ -64,14 +61,11 @@ public sealed class ChangePasswordPageController : Controller
         var result = await _changePassword.ExecuteAsync(
             new ChangePasswordCommand(identity.UserId.Value, currentPassword, newPassword), cancellationToken);
 
-        return result.Outcome switch
-        {
-            ChangePasswordOutcome.Changed => ChangedRedirect(),
-            ChangePasswordOutcome.AccountNotAccessible => LoginRedirect(),
-            ChangePasswordOutcome.CurrentPasswordInvalid =>
-                View(ViewName, ChangePasswordPageViewModel.WithError(CurrentPasswordInvalid)),
-            _ => View(ViewName, ChangePasswordPageViewModel.WithError(PasswordRuleSentence(result.BrokenRule!.Value))),
-        };
+        return result.Match(
+            changed => ChangedRedirect(),
+            notAccessible => LoginRedirect(),
+            wrongCurrent => View(ViewName, ChangePasswordPageViewModel.WithError(CurrentPasswordInvalid)),
+            rejected => View(ViewName, ChangePasswordPageViewModel.WithError(PasswordRuleSentence(rejected.BrokenRule))));
     }
 
     /// <summary>

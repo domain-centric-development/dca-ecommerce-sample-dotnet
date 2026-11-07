@@ -306,7 +306,7 @@ public sealed class RegistrationPageTest : IClassFixture<WebApplicationFactory<P
     private sealed class SucceedingRegistration : IRegisterAccountInputPort
     {
         public Task<RegisterAccountResult> ExecuteAsync(RegisterAccountCommand command, CancellationToken cancellationToken = default) =>
-            Task.FromResult(new RegisterAccountResult(
+            Task.FromResult<RegisterAccountResult>(new RegisterAccountResult.Registered(
                 $"account-{command.CurrentUserId}", command.CurrentUserId, command.Email, new HashSet<Role> { Role.Customer }));
     }
 

@@ -13,7 +13,7 @@ public sealed class ProductDtoConverter
     /// The answer to a create. It carries the price the product was created with; stock and availability stay
     /// empty — Inventory owns them and has not answered yet at the moment the product comes into existence.
     /// </summary>
-    public ProductDto ToDto(CreateProductResult result, CreateProductCommand command)
+    public ProductDto ToDto(CreateProductResult.Created result, CreateProductCommand command)
     {
         ArgumentNullException.ThrowIfNull(result);
         ArgumentNullException.ThrowIfNull(command);

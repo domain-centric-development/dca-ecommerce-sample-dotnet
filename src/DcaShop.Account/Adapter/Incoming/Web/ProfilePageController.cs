@@ -66,23 +66,22 @@ public sealed class ProfilePageController : Controller
         var result = await _changeProfile.ExecuteAsync(
             new ChangeProfileCommand(identity.UserId.Value, email, parsed), cancellationToken);
 
-        switch (result.Outcome)
-        {
-            case ChangeProfileOutcome.Changed:
-                // The email is the login credential and travels in the session token, so a changed address has
-                // to be re-issued — otherwise the session would keep naming the old one.
-                _identitySession.SetRegisteredIdentity(
-                    _tokenService.GenerateRegisteredToken(identity.UserId, result.Profile!.Email, identity.Roles));
-                TempData.Leave(AccountPageNotices.ProfilePage, AccountPageNotice.ProfileUpdated);
-                return Redirect(AccountRoutes.Profile);
+        return await result.Match(
+            changed => Task.FromResult(Changed(identity, changed.Profile)),
+            notAccessible => Task.FromResult(LoginRedirect()),
+            emailInUse => RejectedAsync(identity.UserId.Value, email, dateOfBirth, EmailAlreadyInUse, cancellationToken),
+            emailInvalid => RejectedAsync(identity.UserId.Value, email, dateOfBirth, EmailInvalid, cancellationToken),
+            dateInvalid => RejectedAsync(identity.UserId.Value, email, dateOfBirth, DateOfBirthInvalid, cancellationToken));
+    }
 
-            case ChangeProfileOutcome.AccountNotAccessible:
-                return LoginRedirect();
-
-            default:
-                return await RejectedAsync(
-                    identity.UserId.Value, email, dateOfBirth, MessageFor(result.Outcome), cancellationToken);
-        }
+    private IActionResult Changed(IIdentityProvider.IIdentity identity, ChangeProfileResult.ProfileView profile)
+    {
+        // The email is the login credential and travels in the session token, so a changed address has to be
+        // re-issued — otherwise the session would keep naming the old one.
+        _identitySession.SetRegisteredIdentity(
+            _tokenService.GenerateRegisteredToken(identity.UserId, profile.Email, identity.Roles));
+        TempData.Leave(AccountPageNotices.ProfilePage, AccountPageNotice.ProfileUpdated);
+        return Redirect(AccountRoutes.Profile);
     }
 
     private async Task<IActionResult> RejectedAsync(
@@ -94,17 +93,9 @@ public sealed class ProfilePageController : Controller
             : View(ViewName, ProfilePageViewModel.WithError(stored, submittedEmail, submittedDateOfBirth, message));
     }
 
-    /// <summary>The page's own sentence for a refused change, worded from the outcome.</summary>
-    private static string MessageFor(ChangeProfileOutcome outcome) => outcome switch
-    {
-        ChangeProfileOutcome.EmailAlreadyInUse => EmailAlreadyInUse,
-        ChangeProfileOutcome.EmailInvalid => EmailInvalid,
-        ChangeProfileOutcome.DateOfBirthInvalid => DateOfBirthInvalid,
-        _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "not a refusal"),
-    };
-
     private async Task<GetProfileResult.ProfileView?> StoredProfileAsync(string userId, CancellationToken ct) =>
-        (await _getProfile.ExecuteAsync(new GetProfileQuery(userId), ct)).Profile;
+        (await _getProfile.ExecuteAsync(new GetProfileQuery(userId), ct))
+            .Match<GetProfileResult.ProfileView?>(found => found.Profile, notAccessible => null);
 
     private IActionResult LoginRedirect() => Redirect(AccountRoutes.ToLoginWithReturnUrl(AccountRoutes.Profile));
 }

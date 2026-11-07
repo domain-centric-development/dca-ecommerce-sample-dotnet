@@ -1,22 +1,34 @@
+using DcaShop.Account.Domain.Model;
 using DcaShop.SharedKernel.Domain.Model;
+
+using DomainCentric.BuildingBlocks.Application;
+
+using OneOf;
 
 namespace DcaShop.Account.Application.AuthenticateAccount;
 
 /// <summary>
-/// The outcome of a login attempt. A failure names a message meant for the user, and for every reason a
-/// credential could be wrong that message is the same one — naming which half failed tells an attacker which
-/// addresses exist.
+/// What a login attempt came to: authenticated, the credentials were not accepted, or the account may not log in.
+/// The result says what happened, never in words: the adapter that shows it words the refusal.
 /// </summary>
-public sealed record AuthenticateAccountResult(
-    bool Success,
-    string? UserId,
-    string? Email,
-    IReadOnlySet<Role>? Roles,
-    string? ErrorMessage)
+[GenerateOneOf]
+public sealed partial class AuthenticateAccountResult
+    : OneOfBase<
+        AuthenticateAccountResult.Authenticated,
+        AuthenticateAccountResult.CredentialsRefused,
+        AuthenticateAccountResult.AccountNotAccessible>
 {
-    public static AuthenticateAccountResult Succeeded(string userId, string email, IReadOnlySet<Role> roles) =>
-        new(true, userId, email, roles, null);
+    /// <summary>The credentials belong to an account that may log in; the login was recorded.</summary>
+    public sealed record Authenticated(string UserId, string Email, IReadOnlySet<Role> Roles);
 
-    public static AuthenticateAccountResult Failed(string errorMessage) =>
-        new(false, null, null, null, errorMessage);
+    /// <summary>
+    /// The address and password do not name an account together. One case for every reason a credential could be
+    /// wrong — an unknown address, a wrong password, a malformed address: naming which half failed tells an attacker
+    /// which addresses exist.
+    /// </summary>
+    public sealed record CredentialsRefused : IRefusal;
+
+    /// <summary>The credentials are right, but the account's status does not allow a login.</summary>
+    /// <param name="Status">The status that refuses the login.</param>
+    public sealed record AccountNotAccessible(AccountStatus Status) : IRefusal;
 }

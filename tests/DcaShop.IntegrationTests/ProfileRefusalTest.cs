@@ -28,13 +28,14 @@ public sealed class ProfileRefusalTest : IClassFixture<WebApplicationFactory<Pro
         var changeProfile = scope.ServiceProvider.GetRequiredService<IChangeProfileInputPort>();
         var refused = await changeProfile.ExecuteAsync(
             new ChangeProfileCommand(userId, $"anna.meyer-{Guid.NewGuid():N}@example.com", new DateOnly(2999, 1, 1)));
-        Assert.Equal(ChangeProfileOutcome.DateOfBirthInvalid, refused.Outcome);
+        Assert.IsType<ChangeProfileResult.DateOfBirthInvalid>(refused.Value);
 
         var stored = await scope.ServiceProvider.GetRequiredService<IGetProfileInputPort>()
             .ExecuteAsync(new GetProfileQuery(userId));
 
-        Assert.Equal(email, stored.Profile!.Email);
-        Assert.Equal(new DateOnly(1990, 5, 17), stored.Profile.DateOfBirth);
+        var profile = Assert.IsType<GetProfileResult.Found>(stored.Value).Profile;
+        Assert.Equal(email, profile.Email);
+        Assert.Equal(new DateOnly(1990, 5, 17), profile.DateOfBirth);
     }
 
     /// <summary>Registers Anna under <paramref name="email"/> and a visitor identity of her own; answers that identity.</summary>
@@ -44,7 +45,7 @@ public sealed class ProfileRefusalTest : IClassFixture<WebApplicationFactory<Pro
         using var scope = _factory.Services.CreateScope();
         var registered = await scope.ServiceProvider.GetRequiredService<IRegisterAccountInputPort>().ExecuteAsync(
             new RegisterAccountCommand(email, Password, userId, "Anna", "Schmidt", new DateOnly(1990, 5, 17)));
-        Assert.Equal(userId, registered.UserId);
+        Assert.Equal(userId, Assert.IsType<RegisterAccountResult.Registered>(registered.Value).UserId);
         return userId;
     }
 }

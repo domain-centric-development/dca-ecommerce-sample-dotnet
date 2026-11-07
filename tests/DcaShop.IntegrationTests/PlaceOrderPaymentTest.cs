@@ -1,6 +1,7 @@
 using System.Diagnostics;
 
-using DcaShop.Checkout.Application.Shared;
+using DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
+using DcaShop.Checkout.Application.CheckoutCompletion.SubmitPayment;
 using DcaShop.Checkout.Domain.Model;
 
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -39,7 +40,7 @@ public sealed class PlaceOrderPaymentTest : IClassFixture<WebApplicationFactory<
         var chosen = await checkouts.ChooseTheProviderAsync(checkout);
 
         // Then the checkout shows the review step
-        Assert.Equal(CheckoutStep.Review, chosen.CurrentStep);
+        Assert.Equal(CheckoutStep.Review, Assert.IsType<SubmitPaymentResult.Submitted>(chosen.Value).CurrentStep);
 
         // And the payment provider received no payment request
         Assert.Empty(_provider.PaymentRequests());
@@ -59,10 +60,10 @@ public sealed class PlaceOrderPaymentTest : IClassFixture<WebApplicationFactory<
         _provider.RefusesPayments();
 
         // When the guest presses "Place Order"
-        var refused = await Record.ExceptionAsync(() => checkouts.PlaceOrderAsync(checkout));
+        var refused = await checkouts.PlaceOrderAsync(checkout);
 
         // Then the review stays open with the refusal
-        Assert.IsType<PaymentInitiationFailedException>(refused);
+        Assert.IsType<ConfirmCheckoutResult.PaymentInitiationFailed>(refused.Value);
         var session = await checkouts.SessionAsync(checkout);
         Assert.Equal((CheckoutStep.Review, CheckoutSessionStatus.Active), (session.Step, session.Status));
 
@@ -84,11 +85,11 @@ public sealed class PlaceOrderPaymentTest : IClassFixture<WebApplicationFactory<
 
         // When the customer presses "Place Order"
         var watch = Stopwatch.StartNew();
-        var failure = await Record.ExceptionAsync(() => checkouts.PlaceOrderAsync(checkout));
+        var failure = await checkouts.PlaceOrderAsync(checkout);
         watch.Stop();
 
         // Then the order is refused as the provider being unavailable, without waiting for the late answer
-        Assert.IsType<PaymentProviderUnavailableException>(failure);
+        Assert.IsType<ConfirmCheckoutResult.PaymentProviderUnavailable>(failure.Value);
         Assert.True(watch.Elapsed < TimeSpan.FromSeconds(4), $"the late answer was awaited ({watch.Elapsed.TotalSeconds:0.0} s) instead of being abandoned at the timeout");
 
         // And no order is confirmed: the checkout stays at the review
@@ -110,10 +111,10 @@ public sealed class PlaceOrderPaymentTest : IClassFixture<WebApplicationFactory<
         Assert.Equal(3, await checkouts.StockAsync(Hexagon));
 
         // When the guest presses "Place Order"
-        var refused = await Record.ExceptionAsync(() => checkouts.PlaceOrderAsync(checkout));
+        var refused = await checkouts.PlaceOrderAsync(checkout);
 
         // Then the order is refused, naming the line the stock no longer covers
-        var invalid = Assert.IsType<CheckoutValidationException>(refused);
+        var invalid = Assert.IsType<ConfirmCheckoutResult.CheckoutValidation>(refused.Value);
         Assert.Equal(Hexagon, invalid.Validation.ShortOfStock?.ProductName);
 
         // And the payment provider received no payment request

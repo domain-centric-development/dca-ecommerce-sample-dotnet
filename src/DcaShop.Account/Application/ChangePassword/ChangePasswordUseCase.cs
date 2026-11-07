@@ -10,7 +10,10 @@ using Microsoft.Extensions.Logging;
 
 namespace DcaShop.Account.Application.ChangePassword;
 
-/// <summary>Changes the password of the account the current session belongs to.</summary>
+/// <summary>
+/// Changes the password of the account the current session belongs to. Every refusal is returned as a case of
+/// <see cref="ChangePasswordResult"/>, decided before the password is written.
+/// </summary>
 public sealed class ChangePasswordUseCase : IChangePasswordInputPort
 {
     private readonly IAccountRepository _accounts;
@@ -38,20 +41,20 @@ public sealed class ChangePasswordUseCase : IChangePasswordInputPort
     {
         var userId = UserId.Of(command.UserId);
 
-        return await _transactionBoundary.InTransactionAsync(
+        return await _transactionBoundary.InTransactionAsync<ChangePasswordResult>(
             async ct =>
             {
                 var account = await _accounts.FindByLinkedUserIdAsync(userId, ct).ConfigureAwait(false);
                 if (account is null || !account.Status.CanLogin())
                 {
                     _logger.LogWarning("Password change attempt without an accessible account");
-                    return ChangePasswordResult.AccountNotAccessible();
+                    return new ChangePasswordResult.AccountNotAccessible();
                 }
 
                 if (!account.CheckPassword(command.CurrentPassword, _passwordHasher))
                 {
                     _logger.LogWarning("Password change attempt with a wrong current password");
-                    return ChangePasswordResult.CurrentPasswordInvalid();
+                    return new ChangePasswordResult.CurrentPasswordInvalid();
                 }
 
                 // Only the strength decision may become NewPasswordRejected. The rule has its own type, so a
@@ -65,7 +68,7 @@ public sealed class ChangePasswordUseCase : IChangePasswordInputPort
                 catch (PasswordTooWeakException e)
                 {
                     _logger.LogDebug("Password change rejected: {Reason}", e.Message);
-                    return ChangePasswordResult.NewPasswordRejected(e.Rule);
+                    return new ChangePasswordResult.NewPasswordRejected(e.Rule);
                 }
 
                 account.ChangePassword(command.NewPassword, _passwordHasher);
@@ -73,7 +76,7 @@ public sealed class ChangePasswordUseCase : IChangePasswordInputPort
                 await _events.PublishAndClearEventsAsync(account, ct).ConfigureAwait(false);
 
                 _logger.LogInformation("Password changed for account {AccountId}", account.Id);
-                return ChangePasswordResult.Changed();
+                return new ChangePasswordResult.Changed();
             },
             cancellationToken).ConfigureAwait(false);
     }

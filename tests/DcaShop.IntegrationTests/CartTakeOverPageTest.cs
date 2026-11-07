@@ -58,7 +58,7 @@ public sealed class CartTakeOverPageTest : IClassFixture<WebApplicationFactory<P
         public Task<RecoverCartResult> ExecuteAsync(RecoverCartCommand command, CancellationToken cancellationToken = default)
         {
             Commands.Add(command);
-            return Task.FromResult(RecoverCartResult.NoRecoveryNeeded(command.RegisteredUserId));
+            return Task.FromResult<RecoverCartResult>(RecoverCartResult.Recovered.NoRecoveryNeeded(command.RegisteredUserId));
         }
     }
 }

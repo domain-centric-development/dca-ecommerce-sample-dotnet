@@ -38,8 +38,8 @@ public sealed class CheckoutOwnershipTest : IClassFixture<WebApplicationFactory<
         using var scope = _factory.Services.CreateScope();
         var query = scope.ServiceProvider.GetRequiredService<IGetCheckoutSessionInputPort>();
 
-        Assert.True((await query.ExecuteAsync(new GetCheckoutSessionQuery(sessionId, owner))).Found);
-        Assert.False((await query.ExecuteAsync(new GetCheckoutSessionQuery(sessionId, stranger))).Found);
+        Assert.IsType<GetCheckoutSessionResult.Found>((await query.ExecuteAsync(new GetCheckoutSessionQuery(sessionId, owner))).Value);
+        Assert.IsType<GetCheckoutSessionResult.CheckoutSessionNotFound>((await query.ExecuteAsync(new GetCheckoutSessionQuery(sessionId, stranger))).Value);
     }
 
     [Fact]
@@ -52,14 +52,14 @@ public sealed class CheckoutOwnershipTest : IClassFixture<WebApplicationFactory<
         using var scope = _factory.Services.CreateScope();
         var submitBuyerInfo = scope.ServiceProvider.GetRequiredService<ISubmitBuyerInfoInputPort>();
 
-        var refused = await Assert.ThrowsAsync<CheckoutSessionNotFoundException>(() => submitBuyerInfo.ExecuteAsync(
-            new SubmitBuyerInfoCommand(sessionId, stranger, "eve@example.com", "Eve", "Adams", "+1-555-0199")));
-        Assert.Contains("Session not found", refused.Message, StringComparison.Ordinal);
+        var refused = await submitBuyerInfo.ExecuteAsync(
+            new SubmitBuyerInfoCommand(sessionId, stranger, "eve@example.com", "Eve", "Adams", "+1-555-0199"));
+        Assert.Equal(sessionId, Assert.IsType<SubmitBuyerInfoResult.CheckoutSessionNotFound>(refused.Value).SessionId.Value);
 
         // The owner is unaffected
         var accepted = await submitBuyerInfo.ExecuteAsync(
             new SubmitBuyerInfoCommand(sessionId, owner, "ada@example.com", "Ada", "Lovelace", "+1-555-0100"));
-        Assert.Equal(CheckoutStep.Delivery, accepted.CurrentStep);
+        Assert.Equal(CheckoutStep.Delivery, Assert.IsType<SubmitBuyerInfoResult.Submitted>(accepted.Value).CurrentStep);
     }
 
     [Fact]
@@ -73,13 +73,11 @@ public sealed class CheckoutOwnershipTest : IClassFixture<WebApplicationFactory<
         var submitPayment = scope.ServiceProvider.GetRequiredService<ISubmitPaymentInputPort>();
         var confirm = scope.ServiceProvider.GetRequiredService<IConfirmCheckoutInputPort>();
 
-        var payment = await Assert.ThrowsAsync<CheckoutSessionNotFoundException>(() => submitPayment.ExecuteAsync(
-            new SubmitPaymentCommand(sessionId, stranger, "mock")));
-        Assert.Contains("Session not found", payment.Message, StringComparison.Ordinal);
+        var payment = await submitPayment.ExecuteAsync(new SubmitPaymentCommand(sessionId, stranger, "mock"));
+        Assert.Equal(sessionId, Assert.IsType<SubmitPaymentResult.CheckoutSessionNotFound>(payment.Value).SessionId.Value);
 
-        var confirmation = await Assert.ThrowsAsync<CheckoutSessionNotFoundException>(() => confirm.ExecuteAsync(
-            new ConfirmCheckoutCommand(sessionId, stranger, string.Empty)));
-        Assert.Contains("Session not found", confirmation.Message, StringComparison.Ordinal);
+        var confirmation = await confirm.ExecuteAsync(new ConfirmCheckoutCommand(sessionId, stranger, string.Empty));
+        Assert.Equal(sessionId, Assert.IsType<ConfirmCheckoutResult.CheckoutSessionNotFound>(confirmation.Value).SessionId.Value);
     }
 
     /// <summary>An active checkout session on a cart with one item, belonging to the given customer.</summary>
@@ -93,8 +91,8 @@ public sealed class CheckoutOwnershipTest : IClassFixture<WebApplicationFactory<
 
         var cart = await carts.ExecuteAsync(new GetOrCreateActiveCartCommand(customerId));
         var product = (await products.ExecuteAsync(new GetAllProductsQuery())).Products[0];
-        await addItem.ExecuteAsync(new AddItemToCartCommand(cart.CartId, customerId, product.ProductId.Value, 1));
+        Assert.IsType<AddItemToCartResult.Added>((await addItem.ExecuteAsync(new AddItemToCartCommand(cart.CartId, customerId, product.ProductId.Value, 1))).Value);
 
-        return (await start.ExecuteAsync(new StartCheckoutCommand(cart.CartId, customerId))).SessionId;
+        return Assert.IsType<StartCheckoutResult.Started>((await start.ExecuteAsync(new StartCheckoutCommand(cart.CartId, customerId))).Value).SessionId;
     }
 }

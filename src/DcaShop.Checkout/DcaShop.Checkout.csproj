@@ -9,5 +9,9 @@
     <ProjectReference Include="../DcaShop.Cart/DcaShop.Cart.csproj" />
     <ProjectReference Include="../DcaShop.Inventory/DcaShop.Inventory.csproj" />
     <ProjectReference Include="../DcaShop.Pricing/DcaShop.Pricing.csproj" />
+    <PackageReference Include="OneOf" Version="$(OneOfVersion)" />
+    <!-- Placing an order has more than nine outcomes: OneOf's own bases stop at nine cases. -->
+    <PackageReference Include="OneOf.Extended" Version="$(OneOfVersion)" />
+    <PackageReference Include="OneOf.SourceGenerator" Version="$(OneOfVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

@@ -10,7 +10,7 @@ namespace DcaShop.Checkout.Domain.Model;
 /// A customer's checkout: buyer info → delivery → payment → review → confirmation. Step data stays null until
 /// the step is fulfilled; terminal statuses prevent further changes.
 /// </summary>
-public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, CheckoutSessionId>
+public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, CheckoutSessionId>, IOwned<CustomerId>
 {
     private readonly List<CheckoutLineItem> _lineItems;
 

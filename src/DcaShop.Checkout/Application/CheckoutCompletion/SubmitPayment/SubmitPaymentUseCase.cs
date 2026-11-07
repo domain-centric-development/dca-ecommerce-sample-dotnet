@@ -33,22 +33,50 @@ public sealed class SubmitPaymentUseCase : ISubmitPaymentInputPort
 
         // Only a way to pay the shop offers and that takes payments right now is chosen; the registry may leave the
         // process, so it is asked before the transaction
-        var provider = await _providers.FindAsync(providerId, cancellationToken).ConfigureAwait(false)
-                       ?? throw new PaymentProviderNotFoundException(providerId);
-        if (!await provider.IsAvailableAsync(cancellationToken).ConfigureAwait(false))
+        var provider = await _providers.FindAsync(providerId, cancellationToken).ConfigureAwait(false);
+        if (provider is null)
         {
-            throw new PaymentProviderUnavailableException(providerId);
+            return new SubmitPaymentResult.PaymentProviderNotFound(providerId);
         }
 
-        return await _transactionBoundary.InTransactionAsync(
+        if (!await provider.IsAvailableAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return new SubmitPaymentResult.PaymentProviderUnavailable(providerId);
+        }
+
+        return await _transactionBoundary.InTransactionAsync<SubmitPaymentResult>(
             async ct =>
             {
-                var session = await _sessions.FindByIdForCustomerAsync(sessionId, customerId, ct).ConfigureAwait(false)
-                              ?? throw new CheckoutSessionNotFoundException(sessionId);
-                session.SubmitPayment(new PaymentSelection(providerId));
+                var session = await _sessions.FindByIdForCustomerAsync(sessionId, customerId, ct).ConfigureAwait(false);
+                if (session is null)
+                {
+                    return new SubmitPaymentResult.CheckoutSessionNotFound(sessionId);
+                }
+
+                try
+                {
+                    session.SubmitPayment(new PaymentSelection(providerId));
+                }
+                catch (CheckoutNotModifiableException notModifiable)
+                {
+                    return new SubmitPaymentResult.CheckoutNotModifiable(notModifiable.SessionId, notModifiable.Status);
+                }
+                catch (CheckoutStepNotCompletedException notCompleted)
+                {
+                    return new SubmitPaymentResult.CheckoutStepNotCompleted(notCompleted.SessionId, notCompleted.Step);
+                }
+                catch (CheckoutStepOutOfOrderException outOfOrder)
+                {
+                    return new SubmitPaymentResult.CheckoutStepOutOfOrder(outOfOrder.SessionId, outOfOrder.Requested, outOfOrder.Current);
+                }
+                catch (NothingToPayException nothing)
+                {
+                    return new SubmitPaymentResult.NothingToPay(nothing.SessionId, nothing.Total);
+                }
+
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
-                return SubmitPaymentResult.From(session);
+                return SubmitPaymentResult.Submitted.From(session);
             },
             cancellationToken).ConfigureAwait(false);
     }

@@ -14,7 +14,8 @@ namespace DcaShop.Cart.Application.CartRecovery.RecoverCart;
 /// It is the other half of <see cref="MergeCarts.MergeCartsUseCase"/>: when both carts hold items the visitor is
 /// asked which one to keep, and when only the guest cart does, there is no question to ask — but the items still
 /// have to follow the identity, or logging in would silently empty the cart. The use case is idempotent: with
-/// matching identities, or with no guest cart, it does nothing.
+/// matching identities, or with no guest cart, it does nothing. A guest other than the one the visitor was before
+/// their login is returned as <see cref="RecoverCartResult.GuestCartNotOwned"/>, before the transaction opens.
 /// </remarks>
 public sealed class RecoverCartUseCase : IRecoverCartInputPort
 {
@@ -38,15 +39,15 @@ public sealed class RecoverCartUseCase : IRecoverCartInputPort
 
         if (command.GuestBeforeLogin != command.AnonymousUserId)
         {
-            throw new GuestCartNotOwnedException(anonymousCustomerId);
+            return new RecoverCartResult.GuestCartNotOwned(anonymousCustomerId);
         }
 
         if (anonymousCustomerId == registeredCustomerId)
         {
-            return RecoverCartResult.NoRecoveryNeeded(registeredCustomerId.Value);
+            return RecoverCartResult.Recovered.NoRecoveryNeeded(registeredCustomerId.Value);
         }
 
-        return await _transactionBoundary.InTransactionAsync(
+        return await _transactionBoundary.InTransactionAsync<RecoverCartResult>(
             async ct =>
             {
                 var anonymousCart = await _carts.FindActiveByCustomerAsync(anonymousCustomerId, ct)
@@ -54,7 +55,7 @@ public sealed class RecoverCartUseCase : IRecoverCartInputPort
 
                 if (anonymousCart is null || anonymousCart.IsEmpty)
                 {
-                    return RecoverCartResult.NoRecoveryNeeded(registeredCustomerId.Value);
+                    return RecoverCartResult.Recovered.NoRecoveryNeeded(registeredCustomerId.Value);
                 }
 
                 var accountCart = await _carts.FindActiveByCustomerAsync(registeredCustomerId, ct)
@@ -85,7 +86,7 @@ public sealed class RecoverCartUseCase : IRecoverCartInputPort
     /// The guest cart itself becomes the account's — same id, same positions — so a checkout captured from it is
     /// still the checkout of the account's cart. An empty cart the account had goes, there is one active cart each.
     /// </summary>
-    private async Task<RecoverCartResult> HandOverAsync(
+    private async Task<RecoverCartResult.Recovered> HandOverAsync(
         ShoppingCart anonymousCart, ShoppingCart? emptyAccountCart, CustomerId registeredCustomerId, CancellationToken ct)
     {
         if (emptyAccountCart is not null)
@@ -101,7 +102,7 @@ public sealed class RecoverCartUseCase : IRecoverCartInputPort
     }
 
     /// <summary>The account's cart after the recovery, whichever way the guest's positions reached it.</summary>
-    private static RecoverCartResult Recovered(ShoppingCart cart, int itemsRecovered, bool anonymousCartDeleted) =>
+    private static RecoverCartResult.Recovered Recovered(ShoppingCart cart, int itemsRecovered, bool anonymousCartDeleted) =>
         new(
             cart.Id.Value,
             cart.CustomerId.Value,

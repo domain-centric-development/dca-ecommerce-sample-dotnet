@@ -50,17 +50,14 @@ public sealed class AuthResource : ControllerBase
         var result = await _authenticateAccount.ExecuteAsync(
             new AuthenticateAccountCommand(request.Email, request.Password), cancellationToken);
 
-        // Every failed login answers alike, as a problem document with the API's challenge: the use case's sentence
-        // is for the login page, and an answer that varied would tell the caller more than that the login failed.
-        if (!result.Success)
-        {
-            Response.Headers[HeaderNames.WWWAuthenticate] = "Bearer";
-            return Problem(statusCode: StatusCodes.Status401Unauthorized, title: AuthenticationFailedTitle);
-        }
-
-        var token = _tokenService.GenerateRegisteredToken(
-            UserId.Of(result.UserId!), result.Email!, result.Roles!);
-        return Ok(LoginResponse.Succeeded(token, result.Email!));
+        // Every refused login answers alike, as a problem document with the API's challenge: an answer that varied
+        // would tell the caller more than that the login failed.
+        return result.Match(
+            authenticated => Ok(LoginResponse.Succeeded(
+                _tokenService.GenerateRegisteredToken(UserId.Of(authenticated.UserId), authenticated.Email, authenticated.Roles),
+                authenticated.Email)),
+            refused => AuthenticationFailed(),
+            notAccessible => AuthenticationFailed());
     }
 
     [HttpPost("register")]
@@ -71,8 +68,7 @@ public sealed class AuthResource : ControllerBase
         ArgumentNullException.ThrowIfNull(request);
         var currentUserId = _identityProvider.GetCurrentIdentity().UserId.Value;
 
-        // A refused registration travels as the failure's own type; AccountApiExceptionHandler turns it into a
-        // problem document, so the success body describes the success case only.
+        // A refused registration is a case of the result; AccountProblem words its problem document.
         var result = await _registerAccount.ExecuteAsync(
             new RegisterAccountCommand(
                 request.Email,
@@ -83,9 +79,22 @@ public sealed class AuthResource : ControllerBase
                 request.DateOfBirth),
             cancellationToken);
 
-        var token = _tokenService.GenerateRegisteredToken(
-            UserId.Of(result.UserId), result.Email, result.Roles);
-        return StatusCode(StatusCodes.Status201Created, RegisterResponse.Succeeded(token, result.Email));
+        return result.Match<ActionResult<RegisterResponse>>(
+            registered => StatusCode(
+                StatusCodes.Status201Created,
+                RegisterResponse.Succeeded(
+                    _tokenService.GenerateRegisteredToken(UserId.Of(registered.UserId), registered.Email, registered.Roles),
+                    registered.Email)),
+            emailTaken => AccountProblem.EmailAlreadyRegistered(emailTaken.Email),
+            alreadyExists => AccountProblem.AccountAlreadyExists(),
+            weak => AccountProblem.PasswordTooWeak(weak.BrokenRule));
+    }
+
+    /// <summary>A refused login, whichever the reason.</summary>
+    private ActionResult<LoginResponse> AuthenticationFailed()
+    {
+        Response.Headers[HeaderNames.WWWAuthenticate] = "Bearer";
+        return Problem(statusCode: StatusCodes.Status401Unauthorized, title: AuthenticationFailedTitle);
     }
 
     /// <summary>

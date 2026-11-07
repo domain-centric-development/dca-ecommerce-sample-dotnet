@@ -1,9 +1,7 @@
 using DcaShop.Checkout.Application.Session.StartCheckout;
-using DcaShop.Checkout.Application.Shared;
 using DcaShop.Checkout.Domain.Model;
 using DcaShop.SharedKernel.Application.Shared;
 
-using DomainCentric.BuildingBlocks.Application;
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 using Microsoft.AspNetCore.Mvc;
@@ -30,41 +28,34 @@ public sealed class StartCheckoutPageController : Controller
     [HttpPost("start")]
     public async Task<IActionResult> Start([FromForm] Guid cartId, CancellationToken cancellationToken)
     {
+        StartCheckoutResult result;
         try
         {
             // The checkout session is keyed on the visitor identity, exactly as the cart is.
-            await _start.ExecuteAsync(
+            result = await _start.ExecuteAsync(
                 new StartCheckoutCommand(cartId, _identityProvider.GetCurrentIdentity().UserId.Value), cancellationToken);
-            return Redirect(CheckoutRoutes.PathOf(CheckoutStep.BuyerInfo));
         }
-        catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
+        catch (Exception e) when (e is DomainException or ArgumentException)
         {
-            // The two base types are the checkout's own refusals. ArgumentException is still here because a form
-            // field the customer typed reaches a value object unvalidated; each field moved into request
-            // validation is one reason less to catch it.
-            if (e is CheckoutItemsUnavailableException unavailable)
-            {
-                TempData.LeaveForTheCart(CartNotice.ItemsUnavailable, unavailable.ProductIds.Count);
-            }
-            else
-            {
-                TempData.LeaveForTheCart(NoticeFor(e));
-            }
-
-            return Redirect(CheckoutRoutes.Cart);
+            // What is still thrown: a rule of the model no use case returns as a case, and a value a value object
+            // refuses — the form field reaching it unvalidated; each field moved into request validation is one
+            // reason less to catch it.
+            return ToTheCart(CartNotice.CheckoutNotStarted);
         }
+
+        return result.Match(
+            started => Redirect(CheckoutRoutes.PathOf(CheckoutStep.BuyerInfo)),
+            notAvailable => ToTheCart(CartNotice.CartNotFound),
+            notActive => ToTheCart(CartNotice.CartNotCheckable),
+            empty => ToTheCart(CartNotice.EmptyCart),
+            articleNotAvailable => ToTheCart(CartNotice.CartProductUnavailable),
+            unavailable => ToTheCart(CartNotice.ItemsUnavailable, unavailable.ProductIds.Count));
     }
 
-    /// <summary>
-    /// What the cart page tells the customer when a checkout cannot start, chosen from the failure's type — the
-    /// exception's message is for the log, never for the page.
-    /// </summary>
-    private static CartNotice NoticeFor(Exception failure) => failure switch
+    /// <summary>Back to the cart, leaving the cart page the notice that says why the checkout did not start.</summary>
+    private RedirectResult ToTheCart(CartNotice notice, int? count = null)
     {
-        CartNotAvailableException => CartNotice.CartNotFound,
-        CartNotActiveException => CartNotice.CartNotCheckable,
-        EmptyCartException or EmptyCheckoutException => CartNotice.EmptyCart,
-        ArticleNotAvailableException => CartNotice.CartProductUnavailable,
-        _ => CartNotice.CheckoutNotStarted,
-    };
+        TempData.LeaveForTheCart(notice, count);
+        return Redirect(CheckoutRoutes.Cart);
+    }
 }

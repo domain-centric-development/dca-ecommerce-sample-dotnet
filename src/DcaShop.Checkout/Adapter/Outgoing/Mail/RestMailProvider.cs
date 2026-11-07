@@ -12,7 +12,7 @@ namespace DcaShop.Checkout.Adapter.Outgoing.Mail;
 /// The mail provider over REST — the anti-corruption layer towards it. A mail is one <c>POST /messages</c> with the
 /// recipient, the template <c>order-confirmation</c>, the idempotency key and the mail's values as text: <c>202</c>
 /// accepts it, and anything else — another status, no answer in time, no connection — counts as the provider being
-/// unavailable. The provider's request shape stays inside this class.
+/// unavailable, thrown as the failure the port declares. The provider's request shape stays inside this class.
 /// </summary>
 public sealed class RestMailProvider : IOrderConfirmationMailer
 {
@@ -29,7 +29,7 @@ public sealed class RestMailProvider : IOrderConfirmationMailer
         _logger = logger;
     }
 
-    public async Task<IOrderConfirmationMailer.MailOutcome> SendAsync(IOrderConfirmationMailer.OrderConfirmationMail mail, CancellationToken cancellationToken = default)
+    public async Task SendAsync(IOrderConfirmationMailer.OrderConfirmationMail mail, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(mail);
         var request = new MailRequest(mail.To, Template, mail.Key, new Dictionary<string, string>
@@ -45,26 +45,24 @@ public sealed class RestMailProvider : IOrderConfirmationMailer
                 .ConfigureAwait(false);
             if (response.StatusCode != HttpStatusCode.Accepted)
             {
-                return Unavailable($"The mail provider answered {(int)response.StatusCode}", mail.Key);
+                throw Unavailable($"The mail provider answered {(int)response.StatusCode}", mail.Key);
             }
-
-            return IOrderConfirmationMailer.MailOutcome.Accepted;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             // The client's own deadline, not the caller giving up: the caller's cancellation travels on unchanged
-            return Unavailable("The mail provider did not answer in time", mail.Key);
+            throw Unavailable("The mail provider did not answer in time", mail.Key);
         }
         catch (HttpRequestException e)
         {
-            return Unavailable($"The mail provider could not be reached: {e.Message}", mail.Key);
+            throw Unavailable($"The mail provider could not be reached: {e.Message}", mail.Key);
         }
     }
 
-    private IOrderConfirmationMailer.MailOutcome Unavailable(string reason, string key)
+    private MailProviderUnavailableException Unavailable(string reason, string key)
     {
         _logger.LogWarning("Mail {Key} not accepted: {Reason}", key, reason);
-        return IOrderConfirmationMailer.MailOutcome.Unavailable;
+        return new MailProviderUnavailableException(key, reason);
     }
 
     /// <summary>The provider's mail: the values in <c>data</c> as text, the key the same for every attempt of the mail.</summary>

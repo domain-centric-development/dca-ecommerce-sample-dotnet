@@ -87,10 +87,10 @@ public sealed class PriceChangeTest
         using var scope = shop.Services.CreateScope();
         var changePrice = scope.ServiceProvider.GetRequiredService<IChangePriceInputPort>();
 
-        var refusal = await Assert.ThrowsAsync<ProductPriceNotFoundException>(() =>
-            changePrice.ExecuteAsync(new ChangePriceCommand(unknown, 49.99m, "EUR")));
+        var result = await changePrice.ExecuteAsync(new ChangePriceCommand(unknown, 49.99m, "EUR"));
 
-        Assert.Equal(unknown, refusal.ProductId.Value);
+        var notFound = Assert.IsType<ChangePriceResult.ProductPriceNotFound>(result.Value);
+        Assert.Equal(unknown, notFound.ProductId.Value);
     }
 
     private static async Task<string> PagePriceAsync(WebApplicationFactory<Program> shop, string productId)

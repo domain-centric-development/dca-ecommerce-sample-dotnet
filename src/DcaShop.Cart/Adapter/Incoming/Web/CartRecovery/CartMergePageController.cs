@@ -3,7 +3,6 @@ using System.Net;
 using DcaShop.Cart.Application.CartRecovery.GetCartMergeOptions;
 using DcaShop.Cart.Application.CartRecovery.MergeCarts;
 using DcaShop.Cart.Application.CartRecovery.RecoverCart;
-using DcaShop.Cart.Application.Shared;
 using DcaShop.SharedKernel.Application.Shared;
 
 using Microsoft.AspNetCore.Mvc;
@@ -22,8 +21,8 @@ namespace DcaShop.Cart.Adapter.Incoming.Web.CartRecovery;
 /// </para>
 /// <para>
 /// The guest travels in the URL and the form. The merge and the take-over carry the guest the identity says the
-/// visitor was before the login beside it, and act only when the two match; a refusal opens the cart page without
-/// a notice.
+/// visitor was before the login beside it, and act only when the two match; the result's <c>GuestCartNotOwned</c>
+/// case opens the cart page without a notice.
 /// </para>
 /// </remarks>
 [Route("cart/merge")]
@@ -99,24 +98,18 @@ public sealed class CartMergePageController : Controller
         }
 
         var identity = _identityProvider.GetCurrentIdentity();
-        try
-        {
-            await _mergeCarts.ExecuteAsync(
-                new MergeCartsCommand(
-                    anonymousUserId, identity.UserId.Value, chosen, identity.GuestBeforeLogin?.Value),
-                cancellationToken);
-        }
-        catch (GuestCartNotOwnedException)
-        {
-            return Redirect(CartPage);
-        }
+        var result = await _mergeCarts.ExecuteAsync(
+            new MergeCartsCommand(anonymousUserId, identity.UserId.Value, chosen, identity.GuestBeforeLogin?.Value),
+            cancellationToken);
 
-        return RedirectWithNoticeForTheCart(Destination(returnUrl), chosen switch
-        {
-            CartMergeStrategy.MergeBoth => CartPageNotice.CartsMerged,
-            CartMergeStrategy.UseAccountCart => CartPageNotice.AccountCartUsed,
-            _ => CartPageNotice.RecentCartUsed,
-        });
+        return result.Match(
+            merged => RedirectWithNoticeForTheCart(Destination(returnUrl), chosen switch
+            {
+                CartMergeStrategy.MergeBoth => CartPageNotice.CartsMerged,
+                CartMergeStrategy.UseAccountCart => CartPageNotice.AccountCartUsed,
+                _ => CartPageNotice.RecentCartUsed,
+            }),
+            notOwned => Redirect(CartPage));
     }
 
     [HttpPost("take-over")]
@@ -126,18 +119,13 @@ public sealed class CartMergePageController : Controller
         CancellationToken cancellationToken)
     {
         var identity = _identityProvider.GetCurrentIdentity();
-        try
-        {
-            await _recoverCart.ExecuteAsync(
-                new RecoverCartCommand(anonymousUserId, identity.UserId.Value, identity.GuestBeforeLogin?.Value),
-                cancellationToken);
-        }
-        catch (GuestCartNotOwnedException)
-        {
-            return Redirect(CartPage);
-        }
+        var result = await _recoverCart.ExecuteAsync(
+            new RecoverCartCommand(anonymousUserId, identity.UserId.Value, identity.GuestBeforeLogin?.Value),
+            cancellationToken);
 
-        return RedirectWithNoticeForTheCart(Destination(returnUrl), CartPageNotice.WelcomeBack);
+        return result.Match(
+            recovered => RedirectWithNoticeForTheCart(Destination(returnUrl), CartPageNotice.WelcomeBack),
+            notOwned => Redirect(CartPage));
     }
 
     /// <summary>The return page when it is a page of the shop; the cart page otherwise.</summary>

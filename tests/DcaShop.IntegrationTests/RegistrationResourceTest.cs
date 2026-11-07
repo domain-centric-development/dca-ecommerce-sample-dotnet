@@ -77,7 +77,7 @@ public sealed class RegistrationResourceTest : IClassFixture<WebApplicationFacto
                 Commands.Add(command);
             }
 
-            return Task.FromResult(new RegisterAccountResult(
+            return Task.FromResult<RegisterAccountResult>(new RegisterAccountResult.Registered(
                 Guid.NewGuid().ToString(), command.CurrentUserId, command.Email, new HashSet<Role> { Role.Customer }));
         }
     }

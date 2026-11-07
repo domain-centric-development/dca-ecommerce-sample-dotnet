@@ -122,3 +122,9 @@ browser's own. A third cookie keeps it:
 valid anonymous token, and sets `IIdentityProvider.IIdentity.GuestBeforeLogin`. The Cart context's merge and
 take-over carry that value in their commands and refuse any other guest (`GuestCartNotOwnedException`, ADR-007).
 The cookie is written by `CookieWriter` with the same hardening as the other two.
+
+## 2026-11-07 note: the guest's refusal is a result case
+
+Since ADR-017 the merge and the take-over do not throw `GuestCartNotOwnedException` any more: they return
+`MergeCartsResult.GuestCartNotOwned` and `RecoverCartResult.GuestCartNotOwned`, and the page answers that case as it
+answered the exception — the cart page, without a notice. The cookie and its reading are unchanged.

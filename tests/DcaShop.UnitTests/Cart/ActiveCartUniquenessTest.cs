@@ -1,5 +1,6 @@
 using DcaShop.Cart.Adapter.Outgoing.Persistence;
 using DcaShop.Cart.Application.Shared;
+using DcaShop.Cart.Application.Shopping.CreateCart;
 using DcaShop.Cart.Application.Shopping.GetOrCreateActiveCart;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Infrastructure.Transactions;
@@ -31,6 +32,21 @@ public sealed class ActiveCartUniquenessTest
 
         await Assert.ThrowsAsync<ActiveCartAlreadyExistsException>(() =>
             carts.SaveAsync(ShoppingCart.Create(CartId.Generate(), customer)));
+    }
+
+    [Fact]
+    public async Task OpeningASecondCartReturnsTheRefusalAndKeepsTheFirst()
+    {
+        var carts = new InMemoryShoppingCartRepository();
+        var customer = $"customer-{Guid.NewGuid()}";
+        var useCase = new CreateCartUseCase(carts, new SilentPublisher(), new InMemoryTransactionBoundary());
+        var first = await useCase.ExecuteAsync(new CreateCartCommand(customer));
+
+        var second = await useCase.ExecuteAsync(new CreateCartCommand(customer));
+
+        Assert.Equal(CustomerId.Of(customer), second.AsT1.CustomerId);
+        Assert.Equal(first.AsT0.CartId, (await carts.FindActiveByCustomerAsync(CustomerId.Of(customer)))!.Id.Value);
+        Assert.Single(await carts.FindByCustomerAsync(CustomerId.Of(customer)));
     }
 
     [Fact]

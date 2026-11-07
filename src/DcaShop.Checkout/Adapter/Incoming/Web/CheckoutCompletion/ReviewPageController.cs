@@ -39,6 +39,10 @@ public sealed class ReviewPageController : Controller
     private async Task<IActionResult> RenderAsync(CheckoutCartSnapshot session, string? error, CancellationToken cancellationToken)
     {
         var review = await _review.ExecuteAsync(new GetReviewQuery(session.SessionId.Value, _page.CurrentCustomerId()), cancellationToken);
-        return View("~/Views/Checkout/Review.cshtml", new ReviewPageViewModel(review.Order, review.Fingerprint, error));
+        return review.Match<IActionResult>(
+            found => View("~/Views/Checkout/Review.cshtml", new ReviewPageViewModel(found.Order, found.Fingerprint, error)),
+            // The page renders a session the step access just found; one gone in between is no refusal the page
+            // words — it fails the request as it always did.
+            notFound => throw new InvalidOperationException($"The checkout session to review is gone: {notFound.SessionId}"));
     }
 }

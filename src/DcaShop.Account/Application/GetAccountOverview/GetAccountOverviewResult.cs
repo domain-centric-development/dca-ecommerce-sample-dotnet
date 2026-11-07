@@ -1,11 +1,19 @@
+using DomainCentric.BuildingBlocks.Application;
+
+using OneOf;
+
 namespace DcaShop.Account.Application.GetAccountOverview;
 
-/// <summary>The overview, or nothing when the identity has no account the session may act on.</summary>
-public sealed record GetAccountOverviewResult(GetAccountOverviewResult.AccountOverview? Account)
+/// <summary>The overview, or no account the session may act on.</summary>
+[GenerateOneOf]
+public sealed partial class GetAccountOverviewResult
+    : OneOfBase<GetAccountOverviewResult.Found, GetAccountOverviewResult.AccountNotAccessible>
 {
-    public bool Found => Account is not null;
+    /// <summary>The account's overview.</summary>
+    public sealed record Found(AccountOverview Account);
 
-    public static GetAccountOverviewResult NotFound() => new((AccountOverview?)null);
+    /// <summary>The identity has no account the session may act on — closed, suspended, or none.</summary>
+    public sealed record AccountNotAccessible : IRefusal;
 
     /// <summary>What the account landing page shows.</summary>
     public sealed record AccountOverview(string Email, DateTimeOffset? LastLoginAt)

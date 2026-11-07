@@ -12,7 +12,8 @@ public interface IShoppingCartRepository : IRepository<ShoppingCart, CartId>
     /// One customer's cart by id — <see langword="null"/> when it does not exist <em>or</em> is not theirs. Every
     /// use case that acts on a cart a caller named reaches for this rather than <see cref="IRepository{T,TId}.FindByIdAsync"/>:
     /// the two cases are indistinguishable on purpose, and a persistence adapter expresses it as one predicate.
-    /// <see cref="IRepository{T,TId}.FindByIdAsync"/> stays for the system paths that act on nobody's behalf.
+    /// The cart is an owned aggregate; <see cref="IRepository{T,TId}.FindByIdAsync"/> stays for the system paths that
+    /// act on nobody's behalf and hold no owner to name.
     /// </summary>
     Task<ShoppingCart?> FindByIdForCustomerAsync(CartId id, CustomerId customerId, CancellationToken cancellationToken = default);
 

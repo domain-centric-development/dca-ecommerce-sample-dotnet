@@ -31,7 +31,7 @@ public sealed class ProductCatalogService
     public async Task<ProductInfo?> GetProductInfoAsync(ProductId productId, CancellationToken cancellationToken = default)
     {
         var result = await _getProductById.ExecuteAsync(new GetProductByIdQuery(productId.Value), cancellationToken).ConfigureAwait(false);
-        return result.Product is null ? null : ToInfo(result.Product);
+        return result.Match<ProductInfo?>(found => ToInfo(found.Product), notFound => null);
     }
 
     public async Task<IReadOnlyList<ProductInfo>> GetAllProductsAsync(CancellationToken cancellationToken = default)

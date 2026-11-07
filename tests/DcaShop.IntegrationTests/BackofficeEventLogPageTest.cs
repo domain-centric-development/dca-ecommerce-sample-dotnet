@@ -307,7 +307,9 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
             ReplayFailedPublicationCommand command, CancellationToken cancellationToken = default)
         {
             Commands.Add(command);
-            return Task.FromResult(new ReplayFailedPublicationResult(_found));
+            return Task.FromResult<ReplayFailedPublicationResult>(_found
+                ? new ReplayFailedPublicationResult.Replayed()
+                : new ReplayFailedPublicationResult.PublicationNotFound(command.PublicationId, command.ListenerId));
         }
     }
 }

@@ -18,10 +18,16 @@ public interface IPaymentProvider : IOutputPort
     string DisplayName { get; }
 
     /// <summary>
-    /// Creates a payment intent or its equivalent with the provider. The result carries the provider-specific
-    /// reference the payment is tracked and completed by.
+    /// Creates a payment intent or its equivalent with the provider and answers the provider-specific reference the
+    /// payment is tracked and completed by. The provider is a foreign system: its refusal and its being unreachable are
+    /// expected, and this contract declares each as its own failure, which every implementation throws whatever its
+    /// mechanism is.
     /// </summary>
-    Task<IPaymentProvider.PaymentResult> InitiatePaymentAsync(CheckoutSessionId sessionId, Money amount, CancellationToken cancellationToken = default);
+    /// <exception cref="PaymentInitiationFailedException">The provider answered and refused the payment.</exception>
+    /// <exception cref="PaymentProviderUnavailableException">
+    /// The provider did not answer in time, could not be reached, or answered outside its contract.
+    /// </exception>
+    Task<string> InitiatePaymentAsync(CheckoutSessionId sessionId, Money amount, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Confirms a payment that was initiated earlier. Providers that complete the payment on initiation may

@@ -51,7 +51,7 @@ public sealed class CheckoutSpecificationTest
             case "checkout.superseded.confirm-rejected":
                 {
                     var next = await f.Start(); Assert.NotEqual(session.Id, next.Id); Assert.Equal(CheckoutSessionStatus.Superseded, session.Status);
-                    await Assert.ThrowsAsync<CheckoutNotModifiableException>(() => f.Confirm(session)); Assert.Empty(session.DomainEvents); break;
+                    Assert.IsType<ConfirmCheckoutResult.CheckoutNotModifiable>((await f.Confirm(session)).Value); Assert.Empty(session.DomainEvents); break;
                 }
             case "checkout.abandon.preserves-cart":
                 {
@@ -60,14 +60,14 @@ public sealed class CheckoutSpecificationTest
                 }
             case "checkout.completed.not-superseded":
                 {
-                    await f.Confirm(session); session.Complete("order"); await f.Start(); Assert.Equal(CheckoutSessionStatus.Completed, session.Status); break;
+                    Assert.IsType<ConfirmCheckoutResult.Confirmed>((await f.Confirm(session)).Value); session.Complete("order"); await f.Start(); Assert.Equal(CheckoutSessionStatus.Completed, session.Status); break;
                 }
             case "checkout.confirm.out-of-stock":
                 {
                     var totals = session.Totals; var events = f.Events.Published.Count;
                     if (v.TryGetProperty("newUnitPrice", out var newPrice)) f.Price = Money.Euro(decimal.Parse(newPrice.GetString()!, System.Globalization.CultureInfo.InvariantCulture));
                     if (v.TryGetProperty("newStock", out var newStock)) f.Stock = newStock.GetInt32();
-                    var failure = await Assert.ThrowsAsync<CheckoutValidationException>(() => f.Confirm(session));
+                    var failure = Assert.IsType<ConfirmCheckoutResult.CheckoutValidation>((await f.Confirm(session)).Value);
                     Assert.Equal(f.Product, Assert.Single(failure.Validation.Errors).ProductId);
                     Assert.False(v.GetProperty("accept").GetBoolean());
                     Assert.Equal(v.GetProperty("errors").GetInt32(), failure.Validation.Errors.Count);
@@ -79,7 +79,7 @@ public sealed class CheckoutSpecificationTest
                     // The review showed the price the checkout started with; a price changed since refuses the order
                     var totals = session.Totals; var events = f.Events.Published.Count; var shown = f.Review(session);
                     f.Price = Money.Euro(decimal.Parse(v.GetProperty("newUnitPrice").GetString()!, System.Globalization.CultureInfo.InvariantCulture));
-                    await Assert.ThrowsAsync<PriceChangedSinceReviewException>(() => f.Confirm(session, shown));
+                    Assert.IsType<ConfirmCheckoutResult.PriceChangedSinceReview>((await f.Confirm(session, shown)).Value);
                     Assert.False(v.GetProperty("accept").GetBoolean());
                     Assert.Equal(CheckoutSessionStatus.Active, session.Status);
                     Assert.Equal(totals, session.Totals); Assert.Empty(session.DomainEvents); Assert.Equal(events, f.Events.Published.Count); break;
@@ -87,7 +87,7 @@ public sealed class CheckoutSpecificationTest
             case "checkout.confirm.unchanged":
             case "checkout.confirmed-event.total":
                 {
-                    await f.Confirm(session); var confirmed = Assert.IsType<CheckoutConfirmed>(f.Events.Published.Last());
+                    Assert.IsType<ConfirmCheckoutResult.Confirmed>((await f.Confirm(session)).Value); var confirmed = Assert.IsType<CheckoutConfirmed>(f.Events.Published.Last());
                     Assert.True(v.GetProperty("accept").GetBoolean());
                     Assert.Equal(Money.Euro(decimal.Parse(v.GetProperty("total").GetString()!, System.Globalization.CultureInfo.InvariantCulture)), session.Totals.Total); Assert.Equal(session.Totals.Total, confirmed.TotalAmount); break;
                 }
@@ -107,7 +107,7 @@ public sealed class CheckoutSpecificationTest
         if (confirmationWins) Assert.False(second.IsCompleted);
         f.Events.Release.TrySetResult(); await first;
         if (confirmationWins) { await second; Assert.Equal(CheckoutSessionStatus.Confirmed, session.Status); }
-        else { await Assert.ThrowsAsync<CheckoutNotModifiableException>(() => second); Assert.Equal(CheckoutSessionStatus.Superseded, session.Status); }
+        else { Assert.IsType<ConfirmCheckoutResult.CheckoutNotModifiable>((await (Task<ConfirmCheckoutResult>)second).Value); Assert.Equal(CheckoutSessionStatus.Superseded, session.Status); }
     }
     private static void Ready(CheckoutSession s)
     {
@@ -133,7 +133,7 @@ public sealed class CheckoutSpecificationTest
         {
             var result = await new StartCheckoutUseCase(this, new CheckoutCartFactory(), this, Repository, Events, new InMemoryTransactionBoundary())
                 .ExecuteAsync(new StartCheckoutCommand(Cart.Id.Value, Cart.CustomerId.Value));
-            return (await Repository.FindByIdAsync(new CheckoutSessionId(result.SessionId)))!;
+            return (await Repository.FindByIdAsync(new CheckoutSessionId(Assert.IsType<StartCheckoutResult.Started>(result.Value).SessionId)))!;
         }
         /// <summary>Places the order with the fingerprint the review <paramref name="shown"/> — by default the one it shows now.</summary>
         public Task<ConfirmCheckoutResult> Confirm(CheckoutSession session, string? shown = null) => new ConfirmCheckoutUseCase(Repository, this, this, new InMemoryPaymentProviderRegistry([new StandIn()]), new CheckoutPricing(), Events, new InMemoryTransactionBoundary(), NullLogger<ConfirmCheckoutUseCase>.Instance).ExecuteAsync(new ConfirmCheckoutCommand(session.Id.Value, session.CustomerId.Value, shown ?? Review(session)));
@@ -150,7 +150,7 @@ public sealed class CheckoutSpecificationTest
     {
         public PaymentProviderId Id => PaymentProviderId.Of("invoice");
         public string DisplayName => "Invoice";
-        public Task<IPaymentProvider.PaymentResult> InitiatePaymentAsync(CheckoutSessionId sessionId, Money amount, CancellationToken cancellationToken = default) => Task.FromResult(IPaymentProvider.PaymentResult.Succeeded("invoice-" + sessionId));
+        public Task<string> InitiatePaymentAsync(CheckoutSessionId sessionId, Money amount, CancellationToken cancellationToken = default) => Task.FromResult("invoice-" + sessionId);
         public Task<IPaymentProvider.PaymentResult> ConfirmPaymentAsync(string providerReference, CancellationToken cancellationToken = default) => Task.FromResult(IPaymentProvider.PaymentResult.Succeeded(providerReference));
         public Task<IPaymentProvider.PaymentResult> CancelPaymentAsync(string providerReference, CancellationToken cancellationToken = default) => Task.FromResult(IPaymentProvider.PaymentResult.Succeeded(providerReference));
         public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);

@@ -1,25 +1,23 @@
-using DcaShop.Account.Application.RegisterAccount;
 using DcaShop.Account.Domain.Model;
 
-using DomainCentric.BuildingBlocks.Application;
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 namespace DcaShop.Account.Adapter.Incoming.Api;
 
 /// <summary>
-/// Translates the account context's failures into HTTP answers — the one place in this context that knows the
-/// protocol.
+/// Translates what is still <em>thrown</em> towards the account context's routes into HTTP answers.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Authentication itself does not arrive here: a wrong password is an outcome of the authentication use case,
-/// returned as a value, and the resource renders it. What arrives are the refusals: an address somebody else
-/// holds, a password the model will not accept, an account that is closed.
+/// The account's use cases return every refusal a caller answers as a case of their result — a wrong password, an
+/// address somebody else holds, a password the model will not accept — and <see cref="AuthResource"/> matches over
+/// it. What reaches this handler is what no use case returns: a rule of the model no use case names as a case of its
+/// own, and a value a value object refuses. The words are shared with the resource through
+/// <see cref="AccountProblem"/>.
 /// </para>
 /// <para>
 /// Scoped to this context's own routes: an adapter answers for its own module only. A handler chain is one
@@ -31,15 +29,10 @@ public sealed class AccountApiExceptionHandler : IExceptionHandler
 {
     private static readonly string[] RoutePrefixes = ["/api/auth"];
 
-    /// <summary>The failure names no attempt, so the sentence is the adapter's own.</summary>
-    private const string AccountAlreadyExistsDetail = "The signed-in user already has an account.";
-
-    private readonly IProblemDetailsService _problemDetails;
     private readonly ILogger<AccountApiExceptionHandler> _logger;
 
-    public AccountApiExceptionHandler(IProblemDetailsService problemDetails, ILogger<AccountApiExceptionHandler> logger)
+    public AccountApiExceptionHandler(ILogger<AccountApiExceptionHandler> logger)
     {
-        _problemDetails = problemDetails;
         _logger = logger;
     }
 
@@ -52,80 +45,33 @@ public sealed class AccountApiExceptionHandler : IExceptionHandler
 
         switch (exception)
         {
-            // Another account already holds that address.
-            case EmailAlreadyRegisteredException taken:
-                return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status409Conflict, "Email already registered", $"The email address {taken.Email.Value} is already registered.");
-
-            // The signed-in user already has an account.
-            case AccountAlreadyExistsException:
-                return ProblemAsync(httpContext, exception, StatusCodes.Status409Conflict, "Account already exists", AccountAlreadyExistsDetail);
-
-            // The password does not meet the strength rules. The answer names the broken rule — the rule, never the
-            // attempt.
-            case PasswordTooWeakException weak:
-                return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status422UnprocessableEntity, "Password too weak", PasswordRuleSentence(weak.Rule));
-
             // The account exists but is closed.
             case AccountClosedException closed:
-                return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status409Conflict, "Account closed", $"Account {closed.AccountId.Value} is closed.");
+                return AccountProblem.AccountClosed(closed.AccountId).WriteAsync(httpContext, exception);
 
-            // The account's status does not allow signing in. The status itself is deliberately not in the
-            // answer: it would tell a stranger which addresses have suspended accounts.
+            // The account's status does not allow signing in; the status stays in the log.
             case AccountNotAccessibleException inaccessible:
                 _logger.LogInformation(
                     "Sign-in refused for account {AccountId}: {Status}", inaccessible.AccountId.Value, inaccessible.Status);
-                return ProblemAsync(httpContext, exception, StatusCodes.Status403Forbidden, "Account not accessible", "This account cannot sign in.");
+                return AccountProblem.AccountNotAccessible().WriteAsync(httpContext, exception);
 
-            // Any other failure the use case reports.
-            case UseCaseException:
-                return ProblemAsync(httpContext, exception, StatusCodes.Status422UnprocessableEntity, "Request cannot be served");
-
-            // A rule of the model refused the request.
+            // A rule of the model refused the request that no use case returns as a case.
             case DomainException:
-                return ProblemAsync(httpContext, exception, StatusCodes.Status422UnprocessableEntity, "Business rule violated");
+                return AccountProblem.BusinessRuleViolated().WriteAsync(httpContext, exception);
 
             // A value the caller sent is not acceptable to a value object — a malformed address, a blank name.
             // The one mapping that stays imprecise: this is also the type a defect in this application raises,
             // and nothing in the type tells the two apart.
             case ArgumentException:
                 _logger.LogDebug("Rejected request value: {Reason}", exception.Message);
-                return ProblemAsync(httpContext, exception, StatusCodes.Status400BadRequest, "Unacceptable value");
+                return AccountProblem.UnacceptableValue().WriteAsync(httpContext, exception);
 
             default:
                 return ValueTask.FromResult(false);
         }
     }
 
-    private static string PasswordRuleSentence(PasswordRule rule) => rule switch
-    {
-        PasswordRule.TooShort => $"Password must be at least {HashedPassword.MinLength} characters long.",
-        PasswordRule.TooLong => $"Password must not be longer than {HashedPassword.MaxByteLength} bytes.",
-        PasswordRule.NoUppercaseLetter => "Password must contain an uppercase letter.",
-        PasswordRule.NoLowercaseLetter => "Password must contain a lowercase letter.",
-        PasswordRule.NoDigit => "Password must contain a digit.",
-        _ => throw new ArgumentOutOfRangeException(nameof(rule), rule, null),
-    };
-
     private static bool IsOwnRoute(HttpContext httpContext) =>
         httpContext.Request.Path.Value is { } path
         && RoutePrefixes.Any(prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
-
-    /// <summary>
-    /// Writes the problem document. The detail is worded here, from the failure's values — the exception's message
-    /// is for the log, never for the caller; a catch-all arm answers with its title alone.
-    /// </summary>
-    private async ValueTask<bool> ProblemAsync(
-        HttpContext httpContext, Exception exception, int status, string title, string? detail = null)
-    {
-        httpContext.Response.StatusCode = status;
-        return await _problemDetails.TryWriteAsync(new ProblemDetailsContext
-        {
-            HttpContext = httpContext,
-            Exception = exception,
-            ProblemDetails = new ProblemDetails { Status = status, Title = title, Detail = detail },
-        }).ConfigureAwait(false);
-    }
 }

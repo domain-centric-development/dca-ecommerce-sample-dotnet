@@ -67,9 +67,10 @@ public sealed class RegisterPageController : Controller
             return Rejected(submission, SubmittedDate.NotADate);
         }
 
+        RegisterAccountResult result;
         try
         {
-            var result = await _registerAccount.ExecuteAsync(
+            result = await _registerAccount.ExecuteAsync(
                 new RegisterAccountCommand(
                     email,
                     password,
@@ -78,34 +79,34 @@ public sealed class RegisterPageController : Controller
                     lastName,
                     parsedDateOfBirth),
                 cancellationToken);
-
-            _identitySession.SetRegisteredIdentity(
-                _tokenService.GenerateRegisteredToken(UserId.Of(result.UserId), result.Email, result.Roles));
-
-            var target = submission.ReturnUrl ?? "/";
-            TempData.Leave(AccountPageNotices.AddressedTo(target), AccountPageNotice.AccountCreated);
-            return Redirect(target);
         }
-        catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
+        catch (ArgumentException)
         {
-            // The context's own refusals, plus the argument exception a form field still reaches a value object
-            // with.
-            return Rejected(submission, MessageFor(e));
+            // The argument exception a form field still reaches a value object with.
+            return Rejected(submission, "Please check the email address, your name and your date of birth.");
         }
+        catch (DomainException)
+        {
+            // A rule of the model no use case returns as a case of its own.
+            return Rejected(submission, "The account could not be created. Please try again.");
+        }
+
+        return result.Match(
+            registered => SignedUp(registered, submission),
+            emailTaken => Rejected(submission, "This email address is already registered"),
+            alreadyExists => Rejected(submission, "You already have an account."),
+            weak => Rejected(submission, ChangePasswordPageController.PasswordRuleSentence(weak.BrokenRule)));
     }
 
-    /// <summary>
-    /// What the page tells the visitor, worded from the failure's type and values — the exception's message is for
-    /// the log, never for the page.
-    /// </summary>
-    private static string MessageFor(Exception failure) => failure switch
+    private IActionResult SignedUp(RegisterAccountResult.Registered registered, RegisterPageViewModel submission)
     {
-        EmailAlreadyRegisteredException => "This email address is already registered",
-        AccountAlreadyExistsException => "You already have an account.",
-        PasswordTooWeakException weak => ChangePasswordPageController.PasswordRuleSentence(weak.Rule),
-        ArgumentException => "Please check the email address, your name and your date of birth.",
-        _ => "The account could not be created. Please try again.",
-    };
+        _identitySession.SetRegisteredIdentity(
+            _tokenService.GenerateRegisteredToken(UserId.Of(registered.UserId), registered.Email, registered.Roles));
+
+        var target = submission.ReturnUrl ?? "/";
+        TempData.Leave(AccountPageNotices.AddressedTo(target), AccountPageNotice.AccountCreated);
+        return Redirect(target);
+    }
 
     private IActionResult Rejected(RegisterPageViewModel submission, string error) =>
         View("~/Views/Account/Register.cshtml", submission with { ErrorMessage = error });

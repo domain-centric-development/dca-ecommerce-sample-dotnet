@@ -150,7 +150,7 @@ in the same transaction — a redelivery cannot reset a price that changed since
 **Definition:** A price change named a product Pricing holds no price for — answered "not found". Pricing knows no
 catalogue, so a product created but not yet priced is refused the same way.
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IProductPriceRepository.FindByProductIdAsync`, Price change (`ChangePrice`)
+**Type:** Refusal case of a use-case result (`IRefusal`) · **Related terms:** `IProductPriceRepository.FindByProductIdAsync`, Price change (`ChangePrice`)
 
 ---
 

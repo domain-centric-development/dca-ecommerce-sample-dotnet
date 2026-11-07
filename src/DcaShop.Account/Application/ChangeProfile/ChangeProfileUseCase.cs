@@ -10,7 +10,10 @@ using Microsoft.Extensions.Logging;
 
 namespace DcaShop.Account.Application.ChangeProfile;
 
-/// <summary>Changes the login address and the owner's date of birth of the current account.</summary>
+/// <summary>
+/// Changes the login address and the owner's date of birth of the current account. Every refusal is returned as a
+/// case of <see cref="ChangeProfileResult"/>, decided before either value is applied.
+/// </summary>
 public sealed class ChangeProfileUseCase : IChangeProfileInputPort
 {
     private readonly IAccountRepository _accounts;
@@ -35,14 +38,14 @@ public sealed class ChangeProfileUseCase : IChangeProfileInputPort
     {
         var userId = UserId.Of(command.UserId);
 
-        return await _transactionBoundary.InTransactionAsync(
+        return await _transactionBoundary.InTransactionAsync<ChangeProfileResult>(
             async ct =>
             {
                 var account = await _accounts.FindByLinkedUserIdAsync(userId, ct).ConfigureAwait(false);
                 if (account is null || !account.Status.CanLogin())
                 {
                     _logger.LogWarning("Profile change attempt without an accessible account");
-                    return ChangeProfileResult.AccountNotAccessible();
+                    return new ChangeProfileResult.AccountNotAccessible();
                 }
 
                 // Both values are checked before either is applied, so a rejection leaves the profile whole.
@@ -54,20 +57,20 @@ public sealed class ChangeProfileUseCase : IChangeProfileInputPort
                 catch (ArgumentException e)
                 {
                     _logger.LogDebug("Profile change rejected: {Reason}", e.Message);
-                    return ChangeProfileResult.EmailInvalid();
+                    return new ChangeProfileResult.EmailInvalid();
                 }
 
                 if (!UsableDateOfBirth.Rule.IsSatisfiedBy(command.DateOfBirth))
                 {
                     _logger.LogDebug("Profile change rejected: date of birth not usable");
-                    return ChangeProfileResult.DateOfBirthInvalid();
+                    return new ChangeProfileResult.DateOfBirthInvalid();
                 }
 
                 if (newEmail != account.Email
                     && await _accounts.ExistsByEmailAsync(newEmail, ct).ConfigureAwait(false))
                 {
                     _logger.LogDebug("Profile change rejected: email already in use");
-                    return ChangeProfileResult.EmailAlreadyInUse();
+                    return new ChangeProfileResult.EmailAlreadyInUse();
                 }
 
                 account.ChangeEmail(newEmail);
@@ -76,7 +79,7 @@ public sealed class ChangeProfileUseCase : IChangeProfileInputPort
                 await _events.PublishAndClearEventsAsync(account, ct).ConfigureAwait(false);
 
                 _logger.LogInformation("Profile changed for account {AccountId}", account.Id);
-                return ChangeProfileResult.Changed(
+                return new ChangeProfileResult.Changed(
                     new ChangeProfileResult.ProfileView(account.Email.Value, account.Owner.DateOfBirth));
             },
             cancellationToken).ConfigureAwait(false);

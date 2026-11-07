@@ -5,5 +5,7 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../DcaShop.SharedKernel/DcaShop.SharedKernel.csproj" />
+    <PackageReference Include="OneOf" Version="$(OneOfVersion)" />
+    <PackageReference Include="OneOf.SourceGenerator" Version="$(OneOfVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

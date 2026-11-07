@@ -60,14 +60,15 @@ internal sealed class PortCheckouts(WebApplicationFactory<Program> shop)
         var cart = await services.GetRequiredService<IGetOrCreateActiveCartInputPort>().ExecuteAsync(new GetOrCreateActiveCartCommand(customerId));
         foreach (var (id, quantity) in products)
         {
-            await services.GetRequiredService<IAddItemToCartInputPort>().ExecuteAsync(new AddItemToCartCommand(cart.CartId, customerId, id, quantity));
+            Assert.IsType<AddItemToCartResult.Added>((await services.GetRequiredService<IAddItemToCartInputPort>().ExecuteAsync(new AddItemToCartCommand(cart.CartId, customerId, id, quantity))).Value);
         }
 
-        var sessionId = (await services.GetRequiredService<IStartCheckoutInputPort>().ExecuteAsync(new StartCheckoutCommand(cart.CartId, customerId))).SessionId;
-        await services.GetRequiredService<ISubmitBuyerInfoInputPort>().ExecuteAsync(
-            new SubmitBuyerInfoCommand(sessionId, customerId, BuyerEmail, "Jane", "Doe", "+49 30 1234567"));
-        await services.GetRequiredService<ISubmitDeliveryInputPort>().ExecuteAsync(
-            new SubmitDeliveryCommand(sessionId, customerId, "Hauptstrasse 1", null, "Berlin", "10115", "Germany", null, shippingOption));
+        var started = await services.GetRequiredService<IStartCheckoutInputPort>().ExecuteAsync(new StartCheckoutCommand(cart.CartId, customerId));
+        var sessionId = Assert.IsType<StartCheckoutResult.Started>(started.Value).SessionId;
+        Assert.IsType<SubmitBuyerInfoResult.Submitted>((await services.GetRequiredService<ISubmitBuyerInfoInputPort>().ExecuteAsync(
+            new SubmitBuyerInfoCommand(sessionId, customerId, BuyerEmail, "Jane", "Doe", "+49 30 1234567"))).Value);
+        Assert.IsType<SubmitDeliveryResult.Submitted>((await services.GetRequiredService<ISubmitDeliveryInputPort>().ExecuteAsync(
+            new SubmitDeliveryCommand(sessionId, customerId, "Hauptstrasse 1", null, "Berlin", "10115", "Germany", null, shippingOption))).Value);
         return new CustomersCheckout(sessionId, customerId);
     }
 
@@ -75,7 +76,7 @@ internal sealed class PortCheckouts(WebApplicationFactory<Program> shop)
     public async Task<CustomersCheckout> AtTheReviewAsync(string shippingOption, params (string Product, int Quantity)[] lines)
     {
         var checkout = await AtThePaymentStepAsync(shippingOption, lines);
-        await ChooseTheProviderAsync(checkout);
+        Assert.IsType<SubmitPaymentResult.Submitted>((await ChooseTheProviderAsync(checkout)).Value);
         return checkout;
     }
 
@@ -93,9 +94,14 @@ internal sealed class PortCheckouts(WebApplicationFactory<Program> shop)
         using var scope = shop.Services.CreateScope();
         var review = await scope.ServiceProvider.GetRequiredService<IGetReviewInputPort>()
             .ExecuteAsync(new GetReviewQuery(checkout.SessionId, checkout.CustomerId));
+        var fingerprint = Assert.IsType<GetReviewResult.Found>(review.Value).Fingerprint;
         return await scope.ServiceProvider.GetRequiredService<IConfirmCheckoutInputPort>()
-            .ExecuteAsync(new ConfirmCheckoutCommand(checkout.SessionId, checkout.CustomerId, review.Fingerprint));
+            .ExecuteAsync(new ConfirmCheckoutCommand(checkout.SessionId, checkout.CustomerId, fingerprint));
     }
+
+    /// <summary>The customer presses "Place Order" on the review, and the order is placed.</summary>
+    public async Task<ConfirmCheckoutResult.Confirmed> PlacedOrderAsync(CustomersCheckout checkout) =>
+        Assert.IsType<ConfirmCheckoutResult.Confirmed>((await PlaceOrderAsync(checkout)).Value);
 
     /// <summary>The checkout session as it is stored now.</summary>
     public async Task<CheckoutCartSnapshot> SessionAsync(CustomersCheckout checkout)
@@ -103,7 +109,7 @@ internal sealed class PortCheckouts(WebApplicationFactory<Program> shop)
         using var scope = shop.Services.CreateScope();
         var found = await scope.ServiceProvider.GetRequiredService<IGetCheckoutSessionInputPort>()
             .ExecuteAsync(new GetCheckoutSessionQuery(checkout.SessionId, checkout.CustomerId));
-        return found.Session!;
+        return Assert.IsType<GetCheckoutSessionResult.Found>(found.Value).Session;
     }
 
     /// <summary>The stock of the product as Inventory holds it now.</summary>

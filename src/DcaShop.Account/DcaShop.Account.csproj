@@ -9,5 +9,7 @@
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
+    <PackageReference Include="OneOf" Version="$(OneOfVersion)" />
+    <PackageReference Include="OneOf.SourceGenerator" Version="$(OneOfVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

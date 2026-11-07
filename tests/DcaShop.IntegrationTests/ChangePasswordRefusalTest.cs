@@ -27,8 +27,7 @@ public sealed class ChangePasswordRefusalTest : IClassFixture<WebApplicationFact
 
         var result = await changePassword.ExecuteAsync(new ChangePasswordCommand(userId, "Wrong999", "weakpass"));
 
-        Assert.Equal(ChangePasswordOutcome.CurrentPasswordInvalid, result.Outcome);
-        Assert.Null(result.BrokenRule);
+        Assert.IsType<ChangePasswordResult.CurrentPasswordInvalid>(result.Value);
     }
 
     /// <summary>Registers Anna under an address and a visitor identity of her own; answers that identity.</summary>
@@ -39,7 +38,7 @@ public sealed class ChangePasswordRefusalTest : IClassFixture<WebApplicationFact
         var registered = await scope.ServiceProvider.GetRequiredService<IRegisterAccountInputPort>().ExecuteAsync(
             new RegisterAccountCommand(
                 $"anna.schmidt-{Guid.NewGuid():N}@example.com", Password, userId, "Anna", "Schmidt", new DateOnly(1990, 5, 17)));
-        Assert.Equal(userId, registered.UserId);
+        Assert.Equal(userId, Assert.IsType<RegisterAccountResult.Registered>(registered.Value).UserId);
         return userId;
     }
 }

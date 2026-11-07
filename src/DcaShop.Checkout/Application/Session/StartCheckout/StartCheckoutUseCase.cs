@@ -8,7 +8,10 @@ using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
 namespace DcaShop.Checkout.Application.Session.StartCheckout;
 
-/// <summary>Starts a checkout from an active cart. Line items get fresh prices; the cart stays active until confirmation.</summary>
+/// <summary>
+/// Starts a checkout from an active cart. Line items get fresh prices; the cart stays active until confirmation. Every
+/// refusal is returned as a case of <see cref="StartCheckoutResult"/>, decided before the transaction opens.
+/// </summary>
 public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
 {
     private readonly ICartDataPort _cartData;
@@ -33,16 +36,20 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
         var cartId = new CartId(command.CartId);
         // Cart and article data come from other contexts (remote-capable) — outside the transaction
         // Scoped to the caller: a cart that is not theirs is indistinguishable from one that does not exist.
-        var cart = await _cartData.FindByIdAsync(cartId, CustomerId.Of(command.CustomerId), cancellationToken).ConfigureAwait(false)
-                   ?? throw new CartNotAvailableException(cartId);
+        var cart = await _cartData.FindByIdAsync(cartId, CustomerId.Of(command.CustomerId), cancellationToken).ConfigureAwait(false);
+        if (cart is null)
+        {
+            return new StartCheckoutResult.CartNotAvailable(cartId);
+        }
+
         if (!cart.Active)
         {
-            throw new CartNotActiveException(cartId);
+            return new StartCheckoutResult.CartNotActive(cartId);
         }
 
         if (cart.Items.Count == 0)
         {
-            throw new EmptyCartException(cartId);
+            return new StartCheckoutResult.EmptyCart(cartId);
         }
 
         var articles = await _articleData.GetArticleDataAsync(cart.Items.Select(i => i.ProductId).ToArray(), cancellationToken).ConfigureAwait(false);
@@ -51,7 +58,7 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
         {
             if (!articles.TryGetValue(cartItem.ProductId, out var article))
             {
-                throw new ArticleNotAvailableException(cartItem.ProductId);
+                return new StartCheckoutResult.ArticleNotAvailable(cartItem.ProductId);
             }
 
             lineItems.Add(new CheckoutLineItem(CheckoutLineItemId.Generate(), cartItem.ProductId, article.Name, article.CurrentPrice, cartItem.Quantity, article.ImageUrl, cartItem.PositionSnapshot));
@@ -62,21 +69,36 @@ public sealed class StartCheckoutUseCase : IStartCheckoutInputPort
         var checkoutCart = _checkoutCartFactory.Create(cart.CartId, cart.CustomerId, lineItems, articles);
         if (!checkoutCart.IsValidForCheckout)
         {
-            throw new CheckoutItemsUnavailableException(checkoutCart.InvalidItems().Select(i => i.LineItem.ProductId).ToList());
+            return new StartCheckoutResult.CheckoutItemsUnavailable(checkoutCart.InvalidItems().Select(i => i.LineItem.ProductId).ToList());
         }
 
         var subtotal = checkoutCart.CalculateCurrentSubtotal();
 
         // Short transaction: create, save, publish
-        return await _sessions.InCartSessionAsync(cartId, () => _transactionBoundary.InTransactionAsync(
+        return await _sessions.InCartSessionAsync(cartId, () => _transactionBoundary.InTransactionAsync<StartCheckoutResult>(
             async ct =>
             {
+                // Decide, then write: the session refuses an empty checkout before the one it replaces is superseded
+                CheckoutSession session;
+                try
+                {
+                    session = CheckoutSession.Start(cart.CartId, cart.CustomerId, lineItems, subtotal);
+                }
+                catch (EmptyCheckoutException)
+                {
+                    return new StartCheckoutResult.EmptyCart(cartId);
+                }
+
                 var previous = await _sessions.FindActiveByCartIdAsync(cartId, ct).ConfigureAwait(false);
-                if (previous is not null) { previous.Supersede(); await _sessions.SaveAsync(previous, ct).ConfigureAwait(false); }
-                var session = CheckoutSession.Start(cart.CartId, cart.CustomerId, lineItems, subtotal);
+                if (previous is not null)
+                {
+                    previous.Supersede();
+                    await _sessions.SaveAsync(previous, ct).ConfigureAwait(false);
+                }
+
                 await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
-                return StartCheckoutResult.From(session);
+                return StartCheckoutResult.Started.From(session);
             },
             cancellationToken), cancellationToken).ConfigureAwait(false);
     }

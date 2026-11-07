@@ -11,6 +11,12 @@ namespace DcaShop.Cart.Events;
 public interface ICartCompletionTrigger : IIntegrationEvent
 {
     string CartId { get; }
+
+    /// <summary>
+    /// The customer the cart belongs to. The cart is loaded through its owner, never by its id alone, so a trigger that
+    /// names somebody else's cart completes nothing.
+    /// </summary>
+    string CustomerId { get; }
     string SessionId { get; }
     IReadOnlyList<string> PurchasedPositions { get; }
 }

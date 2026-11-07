@@ -16,15 +16,16 @@ public sealed class GetCartByIdUseCase : IGetCartByIdInputPort
 
     public async Task<GetCartByIdResult> ExecuteAsync(GetCartByIdQuery query, CancellationToken cancellationToken = default)
     {
+        var cartId = new CartId(query.CartId);
         var cart = await _carts
-            .FindByIdForCustomerAsync(new CartId(query.CartId), CustomerId.Of(query.CustomerId), cancellationToken)
+            .FindByIdForCustomerAsync(cartId, CustomerId.Of(query.CustomerId), cancellationToken)
             .ConfigureAwait(false);
         if (cart is null)
         {
-            return GetCartByIdResult.NotFound();
+            return new GetCartByIdResult.CartNotFound(cartId);
         }
 
         var enriched = await _reader.ReadAsync(cart, cancellationToken).ConfigureAwait(false);
-        return new GetCartByIdResult(enriched, CartTotals.From(enriched));
+        return new GetCartByIdResult.Found(enriched, CartTotals.From(enriched));
     }
 }

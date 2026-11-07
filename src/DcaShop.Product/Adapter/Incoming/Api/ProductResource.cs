@@ -59,10 +59,11 @@ public sealed class ProductResource : ControllerBase
             request.Category,
             request.Stock);
 
-        // A refused creation travels as the failure's own type; ProductApiExceptionHandler turns it into a
-        // problem document with the status that failure deserves.
+        // A refused creation is a case of the result; ProductProblem words its problem document.
         var result = await _createProduct.ExecuteAsync(command, cancellationToken);
-        return StatusCode(StatusCodes.Status201Created, _converter.ToDto(result, command));
+        return result.Match<ActionResult<ProductDto>>(
+            created => StatusCode(StatusCodes.Status201Created, _converter.ToDto(created, command)),
+            duplicate => ProductProblem.DuplicateSku(duplicate.Sku));
     }
 
     [HttpGet]
@@ -76,6 +77,6 @@ public sealed class ProductResource : ControllerBase
     public async Task<ActionResult<ProductDto>> GetProductById(Guid id, CancellationToken cancellationToken)
     {
         var result = await _getProductById.ExecuteAsync(new GetProductByIdQuery(id), cancellationToken);
-        return result.Product is { } product ? Ok(_converter.ToDto(product)) : NotFound();
+        return result.Match<ActionResult<ProductDto>>(found => Ok(_converter.ToDto(found.Product)), notFound => NotFound());
     }
 }

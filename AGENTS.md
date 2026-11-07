@@ -72,7 +72,7 @@ commit it with the change that caused it. `product/domain.md` is the designed, h
 ## Tech stack
 
 .NET 10 (LTS; SDK pinned via `global.json`), ASP.NET Core MVC + Razor views, xUnit, `DomainCentric.BuildingBlocks` + `DomainCentric.ArchRules(.Xunit)`
-from NuGet.org (`DomainCentric.BuildingBlocks` 0.2.1, `DomainCentric.ArchRules.Xunit` 0.9.0, pinned in `Directory.Build.props`;
+from NuGet.org (`DomainCentric.BuildingBlocks` 0.3.0, `DomainCentric.ArchRules.Xunit` 0.12.0, pinned in `Directory.Build.props`;
 `-p:UseLocalDcaDotnet=true` references the sibling `../dca-dotnet` as projects for unreleased rules — the counterpart of
 the Java sample's `-PwithDcaJava`; **run the tests once without it before calling anything done**, and CI
 (`.github/workflows/ci.yml`) does exactly that on every push). In-memory persistence only.
@@ -111,9 +111,19 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   `Adapter/Incoming/Api/`) — the layout's `RestControllerSuffix` is set to `Resource` in `ArchitectureRulesTest`
   so `DCA-NAM-006` enforces the Java sample's name rather than the .NET default `Controller`; event adapters `*EventConsumer` (incoming) and
   `*EventPublisher` (domain → integration relay, outgoing); domain events in past tense, integration events
-  with the `Event` suffix and `[IntegrationEventType]`; failures (domain and use-case exceptions) named by the
-  broken rule in the domain's words, with the suffix `Exception` (`CartNotModifiableException`) — the method's
-  `failure_suffix: Exception`.
+  with the `Event` suffix and `[IntegrationEventType]`; failures (domain exceptions, and the one failure an output
+  port declares, an `OutputPortException`) named by the broken rule in the domain's words, with the suffix
+  `Exception` (`CartNotModifiableException`) — the method's `failure_suffix: Exception`.
+- Refusals are **returned** in every context (ADR-017): a use case answers each expected refusal as a case of a
+  closed result — `[GenerateOneOf] public sealed partial class <Op>Result : OneOfBase<…>` with nested `sealed record`
+  cases, the success named for what happened, each refusal named like the failure without `Exception` and
+  implementing `IRefusal` (`DCA-ERR-008`). The domain keeps throwing; the use case catches the named domain exception
+  once, before it writes, and returns its case — decide, then write; the transaction boundary rolls a returned
+  refusal back as the net. Adapters `Match`/`Switch` with one function per case and catch only what is still thrown
+  (`DomainException`, `ArgumentException`), never `PortException`, `InputPortException` or `OutputPortException`.
+  A caller with nobody to answer (event consumer, seeder) turns a refusal into a thrown `InvalidOperationException`.
+  Tests assert the returned case; an adapter test's stub returns it; a setup helper asserts the success case. OneOf
+  (`<OneOfVersion>` in `Directory.Build.props`, `OneOf.Extended` past nine cases) until C# 15 `union` types on .NET 11.
 - Ports and use cases are **async only** (`Task<TOut> ExecuteAsync(TIn, CancellationToken)`, `*Async` methods);
   the **domain stays synchronous**. Value objects are `sealed record`s, ids `readonly record struct : IId`.
 - Cross-context calls go **only** through the other context's `Api/` from an outgoing adapter (ACL); consumed
@@ -187,8 +197,10 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   because that is a property of the exposure. An **ownership** check never may: the caller is part of the command
   (`GetCartByIdQuery(CartId, CustomerId)`, `AddItemToCartCommand`, `StartCheckoutCommand`) and the use case asks
   `IShoppingCartRepository.FindByIdForCustomerAsync`, not `FindByIdAsync` plus an `if`. Cart's Open Host Service
-  demands the customer too, so Checkout inherits the rule. `FindByIdAsync` stays for the system paths that act on
-  nobody's behalf (`CompleteCart`, from an integration event). The refusal is *rendered* at the edge: a stranger's
+  demands the customer too, so Checkout inherits the rule. `ShoppingCart` and `CheckoutSession` implement
+  `IOwned<CustomerId>`, and `DCA-TAC-026` holds their repositories to the scoped lookup. `CompleteCart`, run from an
+  integration event, loads through the owner as well: `ICartCompletionTrigger` carries the customer.
+  `FindByIdAsync` stays only for system paths that hold no owner to name. The refusal is *rendered* at the edge: a stranger's
   cart answers `404`, never `403`.
 - The backoffice has its **own** cookie scheme and its own credentials (`Adapter.Incoming.Web.BackofficeOptions`, defaults
   `admin`/`admin`). A staff session and a shopper session are never the same cookie.

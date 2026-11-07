@@ -41,7 +41,7 @@ public sealed class PaymentPageController : Controller
         _page.SubmittingAsync(
             CheckoutStep.Payment,
             CheckoutRoutes.PathOf(CheckoutStep.Review),
-            id => _submitPayment.ExecuteAsync(new SubmitPaymentCommand(id, _page.CurrentCustomerId(), providerId), cancellationToken),
+            async id => RefusalOf(await _submitPayment.ExecuteAsync(new SubmitPaymentCommand(id, _page.CurrentCustomerId(), providerId), cancellationToken)),
             (session, error) => RenderAsync(session, error, cancellationToken),
             cancellationToken);
 
@@ -55,4 +55,15 @@ public sealed class PaymentPageController : Controller
                 providers.Providers.Select(p => new PaymentPageViewModel.PaymentChoice(p.Id, p.DisplayName, Available: true)).ToList(),
                 error));
     }
+
+    /// <summary>The step's refusal, or none when the way to pay was recorded.</summary>
+    private static StepRefusal? RefusalOf(SubmitPaymentResult result) => result.Match<StepRefusal?>(
+        submitted => null,
+        providerNotFound => StepRefusal.PaymentProviderNotFound,
+        providerUnavailable => StepRefusal.PaymentProviderUnavailable,
+        notFound => StepRefusal.SessionNotFound,
+        notModifiable => StepRefusal.NotModifiable,
+        notCompleted => StepRefusal.StepNotCompleted,
+        outOfOrder => StepRefusal.StepOutOfOrder,
+        nothingToPay => StepRefusal.NothingToPay);
 }

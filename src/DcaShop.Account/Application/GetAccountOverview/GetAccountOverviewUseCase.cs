@@ -20,10 +20,10 @@ public sealed class GetAccountOverviewUseCase : IGetAccountOverviewInputPort
 
         if (account is null || !account.Status.CanLogin())
         {
-            return GetAccountOverviewResult.NotFound();
+            return new GetAccountOverviewResult.AccountNotAccessible();
         }
 
-        return new GetAccountOverviewResult(
+        return new GetAccountOverviewResult.Found(
             new GetAccountOverviewResult.AccountOverview(account.Email.Value, account.LastLoginAt));
     }
 }

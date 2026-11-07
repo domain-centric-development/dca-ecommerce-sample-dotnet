@@ -43,12 +43,15 @@ public sealed class ProductPriceResourceTest : IClassFixture<WebApplicationFacto
     public async Task AProductWithoutAPriceIsNotFound()
     {
         var unknown = Guid.Parse("00000000-0000-4000-8000-000000000001");
-        _changePrice.Refusal = new ProductPriceNotFoundException(new ProductId(unknown));
+        _changePrice.Answer = new ChangePriceResult.ProductPriceNotFound(new ProductId(unknown));
         var staff = await _factory.StaffClientAsync("price-keeper@example.com");
 
         var response = await staff.PutAsync($"/api/products/{unknown}/price", Json("""{"price":49.99}"""));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.ToString());
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Not Found", problem.GetProperty("title").GetString());
         Assert.Equal(unknown, Assert.Single(_changePrice.Commands).ProductId);
     }
 
@@ -83,19 +86,28 @@ public sealed class ProductPriceResourceTest : IClassFixture<WebApplicationFacto
 
     private static StringContent Json(string body) => new(body, Encoding.UTF8, "application/json");
 
-    /// <summary>Records every change it is asked for; answers with the refusal it was given, else with the new price.</summary>
+    /// <summary>
+    /// Records every change it is asked for; answers with the case it was given, throws the failure it was given, else
+    /// answers with the new price.
+    /// </summary>
     private sealed class RecordingChangePrice : IChangePriceInputPort
     {
         public List<ChangePriceCommand> Commands { get; } = [];
+
+        public ChangePriceResult? Answer { get; set; }
 
         public Exception? Refusal { get; set; }
 
         public Task<ChangePriceResult> ExecuteAsync(ChangePriceCommand command, CancellationToken cancellationToken = default)
         {
             Commands.Add(command);
-            return Refusal is { } refusal
-                ? Task.FromException<ChangePriceResult>(refusal)
-                : Task.FromResult(new ChangePriceResult(command.ProductId, command.PriceAmount, command.PriceCurrency, DateTimeOffset.UtcNow));
+            if (Refusal is { } refusal)
+            {
+                return Task.FromException<ChangePriceResult>(refusal);
+            }
+
+            return Task.FromResult(Answer
+                ?? new ChangePriceResult.Changed(command.ProductId, command.PriceAmount, command.PriceCurrency, DateTimeOffset.UtcNow));
         }
     }
 }

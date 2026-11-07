@@ -24,6 +24,12 @@ namespace DcaShop.Account.Adapter.Incoming.Web;
 [Route("login")]
 public sealed class LoginPageController : Controller
 {
+    /// <summary>
+    /// The one sentence for every reason a credential could be wrong — naming which half failed tells an attacker
+    /// which addresses exist.
+    /// </summary>
+    private const string InvalidCredentials = "Invalid email or password";
+
     private readonly IAuthenticateAccountInputPort _authenticateAccount;
     private readonly ITokenService _tokenService;
     private readonly IIdentityProvider _identityProvider;
@@ -61,20 +67,23 @@ public sealed class LoginPageController : Controller
             result = await _authenticateAccount.ExecuteAsync(
                 new AuthenticateAccountCommand(email, password), cancellationToken);
         }
-        catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
+        catch (Exception e) when (e is DomainException or ArgumentException)
         {
-            // The context's own refusals, plus the argument exception a form field still reaches a value object
-            // with.
+            // A rule of the model no use case returns as a case, plus the argument exception a form field still
+            // reaches a value object with.
             return Rejected(email, returnUrl, MessageFor(e));
         }
 
-        if (!result.Success)
-        {
-            return Rejected(email, returnUrl, result.ErrorMessage!);
-        }
+        return result.Match(
+            authenticated => SignedIn(authenticated, guest, returnUrl),
+            refused => Rejected(email, returnUrl, InvalidCredentials),
+            notAccessible => Rejected(email, returnUrl, $"Account is {notAccessible.Status.ToString().ToLowerInvariant()}"));
+    }
 
+    private IActionResult SignedIn(AuthenticateAccountResult.Authenticated authenticated, UserId guest, string? returnUrl)
+    {
         _identitySession.SetRegisteredIdentity(
-            _tokenService.GenerateRegisteredToken(UserId.Of(result.UserId!), result.Email!, result.Roles!));
+            _tokenService.GenerateRegisteredToken(UserId.Of(authenticated.UserId), authenticated.Email, authenticated.Roles));
         _identitySession.KeepGuestBeforeLogin(guest);
 
         var mergeUrl = $"/cart/merge?anonymousUserId={WebUtility.UrlEncode(guest.Value)}";

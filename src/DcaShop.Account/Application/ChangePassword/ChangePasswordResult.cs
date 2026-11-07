@@ -1,52 +1,33 @@
 using DcaShop.Account.Domain.Model;
 
+using DomainCentric.BuildingBlocks.Application;
+
+using OneOf;
+
 namespace DcaShop.Account.Application.ChangePassword;
 
-/// <summary>Why a password change did or did not happen.</summary>
-public enum ChangePasswordOutcome
+/// <summary>
+/// What a password change came to. The result says what happened, never in words: the page that shows it words the
+/// refusal from the case. A rejected new password names the broken rule.
+/// </summary>
+[GenerateOneOf]
+public sealed partial class ChangePasswordResult
+    : OneOfBase<
+        ChangePasswordResult.Changed,
+        ChangePasswordResult.AccountNotAccessible,
+        ChangePasswordResult.CurrentPasswordInvalid,
+        ChangePasswordResult.NewPasswordRejected>
 {
-    Changed,
+    /// <summary>The password was changed.</summary>
+    public sealed record Changed;
 
     /// <summary>No account the session may act on — closed, suspended, or gone.</summary>
-    AccountNotAccessible,
+    public sealed record AccountNotAccessible : IRefusal;
 
-    CurrentPasswordInvalid,
+    /// <summary>The current password does not match.</summary>
+    public sealed record CurrentPasswordInvalid : IRefusal;
 
     /// <summary>The new password does not satisfy the password policy.</summary>
-    NewPasswordRejected,
-}
-
-/// <summary>
-/// The outcome of a password change. The result says what happened, never in words: the page that shows it words
-/// the refusal from the outcome. A rejected new password names the broken rule and any other outcome does not.
-/// </summary>
-public sealed record ChangePasswordResult
-{
-    private ChangePasswordResult(ChangePasswordOutcome outcome, PasswordRule? brokenRule)
-    {
-        if ((outcome == ChangePasswordOutcome.NewPasswordRejected) != (brokenRule is not null))
-        {
-            throw new ArgumentException(
-                $"A rejected new password names the broken rule, any other outcome does not: {outcome}", nameof(outcome));
-        }
-
-        Outcome = outcome;
-        BrokenRule = brokenRule;
-    }
-
-    public ChangePasswordOutcome Outcome { get; }
-
-    /// <summary>The part of the password policy the new password breaks; set exactly for a rejected one.</summary>
-    public PasswordRule? BrokenRule { get; }
-
-    public static ChangePasswordResult Changed() => new(ChangePasswordOutcome.Changed, null);
-
-    public static ChangePasswordResult AccountNotAccessible() =>
-        new(ChangePasswordOutcome.AccountNotAccessible, null);
-
-    public static ChangePasswordResult CurrentPasswordInvalid() =>
-        new(ChangePasswordOutcome.CurrentPasswordInvalid, null);
-
-    public static ChangePasswordResult NewPasswordRejected(PasswordRule brokenRule) =>
-        new(ChangePasswordOutcome.NewPasswordRejected, brokenRule);
+    /// <param name="BrokenRule">The part of the policy the new password breaks.</param>
+    public sealed record NewPasswordRejected(PasswordRule BrokenRule) : IRefusal;
 }

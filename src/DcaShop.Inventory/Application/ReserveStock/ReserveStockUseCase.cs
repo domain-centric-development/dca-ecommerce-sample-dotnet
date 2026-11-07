@@ -62,7 +62,7 @@ public sealed class ReserveStockUseCase : IReserveStockInputPort
 
         if (shortages.Count > 0)
         {
-            return new ReserveStockResult(shortages);
+            return new ReserveStockResult.InsufficientUnreservedStock(shortages);
         }
 
         foreach (var (stockLevel, quantity) in covered)
@@ -72,6 +72,6 @@ public sealed class ReserveStockUseCase : IReserveStockInputPort
             await _events.PublishAndClearEventsAsync(stockLevel, ct).ConfigureAwait(false);
         }
 
-        return new ReserveStockResult([]);
+        return new ReserveStockResult.Reserved();
     }
 }

@@ -1,7 +1,10 @@
 using DcaShop.SharedKernel.Infrastructure.Transactions;
 
+using DomainCentric.BuildingBlocks.Application;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
+
+using OneOf;
 
 namespace DcaShop.UnitTests.SharedKernel;
 
@@ -131,4 +134,139 @@ public sealed class InMemoryTransactionBoundaryTest
 
         Assert.False(ran);
     }
+
+    [Fact]
+    public async Task AReturnedRefusalRollsBackTheWriteBeforeItAndIsReturnedUnchanged()
+    {
+        var impl = new InMemoryTransactionBoundary();
+        ITransactionBoundary boundary = impl;
+        var written = false;
+        var rolledBack = false;
+        var refusal = new Refused("no");
+
+        var result = await boundary.InTransactionAsync<OneOf<Done, Refused>>(_ =>
+        {
+            impl.EnlistCommit(() => written = true);
+            impl.AfterRollback(() => rolledBack = true);
+            return Task.FromResult<OneOf<Done, Refused>>(refusal);
+        });
+
+        Assert.Same(refusal, result.AsT1);
+        Assert.False(written);
+        Assert.True(rolledBack);
+        Assert.False(impl.InTransaction);
+    }
+
+    [Fact]
+    public async Task ARefusalReturnedDirectlyRollsBackToo()
+    {
+        var impl = new InMemoryTransactionBoundary();
+        var written = false;
+
+        var result = await impl.InTransactionAsync<object>(_ =>
+        {
+            impl.EnlistCommit(() => written = true);
+            return Task.FromResult<object>(new Refused("no"));
+        });
+
+        Assert.IsType<Refused>(result);
+        Assert.False(written);
+    }
+
+    [Fact]
+    public async Task AReturnedSuccessCommits()
+    {
+        var impl = new InMemoryTransactionBoundary();
+        var written = false;
+
+        var result = await impl.InTransactionAsync<OneOf<Done, Refused>>(_ =>
+        {
+            impl.EnlistCommit(() => written = true);
+            return Task.FromResult<OneOf<Done, Refused>>(new Done());
+        });
+
+        Assert.True(result.IsT0);
+        Assert.True(written);
+    }
+
+    [Fact]
+    public async Task AThrownFailureStillRollsBack()
+    {
+        var impl = new InMemoryTransactionBoundary();
+        var written = false;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => impl.InTransactionAsync<OneOf<Done, Refused>>(_ =>
+        {
+            impl.EnlistCommit(() => written = true);
+            throw new InvalidOperationException("boom");
+        }));
+
+        Assert.False(written);
+        Assert.False(impl.InTransaction);
+    }
+
+    [Fact]
+    public async Task AnInnerRefusalThenAnOuterSuccessThrowsAndRollsBack()
+    {
+        var impl = new InMemoryTransactionBoundary();
+        ITransactionBoundary boundary = impl;
+        var written = false;
+
+        await Assert.ThrowsAsync<TransactionRolledBackException>(() => boundary.InTransactionAsync<OneOf<Done, Refused>>(async ct =>
+        {
+            impl.EnlistCommit(() => written = true);
+            await boundary.InTransactionAsync<OneOf<Done, Refused>>(_ => Task.FromResult<OneOf<Done, Refused>>(new Refused("inner")), ct);
+            return new Done();
+        }));
+
+        Assert.False(written);
+        Assert.False(impl.InTransaction);
+    }
+
+    [Fact]
+    public async Task AnOuterRefusalAfterACaughtInnerFailureRollsBackWithoutThrowing()
+    {
+        var impl = new InMemoryTransactionBoundary();
+        ITransactionBoundary boundary = impl;
+        var written = false;
+
+        var result = await boundary.InTransactionAsync<OneOf<Done, Refused>>(async ct =>
+        {
+            impl.EnlistCommit(() => written = true);
+            try
+            {
+                await boundary.InTransactionAsync(_ => throw new InvalidOperationException("inner"), ct);
+            }
+            catch (InvalidOperationException)
+            {
+                // answered by the outer block with a refusal
+            }
+
+            return new Refused("outer");
+        });
+
+        Assert.True(result.IsT1);
+        Assert.False(written);
+        Assert.False(impl.InTransaction);
+    }
+
+    [Fact]
+    public async Task ATransactionAfterARefusalStartsClean()
+    {
+        var impl = new InMemoryTransactionBoundary();
+        var written = false;
+
+        await impl.InTransactionAsync<OneOf<Done, Refused>>(_ => Task.FromResult<OneOf<Done, Refused>>(new Refused("first")));
+        await impl.InTransactionAsync<OneOf<Done, Refused>>(_ =>
+        {
+            impl.EnlistCommit(() => written = true);
+            return Task.FromResult<OneOf<Done, Refused>>(new Done());
+        });
+
+        Assert.True(written);
+    }
+
+    private sealed record Done;
+
+    private sealed record Refused(string Reason) : IRefusal;
 }

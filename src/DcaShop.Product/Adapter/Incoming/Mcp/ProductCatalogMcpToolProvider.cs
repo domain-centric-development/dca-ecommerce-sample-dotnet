@@ -62,7 +62,7 @@ public sealed class ProductCatalogMcpToolProvider
         }
 
         var result = await _getProductById.ExecuteAsync(new GetProductByIdQuery(productId), cancellationToken);
-        return result.Product is { } product ? Answer(_converter.ToDto(product)) : NoProduct;
+        return result.Match(found => Answer(_converter.ToDto(found.Product)), notFound => NoProduct);
     }
 
     /// <summary>

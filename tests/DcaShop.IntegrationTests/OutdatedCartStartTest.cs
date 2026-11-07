@@ -37,14 +37,14 @@ public sealed class OutdatedCartStartTest : IClassFixture<WebApplicationFactory<
         var hexagon = (await products.ExecuteAsync(new GetAllProductsQuery())).Products.Single(p => p.Name.Value == Hexagon);
         Assert.Equal(8, hexagon.Article.AvailableStock);
         var cart = await scope.ServiceProvider.GetRequiredService<IGetOrCreateActiveCartInputPort>().ExecuteAsync(new GetOrCreateActiveCartCommand(guest));
-        await scope.ServiceProvider.GetRequiredService<IAddItemToCartInputPort>()
-            .ExecuteAsync(new AddItemToCartCommand(cart.CartId, guest, hexagon.ProductId.Value, 5));
+        Assert.IsType<AddItemToCartResult.Added>((await scope.ServiceProvider.GetRequiredService<IAddItemToCartInputPort>()
+            .ExecuteAsync(new AddItemToCartCommand(cart.CartId, guest, hexagon.ProductId.Value, 5))).Value);
         await GuestOrders.AnotherGuestHasBoughtAsync(_factory, hexagon.ProductId.Value, 5);
         var start = scope.ServiceProvider.GetRequiredService<IStartCheckoutInputPort>();
 
-        var refused = await Assert.ThrowsAsync<CheckoutItemsUnavailableException>(() =>
-            start.ExecuteAsync(new StartCheckoutCommand(cart.CartId, guest)));
+        var result = await start.ExecuteAsync(new StartCheckoutCommand(cart.CartId, guest));
 
+        var refused = Assert.IsType<StartCheckoutResult.CheckoutItemsUnavailable>(result.Value);
         Assert.Equal([hexagon.ProductId], refused.ProductIds);
         var session = await scope.ServiceProvider.GetRequiredService<IGetActiveCheckoutSessionInputPort>()
             .ExecuteAsync(new GetActiveCheckoutSessionQuery(guest));
@@ -54,7 +54,7 @@ public sealed class OutdatedCartStartTest : IClassFixture<WebApplicationFactory<
     [Fact]
     public async Task ARefusedStartForUnavailableLinesOpensTheCartWithItsError()
     {
-        var refusal = new CheckoutItemsUnavailableException([ProductId.Generate()]);
+        var refusal = new StartCheckoutResult.CheckoutItemsUnavailable([ProductId.Generate()]);
         var start = new RefusingStart(refusal);
         using var shop = ShopWhoseStartIs(start);
         var visitor = GuestOrders.Guest(shop);
@@ -77,14 +77,14 @@ public sealed class OutdatedCartStartTest : IClassFixture<WebApplicationFactory<
             builder.ConfigureTestServices(s => s.AddSingleton(start)));
 
     /// <summary>A start that answers every command with <paramref name="refusal"/> and keeps the commands it was given.</summary>
-    private sealed class RefusingStart(CheckoutItemsUnavailableException refusal) : IStartCheckoutInputPort
+    private sealed class RefusingStart(StartCheckoutResult.CheckoutItemsUnavailable refusal) : IStartCheckoutInputPort
     {
         public List<StartCheckoutCommand> Commands { get; } = [];
 
         public Task<StartCheckoutResult> ExecuteAsync(StartCheckoutCommand command, CancellationToken cancellationToken = default)
         {
             Commands.Add(command);
-            throw refusal;
+            return Task.FromResult<StartCheckoutResult>(refusal);
         }
     }
 }

@@ -1,4 +1,3 @@
-using DcaShop.Cart.Application.CartCheckout.CompleteCart;
 using DcaShop.Cart.Application.Shopping.GetActiveCart;
 using DcaShop.Cart.Application.Shopping.GetCartById;
 using DcaShop.Cart.Domain.Model;
@@ -8,19 +7,20 @@ using DomainCentric.BuildingBlocks.Ddd.Strategic.Relationships;
 
 namespace DcaShop.Cart.Api;
 
-/// <summary>Open Host Service of the Shopping Cart: cart snapshots for other contexts (primarily Checkout), and completion after a confirmed checkout.</summary>
-[OpenHostService("Shopping Cart", Description = "Provides cart data and cart completion for other bounded contexts")]
+/// <summary>
+/// Open Host Service of the Shopping Cart: cart snapshots for other contexts (primarily Checkout). Cart completion is no
+/// call here: the cart completes when the confirmed checkout's integration event arrives.
+/// </summary>
+[OpenHostService("Shopping Cart", Description = "Provides cart data for other bounded contexts")]
 public sealed class CartService
 {
     private readonly IGetCartByIdInputPort _getCartById;
     private readonly IGetActiveCartInputPort _getActiveCart;
-    private readonly ICompleteCartInputPort _completeCart;
 
-    public CartService(IGetCartByIdInputPort getCartById, IGetActiveCartInputPort getActiveCart, ICompleteCartInputPort completeCart)
+    public CartService(IGetCartByIdInputPort getCartById, IGetActiveCartInputPort getActiveCart)
     {
         _getCartById = getCartById;
         _getActiveCart = getActiveCart;
-        _completeCart = completeCart;
     }
 
     public sealed record CartSnapshot(Guid CartId, string CustomerId, IReadOnlyList<CartItemSnapshot> Items, bool Active);
@@ -56,11 +56,11 @@ public sealed class CartService
     public async Task<CartSnapshot?> FindCartByIdAsync(Guid cartId, string customerId, CancellationToken cancellationToken = default)
     {
         var result = await _getCartById.ExecuteAsync(new GetCartByIdQuery(cartId, customerId), cancellationToken).ConfigureAwait(false);
-        if (result.Cart is not { } cart)
-        {
-            return null;
-        }
+        return result.Match<CartSnapshot?>(found => SnapshotOf(found.Cart), notFound => null);
+    }
 
+    private static CartSnapshot SnapshotOf(EnrichedCart cart)
+    {
         var items = cart.Items.Select(i => new CartItemSnapshot(i.ProductId, i.PriceAtAddition, i.Quantity.Value, i.PositionSnapshot)).ToList();
         return new CartSnapshot(cart.CartId.Value, cart.CustomerId.Value, items, cart.Status == CartStatus.Active);
     }
@@ -76,11 +76,4 @@ public sealed class CartService
             ? await FindCartByIdAsync(cart.CartId.Value, customerId, cancellationToken).ConfigureAwait(false)
             : null;
     }
-
-    /// <summary>
-    /// Completes a cart after a confirmed checkout. Unscoped on purpose: this one acts on nobody's behalf — it is
-    /// the system reacting to its own event, delivered at least once, with no caller to check.
-    /// </summary>
-    public Task CompleteCartAsync(Guid cartId, string sessionId, IReadOnlyList<string> purchasedPositions, CancellationToken cancellationToken = default) =>
-        _completeCart.ExecuteAsync(new CompleteCartCommand(cartId, sessionId, purchasedPositions), cancellationToken);
 }

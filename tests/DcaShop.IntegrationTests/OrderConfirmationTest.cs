@@ -35,7 +35,7 @@ public sealed class OrderConfirmationTest : IClassFixture<WebApplicationFactory<
 
         // Given a guest who placed an order with the buyer e-mail "jane@example.com"
         var checkout = await checkouts.AtTheReviewAsync("standard", ("Domain-Driven Design", 1));
-        await checkouts.PlaceOrderAsync(checkout);
+        await checkouts.PlacedOrderAsync(checkout);
         var sent = await MailProviderStubs.WithinFifteenSecondsAsync(() => _mails.MailsTo(Jane), mails => mails.Count > 0);
         Assert.NotEmpty(sent);
 
@@ -43,8 +43,9 @@ public sealed class OrderConfirmationTest : IClassFixture<WebApplicationFactory<
         var confirmed = ConfirmationOf(checkout);
         using (var scope = _shop!.Services.CreateScope())
         {
-            await scope.ServiceProvider.GetRequiredService<ISendOrderConfirmationInputPort>()
+            var repeated = await scope.ServiceProvider.GetRequiredService<ISendOrderConfirmationInputPort>()
                 .ExecuteAsync(new SendOrderConfirmationCommand(confirmed.EventId, checkout.SessionId, checkout.CustomerId));
+            Assert.True(Assert.IsType<SendOrderConfirmationResult.Sent>(repeated.Value).AlreadySent);
         }
 
         // Then the mail provider has received the order-confirmation mail for that order once, under the same key
@@ -64,7 +65,7 @@ public sealed class OrderConfirmationTest : IClassFixture<WebApplicationFactory<
 
         // And a guest with the buyer e-mail "jane@example.com" has placed an order
         var checkout = await checkouts.AtTheReviewAsync("standard", ("Domain-Driven Design", 1));
-        await checkouts.PlaceOrderAsync(checkout);
+        await checkouts.PlacedOrderAsync(checkout);
         Assert.Equal(CheckoutSessionStatus.Confirmed, (await checkouts.SessionAsync(checkout)).Status);
         var turnedAway = await MailProviderStubs.WithinFifteenSecondsAsync(() => _mails.MailsTo(Jane), mails => mails.Count > 0);
         Assert.NotEmpty(turnedAway);

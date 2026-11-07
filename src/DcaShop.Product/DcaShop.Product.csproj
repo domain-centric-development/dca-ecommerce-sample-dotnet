@@ -10,5 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.2.0" />
+    <PackageReference Include="OneOf" Version="$(OneOfVersion)" />
+    <PackageReference Include="OneOf.SourceGenerator" Version="$(OneOfVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

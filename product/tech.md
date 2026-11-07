@@ -20,6 +20,8 @@ serves older ones.
 
 Gallery: none yet — Storybook's server renderer when the shop gets one.
 
+Refusals: returned — expected refusals are cases of a closed use-case result (ADR-017)
+
 Measured against the frontend craft that follows these three lines, the shop keeps: BEM blocks with modifiers
 in one stylesheet taken over from the Java sample; semantic tokens as custom properties on `:root` with brand
 themes chosen by `data-theme`; `data-test` attributes as the browser tests' only selectors;

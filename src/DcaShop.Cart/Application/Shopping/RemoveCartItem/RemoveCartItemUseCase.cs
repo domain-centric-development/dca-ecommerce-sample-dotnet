@@ -10,6 +10,10 @@ namespace DcaShop.Cart.Application.Shopping.RemoveCartItem;
 /// Takes one item out of the caller's active cart by its own id. Only the caller's active cart is asked, so an item of
 /// somebody else's cart is as absent as one that was never there.
 /// </summary>
+/// <remarks>
+/// Every refusal is returned as a case of <see cref="RemoveCartItemResult"/>, the aggregate's caught once here; each is
+/// decided before anything is written, so the transaction that returns it commits nothing.
+/// </remarks>
 public sealed class RemoveCartItemUseCase : IRemoveCartItemInputPort
 {
     private readonly IShoppingCartRepository _carts;
@@ -26,19 +30,33 @@ public sealed class RemoveCartItemUseCase : IRemoveCartItemInputPort
     public async Task<RemoveCartItemResult> ExecuteAsync(RemoveCartItemCommand command, CancellationToken cancellationToken = default)
     {
         // Whole use case is local: one short transaction
-        return await _transactionBoundary.InTransactionAsync(
+        return await _transactionBoundary.InTransactionAsync<RemoveCartItemResult>(
             async ct =>
             {
                 var itemId = new CartItemId(command.CartItemId);
-                var cart = await _carts.FindActiveByCustomerAsync(CustomerId.Of(command.CustomerId), ct).ConfigureAwait(false)
-                           ?? throw CartItemNotFoundException.ForItem(itemId);
+                var cart = await _carts.FindActiveByCustomerAsync(CustomerId.Of(command.CustomerId), ct).ConfigureAwait(false);
+                if (cart is null)
+                {
+                    return new RemoveCartItemResult.CartItemNotFound(itemId);
+                }
 
-                cart.RemoveItem(itemId);
+                try
+                {
+                    cart.RemoveItem(itemId);
+                }
+                catch (CartNotModifiableException notModifiable)
+                {
+                    return new RemoveCartItemResult.CartNotModifiable(notModifiable.CartId, notModifiable.Status);
+                }
+                catch (CartItemNotFoundException)
+                {
+                    return new RemoveCartItemResult.CartItemNotFound(itemId);
+                }
 
                 await _carts.SaveAsync(cart, ct).ConfigureAwait(false);
                 await _events.PublishAndClearEventsAsync(cart, ct).ConfigureAwait(false);
 
-                return new RemoveCartItemResult(cart.Id.Value, cart.ItemCount);
+                return new RemoveCartItemResult.Removed(cart.Id.Value, cart.ItemCount);
             },
             cancellationToken).ConfigureAwait(false);
     }

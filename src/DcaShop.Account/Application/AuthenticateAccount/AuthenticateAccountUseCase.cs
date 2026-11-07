@@ -11,12 +11,11 @@ namespace DcaShop.Account.Application.AuthenticateAccount;
 
 /// <summary>
 /// Verifies credentials and records the login. It answers a wrong address, a wrong password and a malformed
-/// address with the same message, so a caller cannot use it to enumerate accounts.
+/// address with the same case, <see cref="AuthenticateAccountResult.CredentialsRefused"/>, so a caller cannot use
+/// it to enumerate accounts. Every refusal is decided before the login is recorded.
 /// </summary>
 public sealed class AuthenticateAccountUseCase : IAuthenticateAccountInputPort
 {
-    private const string GenericError = "Invalid email or password";
-
     private readonly IAccountRepository _accounts;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IDomainEventPublisher _events;
@@ -48,31 +47,30 @@ public sealed class AuthenticateAccountUseCase : IAuthenticateAccountInputPort
         catch (ArgumentException)
         {
             _logger.LogDebug("Invalid email format during login attempt");
-            return AuthenticateAccountResult.Failed(GenericError);
+            return new AuthenticateAccountResult.CredentialsRefused();
         }
 
-        return await _transactionBoundary.InTransactionAsync(
+        return await _transactionBoundary.InTransactionAsync<AuthenticateAccountResult>(
             async ct =>
             {
                 var account = await _accounts.FindByEmailAsync(email, ct).ConfigureAwait(false);
                 if (account is null)
                 {
                     _logger.LogDebug("Login attempt for non-existent email");
-                    return AuthenticateAccountResult.Failed(GenericError);
+                    return new AuthenticateAccountResult.CredentialsRefused();
                 }
 
                 if (!account.CheckPassword(command.Password, _passwordHasher))
                 {
                     _logger.LogWarning("Failed login attempt for account {AccountId}", account.Id);
-                    return AuthenticateAccountResult.Failed(GenericError);
+                    return new AuthenticateAccountResult.CredentialsRefused();
                 }
 
                 if (!account.Status.CanLogin())
                 {
                     _logger.LogWarning(
                         "Login attempt for {Status} account {AccountId}", account.Status, account.Id);
-                    return AuthenticateAccountResult.Failed(
-                        $"Account is {account.Status.ToString().ToLowerInvariant()}");
+                    return new AuthenticateAccountResult.AccountNotAccessible(account.Status);
                 }
 
                 account.RecordLogin();
@@ -80,7 +78,7 @@ public sealed class AuthenticateAccountUseCase : IAuthenticateAccountInputPort
                 await _events.PublishAndClearEventsAsync(account, ct).ConfigureAwait(false);
 
                 _logger.LogInformation("Successful login for account {AccountId}", account.Id);
-                return AuthenticateAccountResult.Succeeded(
+                return new AuthenticateAccountResult.Authenticated(
                     account.LinkedUserId.Value, account.Email.Value, account.Roles);
             },
             cancellationToken).ConfigureAwait(false);

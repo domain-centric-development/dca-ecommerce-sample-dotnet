@@ -41,7 +41,7 @@ public sealed class DeliveryPageController : Controller
         _page.SubmittingAsync(
             CheckoutStep.Delivery,
             CheckoutRoutes.PathOf(CheckoutStep.Payment),
-            id => _submitDelivery.ExecuteAsync(new SubmitDeliveryCommand(id, _page.CurrentCustomerId(), street, streetLine2, city, postalCode, country, state, shippingOptionId), cancellationToken),
+            async id => RefusalOf(await _submitDelivery.ExecuteAsync(new SubmitDeliveryCommand(id, _page.CurrentCustomerId(), street, streetLine2, city, postalCode, country, state, shippingOptionId), cancellationToken)),
             (session, error) => RenderAsync(session, error, cancellationToken),
             cancellationToken);
 
@@ -60,4 +60,13 @@ public sealed class DeliveryPageController : Controller
     private static string AmountOf(string money) => money.Split(' ')[0];
 
     private static string CurrencyOf(string money) => money.Split(' ').ElementAtOrDefault(1) ?? string.Empty;
+
+    /// <summary>The step's refusal, or none when the delivery was recorded.</summary>
+    private static StepRefusal? RefusalOf(SubmitDeliveryResult result) => result.Match<StepRefusal?>(
+        submitted => null,
+        notFound => StepRefusal.SessionNotFound,
+        notOffered => StepRefusal.ShippingOptionNotOffered,
+        notModifiable => StepRefusal.NotModifiable,
+        notCompleted => StepRefusal.StepNotCompleted,
+        outOfOrder => StepRefusal.StepOutOfOrder);
 }

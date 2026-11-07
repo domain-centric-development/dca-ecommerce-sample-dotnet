@@ -20,10 +20,10 @@ public sealed class MockPaymentProvider : IPaymentProvider
 
     public string DisplayName => "Mock Payment (Test)";
 
-    public Task<IPaymentProvider.PaymentResult> InitiatePaymentAsync(CheckoutSessionId sessionId, Money amount, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_available
-            ? IPaymentProvider.PaymentResult.Succeeded(ReferencePrefix + Guid.NewGuid())
-            : Unavailable());
+    public Task<string> InitiatePaymentAsync(CheckoutSessionId sessionId, Money amount, CancellationToken cancellationToken = default) =>
+        _available
+            ? Task.FromResult(ReferencePrefix + Guid.NewGuid())
+            : throw new PaymentProviderUnavailableException(ProviderId, "Mock payment provider is currently unavailable");
 
     public Task<IPaymentProvider.PaymentResult> ConfirmPaymentAsync(string providerReference, CancellationToken cancellationToken = default) =>
         Task.FromResult(Settle(providerReference));

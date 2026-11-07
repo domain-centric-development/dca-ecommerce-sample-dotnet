@@ -372,7 +372,7 @@ the identity the caller used: the `CartItemId` or the `ProductId`.
 **Definition:** The addressed cart is not available to the asking customer. Deliberately one failure for "does not
 exist" and "belongs to somebody else" (ADR-007).
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IShoppingCartRepository.FindByIdForCustomerAsync`
+**Type:** Refusal case of a use-case result (`IRefusal`) · **Related terms:** `IShoppingCartRepository.FindByIdForCustomerAsync`
 
 ---
 
@@ -383,7 +383,7 @@ before the login (`GuestBeforeLogin`), which the identity carries for the sessio
 into the account; a refused request changes no cart, and the merge page answers it with the cart page, without a
 notice.
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `MergeCarts`, Take over the guest cart (`RecoverCart`), ADR-007
+**Type:** Refusal case of a use-case result (`IRefusal`) · **Related terms:** `MergeCarts`, Take over the guest cart (`RecoverCart`), ADR-007
 
 ---
 
@@ -392,7 +392,7 @@ notice.
 **Definition:** A second active cart would be stored for a customer who already has one. Part of the repository's
 contract: only the store sees every cart at once.
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IShoppingCartRepository.SaveAsync` (ADR-014)
+**Type:** Output-port failure (`OutputPortException`), returned by `CreateCart` as a refusal case (`IRefusal`) · **Related terms:** `IShoppingCartRepository.SaveAsync` (ADR-014)
 
 ---
 
@@ -405,7 +405,7 @@ stock (`InStock`). Read through the cart's own port, so a statement about the re
 the `ProductId`, never the caller's text: a reference that does not even parse into a product id is answered by
 the adapter that received it (`ProductId.TryOf`) and never reaches the use case.
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IArticleDataPort`, `CartArticle`
+**Type:** Refusal case of a use-case result (`IRefusal`) · **Related terms:** `IArticleDataPort`, `CartArticle`
 
 ## Features
 

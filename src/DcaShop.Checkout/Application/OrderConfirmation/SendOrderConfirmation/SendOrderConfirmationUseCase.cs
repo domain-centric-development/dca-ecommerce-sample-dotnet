@@ -9,8 +9,9 @@ namespace DcaShop.Checkout.Application.OrderConfirmation.SendOrderConfirmation;
 /// Sends the order confirmation of a confirmed checkout: to the buyer e-mail of the checkout, with the order total it
 /// was confirmed at, under one key per order. A delivery of the same event that comes again finds the effect recorded
 /// and sends nothing. The mail leaves the process, so it is sent before the transaction that records the effect
-/// (ADR-004): a crash between the two sends again under the same key, which the provider sends once. A provider that
-/// does not accept the mail is refused as unavailable before anything is recorded, so the delivery is tried again later.
+/// (ADR-004): a crash between the two sends again under the same key, which the provider sends once. A checkout that
+/// holds no placed order is refused as such. A provider that does not accept the mail — a foreign system, its port
+/// declares the failure — is refused as unavailable before anything is recorded, so the delivery is tried again later.
 /// </summary>
 public sealed class SendOrderConfirmationUseCase : ISendOrderConfirmationInputPort
 {
@@ -40,27 +41,33 @@ public sealed class SendOrderConfirmationUseCase : ISendOrderConfirmationInputPo
 
         if (await _processedEvents.ContainsAsync(Effect, command.EventId, cancellationToken).ConfigureAwait(false))
         {
-            return new SendOrderConfirmationResult(command.SessionId, AlreadySent: true);
+            return new SendOrderConfirmationResult.Sent(command.SessionId, AlreadySent: true);
         }
 
         var sessionId = new CheckoutSessionId(command.SessionId);
-        var session = await _sessions.FindByIdForCustomerAsync(sessionId, CustomerId.Of(command.CustomerId), cancellationToken).ConfigureAwait(false)
-                      ?? throw new CheckoutSessionNotFoundException(sessionId);
-        var buyer = session.BuyerInfo ?? throw new BuyerInfoNotSubmittedException(sessionId);
+        var session = await _sessions.FindByIdForCustomerAsync(sessionId, CustomerId.Of(command.CustomerId), cancellationToken).ConfigureAwait(false);
+        if (session?.BuyerInfo is not { } buyer)
+        {
+            return new SendOrderConfirmationResult.NoPlacedOrder(sessionId);
+        }
 
         // The mail provider is remote: the mail goes out before the transaction, never inside it
         var mail = new IOrderConfirmationMailer.OrderConfirmationMail(buyer.Email, session.Totals.Total, MailKeyOf(sessionId));
-        if (await _mailer.SendAsync(mail, cancellationToken).ConfigureAwait(false) is not IOrderConfirmationMailer.MailOutcome.Accepted)
+        try
         {
-            throw new MailProviderUnavailableException(mail.Key);
+            await _mailer.SendAsync(mail, cancellationToken).ConfigureAwait(false);
+        }
+        catch (MailProviderUnavailableException unavailable)
+        {
+            return new SendOrderConfirmationResult.MailProviderUnavailable(unavailable.Key);
         }
 
         // What is left is local: one short transaction that records the effect
-        return await _transactionBoundary.InTransactionAsync(
+        return await _transactionBoundary.InTransactionAsync<SendOrderConfirmationResult>(
             async ct =>
             {
                 await _processedEvents.MarkProcessedAsync(Effect, command.EventId, ct).ConfigureAwait(false);
-                return new SendOrderConfirmationResult(command.SessionId, AlreadySent: false);
+                return new SendOrderConfirmationResult.Sent(command.SessionId, AlreadySent: false);
             },
             cancellationToken).ConfigureAwait(false);
     }

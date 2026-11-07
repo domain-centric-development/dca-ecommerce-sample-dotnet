@@ -39,7 +39,7 @@ public sealed class BuyerInfoPageController : Controller
         _page.SubmittingAsync(
             CheckoutStep.BuyerInfo,
             CheckoutRoutes.PathOf(CheckoutStep.Delivery),
-            id => _submitBuyerInfo.ExecuteAsync(new SubmitBuyerInfoCommand(id, _page.CurrentCustomerId(), email, firstName, lastName, phone), cancellationToken),
+            async id => RefusalOf(await _submitBuyerInfo.ExecuteAsync(new SubmitBuyerInfoCommand(id, _page.CurrentCustomerId(), email, firstName, lastName, phone), cancellationToken)),
             Render,
             cancellationToken);
 
@@ -50,4 +50,11 @@ public sealed class BuyerInfoPageController : Controller
             "~/Views/Checkout/BuyerInfo.cshtml",
             new BuyerInfoPageViewModel(session, error, identity.IsAnonymous, identity.Email)));
     }
+
+    /// <summary>The step's refusal, or none when the buyer was recorded.</summary>
+    private static StepRefusal? RefusalOf(SubmitBuyerInfoResult result) => result.Match<StepRefusal?>(
+        submitted => null,
+        notFound => StepRefusal.SessionNotFound,
+        notModifiable => StepRefusal.NotModifiable,
+        outOfOrder => StepRefusal.StepOutOfOrder);
 }

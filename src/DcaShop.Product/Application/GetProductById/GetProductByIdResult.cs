@@ -1,9 +1,19 @@
 using DcaShop.Product.Domain.Model;
+using DcaShop.SharedKernel.Domain.Model;
+
+using DomainCentric.BuildingBlocks.Application;
+
+using OneOf;
 
 namespace DcaShop.Product.Application.GetProductById;
 
-/// <summary><see cref="Product"/> is null when no product with the requested id exists.</summary>
-public sealed record GetProductByIdResult(EnrichedProduct? Product)
+/// <summary>What looking a product up came to: found, or no product with the requested id exists.</summary>
+[GenerateOneOf]
+public sealed partial class GetProductByIdResult : OneOfBase<GetProductByIdResult.Found, GetProductByIdResult.ProductNotFound>
 {
-    public bool Found => Product is not null;
+    /// <summary>The product, with the article facts it is shown with.</summary>
+    public sealed record Found(EnrichedProduct Product);
+
+    /// <summary>No product with the requested id exists.</summary>
+    public sealed record ProductNotFound(ProductId ProductId) : IRefusal;
 }

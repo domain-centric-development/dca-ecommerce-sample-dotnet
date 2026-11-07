@@ -1,6 +1,6 @@
 # ADR-016: A Failure Carries Its Own Type, and Only the Adapter Turns It Into an Answer
 
-**Date**: 2026-09-21 · **Status**: Accepted
+**Date**: 2026-09-21 · **Status**: Accepted, amended by ADR-017
 
 ## Context
 
@@ -106,3 +106,11 @@ What changed is that the catch which converts a domain rule into such a variant 
 
 2026-10-11: a page no longer renders the failure's message; the adapter words the refusal from its type and values
 (guide: The adapter answers; WP-101).
+
+2026-11-07: amended by ADR-017. The use cases no longer throw their expected refusals: each returns them as cases
+of a closed result, and the use-case exceptions this ADR lists are gone, except `ActiveCartAlreadyExistsException`,
+now an `OutputPortException` the store declares. The domain exceptions stay and are caught once by the use case. The
+`*ApiExceptionHandler`s keep only what is still thrown — a rule of the model no use case returns as a case, and the
+argument exception — and share their problem documents with the resources through a `*Problem` class per context;
+the pages match over the result and catch only those two. Three layers became a hierarchy: `UseCaseException`
+derives from `InputPortException`, beside it `OutputPortException`, both under `PortException`.

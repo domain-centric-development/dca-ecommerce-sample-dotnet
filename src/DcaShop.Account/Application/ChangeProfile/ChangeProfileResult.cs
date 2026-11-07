@@ -1,60 +1,37 @@
+using DomainCentric.BuildingBlocks.Application;
+
+using OneOf;
+
 namespace DcaShop.Account.Application.ChangeProfile;
 
-/// <summary>Why a profile change did or did not happen.</summary>
-public enum ChangeProfileOutcome
+/// <summary>
+/// What a profile change came to. The result says what happened and which value was refused, never in words: the
+/// page that shows it words the refusal from the case. Only a stored change carries the profile.
+/// </summary>
+[GenerateOneOf]
+public sealed partial class ChangeProfileResult
+    : OneOfBase<
+        ChangeProfileResult.Changed,
+        ChangeProfileResult.AccountNotAccessible,
+        ChangeProfileResult.EmailAlreadyInUse,
+        ChangeProfileResult.EmailInvalid,
+        ChangeProfileResult.DateOfBirthInvalid>
 {
-    Changed,
+    /// <summary>The change was stored.</summary>
+    /// <param name="Profile">The stored values after the change.</param>
+    public sealed record Changed(ProfileView Profile);
 
     /// <summary>No account the session may act on — closed, suspended, or gone.</summary>
-    AccountNotAccessible,
+    public sealed record AccountNotAccessible : IRefusal;
 
     /// <summary>Another account already uses the submitted email address.</summary>
-    EmailAlreadyInUse,
+    public sealed record EmailAlreadyInUse : IRefusal;
 
     /// <summary>The submitted email address is not a valid address.</summary>
-    EmailInvalid,
+    public sealed record EmailInvalid : IRefusal;
 
     /// <summary>The submitted date of birth is missing or lies in the future.</summary>
-    DateOfBirthInvalid,
-}
-
-/// <summary>
-/// The outcome of a profile change. The result says what happened and which value was refused, never in words:
-/// the page that shows it words the refusal from the outcome. Only a stored change carries the profile, and it
-/// always does.
-/// </summary>
-public sealed record ChangeProfileResult
-{
-    private ChangeProfileResult(ChangeProfileOutcome outcome, ProfileView? profile)
-    {
-        if ((outcome == ChangeProfileOutcome.Changed) != (profile is not null))
-        {
-            throw new ArgumentException(
-                $"Only a stored change carries the profile, and it always does: {outcome}", nameof(outcome));
-        }
-
-        Outcome = outcome;
-        Profile = profile;
-    }
-
-    public ChangeProfileOutcome Outcome { get; }
-
-    public ProfileView? Profile { get; }
-
-    public static ChangeProfileResult Changed(ProfileView profile) =>
-        new(ChangeProfileOutcome.Changed, profile);
-
-    public static ChangeProfileResult AccountNotAccessible() =>
-        new(ChangeProfileOutcome.AccountNotAccessible, null);
-
-    public static ChangeProfileResult EmailAlreadyInUse() =>
-        new(ChangeProfileOutcome.EmailAlreadyInUse, null);
-
-    public static ChangeProfileResult EmailInvalid() =>
-        new(ChangeProfileOutcome.EmailInvalid, null);
-
-    public static ChangeProfileResult DateOfBirthInvalid() =>
-        new(ChangeProfileOutcome.DateOfBirthInvalid, null);
+    public sealed record DateOfBirthInvalid : IRefusal;
 
     /// <summary>The stored values after the change.</summary>
     public sealed record ProfileView(string Email, DateOnly DateOfBirth);

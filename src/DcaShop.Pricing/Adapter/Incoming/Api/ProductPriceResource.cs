@@ -32,8 +32,8 @@ public sealed class ProductPriceResource : ControllerBase
 
     /// <summary>
     /// Sets the product's price to the one in the body. A product id that does not parse and a price that is not
-    /// greater than zero are answered here at the edge; a product without a price travels as
-    /// <see cref="ProductPriceNotFoundException"/> to <see cref="PricingApiExceptionHandler"/>.
+    /// greater than zero are answered here at the edge; a product without a price is the result's
+    /// <see cref="ChangePriceResult.ProductPriceNotFound"/> case.
     /// </summary>
     [HttpPut]
     [Authorize(Roles = Role.StaffCode)]
@@ -52,7 +52,9 @@ public sealed class ProductPriceResource : ControllerBase
             return ValidationProblem(title: UnacceptableValue, modelStateDictionary: ModelState);
         }
 
-        await _changePrice.ExecuteAsync(new ChangePriceCommand(product.Value, request.Price, "EUR"), cancellationToken);
-        return NoContent();
+        var result = await _changePrice.ExecuteAsync(new ChangePriceCommand(product.Value, request.Price, "EUR"), cancellationToken);
+        return result.Match<IActionResult>(
+            changed => NoContent(),
+            notFound => PricingProblem.ProductPriceNotFound());
     }
 }

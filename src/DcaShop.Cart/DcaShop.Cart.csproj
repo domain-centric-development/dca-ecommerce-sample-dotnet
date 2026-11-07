@@ -8,5 +8,7 @@
     <ProjectReference Include="../DcaShop.Product/DcaShop.Product.csproj" />
     <ProjectReference Include="../DcaShop.Pricing/DcaShop.Pricing.csproj" />
     <ProjectReference Include="../DcaShop.Inventory/DcaShop.Inventory.csproj" />
+    <PackageReference Include="OneOf" Version="$(OneOfVersion)" />
+    <PackageReference Include="OneOf.SourceGenerator" Version="$(OneOfVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

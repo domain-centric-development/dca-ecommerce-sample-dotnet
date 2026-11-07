@@ -1,5 +1,8 @@
+using DomainCentric.BuildingBlocks.Application;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
+
+using OneOf;
 
 namespace DcaShop.SharedKernel.Infrastructure.Transactions;
 
@@ -12,6 +15,13 @@ namespace DcaShop.SharedKernel.Infrastructure.Transactions;
 /// throws. A database adapter replaces this class with one that opens the transaction (EF Core
 /// <c>DbContext</c>, <c>TransactionScope</c>) and keeps the same hooks.
 /// </summary>
+/// <remarks>
+/// A returned refusal rolls back like a thrown failure (WP-171): when the work completes with an
+/// <see cref="IRefusal"/> — directly, or as the current case of a OneOf result — the outermost block rolls back and
+/// returns the result unchanged, without throwing; an inner block that returns one marks the shared transaction
+/// rollback-only, so an outermost block that returns a success afterwards throws
+/// <see cref="TransactionRolledBackException"/>. "Decide, then write" stays the rule; this is the net.
+/// </remarks>
 public sealed class InMemoryTransactionBoundary : ITransactionBoundary, ITransactionHooks
 {
     internal static readonly object CommitGate = new();
@@ -60,8 +70,20 @@ public sealed class InMemoryTransactionBoundary : ITransactionBoundary, ITransac
         try
         {
             var result = await work(cancellationToken).ConfigureAwait(false);
+            var refused = IsRefusal(result);
+            if (_depth > 1 && refused)
+            {
+                _rollbackOnly = true;   // an inner refusal poisons the shared transaction like an inner failure
+            }
+
             if (_depth == 1)
             {
+                if (refused)
+                {
+                    Rollback();
+                    return result;
+                }
+
                 if (_rollbackOnly)
                 {
                     Rollback();
@@ -93,6 +115,10 @@ public sealed class InMemoryTransactionBoundary : ITransactionBoundary, ITransac
             _depth--;
         }
     }
+
+    /// <summary>A refusal: the value itself, or the case a OneOf result currently holds.</summary>
+    private static bool IsRefusal(object? result) =>
+        result is IRefusal || (result is IOneOf union && union.Value is IRefusal);
 
     private void Commit()
     {

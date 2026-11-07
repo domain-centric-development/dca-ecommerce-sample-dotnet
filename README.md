@@ -237,7 +237,8 @@ legitimate for a console with no HTTP identity at all.
 ### How a refusal reads
 
 Every refused request answers with an RFC 9457 problem document (`application/problem+json`), built by the
-context's own `*ApiExceptionHandler`. The status follows what went wrong, not which layer noticed it:
+context's own resource or `*ApiExceptionHandler` from one `*Problem` class. The status follows what went wrong, not
+which layer noticed it:
 
 | Status | When |
 |---|---|
@@ -251,12 +252,15 @@ context's own `*ApiExceptionHandler`. The status follows what went wrong, not wh
   "detail": "A product with SKU API-42 already exists." }
 ```
 
-The failures themselves are types, not status codes: the use cases and the model raise `DuplicateSkuException`,
-`CartNotFoundException`, `InsufficientStockException` and their kin — subtypes of `DomainException` and
-`UseCaseException` from `DomainCentric.BuildingBlocks` — and only the adapter decides what a caller is told
-(ADR-016). An argument guard stays `ArgumentException`: "must not be null" is a caller contract, not a business
-rule. `ApiProblemDetailTest` holds that mapping; the pages keep the HTML error endpoint and map the same two base
-types into form errors.
+The refusals themselves are cases, not status codes: a use case returns every expected refusal as a case of a closed
+result — `CreateProductResult = Created | DuplicateSku`, `AddItemToCartResult = Added | CartNotFound |
+InsufficientArticleStock | …` — each refusal an `IRefusal` from `DomainCentric.BuildingBlocks`, and the adapter
+matches over it, one function per case; a new case breaks every match that must answer it at compile time (ADR-017,
+on OneOf until C# 15 `union` types). The model still throws its rules as `DomainException`s, which the use case
+catches once and returns as cases; the transaction boundary rolls a returned refusal back like a thrown one. Only the
+adapter decides what a caller is told (ADR-016). An argument guard stays `ArgumentException`: "must not be null" is a
+caller contract, not a business rule — that, and a rule of the model no use case names as a case, is all the
+`*ApiExceptionHandler`s and the pages still catch. `ApiProblemDetailTest` holds the mapping.
 
 **MCP** (`/mcp`, `ModelContextProtocol.AspNetCore`) exposes the catalog as the two tools `all-products` and
 `product-by-id`, over the same input ports and the same DTO converter as the REST resources — one representation

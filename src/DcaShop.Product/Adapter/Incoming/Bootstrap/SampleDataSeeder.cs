@@ -67,9 +67,14 @@ public sealed class SampleDataSeeder : IHostedService
 
         foreach (var p in Products)
         {
-            await createProduct.ExecuteAsync(
+            var result = await createProduct.ExecuteAsync(
                 new CreateProductCommand(p.Sku, p.Name, p.Description, p.ImageUrl, p.Price, "EUR", p.Category, p.Stock),
                 cancellationToken).ConfigureAwait(false);
+
+            // The seed is a fixed list of distinct stock keeping units: a duplicate is a defect of the list.
+            result.Switch(
+                created => { },
+                duplicate => throw new InvalidOperationException($"The sample data names SKU {duplicate.Sku.Value} twice"));
         }
 
         await WaitForOutboxAsync(cancellationToken).ConfigureAwait(false);

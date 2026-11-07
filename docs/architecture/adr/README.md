@@ -7,7 +7,7 @@
 | [ADR-003](adr-003-pattern-selection-per-context.md) | Pattern selection per context and stage-1 stand-ins | Accepted |
 | [ADR-004](adr-004-transaction-boundary.md) | Transaction boundary via `ITransactionBoundary`, remote calls outside it | Accepted |
 | [ADR-005](adr-005-antiforgery-and-safe-methods.md) | Antiforgery token on every writing form, no state-changing `GET` | Accepted |
-| [ADR-006](adr-006-identity-and-session-cookies.md) | Two cookies for identity and session, signed by an own JWT middleware | Accepted, point 1 amended by ADR-008 |
+| [ADR-006](adr-006-identity-and-session-cookies.md) | Two cookies for identity and session, signed by an own JWT middleware | Accepted, point 1 amended by ADR-008, the guest's refusal by ADR-017 |
 | [ADR-007](adr-007-api-authorization-and-bearer-only-boundary.md) | API authorization at the adapter, and a Bearer-only `/api` and `/mcp` | Accepted, amended by ADR-008 |
 | [ADR-008](adr-008-identity-as-authentication-handler.md) | The shop's identity as an ASP.NET Core authentication handler; `[Authorize]` for the claims-only gates | Accepted |
 
@@ -25,4 +25,6 @@
 
 | [ADR-015](adr-015-development-defaults-fail-closed.md) | A committed default must not start a real deployment | Accepted |
 
-| [ADR-016](adr-016-exception-layers-and-problem-details.md) | A failure carries its own type, and only the adapter turns it into an answer | Accepted |
+| [ADR-016](adr-016-exception-layers-and-problem-details.md) | A failure carries its own type, and only the adapter turns it into an answer | Accepted, amended by ADR-017 |
+
+| [ADR-017](adr-017-expected-refusals-are-closed-use-case-results.md) | Expected refusals are closed use-case results | Accepted |

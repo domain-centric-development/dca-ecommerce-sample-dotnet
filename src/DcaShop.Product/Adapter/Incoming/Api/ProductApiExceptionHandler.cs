@@ -1,24 +1,20 @@
-using DcaShop.Product.Application.CreateProduct;
-
-using DomainCentric.BuildingBlocks.Application;
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 namespace DcaShop.Product.Adapter.Incoming.Api;
 
 /// <summary>
-/// Translates the catalog's failures into HTTP answers — the one place in this context that knows the protocol.
+/// Translates what is still <em>thrown</em> towards the catalog's routes into HTTP answers.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The use cases raise types, not status codes: <see cref="DuplicateSkuException"/> says the catalog already
-/// carries the stock keeping unit, and nothing in the application or the domain layer decides what a caller is
-/// told about it. That decision lives here, so the same use case can serve this REST exposure and the tool
-/// provider next to it with different answers.
+/// The catalog's use cases return every refusal a caller answers as a case of their result — a stock keeping unit
+/// the catalog already carries, a product that does not exist — and <see cref="ProductResource"/> matches over it.
+/// What reaches this handler is what no use case returns: a value a value object refuses, and a rule of the model no
+/// use case names as a case of its own. The words are shared with the resource through <see cref="ProductProblem"/>.
 /// </para>
 /// <para>
 /// Scoped to this context's own routes: an adapter answers for its own module only. A handler chain is one
@@ -33,12 +29,10 @@ public sealed class ProductApiExceptionHandler : IExceptionHandler
 
     private const string PriceRouteSuffix = "/price";
 
-    private readonly IProblemDetailsService _problemDetails;
     private readonly ILogger<ProductApiExceptionHandler> _logger;
 
-    public ProductApiExceptionHandler(IProblemDetailsService problemDetails, ILogger<ProductApiExceptionHandler> logger)
+    public ProductApiExceptionHandler(ILogger<ProductApiExceptionHandler> logger)
     {
-        _problemDetails = problemDetails;
         _logger = logger;
     }
 
@@ -51,19 +45,9 @@ public sealed class ProductApiExceptionHandler : IExceptionHandler
 
         switch (exception)
         {
-            // The catalog already carries that stock keeping unit — a conflict with existing state.
-            case DuplicateSkuException duplicate:
-                return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status409Conflict, "Stock keeping unit already in use", $"A product with SKU {duplicate.Sku.Value} already exists.");
-
-            // Any other failure the use case reports. The request was understood and refused for a stated reason,
-            // which is what 422 means; a use-case failure that deserves its own status gets its own arm above.
-            case UseCaseException:
-                return ProblemAsync(httpContext, exception, StatusCodes.Status422UnprocessableEntity, "Request cannot be served");
-
-            // A rule of the model refused the request.
+            // A rule of the model refused the request that no use case returns as a case.
             case DomainException:
-                return ProblemAsync(httpContext, exception, StatusCodes.Status422UnprocessableEntity, "Business rule violated");
+                return ProductProblem.BusinessRuleViolated().WriteAsync(httpContext, exception);
 
             // A value the caller sent is not acceptable to a value object — a malformed stock keeping unit, a
             // blank name. This is the one mapping that stays imprecise: the same exception type is what the
@@ -73,7 +57,7 @@ public sealed class ProductApiExceptionHandler : IExceptionHandler
             // value object's refusal, because only the value object knows the rounding.
             case ArgumentException:
                 _logger.LogDebug("Rejected request value: {Reason}", exception.Message);
-                return ProblemAsync(httpContext, exception, StatusCodes.Status400BadRequest, "Unacceptable value");
+                return ProductProblem.UnacceptableValue().WriteAsync(httpContext, exception);
 
             default:
                 return ValueTask.FromResult(false);
@@ -88,20 +72,4 @@ public sealed class ProductApiExceptionHandler : IExceptionHandler
         httpContext.Request.Path.Value is { } path
         && RoutePrefixes.Any(prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
         && !path.TrimEnd('/').EndsWith(PriceRouteSuffix, StringComparison.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// Writes the problem document. The detail is worded here, from the failure's values — the exception's message
-    /// is for the log, never for the caller; a catch-all arm answers with its title alone.
-    /// </summary>
-    private async ValueTask<bool> ProblemAsync(
-        HttpContext httpContext, Exception exception, int status, string title, string? detail = null)
-    {
-        httpContext.Response.StatusCode = status;
-        return await _problemDetails.TryWriteAsync(new ProblemDetailsContext
-        {
-            HttpContext = httpContext,
-            Exception = exception,
-            ProblemDetails = new ProblemDetails { Status = status, Title = title, Detail = detail },
-        }).ConfigureAwait(false);
-    }
 }

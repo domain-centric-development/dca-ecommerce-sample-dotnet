@@ -44,7 +44,7 @@ public sealed class ProductPageWithoutDescriptionTest : IClassFixture<WebApplica
     private sealed class ProductWithoutDescription : IGetProductByIdInputPort
     {
         public Task<GetProductByIdResult> ExecuteAsync(GetProductByIdQuery query, CancellationToken cancellationToken = default) =>
-            Task.FromResult(new GetProductByIdResult(new EnrichedProduct(
+            Task.FromResult<GetProductByIdResult>(new GetProductByIdResult.Found(new EnrichedProduct(
                 Tote,
                 Sku.Of("TOTE-001"),
                 ProductName.Of("Bounded Context Tote"),

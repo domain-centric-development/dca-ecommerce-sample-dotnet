@@ -27,7 +27,7 @@ public sealed class PlaceOrderPaymentRefusalPageTest : IClassFixture<WebApplicat
         // Given a checkout session at the review
         // And the payment provider refuses payments
         var guest = await GuestAtTheReviewOfAShopWhosePlaceOrderAnswers(
-            new PaymentInitiationFailedException(PaymentProviderId.Of("provider"), "The payment provider refused the payment"));
+            new ConfirmCheckoutResult.PaymentInitiationFailed(PaymentProviderId.Of("provider"), "The payment provider refused the payment"));
 
         // When the customer presses "Place Order"
         var placed = await PlaceOrderAsync(guest);
@@ -50,7 +50,7 @@ public sealed class PlaceOrderPaymentRefusalPageTest : IClassFixture<WebApplicat
         // Given a checkout session at the review
         // And the payment provider answers only after 5 seconds — which "Place Order" answers as unavailable
         var guest = await GuestAtTheReviewOfAShopWhosePlaceOrderAnswers(
-            new PaymentProviderUnavailableException(PaymentProviderId.Of("provider")));
+            new ConfirmCheckoutResult.PaymentProviderUnavailable(PaymentProviderId.Of("provider")));
 
         // When the customer presses "Place Order"
         var placed = await PlaceOrderAsync(guest);
@@ -68,7 +68,7 @@ public sealed class PlaceOrderPaymentRefusalPageTest : IClassFixture<WebApplicat
     }
 
     /// <summary>A guest at the review of "Domain-Driven Design" once, in a shop whose "Place Order" fails with <paramref name="refusal"/>.</summary>
-    private async Task<HttpClient> GuestAtTheReviewOfAShopWhosePlaceOrderAnswers(Exception refusal)
+    private async Task<HttpClient> GuestAtTheReviewOfAShopWhosePlaceOrderAnswers(ConfirmCheckoutResult refusal)
     {
         var shop = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
             services.AddSingleton<IConfirmCheckoutInputPort>(new Refusing(refusal))));
@@ -80,10 +80,10 @@ public sealed class PlaceOrderPaymentRefusalPageTest : IClassFixture<WebApplicat
     private static async Task<HttpResponseMessage> PlaceOrderAsync(HttpClient guest) =>
         await guest.PostAsync("/checkout/confirm", GuestOrders.Form(await guest.GetStringAsync("/checkout/review"), ("placedFrom", "review")));
 
-    /// <summary>A "Place Order" that refuses every order with the same failure.</summary>
-    private sealed class Refusing(Exception refusal) : IConfirmCheckoutInputPort
+    /// <summary>A "Place Order" that refuses every order with the same case.</summary>
+    private sealed class Refusing(ConfirmCheckoutResult refusal) : IConfirmCheckoutInputPort
     {
         public Task<ConfirmCheckoutResult> ExecuteAsync(ConfirmCheckoutCommand command, CancellationToken cancellationToken = default) =>
-            Task.FromException<ConfirmCheckoutResult>(refusal);
+            Task.FromResult(refusal);
     }
 }

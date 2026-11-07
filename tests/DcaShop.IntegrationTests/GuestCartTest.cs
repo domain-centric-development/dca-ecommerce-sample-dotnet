@@ -101,8 +101,8 @@ public sealed class GuestCartTest : IClassFixture<WebApplicationFactory<Program>
             .ExecuteAsync(new GetOrCreateActiveCartCommand(customer));
         var products = await scope.ServiceProvider.GetRequiredService<IGetAllProductsInputPort>().ExecuteAsync(new GetAllProductsQuery());
         var product = products.Products.Single(p => p.Name.Value == productName);
-        await scope.ServiceProvider.GetRequiredService<IAddItemToCartInputPort>()
-            .ExecuteAsync(new AddItemToCartCommand(cart.CartId, customer, product.ProductId.Value, 1));
+        Assert.IsType<AddItemToCartResult.Added>((await scope.ServiceProvider.GetRequiredService<IAddItemToCartInputPort>()
+            .ExecuteAsync(new AddItemToCartCommand(cart.CartId, customer, product.ProductId.Value, 1))).Value);
     }
 
     /// <summary>The lines of the customer's active cart as <c>name xquantity</c>, in the order the cart holds them.</summary>
@@ -113,7 +113,7 @@ public sealed class GuestCartTest : IClassFixture<WebApplicationFactory<Program>
             .ExecuteAsync(new GetOrCreateActiveCartCommand(customer));
         var result = await scope.ServiceProvider.GetRequiredService<IGetCartByIdInputPort>()
             .ExecuteAsync(new GetCartByIdQuery(cart.CartId, customer));
-        Assert.NotNull(result.Cart);
-        return result.Cart.Items.Select(i => $"{i.Article.Name} x{i.Quantity.Value}").ToList();
+        var found = Assert.IsType<GetCartByIdResult.Found>(result.Value);
+        return found.Cart.Items.Select(i => $"{i.Article.Name} x{i.Quantity.Value}").ToList();
     }
 }

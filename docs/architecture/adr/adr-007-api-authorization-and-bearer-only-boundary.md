@@ -45,6 +45,11 @@ learn. That choice is an HTTP concern, so the resource makes it; what it renders
 **A use case with no caller is not under-specified.** `CompleteCart` runs from an integration event, at least
 once, on nobody's behalf — there is no identity to check and it stays unscoped.
 
+*Amended 2026-11-07 (WP-121):* it no longer stays unscoped. The confirmed checkout's event already carries the
+customer, so the cart's completion contract names it and `CompleteCart` loads the cart through its owner, like
+every other use case on an owned aggregate; the open host service's unused `completeCart` was removed. A use
+case with no caller still checks no caller — it scopes the load by the owner the event names.
+
 **`/api/**` and `/mcp` are authenticated by an `Authorization: Bearer` header and by nothing else.**
 
 - `TokenOnlyPaths` names those paths (originally `JwtAuthenticationMiddleware.TokenOnlyPathPrefixes`). On them

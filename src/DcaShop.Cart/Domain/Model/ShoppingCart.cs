@@ -9,7 +9,7 @@ namespace DcaShop.Cart.Domain.Model;
 /// A customer's shopping cart. A product appears at most once — adding it again increases the quantity.
 /// Modifications are only allowed while the cart is <see cref="CartStatus.Active"/>.
 /// </summary>
-public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>
+public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>, IOwned<CustomerId>
 {
     private readonly List<CartItem> _items = new();
 

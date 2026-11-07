@@ -26,8 +26,9 @@ public sealed class ProductCreationTest
         using var shop = new WebApplicationFactory<Program>();
         using (var scope = shop.Services.CreateScope())
         {
-            await scope.ServiceProvider.GetRequiredService<ICreateProductInputPort>().ExecuteAsync(new CreateProductCommand(
+            var created = await scope.ServiceProvider.GetRequiredService<ICreateProductInputPort>().ExecuteAsync(new CreateProductCommand(
                 "MUG-002", "Aggregate Mug", "A mug with a consistency boundary.", string.Empty, 14.99m, "EUR", "Desk & Office", 12));
+            Assert.IsType<CreateProductResult.Created>(created.Value);
         }
 
         var client = shop.CreateClient();

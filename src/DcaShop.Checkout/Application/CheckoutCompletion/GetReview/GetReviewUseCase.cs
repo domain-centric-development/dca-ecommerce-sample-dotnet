@@ -22,10 +22,14 @@ public sealed class GetReviewUseCase : IGetReviewInputPort
     public async Task<GetReviewResult> ExecuteAsync(GetReviewQuery query, CancellationToken cancellationToken = default)
     {
         var sessionId = new CheckoutSessionId(query.SessionId);
-        var session = await _sessions.FindByIdForCustomerAsync(sessionId, CustomerId.Of(query.CustomerId), cancellationToken).ConfigureAwait(false)
-            ?? throw new CheckoutSessionNotFoundException(sessionId);
+        var session = await _sessions.FindByIdForCustomerAsync(sessionId, CustomerId.Of(query.CustomerId), cancellationToken).ConfigureAwait(false);
+        if (session is null)
+        {
+            return new GetReviewResult.CheckoutSessionNotFound(sessionId);
+        }
+
         var articles = await _articleData.GetArticleDataAsync(session.LineItems.Select(i => i.ProductId).ToArray(), cancellationToken).ConfigureAwait(false);
         var facts = articles.ToDictionary(e => e.Key, e => new ArticlePrice(e.Value.CurrentPrice, e.Value.IsAvailable, e.Value.AvailableStock));
-        return new GetReviewResult(CheckoutCartSnapshot.AtTodaysPrices(session, facts), session.FingerprintAt(facts).Value);
+        return new GetReviewResult.Found(CheckoutCartSnapshot.AtTodaysPrices(session, facts), session.FingerprintAt(facts).Value);
     }
 }

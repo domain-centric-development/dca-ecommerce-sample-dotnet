@@ -1,6 +1,7 @@
 using System.Text.Json;
 
 using DcaShop.Product.Application.GetProductById;
+using DcaShop.SharedKernel.Domain.Model;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -134,7 +135,7 @@ public sealed class McpToolTest : IClassFixture<WebApplicationFactory<Program>>
         public Task<GetProductByIdResult> ExecuteAsync(GetProductByIdQuery query, CancellationToken cancellationToken = default)
         {
             Queries.Add(query);
-            return Task.FromResult(new GetProductByIdResult(null));
+            return Task.FromResult<GetProductByIdResult>(new GetProductByIdResult.ProductNotFound(new ProductId(query.ProductId)));
         }
     }
 }

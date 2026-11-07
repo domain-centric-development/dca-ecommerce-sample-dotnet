@@ -58,7 +58,7 @@ public sealed class CrossContextEventFlowTest : IClassFixture<WebApplicationFact
         {
             var created = await scope.ServiceProvider.GetRequiredService<ICreateProductInputPort>().ExecuteAsync(
                 new CreateProductCommand("EVT-001", "Event Sourced Lamp", "Lights up on ProductCreatedEvent", "/images/lamp.svg", 42.50m, "EUR", "Home", 7));
-            productId = created.ProductId;
+            productId = Assert.IsType<CreateProductResult.Created>(created.Value).ProductId;
         }
 
         var product = new ProductId(productId);

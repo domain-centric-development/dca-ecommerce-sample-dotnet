@@ -32,12 +32,9 @@ public sealed class ProductPageController : Controller
     public async Task<IActionResult> Detail(Guid productId, CancellationToken cancellationToken)
     {
         var result = await _getProductById.ExecuteAsync(new GetProductByIdQuery(productId), cancellationToken);
-        if (result.Product is not { } p)
-        {
-            return NotFound();
-        }
-
-        return View("~/Views/Product/Detail.cshtml", ToViewModel(p));
+        return result.Match<IActionResult>(
+            found => View("~/Views/Product/Detail.cshtml", ToViewModel(found.Product)),
+            notFound => NotFound());
     }
 
     private static ProductDetailPageViewModel ToViewModel(EnrichedProduct p) =>

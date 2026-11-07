@@ -1,26 +1,20 @@
-using DcaShop.Cart.Application.Shared;
-using DcaShop.Cart.Application.Shopping.AddItemToCart;
-using DcaShop.Cart.Domain.Model;
-
-using DomainCentric.BuildingBlocks.Application;
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 namespace DcaShop.Cart.Adapter.Incoming.Api;
 
 /// <summary>
-/// Translates the cart's failures into HTTP answers — the one place in this context that knows the protocol.
+/// Translates what is still <em>thrown</em> towards the cart's routes into HTTP answers.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Each outcome has a type, so the mapping is a table rather than a chain of message tests. Note that the status
-/// does not follow the base type: a position the cart does not hold is a rule of the model and still answers
-/// <c>404</c>, because what the caller has to do about it is look for something that exists. Deciding that is
-/// this adapter's job and nothing further in.
+/// The cart's use cases return every refusal a caller answers as a case of their result, and
+/// <see cref="ShoppingCartResource"/> matches over it. What reaches this handler is what no use case returns: a value
+/// that does not parse, and a rule of the model no use case names as a case of its own. The words are shared with the
+/// resource through <see cref="CartProblem"/>.
 /// </para>
 /// <para>
 /// Scoped to this context's own routes: an adapter answers for its own module only. A handler chain is one
@@ -32,12 +26,10 @@ public sealed class CartApiExceptionHandler : IExceptionHandler
 {
     private static readonly string[] RoutePrefixes = ["/api/carts"];
 
-    private readonly IProblemDetailsService _problemDetails;
     private readonly ILogger<CartApiExceptionHandler> _logger;
 
-    public CartApiExceptionHandler(IProblemDetailsService problemDetails, ILogger<CartApiExceptionHandler> logger)
+    public CartApiExceptionHandler(ILogger<CartApiExceptionHandler> logger)
     {
-        _problemDetails = problemDetails;
         _logger = logger;
     }
 
@@ -50,48 +42,17 @@ public sealed class CartApiExceptionHandler : IExceptionHandler
 
         switch (exception)
         {
-            // No cart of this customer under that identity.
-            case CartNotFoundException notFound:
-                return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status404NotFound, "Cart not found", $"There is no cart {notFound.CartId.Value}.");
-
-            // The assortment carries no article for the product the body names. The request is well-formed but
-            // cannot be served, so 422; a 404 stays for what the address names.
-            case ArticleNotAvailableException notAvailable:
-                return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status422UnprocessableEntity, "Article not available", $"There is no article for product {notAvailable.ProductId.Value}.");
-
-            // The cart does not hold the position the caller named.
-            case CartItemNotFoundException notInCart:
-                return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status404NotFound, "Position not in cart", $"The cart holds no position for {notInCart.ItemId?.Value ?? notInCart.ProductId?.Value}.");
-
-            // Not enough of the article to promise the requested quantity.
-            case InsufficientArticleStockException insufficient:
-                return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status409Conflict, "Not enough stock",
-                    $"Requested {insufficient.Requested} of product {insufficient.ProductId.Value}, more than is in stock.");
-
-            // The customer already shops in another cart.
-            case ActiveCartAlreadyExistsException alreadyActive:
-                return ProblemAsync(
-                    httpContext, exception, StatusCodes.Status409Conflict, "Active cart already exists", $"Customer {alreadyActive.CustomerId.Value} already has an active cart.");
-
-            // Any other failure the use case reports.
-            case UseCaseException:
-                return ProblemAsync(httpContext, exception, StatusCodes.Status422UnprocessableEntity, "Request cannot be served");
-
-            // A rule of the model refused the request — a cart that is no longer active, a completion that
-            // already happened.
+            // A rule of the model refused the request that no use case returns as a case — a calculation over
+            // amounts in two currencies, say.
             case DomainException:
-                return ProblemAsync(httpContext, exception, StatusCodes.Status409Conflict, "Cart refuses the change");
+                return CartProblem.CartRefusesTheChange().WriteAsync(httpContext, exception);
 
             // A value the caller sent is not acceptable to a value object. The one mapping that stays imprecise:
             // this is also the type a defect in this application raises, and nothing in the type tells the two
             // apart. Moving each such check into request validation removes the ambiguity, one field at a time.
             case ArgumentException:
                 _logger.LogDebug("Rejected request value: {Reason}", exception.Message);
-                return ProblemAsync(httpContext, exception, StatusCodes.Status400BadRequest, "Unacceptable value");
+                return CartProblem.UnacceptableValue().WriteAsync(httpContext, exception);
 
             default:
                 return ValueTask.FromResult(false);
@@ -101,20 +62,4 @@ public sealed class CartApiExceptionHandler : IExceptionHandler
     private static bool IsOwnRoute(HttpContext httpContext) =>
         httpContext.Request.Path.Value is { } path
         && RoutePrefixes.Any(prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
-
-    /// <summary>
-    /// Writes the problem document. The detail is worded here, from the failure's values — the exception's message
-    /// is for the log, never for the caller; a catch-all arm answers with its title alone.
-    /// </summary>
-    private async ValueTask<bool> ProblemAsync(
-        HttpContext httpContext, Exception exception, int status, string title, string? detail = null)
-    {
-        httpContext.Response.StatusCode = status;
-        return await _problemDetails.TryWriteAsync(new ProblemDetailsContext
-        {
-            HttpContext = httpContext,
-            Exception = exception,
-            ProblemDetails = new ProblemDetails { Status = status, Title = title, Detail = detail },
-        }).ConfigureAwait(false);
-    }
 }

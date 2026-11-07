@@ -9,9 +9,10 @@ namespace DcaShop.Cart.Application.Shared;
 /// Part of the <see cref="IShoppingCartRepository"/> contract rather than of the aggregate: only the store
 /// sees every cart of a customer at once, so only the store can refuse the second one. Every implementation
 /// reports it with this type, whatever its own mechanism is, so a caller can react to a lost race without
-/// knowing which store it is talking to.
+/// knowing which store it is talking to. A failure the output port declares, so an
+/// <see cref="OutputPortException"/>: the adapter throws it, the use case catches it.
 /// </remarks>
-public sealed class ActiveCartAlreadyExistsException : UseCaseException
+public sealed class ActiveCartAlreadyExistsException : OutputPortException
 {
     public ActiveCartAlreadyExistsException(CustomerId customerId)
         : base($"Customer {customerId.Value} already has an active cart")

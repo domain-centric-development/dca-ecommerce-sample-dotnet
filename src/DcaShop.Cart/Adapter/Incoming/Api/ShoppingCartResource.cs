@@ -25,6 +25,10 @@ namespace DcaShop.Cart.Adapter.Incoming.Api;
 /// Listing every cart in the shop crosses that boundary by design; it is <see cref="CartOversightResource"/>'s.
 /// Authenticated by an <c>Authorization: Bearer</c> token and nothing else (ADR-007).
 /// </para>
+/// <para>
+/// Refusals: each route matches over its use case's result, one function per case, and takes the answer from
+/// <see cref="CartProblem"/>. What is still thrown is <see cref="CartApiExceptionHandler"/>'s.
+/// </para>
 /// </remarks>
 [ApiController]
 [Route("api/carts")]
@@ -57,16 +61,15 @@ public sealed class ShoppingCartResource : ControllerBase
         _identityProvider = identityProvider;
     }
 
-    /// <summary>
-    /// Opens the caller's active cart. A caller who already has one is refused — the store's
-    /// <see cref="Application.Shared.ActiveCartAlreadyExistsException"/>, answered by <see cref="CartApiExceptionHandler"/>.
-    /// </summary>
+    /// <summary>Opens the caller's active cart. A caller who already has one is refused.</summary>
     [HttpPost]
     public async Task<ActionResult<ShoppingCartDto>> CreateCart(CancellationToken cancellationToken)
     {
         var result = await _createCart.ExecuteAsync(new CreateCartCommand(CurrentCustomerId), cancellationToken);
-        var cart = await ReadAsync(result.CartId, cancellationToken);
-        return StatusCode(StatusCodes.Status201Created, _converter.ToDto(cart!));
+        return await result.Match<Task<ActionResult<ShoppingCartDto>>>(
+            async created => StatusCode(
+                StatusCodes.Status201Created, _converter.ToDto((await ReadAsync(created.CartId, cancellationToken))!)),
+            alreadyActive => Answer(CartProblem.ActiveCartAlreadyExists(alreadyActive.CustomerId)));
     }
 
     [HttpGet("{cartId:guid}")]
@@ -109,11 +112,14 @@ public sealed class ShoppingCartResource : ControllerBase
             return MalformedProductId();
         }
 
-        // Each refusal travels as its own type; CartApiExceptionHandler decides what the caller is told.
-        await _addItemToCart.ExecuteAsync(
+        var result = await _addItemToCart.ExecuteAsync(
             new AddItemToCartCommand(cartId, CurrentCustomerId, productId.Value, request.Quantity), cancellationToken);
-
-        return Ok(_converter.ToDto((await ReadAsync(cartId, cancellationToken))!));
+        return await result.Match<Task<ActionResult<ShoppingCartDto>>>(
+            async added => Ok(_converter.ToDto((await ReadAsync(cartId, cancellationToken))!)),
+            notAvailable => Answer(CartProblem.ArticleNotAvailable(notAvailable.ProductId)),
+            notFound => Answer(CartProblem.CartNotFound(notFound.CartId)),
+            insufficient => Answer(CartProblem.NotEnoughStock(insufficient.ProductId, insufficient.Requested)),
+            notModifiable => Answer(CartProblem.CartRefusesTheChange()));
     }
 
     /// <summary>Removes the item holding the product named in the path, whatever its quantity.</summary>
@@ -131,10 +137,13 @@ public sealed class ShoppingCartResource : ControllerBase
             return MalformedProductId();
         }
 
-        await _removeItemFromCart.ExecuteAsync(
+        var result = await _removeItemFromCart.ExecuteAsync(
             new RemoveItemFromCartCommand(cartId, CurrentCustomerId, product.Value), cancellationToken);
-
-        return Ok(_converter.ToDto((await ReadAsync(cartId, cancellationToken))!));
+        return await result.Match<Task<ActionResult<ShoppingCartDto>>>(
+            async removed => Ok(_converter.ToDto((await ReadAsync(cartId, cancellationToken))!)),
+            notFound => Answer(CartProblem.CartNotFound(notFound.CartId)),
+            notInCart => Answer(CartProblem.PositionNotInCart(notInCart.ProductId.Value)),
+            notModifiable => Answer(CartProblem.CartRefusesTheChange()));
     }
 
     /// <summary>
@@ -144,10 +153,15 @@ public sealed class ShoppingCartResource : ControllerBase
     private ObjectResult MalformedProductId() =>
         Problem(statusCode: StatusCodes.Status400BadRequest, title: "Unacceptable value");
 
+    /// <summary>A refusal's answer where a route answers asynchronously.</summary>
+    private static Task<ActionResult<ShoppingCartDto>> Answer(CartProblem problem) =>
+        Task.FromResult<ActionResult<ShoppingCartDto>>(problem);
+
     private string CurrentCustomerId => _identityProvider.GetCurrentIdentity().UserId.Value;
 
     private async Task<EnrichedCart?> ReadAsync(Guid cartId, CancellationToken cancellationToken) =>
-        (await _getCartById.ExecuteAsync(new GetCartByIdQuery(cartId, CurrentCustomerId), cancellationToken)).Cart;
+        (await _getCartById.ExecuteAsync(new GetCartByIdQuery(cartId, CurrentCustomerId), cancellationToken))
+            .Match<EnrichedCart?>(found => found.Cart, notFound => null);
 
     /// <summary>The cart, but only if it is the caller's — otherwise null, and the caller is told it is not there.</summary>
     private async Task<EnrichedCart?> ReadOwnAsync(Guid cartId, CancellationToken cancellationToken)

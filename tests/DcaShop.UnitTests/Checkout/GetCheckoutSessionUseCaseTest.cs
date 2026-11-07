@@ -5,8 +5,9 @@ using DcaShop.Checkout.Domain.Model;
 namespace DcaShop.UnitTests.Checkout;
 
 /// <summary>
-/// A session that is not there is the one step decision the snapshot cannot take — there is no snapshot to
-/// ask. The use case answers it, and these cases live here because of that.
+/// A session that is not there is the one answer the snapshot cannot give — there is no snapshot to ask. The use case
+/// answers it with its refusal, whether a step was requested or not; the step page turns it into the way back to the
+/// cart.
 /// </summary>
 public sealed class GetCheckoutSessionUseCaseTest
 {
@@ -18,21 +19,21 @@ public sealed class GetCheckoutSessionUseCaseTest
     [InlineData(CheckoutStep.Payment)]
     [InlineData(CheckoutStep.Review)]
     [InlineData(CheckoutStep.Confirmation)]
-    public async Task WithoutSessionEveryStepSendsTheCustomerBackToTheCart(CheckoutStep step)
+    public async Task EveryStepFindsNoCheckoutTheCustomerDoesNotHave(CheckoutStep step)
     {
-        var result = await UseCase().ExecuteAsync(GetCheckoutSessionQuery.ForStep(Guid.NewGuid(), "nobody", step));
+        var sessionId = Guid.NewGuid();
 
-        Assert.Null(result.Session);
-        Assert.Equal(StepAccess.BackToCart(), result.StepAccess);
+        var result = await UseCase().ExecuteAsync(GetCheckoutSessionQuery.ForStep(sessionId, "nobody", step));
+
+        Assert.Equal(sessionId, Assert.IsType<GetCheckoutSessionResult.CheckoutSessionNotFound>(result.Value).SessionId.Value);
     }
 
     [Fact]
-    public async Task WithoutARequestedStepThereIsNoAccessDecisionToTake()
+    public async Task WithoutARequestedStepNoCheckoutIsFoundEither()
     {
         var result = await UseCase().ExecuteAsync(new GetCheckoutSessionQuery(Guid.NewGuid(), "nobody"));
 
-        Assert.Null(result.Session);
-        Assert.Null(result.StepAccess);
+        Assert.IsType<GetCheckoutSessionResult.CheckoutSessionNotFound>(result.Value);
     }
 
     private GetCheckoutSessionUseCase UseCase() => new(_sessions);

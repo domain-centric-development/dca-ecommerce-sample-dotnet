@@ -27,11 +27,24 @@ public sealed class CartCompletionRedeliveryTest
     {
         var completeCart = new RecordingCompleteCart();
         IEventListener consumer = new CartCompletionEventConsumer(completeCart, NullLogger<CartCompletionEventConsumer>.Instance);
-        var trigger = new CompletionTrigger(Guid.NewGuid(), DateTimeOffset.UtcNow, Guid.NewGuid().ToString(), "session-1", ["position-1:1-2"]);
+        var trigger = new CompletionTrigger(Guid.NewGuid(), DateTimeOffset.UtcNow, Guid.NewGuid().ToString(), "customer-1", "session-1", ["position-1:1-2"]);
 
         await consumer.OnAsync(trigger);
 
-        Assert.Equal(trigger.EventId, Assert.Single(completeCart.Commands).EventId);
+        var command = Assert.Single(completeCart.Commands);
+        Assert.Equal(trigger.EventId, command.EventId);
+        Assert.Equal("customer-1", command.CustomerId);
+    }
+
+    [Fact]
+    public async Task ACartIsLoadedThroughItsOwnerAnotherCustomersCartIsNotFound()
+    {
+        var (useCase, publisher, command) = await CartReadyForCompletionAsync();
+
+        var result = await useCase.ExecuteAsync(command with { CustomerId = "customer-2" });
+
+        Assert.IsType<CompleteCartResult.CartNotFound>(result.Value);
+        Assert.Equal(0, publisher.Publications);
     }
 
     [Fact]
@@ -42,8 +55,8 @@ public sealed class CartCompletionRedeliveryTest
         var first = await useCase.ExecuteAsync(command);
         var second = await useCase.ExecuteAsync(command);
 
-        Assert.False(first.AlreadyCompleted);
-        Assert.True(second.AlreadyCompleted);
+        Assert.False(Assert.IsType<CompleteCartResult.Completed>(first.Value).AlreadyCompleted);
+        Assert.True(Assert.IsType<CompleteCartResult.Completed>(second.Value).AlreadyCompleted);
         Assert.Equal(1, publisher.Publications);
     }
 
@@ -68,7 +81,7 @@ public sealed class CartCompletionRedeliveryTest
         await carts.SaveAsync(cart);
         var publisher = new CountingPublisher();
         var useCase = new CompleteCartUseCase(carts, new InMemoryProcessedEvents(), publisher, new InMemoryTransactionBoundary());
-        var command = new CompleteCartCommand(cart.Id.Value, "session-1", [cart.Items[0].PositionSnapshot], Guid.NewGuid());
+        var command = new CompleteCartCommand(cart.Id.Value, "customer-1", "session-1", [cart.Items[0].PositionSnapshot], Guid.NewGuid());
         return (useCase, publisher, command);
     }
 
@@ -76,6 +89,7 @@ public sealed class CartCompletionRedeliveryTest
         Guid EventId,
         DateTimeOffset OccurredOn,
         string CartId,
+        string CustomerId,
         string SessionId,
         IReadOnlyList<string> PurchasedPositions) : ICartCompletionTrigger;
 
@@ -86,7 +100,7 @@ public sealed class CartCompletionRedeliveryTest
         public Task<CompleteCartResult> ExecuteAsync(CompleteCartCommand input, CancellationToken cancellationToken = default)
         {
             Commands.Add(input);
-            return Task.FromResult(new CompleteCartResult(input.CartId, "Active"));
+            return Task.FromResult<CompleteCartResult>(new CompleteCartResult.Completed(input.CartId, "Active"));
         }
     }
 

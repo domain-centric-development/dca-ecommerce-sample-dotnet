@@ -349,7 +349,7 @@ contract: the string is well formed and refused for what it is made of.
 **Definition:** The address is held by another account, or the signed-in user already has one. Both are statements
 about all accounts, which only the store can make.
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IAccountRepository`
+**Type:** Refusal case of a use-case result (`IRefusal`) · **Related terms:** `IAccountRepository`
 
 ## Features
 

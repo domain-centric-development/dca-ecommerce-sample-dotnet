@@ -49,7 +49,7 @@ public sealed class BackofficeListenerRetryTest : IClassFixture<WebApplicationFa
         {
             var result = await scope.ServiceProvider.GetRequiredService<IReplayFailedPublicationInputPort>()
                 .ExecuteAsync(new ReplayFailedPublicationCommand(broken.Id, broken.ListenerId));
-            Assert.True(result.Found);
+            Assert.IsType<ReplayFailedPublicationResult.Replayed>(result.Value);
         }
 
         await SettledAsync(@event.EventId, PublicationStatus.Completed);
@@ -98,7 +98,7 @@ public sealed class BackofficeListenerRetryTest : IClassFixture<WebApplicationFa
         using var scope = _factory.Services.CreateScope();
         var result = await scope.ServiceProvider.GetRequiredService<IReplayFailedPublicationInputPort>()
             .ExecuteAsync(new ReplayFailedPublicationCommand(entry.Id, entry.ListenerId));
-        Assert.True(result.Found);
+        Assert.IsType<ReplayFailedPublicationResult.Replayed>(result.Value);
     }
 
     /// <summary>The event's own content in an entry's payload: the lines between the status line and the last error.</summary>

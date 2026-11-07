@@ -6,6 +6,11 @@ using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
 namespace DcaShop.Cart.Application.CartCheckout.CompleteCart;
 
+/// <summary>
+/// Reconciles a cart with a confirmed checkout. The cart is loaded through its owner, the customer the confirmed
+/// checkout names: a cart that does not exist and one that is somebody else's are the same refusal,
+/// <see cref="CompleteCartResult.CartNotFound"/>, returned before anything is written.
+/// </summary>
 public sealed class CompleteCartUseCase : ICompleteCartInputPort
 {
     /// <summary>The effect's key in <see cref="IProcessedEvents"/> — stable: a rename would replay old events.</summary>
@@ -29,16 +34,19 @@ public sealed class CompleteCartUseCase : ICompleteCartInputPort
         ArgumentNullException.ThrowIfNull(command);
 
         // Whole use case is local: one short transaction, the effect and its mark in it
-        return await _transactionBoundary.InTransactionAsync(
+        return await _transactionBoundary.InTransactionAsync<CompleteCartResult>(
             async ct =>
             {
                 var cartId = new CartId(command.CartId);
-                var cart = await _carts.FindByIdAsync(cartId, ct).ConfigureAwait(false)
-                           ?? throw new CartNotFoundException(cartId);
+                var cart = await _carts.FindByIdForCustomerAsync(cartId, CustomerId.Of(command.CustomerId), ct).ConfigureAwait(false);
+                if (cart is null)
+                {
+                    return new CompleteCartResult.CartNotFound(cartId);
+                }
 
                 if (command.EventId is { } eventId && await _processedEvents.ContainsAsync(Effect, eventId, ct).ConfigureAwait(false))
                 {
-                    return new CompleteCartResult(cart.Id.Value, cart.Status.ToString(), AlreadyCompleted: true);
+                    return new CompleteCartResult.Completed(cart.Id.Value, cart.Status.ToString(), AlreadyCompleted: true);
                 }
 
                 cart.ReconcileCheckout(command.SessionId, command.PurchasedPositions);
@@ -50,7 +58,7 @@ public sealed class CompleteCartUseCase : ICompleteCartInputPort
                     await _processedEvents.MarkProcessedAsync(Effect, processed, ct).ConfigureAwait(false);
                 }
 
-                return new CompleteCartResult(cart.Id.Value, cart.Status.ToString());
+                return new CompleteCartResult.Completed(cart.Id.Value, cart.Status.ToString());
             },
             cancellationToken).ConfigureAwait(false);
     }

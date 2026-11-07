@@ -83,7 +83,7 @@ public sealed class EventPublicationPageController : Controller
         }
 
         var result = await _replay.ExecuteAsync(new ReplayFailedPublicationCommand(id, listener), cancellationToken);
-        return result.Found ? Redirect("/backoffice/events") : NotFound();
+        return result.Match<IActionResult>(replayed => Redirect("/backoffice/events"), notFound => NotFound());
     }
 
     /// <summary>

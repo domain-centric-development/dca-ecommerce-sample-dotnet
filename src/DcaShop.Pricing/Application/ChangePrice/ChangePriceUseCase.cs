@@ -8,7 +8,8 @@ namespace DcaShop.Pricing.Application.ChangePrice;
 
 /// <summary>
 /// Replaces the current price of a product. Whole use case is local: one short transaction around load, mutate, save,
-/// publish. A product Pricing holds no price for is refused with <see cref="ProductPriceNotFoundException"/>.
+/// publish. A product Pricing holds no price for is returned as <see cref="ChangePriceResult.ProductPriceNotFound"/>,
+/// before anything is written.
 /// </summary>
 public sealed class ChangePriceUseCase : IChangePriceInputPort
 {
@@ -29,16 +30,19 @@ public sealed class ChangePriceUseCase : IChangePriceInputPort
         var productId = new ProductId(input.ProductId);
         var newPrice = Price.Of(Money.Of(input.PriceAmount, Currency.Of(input.PriceCurrency)));
 
-        return _transactionBoundary.InTransactionAsync(async ct =>
+        return _transactionBoundary.InTransactionAsync<ChangePriceResult>(async ct =>
         {
-            var productPrice = await _prices.FindByProductIdAsync(productId, ct).ConfigureAwait(false)
-                ?? throw new ProductPriceNotFoundException(productId);
+            var productPrice = await _prices.FindByProductIdAsync(productId, ct).ConfigureAwait(false);
+            if (productPrice is null)
+            {
+                return new ChangePriceResult.ProductPriceNotFound(productId);
+            }
 
             productPrice.UpdatePrice(newPrice);
             await _prices.SaveAsync(productPrice, ct).ConfigureAwait(false);
             await _events.PublishAndClearEventsAsync(productPrice, ct).ConfigureAwait(false);
 
-            return new ChangePriceResult(
+            return new ChangePriceResult.Changed(
                 productPrice.ProductId.Value,
                 productPrice.CurrentPrice.Value.Amount,
                 productPrice.CurrentPrice.Value.Currency.Code,

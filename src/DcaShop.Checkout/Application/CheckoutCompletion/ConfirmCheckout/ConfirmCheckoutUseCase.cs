@@ -3,6 +3,7 @@ using DcaShop.Checkout.Domain.Model;
 using DcaShop.Checkout.Domain.Service;
 using DcaShop.SharedKernel.Domain.Model;
 
+using DomainCentric.BuildingBlocks.Application;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
@@ -17,6 +18,12 @@ namespace DcaShop.Checkout.Application.CheckoutCompletion.ConfirmCheckout;
 /// once, the one whose reservation the stock no longer covers is refused, naming the line, requests no payment and
 /// changes nothing; a refused or unanswered payment gives the reservation back and places no order.
 /// </summary>
+/// <remarks>
+/// Every refusal is returned as a case of <see cref="ConfirmCheckoutResult"/>, the session's own caught once here. A
+/// refusal after the reservation — the payment's, or the session's when it moved on before the transaction — gives the
+/// reservation back, as a thrown failure does: the remote effect has its compensation, the transaction's rollback cannot
+/// undo it.
+/// </remarks>
 public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
 {
     /// <summary>How long giving back a reservation may take; not the caller's token, which may be what failed.</summary>
@@ -57,15 +64,27 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
 
         // Article data comes from the Product Catalog (remote-capable) — fetched outside the transaction
         var customerId = CustomerId.Of(command.CustomerId);
-        var current = await LoadAsync(sessionId, customerId, cancellationToken).ConfigureAwait(false);
+        var current = await _sessions.FindByIdForCustomerAsync(sessionId, customerId, cancellationToken).ConfigureAwait(false);
+        if (current is null)
+        {
+            return new ConfirmCheckoutResult.CheckoutSessionNotFound(sessionId);
+        }
+
         var articles = await _articleData.GetArticleDataAsync(current.LineItems.Select(i => i.ProductId).ToArray(), cancellationToken).ConfigureAwait(false);
         var facts = articles.ToDictionary(e => e.Key, e => new ArticlePrice(e.Value.CurrentPrice, e.Value.IsAvailable, e.Value.AvailableStock));
         var shown = OrderFingerprint.From(command.Fingerprint);
 
         // Everything the session itself can refuse — an order changed since the review among it — is refused before the
         // stock is reserved: no order that cannot be placed holds stock back from another
-        current.AssertReadyForConfirmation(_pricing.ValidateItems(current, facts), facts, shown);
-        await ReserveStockAsync(current, cancellationToken).ConfigureAwait(false);
+        if (RefusalOf(() => current.AssertReadyForConfirmation(_pricing.ValidateItems(current, facts), facts, shown)) is { } notReady)
+        {
+            return notReady;
+        }
+
+        if (await ReserveStockAsync(current, cancellationToken).ConfigureAwait(false) is { } shortOfStock)
+        {
+            return shortOfStock;
+        }
 
         // The payment comes last, outside the transaction (the provider is remote): for exactly the total the review
         // showed. A payment refused or not answered gives the reserved stock back, as any refusal after it does. Short
@@ -73,17 +92,33 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
         // superseded by a new checkout or confirmed in another tab.
         try
         {
-            var payment = await AuthorizePaymentAsync(current, current.TotalsAt(facts).Total, cancellationToken).ConfigureAwait(false);
-            return await _sessions.InCartSessionAsync(current.CartId, () => _transactionBoundary.InTransactionAsync(
+            var (payment, refused) = await AuthorizePaymentAsync(current, current.TotalsAt(facts).Total, cancellationToken).ConfigureAwait(false);
+            var result = refused ?? await _sessions.InCartSessionAsync(current.CartId, () => _transactionBoundary.InTransactionAsync<ConfirmCheckoutResult>(
                 async ct =>
                 {
-                    var session = await LoadAsync(sessionId, customerId, ct).ConfigureAwait(false);
-                    session.Confirm(_pricing.ValidateItems(session, facts), facts, shown, payment);
+                    var session = await _sessions.FindByIdForCustomerAsync(sessionId, customerId, ct).ConfigureAwait(false);
+                    if (session is null)
+                    {
+                        return new ConfirmCheckoutResult.CheckoutSessionNotFound(sessionId);
+                    }
+
+                    if (RefusalOf(() => session.Confirm(_pricing.ValidateItems(session, facts), facts, shown, payment!)) is { } moved)
+                    {
+                        return moved;
+                    }
+
                     await _sessions.SaveAsync(session, ct).ConfigureAwait(false);
                     await _events.PublishAndClearEventsAsync(session, ct).ConfigureAwait(false);
-                    return ConfirmCheckoutResult.From(session);
+                    return ConfirmCheckoutResult.Confirmed.From(session);
                 },
                 cancellationToken), cancellationToken).ConfigureAwait(false);
+
+            if (result.Value is IRefusal)
+            {
+                await ReleaseQuietlyAsync(current).ConfigureAwait(false);
+            }
+
+            return result;
         }
         catch (Exception)
         {
@@ -95,45 +130,86 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
     /// <summary>
     /// Has the provider the customer chose authorize <paramref name="amount"/> — the total the review showed — under the
     /// checkout's reference, and answers the chosen way to pay with that authorization. A provider the shop no longer
-    /// knows, one that is not taking payments or does not answer, and one that refuses are each refused by their own failure.
+    /// knows, one that is not taking payments or does not answer, and one that refuses are each answered by their own case.
     /// </summary>
-    private async Task<PaymentSelection> AuthorizePaymentAsync(CheckoutSession session, Money amount, CancellationToken cancellationToken)
+    private async Task<(PaymentSelection? Payment, ConfirmCheckoutResult? Refused)> AuthorizePaymentAsync(
+        CheckoutSession session, Money amount, CancellationToken cancellationToken)
     {
         var chosen = session.PaymentSelection!;
-        var provider = await _providers.FindAsync(chosen.ProviderId, cancellationToken).ConfigureAwait(false)
-                       ?? throw new PaymentProviderNotFoundException(chosen.ProviderId);
+        var provider = await _providers.FindAsync(chosen.ProviderId, cancellationToken).ConfigureAwait(false);
+        if (provider is null)
+        {
+            return (null, new ConfirmCheckoutResult.PaymentProviderNotFound(chosen.ProviderId));
+        }
+
         if (!await provider.IsAvailableAsync(cancellationToken).ConfigureAwait(false))
         {
-            throw new PaymentProviderUnavailableException(chosen.ProviderId);
+            return (null, new ConfirmCheckoutResult.PaymentProviderUnavailable(chosen.ProviderId));
         }
 
-        var initiation = await provider.InitiatePaymentAsync(session.Id, amount, cancellationToken).ConfigureAwait(false);
-        if (initiation.Outcome == IPaymentProvider.PaymentOutcome.Unavailable)
+        try
         {
-            _logger.LogWarning("Payment provider {ProviderId} is unavailable: {Reason}", chosen.ProviderId, initiation.ErrorMessage);
-            throw new PaymentProviderUnavailableException(chosen.ProviderId);
+            var reference = await provider.InitiatePaymentAsync(session.Id, amount, cancellationToken).ConfigureAwait(false);
+            return (chosen.Authorized(reference, amount), null);
         }
-
-        if (!initiation.Success || initiation.ProviderReference is not { } reference)
+        catch (PaymentProviderUnavailableException unavailable)
         {
-            throw new PaymentInitiationFailedException(
-                chosen.ProviderId,
-                initiation.ErrorMessage ?? $"Payment provider {chosen.ProviderId} did not open a payment");
+            _logger.LogWarning("Payment provider {ProviderId} is unavailable: {Reason}", chosen.ProviderId, unavailable.Message);
+            return (null, new ConfirmCheckoutResult.PaymentProviderUnavailable(chosen.ProviderId));
         }
+        catch (PaymentInitiationFailedException refused)
+        {
+            return (null, new ConfirmCheckoutResult.PaymentInitiationFailed(chosen.ProviderId, refused.Message));
+        }
+    }
 
-        return chosen.Authorized(reference, amount);
+    /// <summary>
+    /// The session's refusal of <paramref name="decision"/> as a case — the model's refusals, caught once here; null
+    /// when the session accepts. Any other failure keeps travelling.
+    /// </summary>
+    private static ConfirmCheckoutResult? RefusalOf(Action decision)
+    {
+        try
+        {
+            decision();
+            return null;
+        }
+        catch (CheckoutNotModifiableException e)
+        {
+            return new ConfirmCheckoutResult.CheckoutNotModifiable(e.SessionId, e.Status);
+        }
+        catch (CheckoutStepNotCompletedException e)
+        {
+            return new ConfirmCheckoutResult.CheckoutStepNotCompleted(e.SessionId, e.Step);
+        }
+        catch (CheckoutStepOutOfOrderException e)
+        {
+            return new ConfirmCheckoutResult.CheckoutStepOutOfOrder(e.SessionId, e.Requested, e.Current);
+        }
+        catch (CheckoutValidationException e)
+        {
+            return new ConfirmCheckoutResult.CheckoutValidation(e.Validation);
+        }
+        catch (PriceChangedSinceReviewException e)
+        {
+            return new ConfirmCheckoutResult.PriceChangedSinceReview(e.SessionId, e.ProductName);
+        }
+        catch (OrderChangedSinceReviewException e)
+        {
+            return new ConfirmCheckoutResult.OrderChangedSinceReview(e.SessionId);
+        }
     }
 
     /// <summary>
     /// Reserves the stock of the session's lines; when the stock no longer covers a line, the session refuses the
     /// confirmation naming it, as it refuses a line the facts already showed short.
     /// </summary>
-    private async Task ReserveStockAsync(CheckoutSession session, CancellationToken cancellationToken)
+    private async Task<ConfirmCheckoutResult?> ReserveStockAsync(CheckoutSession session, CancellationToken cancellationToken)
     {
         var shortages = await _stockReservation.ReserveAsync(session.LineItems, cancellationToken).ConfigureAwait(false);
         if (shortages.Count == 0)
         {
-            return;
+            return null;
         }
 
         var left = shortages.ToDictionary(shortage => shortage.ProductId, shortage => shortage.Left);
@@ -141,7 +217,7 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
             .Where(line => left.ContainsKey(line.ProductId))
             .Select(line => ValidationError.InsufficientStock(line.ProductId, line.Quantity, left[line.ProductId], line.ProductName))
             .ToList();
-        session.AssertReadyForConfirmation(CheckoutValidationResult.WithErrors(shortLines));
+        return RefusalOf(() => session.AssertReadyForConfirmation(CheckoutValidationResult.WithErrors(shortLines)));
     }
 
     /// <summary>
@@ -161,9 +237,4 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
             _logger.LogWarning(e, "The stock reserved for checkout {SessionId} could not be released", session.Id);
         }
     }
-
-    /// <summary>Loads the session as the caller's own: one that is not theirs is not found.</summary>
-    private async Task<CheckoutSession> LoadAsync(CheckoutSessionId sessionId, CustomerId customerId, CancellationToken cancellationToken) =>
-        await _sessions.FindByIdForCustomerAsync(sessionId, customerId, cancellationToken).ConfigureAwait(false)
-        ?? throw new CheckoutSessionNotFoundException(sessionId);
 }

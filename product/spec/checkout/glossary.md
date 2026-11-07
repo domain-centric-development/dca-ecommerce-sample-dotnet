@@ -432,7 +432,8 @@ purposes.
 instead: terminal and confirmed sessions only reach the confirmation, and a step whose prerequisites are
 unfulfilled sends them to the step they are actually on. Going back to a completed step is allowed. A
 session that is not there at all sends them back to the cart — the one part the model cannot answer,
-because there is no snapshot to ask; the `GetCheckoutSession` use case answers that.
+because there is no snapshot to ask; the `GetCheckoutSession` use case answers that with its refusal
+`CheckoutSessionNotFound`, which the step page turns into the way back to the cart.
 
 **Type:** Behaviour of `CheckoutCartSnapshot`
 
@@ -583,7 +584,7 @@ Session and cart lookups are scoped to the caller, so "not yours" reads as "not 
 `CheckoutItemsUnavailable` is the start's refusal of a cart whose lines are unavailable or short of stock; it
 carries their product ids, in cart order.
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `ICartDataPort`, `ICheckoutArticleDataPort`
+**Type:** Refusal case of a use-case result (`IRefusal`) · **Related terms:** `ICartDataPort`, `ICheckoutArticleDataPort`
 
 ---
 
@@ -595,28 +596,33 @@ provider's reason travels on the failure and into the log. The customer sees the
 refused. Please choose another way to pay." for a refusal, "The payment provider is not available right now. Please
 try again later." when the provider is unavailable — at the payment step or, for Place Order, on the review.
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IPaymentProviderRegistry`, `IPaymentProvider`,
-`PaymentResult`
+**Type:** Refusal case of a use-case result (`IRefusal`). The provider is a foreign system: its port declares the
+refusal and the unavailability of a payment request as `PaymentInitiationFailedException` and
+`PaymentProviderUnavailableException` (`OutputPortException`), the adapter throws them, the use case returns the
+case · **Related terms:** `IPaymentProviderRegistry`, `IPaymentProvider`, `PaymentResult`
 
 ---
 
 ### MailProviderUnavailable (MailProviderUnavailableException)
 
 **Definition:** The mail provider did not accept a mail: it answered other than `202`, did not answer in time or
-could not be reached. The failure carries the mail's key; the delivery that asked for the mail is tried again later,
-under the same key. No customer sees it.
+could not be reached. The case carries the mail's key; the event consumer throws it back, so the delivery that asked
+for the mail is tried again later, under the same key. No customer sees it.
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `IOrderConfirmationMailer`, Order confirmation, Mail outcome
+**Type:** Refusal case of a use-case result (`IRefusal`). The provider is a foreign system: its port declares the
+failure as `MailProviderUnavailableException` (`OutputPortException`), the adapter throws it, the use case returns
+the case · **Related terms:** `IOrderConfirmationMailer`, Order confirmation
 
 ---
 
-### BuyerInfoNotSubmitted (BuyerInfoNotSubmittedException)
+### NoPlacedOrder
 
-**Definition:** The order confirmation was asked for a checkout session that has no buyer info: its first step was
-never submitted. A confirmed checkout always has one, so only a session that was never confirmed reaches this. The
-failure carries the session id; the log says it by name, no customer sees it.
+**Definition:** The order confirmation was asked for a checkout session that holds no placed order: the caller has
+no such session, or it has no buyer info — its first step was never submitted, which no confirmed checkout lacks.
+Nothing can be sent, now or later; the event consumer logs it and completes the delivery. No customer sees it.
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `BuyerInfo`, Order confirmation, `CheckoutNotConfirmed`
+**Type:** Refusal case of `SendOrderConfirmation`'s result (`IRefusal`) · **Related terms:** `BuyerInfo`, Order
+confirmation, `CheckoutNotConfirmed`
 
 ---
 
@@ -626,25 +632,26 @@ failure carries the session id; the log says it by name, no customer sees it.
 and asks for another choice. The failure carries the refused identifier. The customer sees "This shipping method is
 not offered. Please choose another one."
 
-**Type:** Use-case failure (`UseCaseException`) · **Related terms:** `ShippingOption`, `ShippingOptions`
+**Type:** Refusal case of a use-case result (`IRefusal`) · **Related terms:** `ShippingOption`, `ShippingOptions`
 
 ---
 
 ### PaymentResult
 
-**Definition:** What the payment provider made of a payment operation, as checkout understands it. A payment
-request carries the checkout session's total amount and currency and the checkout reference to the provider;
-its outcome is one of:
+**Definition:** What the payment provider made of confirming or cancelling a payment, as checkout understands it:
+`Succeeded`, `Refused` or `Unavailable`. A payment request carries the checkout session's total amount and currency
+and the checkout reference to the provider and ends one of three ways:
 
-- `Succeeded` — an **authorized payment**: the provider accepted it and gave a payment reference. Only then
-  does Place Order confirm the session, which records the authorized `PaymentSelection` and publishes
+- an **authorized payment**: the provider accepted it and gave a payment reference, which the port answers. Only
+  then does Place Order confirm the session, which records the authorized `PaymentSelection` and publishes
   `PaymentSubmitted`.
-- `Refused` — a **refused payment**: the provider answered and declined. The checkout stays at the review, no
-  order is placed and the reserved stock is released (`PaymentInitiationFailed`).
-- `Unavailable` — an **unavailable provider**: no answer within 2 seconds, no connection, or an answer outside
-  the provider's contract. The checkout stays at the review, as for a refusal (`PaymentProviderUnavailable`).
+- a **refused payment**: the provider answered and declined (`PaymentInitiationFailedException`). The checkout
+  stays at the review, no order is placed and the reserved stock is released (`PaymentInitiationFailed`).
+- an **unavailable provider**: no answer within 2 seconds, no connection, or an answer outside the provider's
+  contract (`PaymentProviderUnavailableException`). The checkout stays at the review, as for a refusal
+  (`PaymentProviderUnavailable`).
 
-**Type:** Concept (result of the `IPaymentProvider` output port)
+**Type:** Concept (result of the `IPaymentProvider` output port's confirmation and cancellation)
 
 **Related terms:** `PaymentProviderId`, `PaymentSelection`, `PaymentSubmitted`.
 
@@ -735,26 +742,15 @@ accept the mail delays it — the delivery is tried again later — and never un
 buyer e-mail, once per order (`SendOrderConfirmation`, run by `CheckoutConfirmedEventConsumer` after
 `CheckoutConfirmed` is committed).
 
-**Related terms:** `CheckoutConfirmed`, `BuyerInfo`, `CheckoutTotals`, `MailProviderUnavailable`, `BuyerInfoNotSubmitted`.
+**Related terms:** `CheckoutConfirmed`, `BuyerInfo`, `CheckoutTotals`, `MailProviderUnavailable`, `NoPlacedOrder`.
 
 ### Mail provider
 
 **Definition:** The outside service that sends the shop's mails; it accepts a mail under a key and sends one
-mail per key. Behind the output port `IOrderConfirmationMailer`; with no provider address configured, a stand-in
-accepts every mail and sends nothing.
+mail per key. Behind the output port `IOrderConfirmationMailer`, which throws `MailProviderUnavailableException`
+for a mail the provider did not accept (it answered other than `202`, did not answer in time or could not be
+reached); with no provider address configured, a stand-in accepts every mail and sends nothing.
 
 **Type:** Concept
 
-**Related terms:** Order confirmation, Mail outcome, `MailProviderUnavailable`.
-
-### Mail outcome (MailOutcome)
-
-**Definition:** The mail provider's answer to a mail, as checkout understands it — one of:
-
-- `Accepted` — the provider took the mail for sending (it answered `202`).
-- `Unavailable` — no usable answer: the provider answered other than `202`, did not answer in time or could not be
-  reached. The mail is asked for again later under the same key (`MailProviderUnavailable`).
-
-**Type:** Concept (answer of the `IOrderConfirmationMailer` output port)
-
-**Related terms:** Mail provider, Order confirmation, `MailProviderUnavailable`, `PaymentResult`.
+**Related terms:** Order confirmation, `MailProviderUnavailable`.

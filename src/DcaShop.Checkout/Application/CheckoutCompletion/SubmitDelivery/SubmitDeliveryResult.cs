@@ -1,9 +1,40 @@
 using DcaShop.Checkout.Domain.Model;
 
+using DomainCentric.BuildingBlocks.Application;
+
+using OneOf;
+
 namespace DcaShop.Checkout.Application.CheckoutCompletion.SubmitDelivery;
 
-/// <summary>What the caller needs for its next step: the session and where it stands. The page itself comes from a session query.</summary>
-public sealed record SubmitDeliveryResult(Guid SessionId, CheckoutStep CurrentStep, CheckoutSessionStatus Status)
+/// <summary>What the step came to: the delivery was recorded, or one of the refusals the caller answers.</summary>
+[GenerateOneOf]
+public sealed partial class SubmitDeliveryResult
+    : OneOfBase<
+        SubmitDeliveryResult.Submitted,
+        SubmitDeliveryResult.CheckoutSessionNotFound,
+        SubmitDeliveryResult.ShippingOptionNotOffered,
+        SubmitDeliveryResult.CheckoutNotModifiable,
+        SubmitDeliveryResult.CheckoutStepNotCompleted,
+        SubmitDeliveryResult.CheckoutStepOutOfOrder>
 {
-    public static SubmitDeliveryResult From(CheckoutSession session) => new(session.Id.Value, session.CurrentStep, session.Status);
+    /// <summary>What the caller needs for its next step: the session and where it stands. The page itself comes from a session query.</summary>
+    public sealed record Submitted(Guid SessionId, CheckoutStep CurrentStep, CheckoutSessionStatus Status)
+    {
+        public static Submitted From(CheckoutSession session) => new(session.Id.Value, session.CurrentStep, session.Status);
+    }
+
+    /// <summary>The caller has no checkout session under that id — it does not exist or is somebody else's (ADR-007).</summary>
+    public sealed record CheckoutSessionNotFound(CheckoutSessionId SessionId) : IRefusal;
+
+    /// <summary>The shop offers no shipping option under that id.</summary>
+    public sealed record ShippingOptionNotOffered(string ShippingOptionId) : IRefusal;
+
+    /// <summary>The session is no longer open for changes — confirmed, superseded, abandoned or expired.</summary>
+    public sealed record CheckoutNotModifiable(CheckoutSessionId SessionId, CheckoutSessionStatus Status) : IRefusal;
+
+    /// <summary>An earlier step the request needs has not been completed yet.</summary>
+    public sealed record CheckoutStepNotCompleted(CheckoutSessionId SessionId, CheckoutStep Step) : IRefusal;
+
+    /// <summary>The requested step lies beyond the step the session has reached.</summary>
+    public sealed record CheckoutStepOutOfOrder(CheckoutSessionId SessionId, CheckoutStep Requested, CheckoutStep Current) : IRefusal;
 }

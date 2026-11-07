@@ -1,4 +1,3 @@
-using DcaShop.Cart.Application.Shared;
 using DcaShop.Cart.Application.Shopping.AddItemToCart;
 using DcaShop.Cart.Application.Shopping.GetActiveCart;
 using DcaShop.Cart.Application.Shopping.GetCartById;
@@ -7,7 +6,6 @@ using DcaShop.Cart.Application.Shopping.RemoveCartItem;
 using DcaShop.Cart.Domain.Model;
 using DcaShop.SharedKernel.Application.Shared;
 
-using DomainCentric.BuildingBlocks.Application;
 using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 using Microsoft.AspNetCore.Mvc;
@@ -54,28 +52,33 @@ public sealed class CartPageController : Controller
     public async Task<IActionResult> AddProduct([FromForm] Guid productId, [FromForm] int quantity, CancellationToken cancellationToken)
     {
         var cartId = await ActiveCartIdAsync(cancellationToken);
+        AddItemToCartResult result;
         try
         {
-            await _addItemToCart.ExecuteAsync(new AddItemToCartCommand(cartId, CurrentCustomerId, productId, quantity), cancellationToken);
-            TempData.Leave(CartPageNotices.CartPage, CartPageNotice.ProductAdded);
-            return Redirect(CartPage);
+            result = await _addItemToCart.ExecuteAsync(new AddItemToCartCommand(cartId, CurrentCustomerId, productId, quantity), cancellationToken);
         }
-        catch (Exception e) when (e is UseCaseException or DomainException or ArgumentException)
+        catch (ArgumentException)
         {
-            // The context's own refusals, plus the argument exception a form field still reaches a value object
-            // with.
-            if (e is InsufficientArticleStockException insufficient)
-            {
-                TempData.Leave(
-                    CartPageNotices.CartPage, CartPageNotice.NotEnoughStock, insufficient.Requested, insufficient.Held, insufficient.InStock);
-            }
-            else
-            {
-                TempData.Leave(CartPageNotices.CartPage, NoticeFor(e));
-            }
-
+            // A form field that still reaches a value object as a value the value object refuses.
+            TempData.Leave(CartPageNotices.CartPage, CartPageNotice.InvalidQuantity);
             return Redirect(CartPage);
         }
+        catch (DomainException)
+        {
+            // A rule of the model no use case returns as a case of its own.
+            TempData.Leave(CartPageNotices.CartPage, CartPageNotice.ProductNotAdded);
+            return Redirect(CartPage);
+        }
+
+        // The notice for what adding came to, chosen by the case, the numbers it names taken from its values.
+        result.Switch(
+            added => TempData.Leave(CartPageNotices.CartPage, CartPageNotice.ProductAdded),
+            notAvailable => TempData.Leave(CartPageNotices.CartPage, CartPageNotice.ProductUnavailable),
+            notFound => TempData.Leave(CartPageNotices.CartPage, CartPageNotice.CartNotFound),
+            insufficient => TempData.Leave(
+                CartPageNotices.CartPage, CartPageNotice.NotEnoughStock, insufficient.Requested, insufficient.Held, insufficient.InStock),
+            notModifiable => TempData.Leave(CartPageNotices.CartPage, CartPageNotice.CartNotModifiable));
+        return Redirect(CartPage);
     }
 
     /// <summary>
@@ -90,30 +93,14 @@ public sealed class CartPageController : Controller
             return Redirect(CartPage);
         }
 
-        try
-        {
-            await _removeCartItem.ExecuteAsync(new RemoveCartItemCommand(CurrentCustomerId, itemId), cancellationToken);
-        }
-        catch (DomainException e) when (e is CartItemNotFoundException or CartNotModifiableException)
-        {
-            // Nothing to take out of this cart: the page it lands on already shows that.
-        }
+        var result = await _removeCartItem.ExecuteAsync(new RemoveCartItemCommand(CurrentCustomerId, itemId), cancellationToken);
 
-        return Redirect(CartPage);
+        // Every outcome leads to the cart page as it now is, without a notice: nothing to take out shows there already.
+        return result.Match(
+            removed => Redirect(CartPage),
+            notInCart => Redirect(CartPage),
+            notModifiable => Redirect(CartPage));
     }
-
-    /// <summary>
-    /// What the page tells the customer, chosen from the failure's type — the exception's message is for the log,
-    /// never for the page.
-    /// </summary>
-    private static CartPageNotice NoticeFor(Exception failure) => failure switch
-    {
-        ArticleNotAvailableException => CartPageNotice.ProductUnavailable,
-        CartNotFoundException => CartPageNotice.CartNotFound,
-        CartNotModifiableException => CartPageNotice.CartNotModifiable,
-        ArgumentException => CartPageNotice.InvalidQuantity,
-        _ => CartPageNotice.ProductNotAdded,
-    };
 
     /// <summary>The page with the sentence a redirect's notice names, in the slot of its kind.</summary>
     private static CartPageViewModel WithNotice(CartPageViewModel page, CartPageNotice? notice, IReadOnlyList<int> numbers) =>

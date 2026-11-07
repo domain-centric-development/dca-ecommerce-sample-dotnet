@@ -31,8 +31,8 @@ public sealed class MyAccountPageController : Controller
         var result = await _getAccountOverview.ExecuteAsync(
             new GetAccountOverviewQuery(identity.UserId.Value), cancellationToken);
 
-        return result.Account is { } overview
-            ? View("~/Views/Account/Overview.cshtml", MyAccountPageViewModel.From(overview))
-            : Redirect(AccountRoutes.ToLoginWithReturnUrl(AccountRoutes.Account));
+        return result.Match<IActionResult>(
+            found => View("~/Views/Account/Overview.cshtml", MyAccountPageViewModel.From(found.Account)),
+            notAccessible => Redirect(AccountRoutes.ToLoginWithReturnUrl(AccountRoutes.Account)));
     }
 }

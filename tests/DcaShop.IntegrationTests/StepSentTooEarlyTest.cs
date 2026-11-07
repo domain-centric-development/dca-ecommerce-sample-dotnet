@@ -109,6 +109,6 @@ public sealed class StepSentTooEarlyTest : IClassFixture<WebApplicationFactory<P
     private sealed class RefusingAsSentTooEarly : ISubmitDeliveryInputPort
     {
         public Task<SubmitDeliveryResult> ExecuteAsync(SubmitDeliveryCommand command, CancellationToken cancellationToken = default) =>
-            throw new CheckoutStepNotCompletedException(CheckoutSessionId.Generate(), CheckoutStep.BuyerInfo);
+            Task.FromResult<SubmitDeliveryResult>(new SubmitDeliveryResult.CheckoutStepNotCompleted(CheckoutSessionId.Generate(), CheckoutStep.BuyerInfo));
     }
 }

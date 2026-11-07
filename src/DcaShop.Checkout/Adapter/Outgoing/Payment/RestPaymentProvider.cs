@@ -15,7 +15,7 @@ namespace DcaShop.Checkout.Adapter.Outgoing.Payment;
 /// The payment service provider over REST — the anti-corruption layer towards it. A payment is one
 /// <c>POST /payments</c> with amount, currency and the checkout reference (<c>merchantReference</c>): <c>201</c> with a payment reference authorizes it, <c>402</c>
 /// refuses it, and anything else — no answer in time, no connection, another status, no reference — counts as the
-/// provider being unavailable. An authorized payment is cancelled with <c>POST /payments/{payment reference}/cancel</c>:
+/// provider being unavailable; a refusal and an unavailable provider are thrown as the failures the port declares. An authorized payment is cancelled with <c>POST /payments/{payment reference}/cancel</c>:
 /// <c>204</c> cancels it, anything else counts as unavailable. The provider's request and answer shapes stay inside
 /// this class.
 /// </summary>
@@ -42,7 +42,7 @@ public sealed class RestPaymentProvider : IPaymentProvider
 
     public string DisplayName => "Payment provider";
 
-    public async Task<IPaymentProvider.PaymentResult> InitiatePaymentAsync(CheckoutSessionId sessionId, Money amount, CancellationToken cancellationToken = default)
+    public async Task<string> InitiatePaymentAsync(CheckoutSessionId sessionId, Money amount, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -52,31 +52,31 @@ public sealed class RestPaymentProvider : IPaymentProvider
 
             if (response.StatusCode == HttpStatusCode.PaymentRequired)
             {
-                return IPaymentProvider.PaymentResult.Refused($"The payment provider refused the payment for session {sessionId}");
+                throw new PaymentInitiationFailedException(ProviderId, $"The payment provider refused the payment for session {sessionId}");
             }
 
             if (response.StatusCode != HttpStatusCode.Created)
             {
-                return Unavailable($"The payment provider answered {(int)response.StatusCode}", sessionId);
+                throw Unavailable($"The payment provider answered {(int)response.StatusCode}", sessionId);
             }
 
             var authorization = await response.Content.ReadFromJsonAsync<PaymentAuthorization>(cancellationToken).ConfigureAwait(false);
             return string.IsNullOrWhiteSpace(authorization?.Reference)
-                ? Unavailable("The payment provider authorized without a payment reference", sessionId)
-                : IPaymentProvider.PaymentResult.Succeeded(authorization.Reference);
+                ? throw Unavailable("The payment provider authorized without a payment reference", sessionId)
+                : authorization.Reference;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             // The client's own deadline, not the caller giving up: the caller's cancellation travels on unchanged
-            return Unavailable("The payment provider did not answer in time", sessionId);
+            throw Unavailable("The payment provider did not answer in time", sessionId);
         }
         catch (HttpRequestException e)
         {
-            return Unavailable($"The payment provider could not be reached: {e.Message}", sessionId);
+            throw Unavailable($"The payment provider could not be reached: {e.Message}", sessionId);
         }
         catch (JsonException e)
         {
-            return Unavailable($"The payment provider's answer could not be read: {e.Message}", sessionId);
+            throw Unavailable($"The payment provider's answer could not be read: {e.Message}", sessionId);
         }
     }
 
@@ -107,10 +107,10 @@ public sealed class RestPaymentProvider : IPaymentProvider
 
     public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
 
-    private IPaymentProvider.PaymentResult Unavailable(string reason, CheckoutSessionId sessionId)
+    private PaymentProviderUnavailableException Unavailable(string reason, CheckoutSessionId sessionId)
     {
         _logger.LogWarning("Payment for session {SessionId} not taken: {Reason}", sessionId, reason);
-        return IPaymentProvider.PaymentResult.Unavailable(reason);
+        return new PaymentProviderUnavailableException(ProviderId, reason);
     }
 
     private IPaymentProvider.PaymentResult CancellationUnavailable(string reason, string providerReference)

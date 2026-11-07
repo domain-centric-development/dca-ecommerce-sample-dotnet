@@ -10,6 +10,10 @@ namespace DcaShop.Cart.Application.CartRecovery.MergeCarts;
 /// Applies the merge strategy the visitor chose. Whatever they choose, the anonymous cart is gone afterwards:
 /// its identity has been superseded by the account's, so leaving it behind would strand items nobody can reach.
 /// </summary>
+/// <remarks>
+/// A guest other than the one the visitor was before their login is returned as
+/// <see cref="MergeCartsResult.GuestCartNotOwned"/>, before the transaction opens.
+/// </remarks>
 public sealed class MergeCartsUseCase : IMergeCartsInputPort
 {
     private readonly IShoppingCartRepository _carts;
@@ -32,10 +36,10 @@ public sealed class MergeCartsUseCase : IMergeCartsInputPort
 
         if (command.GuestBeforeLogin != command.AnonymousUserId)
         {
-            throw new GuestCartNotOwnedException(anonymousCustomerId);
+            return new MergeCartsResult.GuestCartNotOwned(anonymousCustomerId);
         }
 
-        return await _transactionBoundary.InTransactionAsync(
+        return await _transactionBoundary.InTransactionAsync<MergeCartsResult>(
             async ct =>
             {
                 var anonymousCart = await _carts.FindActiveByCustomerAsync(anonymousCustomerId, ct)
@@ -82,7 +86,7 @@ public sealed class MergeCartsUseCase : IMergeCartsInputPort
             cancellationToken).ConfigureAwait(false);
     }
 
-    private static MergeCartsResult Summarize(
+    private static MergeCartsResult.Merged Summarize(
         ShoppingCart cart, CartMergeStrategy strategy, int itemsFromAnonymous, int itemsFromAccount) =>
         new(
             cart.Id.Value,
