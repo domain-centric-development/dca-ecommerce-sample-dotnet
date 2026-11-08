@@ -25,6 +25,7 @@ __pycache__/
 Thumbs.db
 .claude/skills/dca-audit
 /.dca-factory/*
+!/.dca-factory/theme/
 !/.dca-factory/evidence/
 /.dca-factory/evidence/*
 !/.dca-factory/evidence/*/
@@ -124,3 +125,6 @@ Thumbs.db
 .opencode/skills/review-hexagonal
 .opencode/skills/tdd
 .opencode/skills/ubiquitous-language
+.codex/skills/frontend
+.opencode/skills/frontend
+.claude/skills/frontend

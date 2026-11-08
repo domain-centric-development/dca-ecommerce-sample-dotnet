@@ -27,9 +27,11 @@
 #   factory.sh down [--now] [--no-wait]      the backlog off — no further story of it starts; with a page open its
 #                                            requests go on, without one the worker ends after its running stage;
 #                                            --now interrupts the running stage and ends the worker too
-#   factory.sh serve [--port <n>] [--open] [--background] [--stop]   the factory's page on 127.0.0.1 — a URL with a
-#                    token of this start; every press writes a request, worked while the page is open. Each checkout
-#                    takes a port of its own (8700–8899); --stop ends a page that runs in the background
+#   factory.sh serve [--port <n>] [--open] [--background] [--stop] [--fixture <name>]   the factory's page on
+#                    127.0.0.1 — a URL with a token of this start; every press writes a request, worked while the page
+#                    is open. Each checkout takes a port of its own (8700–8899); --stop ends a page that runs in the
+#                    background; --fixture all-states|empty serves it against canned views, writing nothing. A project's
+#                    look: .dca-factory/theme/theme.css (and the images it names), `#components` shows it
 #   factory.sh request <kind> [<target>…] [<words>…|-] [--by <who>] [--option <key>] [--from <stage>]
 #                    one request the factory's worker runs at once, beside any running story: wish, release,
 #                    stories, journey, describe, discover, epic-from, answer, accept, correct, run, stop
@@ -353,12 +355,25 @@ skills_mode() {                             # skills_mode <target dir>
 # runner's, not this copy's: a release that adds a file the project needs must be able to put it
 # there, even when the project's runner predates it — so a project's copy hands over to it (`exec`).
 update_project() {                          # update_project <explicit skill folder or "">
-  local src=${1:-} before before_contract after after_contract tool target mode declared updated=0
-  [ -n "$src" ] || src=$(plugin_skills) || {
+  local src=${1:-} before before_contract after after_contract tool target mode declared updated=0 found=""
+  [ -n "$src" ] || { src=$(plugin_skills) && found=1; } || {
     echo "factory: no pipeline found to update from — pass --from <the plugin's skills folder>" >&2; return 2; }
   [ -f "$src/factory-run/scripts/story-gate.py" ] || {
     echo "factory: $src is not the pipeline's skills folder (no factory-run/scripts/story-gate.py)" >&2; return 2; }
   src=$(cd "$src" && pwd -P)
+  # The newest pipeline found can still be older than the installed one — an old plugin cache on a machine
+  # whose project was installed from a checkout. Updating to it is a silent downgrade, so a source found
+  # is refused there; a source the person names with --from is what they asked for.
+  local have source_version
+  have=$(sed -n 's/^version:[[:space:]]*//p' "$STAMP" 2>/dev/null | head -1)
+  source_version=$(gate_field "$src/factory-run/scripts/story-gate.py" VERSION)
+  if [ -n "$found" ] && [ -n "$have" ] && [ -n "$source_version" ] && [ "$have" != "$source_version" ] \
+     && [ "$(printf '%s\n%s\n' "$have" "$source_version" | sort -V | tail -1)" = "$have" ]; then
+    echo "factory: the newest pipeline found is $source_version ($src), older than the installed $have —" >&2
+    echo "factory:   an update would go back. Name the source: --from <the dca-factory $have or newer>/skills" >&2
+    echo "factory:   (or FACTORY_PLUGIN_DIR); nothing was changed" >&2
+    return 2
+  fi
   # The project's own skills are what an update replaces, never where it comes from: linked onto
   # themselves they become loops, and a copy updated from itself stays what it was. A folder of links
   # (what an older runner hands over) names the pipeline through its factory-run link.
@@ -406,6 +421,11 @@ update_project() {                          # update_project <explicit skill fol
   if [ -n "$declared" ] && [ "$declared" != "$after_contract" ]; then
     echo "factory: the stack profile declares contract $declared — raise it to 'contract: $after_contract' once" >&2
     echo "factory:   the profile uses what that contract describes; the gate reads it as older until then." >&2
+  fi
+  # without `release:` a story without `status:` is still delivered, and a draft by hand — said, never written
+  if [ -z "$(cli --get release 2>/dev/null)" ]; then
+    echo "factory: the stack profile has no 'release:' — add 'release: required' to deliver only what a person" >&2
+    echo "factory:   released (a draft, or a story without status:, never — by the gate or by hand)." >&2
   fi
   # an older layout (`project/`, `project/backlog/`, …) is not read by the new gate; the move is said here as well
   cli --schedule 2>/dev/null | sed -n 's/^layout: /factory: /p' >&2
@@ -1188,9 +1208,10 @@ presets_dir() {                             # presets_dir [<skill folder>] — w
 #   new <template> <profile>       write a first profile from the template and what was detected
 #   check <profile> [brief]        what detection proposes against the profile; exit 1 on a missing key
 #   write <profile> [<key>]        add the missing keys; with <key>, take the detected value for that one
-# The roles a method skill fills, and whether the role needs the architecture governance a preset
-# detects. A line is written only where the skill is installed beside the pipeline — a named carrier
-# that is missing stops a run — and stays commented out otherwise, so resolution by description applies.
+# The roles a method skill fills, and what the role needs: the architecture governance a preset detects
+# (`governance`), a browser surface (`frontend`), or nothing (`-`).
+# A line is written only where the skill is installed beside the pipeline — a named carrier that is missing
+# stops a run — and stays commented out otherwise, so resolution by description applies.
 CARRIERS="knowledge dca-knowledge governance
 carrier.plan dca-modelling governance
 carrier.build dca-modelling governance
@@ -1201,7 +1222,8 @@ review.clean-code review-clean-code -
 carrier.glossary ubiquitous-language -
 carrier.domain context-map -
 carrier.test e2e-testing -
-carrier.discover product-discovery -"
+carrier.discover product-discovery -
+carrier.frontend frontend frontend"
 
 # The skill names of the method plugins beside the pipeline whose presets are in <dir>.
 method_skill_names() {                      # method_skill_names <presets dir>
@@ -1224,6 +1246,10 @@ presets() {                                 # presets <dir> <mode> [args…]
 import os, re, sys
 
 directory, python, conventions, mode, rest = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5:]
+#: A project uv manages runs its own interpreter, with its own dependencies: the project's tools (pytest, the rule
+#: suite, the type checker) are installed there, not beside the pipeline's Python.
+if os.path.isfile("uv.lock"):                        # detection reads the project from its working directory
+    python = "uv run python"
 #: The order presets apply in; a later kind's value replaces an earlier one's, an empty value takes it back.
 KINDS = ("stack", "browser", "format", "governance", "stub", "integration", "unit")
 #: Folders no detection looks into: build output, dependencies, tool state. Bounded in depth as well,
@@ -1304,6 +1330,15 @@ def holds(key, value):
         return hits
     raise SystemExit(f"factory: unknown detection `{key}` — a preset has detect.exists and detect.contains only")
 
+#: Files that make a browser surface: templates, stylesheets, component files.
+SURFACE = ("**/*.css **/*.scss **/*.sass **/*.less **/*.html **/*.pug **/*.jade **/*.cshtml **/*.razor **/*.jsx "
+           "**/*.tsx **/*.vue **/*.svelte **/*.erb **/*.twig **/*.hbs **/*.njk **/*.jinja **/*.j2")
+def frontend_default(values):
+    """Whether the frontend craft is the project's: it has a browser surface — a browser runner or the files of a
+    page. The craft follows the method the technical description chose, so a project with rules of its own gets it
+    too."""
+    return values.get("browser", "none") not in ("", "none") or bool(matches(SURFACE))
+
 def detect():
     presets = []
     for name in sorted(os.listdir(directory)) if os.path.isdir(directory) else []:
@@ -1352,9 +1387,10 @@ def detect():
                 values[key] = hit
     # What depends on the installed method skills: a carrier line only for a skill that is there.
     installed = set(os.environ.get("FACTORY_SKILLS", "").split())
+    needed = {"-": True, "governance": governance, "frontend": frontend_default(values)}
     for row in os.environ.get("FACTORY_CARRIERS", "").splitlines():
         key, skill, needs = row.split()
-        if skill in installed and (needs == "-" or governance):
+        if skill in installed and needed.get(needs, False):
             values[key] = skill
             # the three built-in perspectives always run; `reviews:` lists only those added to them
             if key.startswith("review.") and key not in ("review.ddd", "review.hexagonal", "review.clean-code"):
