@@ -4,9 +4,9 @@ The .NET reference implementation of **Domain-Centric Architecture (DCA)** — a
 Design, Hexagonal Architecture and Clean Architecture. A small webshop built with ASP.NET Core, consuming
 `DomainCentric.BuildingBlocks` (the markers) and `DomainCentric.ArchRules` (the executable rules).
 
-It ships seven bounded contexts — **Product Catalog**, **Shopping Cart**, **Checkout**, **Pricing**,
-**Inventory**, **Account**, **Portal** — with the same ubiquitous language and use cases as the Java twin
-(`dca-ecommerce-sample-java`), plus the **Backoffice** context, the REST API and an MCP server.
+It ships eight bounded contexts — **Product Catalog**, **Shopping Cart**, **Checkout**, **Pricing**,
+**Inventory**, **Account**, **Portal** and **Backoffice** — with the same ubiquitous language and use cases as the
+Java twin (`dca-ecommerce-sample-java`), plus the REST API and an MCP server.
 
 *Written with AI assistance — drafted mainly by Claude, reviewed and directed by Christoph Bloemer since
 2025. The architecture rules in this repository's build are part of how that work is verified.*
