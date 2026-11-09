@@ -171,8 +171,9 @@ adapters, DbUp migrations at start-up, Testcontainers in the integration and E2E
   (`./gradlew test-e2e -De2e.baseUrl=http://localhost:5080` in the Java repo; `E2E_BASE_URL=http://localhost:8080`
   here). Keep selectors and scenarios in sync with the Java suite.
 - Views mirror the Java sample's Pug templates one to one (classes, `data-test` attributes, routes, seed data);
-  `wwwroot/css/main.css` and `wwwroot/images/products/` are copies of the Java static assets — keep them in sync
-  when the Java UI changes. A page change delivered here first is the source the Java sample takes over, with the
+  `wwwroot/css/` and `wwwroot/images/` are byte-for-byte copies of the Java sample's `src/main/resources/static/`, its
+  source — a change to them goes into the Java file first and is copied here, in the same change;
+  `../scripts/check-shop-assets.py` (root `check.sh`) fails on any difference. A page change delivered here first is the source the Java sample takes over, with the
   same names; nothing is named anew on the second side. The one deliberate markup difference besides the antiforgery field is the corner
   ribbon in the layout: `.stack-ribbon--dotnet` here, `.stack-ribbon--java` in the Java sample, both styled by
   the same `.stack-ribbon` block in `main.css`. It exists so two tabs of the same-looking shop can be told

@@ -9,7 +9,7 @@ public sealed class CartPage : BasePage
     private const string CheckoutButton = "cart-checkout-button";
     private const string SuccessMessage = "cart-success-message";
     private const string ErrorMessage = "cart-error-message";
-    private const string RemoveButton = "cart-item-remove";
+    private const string RemoveButton = "cart-item-remove-button";
     private const string PriceChangeNotice = "price-change-summary";
 
     private CartPage(IPage page) : base(page)
