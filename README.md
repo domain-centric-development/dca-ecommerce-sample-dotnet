@@ -146,8 +146,7 @@ DcaShop.Cart/
 ├── Domain/
 │   ├── Model/                   ShoppingCart (aggregate), CartItem (entity), Quantity, CartArticle, EnrichedCart …
 │   ├── Event/                   CartItemAddedToCart, CartCompleted … (past tense)
-│   ├── Specification/           ActiveCart, HasMinTotal, LastUpdatedBefore … + ICartSpecificationVisitor
-│   └── glossary.md              the context's ubiquitous language
+│   └── Specification/           ActiveCart, HasMinTotal, LastUpdatedBefore … + ICartSpecificationVisitor
 ├── Application/                 use cases grouped by feature (Cart and Checkout); the other contexts stay flat
 │   ├── Shopping/                feature — filling and reading the cart
 │   │   ├── AddItemToCart/       I*InputPort : IUseCase<Command, Result>, *UseCase, *Command, *Result
@@ -208,7 +207,7 @@ what tells them apart.
 | Async at the ports, synchronous domain | `Task<TOut> ExecuteAsync(...)` vs. plain domain methods |
 | Executable context map | `docs/architecture/context-map.md`, rendered by the architecture tests |
 | One protocol per adapter, one set of use cases | `ProductPageController` (Razor), `ProductResource` (REST), `ProductCatalogMcpToolProvider` (MCP) |
-| Operational module beside the contexts | `DcaShop.Backoffice` — no context marker, its own authentication |
+| Operational context of a generic subdomain | `DcaShop.Backoffice` — `[BoundedContext]`, Separate Ways, no domain model, its own authentication |
 
 ## API, MCP and the backoffice
 
@@ -227,12 +226,12 @@ and anonymous is still an identity — but not an authenticated one, so a staff 
 | `PUT /api/products/{id}/price` (Pricing's resource) | staff role |
 | `GET /api/carts` (every cart in the shop) | staff role |
 | `POST /api/carts`, `GET /api/carts/{id}`, `POST /{id}/items`, `DELETE /{id}/items/{productId}`, `POST /{id}/checkout` | the caller, on their own cart — a stranger's cart answers `404`, never `403` |
+| `POST /api/auth/{login,register,logout}` | anyone; the token comes back in the body, no cookie is set |
 
 Ownership is enforced by the **use cases**, not by the resource: the caller is part of the command and the
 repository is asked a scoped question, so the web pages and any future adapter inherit the same rule. The staff
 gate is the one check that stays at the edge — it reads only the token's claims, and the same use case is
 legitimate for a console with no HTTP identity at all.
-| `POST /api/auth/{login,register,logout}` | anyone; the token comes back in the body, no cookie is set |
 
 ### How a refusal reads
 
@@ -309,7 +308,7 @@ a page waits for a human's acceptance before it counts as delivered.
 
 ## Known limitations (by design)
 
-This is an architecture sample, not a production template. Three pieces are intentionally minimal:
+This is an architecture sample, not a production template. These pieces are intentionally minimal:
 
 - **In-memory persistence** shares mutable aggregate instances between requests and has no optimistic
   concurrency; see ADR-001. `InMemoryTransactionBoundary` draws the boundary and runs after-commit/after-rollback hooks,
@@ -323,7 +322,7 @@ This is an architecture sample, not a production template. Three pieces are inte
 - **No refresh token.** The session cookie's lifetime is the blast radius of a stolen token: there is no
   revocation and no theft detection. ADR-006 records the three-cookie design this stops short of, and why.
 
-All three live entirely in adapters — the domain and application layers are unaffected when they are replaced.
+All of them live entirely in adapters — the domain and application layers are unaffected when they are replaced.
 
 ## Decisions
 
@@ -340,25 +339,25 @@ MIT — see [LICENSE](LICENSE).
 Contributions are accepted under the MIT licence, and the copyright holder may additionally publish
 them under other licences (for example a documentation licence for prose).
 
-Event delivery (2026-09-09): committed capture is recovered independently of wakeup; completion is per listener/consumer. Automatic retry is bounded (five attempts, 200 ms exponential base), terminal failures remain inspectable, and Backoffice offers authenticated, CSRF-protected manual replay of failed work. Original payload/identity and acknowledged consumers are preserved. Provider idempotency is needed to suppress an external duplicate after acceptance-before-ack; local keys alone do not suffice. See the event-delivery ADR for storage limits and replay behavior.
+## Event delivery
 
-## Shared business specification (review batch 2026-09-09)
+A committed event publication is recovered independently of the dispatcher's wake-up, and completion is recorded per
+consumer. Automatic retry is bounded (five attempts, 200 ms exponential backoff); a publication that used them up
+stays inspectable, and the Backoffice replays it on an authenticated, antiforgery-protected request with its original
+payload and identity, leaving consumers that already completed untouched. Suppressing an external duplicate after the
+provider accepted but before the acknowledgement needs the provider's idempotency; local keys alone do not suffice.
+Storage limits and replay behaviour: ADR-002 and ADR-009.
+
+## Shared business specification
 
 Money uses ISO 4217 codes, non-negative amounts, two decimals half-up, and an upper bound of 999999999999.99.
-Product creation and Pricing use strictly positive Price. Product-created v1 is the six-field notification described
-in the local payload ADR. Invalid default quantities are rejected at entry/reconstitution; account role observations
-are immutable snapshots. Aggregate creation owns event registration.
+Product creation and Pricing use a strictly positive Price. Product-created v1 is the six-field notification of
+ADR-010. Invalid default quantities are rejected at entry and on reconstitution; account role observations are
+immutable snapshots. Aggregate creation owns event registration (ADR-011).
 
-An explicit checkout action captures immutable positions and quantities, and the prices of that moment, into a session. Cart edits do not
-create or mutate sessions. A new action supersedes the previous OPEN/Active session; confirmed/completed orders remain.
-Confirmation and replacement serialize through the same repository operation, including transaction completion.
-Superseded confirmation has no completion effect. Abandonment/expiry closes only an open session and leaves cart contents.
-
-Cart reconciliation intersects purchased unit intervals with the current stable position id. Later additions (also of
-the same product), removed/re-added positions and other contents survive. Replay and overlapping completed snapshots
-cannot remove a unit twice. JDBC/JPA cart persistence preserves the interval allocation watermark; in-memory persistence
-retains the same domain state. The legacy Completed cart status remains readable, but snapshot checkout leaves
-an active cart editable and never completes the whole cart.
+An explicit checkout action captures immutable positions and quantities, and the prices of that moment, into a
+session; cart edits and cart reconciliation after an order follow ADR-012. Snapshot checkout leaves an active cart
+editable and never completes the whole cart.
 
 Confirmation retrieves current price/availability/stock facts before its local transaction. Pure domain services consume
 immutable line/fact snapshots. The review shows the order at today's prices; "Place Order" carries the order fingerprint
