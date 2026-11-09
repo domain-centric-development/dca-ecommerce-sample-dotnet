@@ -16,7 +16,7 @@ public sealed class StockReservationTest
     [Fact]
     public async Task AnOrderTheUnreservedStockDoesNotCoverIsRefusedAndReservesNothing()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var covered = ProductId.Of(await shop.ProductIdAsync("Domain-Driven Design"));
         var shortOf = ProductId.Of(await shop.ProductIdAsync("Implementing Domain-Driven Design"));
         using var scope = shop.Services.CreateScope();

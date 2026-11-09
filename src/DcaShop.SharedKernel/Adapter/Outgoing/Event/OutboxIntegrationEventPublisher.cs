@@ -10,7 +10,7 @@ namespace DcaShop.SharedKernel.Adapter.Outgoing.Event;
 /// Implements the <see cref="IIntegrationEventPublisher"/> port with the outbox pattern: the publication is
 /// registered <em>inside</em> the use case's transaction — together with the aggregate, so there is no window in
 /// which the aggregate is committed but the event is not recorded. After commit the publication is released to
-/// the dispatcher; after rollback it is discarded (a database outbox rolls the row back by itself). Delivery
+/// the dispatcher; a rollback takes the publication with it. Delivery
 /// happens asynchronously in <c>EventDispatcherService</c>; failures are retried, not dropped.
 /// </summary>
 public sealed class OutboxIntegrationEventPublisher : IIntegrationEventPublisher
@@ -24,14 +24,10 @@ public sealed class OutboxIntegrationEventPublisher : IIntegrationEventPublisher
         _transaction = transaction;
     }
 
-    public Task PublishAsync(IIntegrationEvent @event, CancellationToken cancellationToken = default)
+    public async Task PublishAsync(IIntegrationEvent @event, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(@event);
-        var publication = _outbox.Register(@event);
-        _transaction.EnlistCommit(() => _outbox.Commit(publication.Id));
+        var publication = await _outbox.RegisterAsync(@event, cancellationToken).ConfigureAwait(false);
         _transaction.AfterCommit(() => _outbox.Release(publication.Id));
-        if (publication.Status == PublicationStatus.Staged)
-            _transaction.AfterRollback(() => _outbox.Discard(publication.Id));
-        return Task.CompletedTask;
     }
 }

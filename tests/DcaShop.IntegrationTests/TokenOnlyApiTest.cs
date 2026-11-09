@@ -21,7 +21,7 @@ public sealed class TokenOnlyApiTest : IDisposable
 {
     private const string SessionCookie = "shop-session";
 
-    private readonly WebApplicationFactory<Program> _factory = new();
+    private readonly WebApplicationFactory<Program> _factory = new ShopFactory();
 
     public void Dispose() => _factory.Dispose();
 

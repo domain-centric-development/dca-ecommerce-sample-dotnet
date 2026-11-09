@@ -3,6 +3,7 @@ using DcaShop.Backoffice.Infrastructure;
 using DcaShop.Cart.Infrastructure;
 using DcaShop.Checkout.Infrastructure;
 using DcaShop.Infrastructure.Events;
+using DcaShop.Infrastructure.Persistence;
 using DcaShop.Inventory.Infrastructure;
 using DcaShop.Portal.Infrastructure;
 using DcaShop.Pricing.Infrastructure;
@@ -19,6 +20,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
+using Npgsql;
+
 namespace DcaShop.Infrastructure;
 
 /// <summary>Composes the whole shop: shared event plumbing, every bounded context, sample data.</summary>
@@ -26,17 +29,23 @@ public static class DcaShopRegistration
 {
     public static IServiceCollection AddDcaShop(this IServiceCollection services, IConfiguration configuration)
     {
+        // The database: migrated before any other hosted service starts, then shared by every context's adapters
+        services.AddHostedService<DatabaseMigration>();
+        services.AddSingleton(_ => NpgsqlDataSource.Create(ShopDatabase.ConnectionString(configuration)));
+        services.AddSingleton<SharedKernel.Infrastructure.Persistence.Database>();
+
         // Event plumbing (shared kernel)
         services.AddScoped<IEventDispatcher, InProcessEventDispatcher>();
         services.AddScoped<IDomainEventPublisher, DomainEventPublisher>();
         services.TryAddSingleton(TimeProvider.System);
-        services.AddSingleton<IEventOutbox, InMemoryEventOutbox>();
+        services.AddSingleton<IEventOutbox, PostgresEventOutbox>();
         services.AddScoped<IIntegrationEventPublisher, OutboxIntegrationEventPublisher>();
 
         // Transaction boundary: writing use cases run inside ITransactionBoundary.InTransactionAsync
-        services.AddScoped<InMemoryTransactionBoundary>();
-        services.AddScoped<ITransactionBoundary>(sp => sp.GetRequiredService<InMemoryTransactionBoundary>());
-        services.AddScoped<ITransactionHooks>(sp => sp.GetRequiredService<InMemoryTransactionBoundary>());
+        // — one PostgreSQL transaction, current for the flow that opened it
+        services.AddSingleton<PostgresTransactionBoundary>();
+        services.AddSingleton<ITransactionBoundary>(sp => sp.GetRequiredService<PostgresTransactionBoundary>());
+        services.AddSingleton<ITransactionHooks>(sp => sp.GetRequiredService<PostgresTransactionBoundary>());
         services.TryAddSingleton(EventRetryPolicy.Default);
         services.AddHostedService<EventDispatcherService>();
 

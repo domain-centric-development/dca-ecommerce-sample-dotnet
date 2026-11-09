@@ -15,7 +15,7 @@ namespace DcaShop.IntegrationTests;
 /// while the mail provider is down. Through the input ports of a shop of its own, wired to a payment provider and a mail
 /// provider that are stubs on free ports.
 /// </summary>
-public sealed class OrderConfirmationTest : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public sealed class OrderConfirmationTest : IClassFixture<ShopFactory>, IDisposable
 {
     private const string Jane = "jane@example.com";
 
@@ -24,7 +24,7 @@ public sealed class OrderConfirmationTest : IClassFixture<WebApplicationFactory<
     private readonly WireMockServer _mails = WireMockServer.Start();
     private WebApplicationFactory<Program>? _shop;
 
-    public OrderConfirmationTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public OrderConfirmationTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task ARepeatedDeliveryOfAnOrdersConfirmationSendsItsMailOnceUnderOneKey()

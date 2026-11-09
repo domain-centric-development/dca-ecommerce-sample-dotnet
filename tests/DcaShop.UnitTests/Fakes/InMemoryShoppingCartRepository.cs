@@ -5,6 +5,10 @@ using DcaShop.Cart.Domain.Model;
 
 namespace DcaShop.Cart.Adapter.Outgoing.Persistence;
 
+/// <summary>
+/// In-memory cart store — the unit tests' stand-in for the database adapter, storing and handing out copies as a
+/// database does.
+/// </summary>
 public sealed class InMemoryShoppingCartRepository : IShoppingCartRepository
 {
     private readonly ConcurrentDictionary<CartId, ShoppingCart> _carts = new();
@@ -18,7 +22,7 @@ public sealed class InMemoryShoppingCartRepository : IShoppingCartRepository
     private readonly ConcurrentDictionary<CustomerId, CartId> _activeCartByCustomer = new();
 
     public Task<ShoppingCart?> FindByIdAsync(CartId id, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_carts.TryGetValue(id, out var cart) ? cart : null);
+        Task.FromResult(_carts.TryGetValue(id, out var cart) ? Copy(cart) : null);
 
     /// <exception cref="ActiveCartAlreadyExistsException">
     /// The cart is active and the customer already has a different active cart — the answer a unique index gives,
@@ -29,7 +33,8 @@ public sealed class InMemoryShoppingCartRepository : IShoppingCartRepository
         // The cart is stored before the claim is published, and withdrawn again when the claim fails. A relational
         // store makes both visible at one commit; here the two writes are separate, so publishing the claim first
         // would let the request that lost the race read the winner's id out of the index and find nothing behind it.
-        _carts[aggregate.Id] = aggregate;
+        var stored = Copy(aggregate);
+        _carts[aggregate.Id] = stored;
 
         if (aggregate.IsActive)
         {
@@ -37,7 +42,7 @@ public sealed class InMemoryShoppingCartRepository : IShoppingCartRepository
             var claimed = _activeCartByCustomer.GetOrAdd(aggregate.CustomerId, aggregate.Id);
             if (claimed != aggregate.Id)
             {
-                _carts.TryRemove(new KeyValuePair<CartId, ShoppingCart>(aggregate.Id, aggregate));
+                _carts.TryRemove(new KeyValuePair<CartId, ShoppingCart>(aggregate.Id, stored));
                 throw new ActiveCartAlreadyExistsException(aggregate.CustomerId);
             }
         }
@@ -69,14 +74,18 @@ public sealed class InMemoryShoppingCartRepository : IShoppingCartRepository
     }
 
     public Task<ShoppingCart?> FindByIdForCustomerAsync(CartId id, CustomerId customerId, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_carts.TryGetValue(id, out var cart) && cart.CustomerId == customerId ? cart : null);
+        Task.FromResult(_carts.TryGetValue(id, out var cart) && cart.CustomerId == customerId ? Copy(cart) : null);
 
     public Task<IReadOnlyList<ShoppingCart>> FindAllAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<ShoppingCart>>(_carts.Values.ToList());
+        Task.FromResult<IReadOnlyList<ShoppingCart>>(_carts.Values.Select(Copy).ToList());
 
     public Task<ShoppingCart?> FindActiveByCustomerAsync(CustomerId customerId, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_activeCartByCustomer.TryGetValue(customerId, out var id) && _carts.TryGetValue(id, out var cart) ? cart : null);
+        Task.FromResult(_activeCartByCustomer.TryGetValue(customerId, out var id) && _carts.TryGetValue(id, out var cart) ? Copy(cart) : null);
 
     public Task<IReadOnlyList<ShoppingCart>> FindByCustomerAsync(CustomerId customerId, CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<ShoppingCart>>(_carts.Values.Where(c => c.CustomerId == customerId).ToList());
+        Task.FromResult<IReadOnlyList<ShoppingCart>>(_carts.Values.Where(c => c.CustomerId == customerId).Select(Copy).ToList());
+
+    private static ShoppingCart Copy(ShoppingCart cart) => ShoppingCart.Reconstitute(
+        cart.Id, cart.CustomerId, cart.Status,
+        cart.Items.Select(item => new ShoppingCart.StoredItem(item.Id, item.ProductId, item.Quantity, item.PriceAtAddition, item.StoredUnits)));
 }

@@ -13,11 +13,11 @@ namespace DcaShop.IntegrationTests;
 /// lowers its own product's stock, and orders add up. The products bought here are bought by no other test of this
 /// class, so each starts at its seeded stock.
 /// </summary>
-public sealed class StockAfterTheOrderTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class StockAfterTheOrderTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public StockAfterTheOrderTest(WebApplicationFactory<Program> factory)
+    public StockAfterTheOrderTest(ShopFactory factory)
     {
         _factory = factory;
     }

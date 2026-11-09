@@ -20,13 +20,13 @@ namespace DcaShop.IntegrationTests;
 /// against a stubbed input port, answers that refusal with the cart and its error. A host of its own: the stock of
 /// the Hexagon goes down here.
 /// </summary>
-public sealed class OutdatedCartStartTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class OutdatedCartStartTest : IClassFixture<ShopFactory>
 {
     private const string Hexagon = "Wooden Hexagon Desk Model";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public OutdatedCartStartTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public OutdatedCartStartTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task StartingFromACartWhoseLineRanShortOfStockIsRefusedNamingThatLine()

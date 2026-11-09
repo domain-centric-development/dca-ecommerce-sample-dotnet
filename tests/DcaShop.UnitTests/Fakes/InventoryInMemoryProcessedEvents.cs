@@ -1,12 +1,12 @@
 using System.Collections.Concurrent;
 
-using DcaShop.Cart.Application.Shared;
+using DcaShop.Inventory.Application.Shared;
 
-namespace DcaShop.Cart.Adapter.Outgoing.Persistence;
+namespace DcaShop.Inventory.Adapter.Outgoing.Persistence;
 
 /// <summary>
-/// In-memory record of produced effects, keyed by effect and event id — demo stand-in for a table with that
-/// composite key (ADR-001).
+/// In-memory record of produced effects, keyed by effect and event id — the unit tests' stand-in for the table with that
+/// composite key.
 /// </summary>
 public sealed class InMemoryProcessedEvents : IProcessedEvents
 {

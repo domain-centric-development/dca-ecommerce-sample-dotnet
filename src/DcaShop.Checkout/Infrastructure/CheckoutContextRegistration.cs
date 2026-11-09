@@ -60,14 +60,14 @@ public static class CheckoutContextRegistration
         services.AddScoped<ISendOrderConfirmationInputPort, SendOrderConfirmationUseCase>();
 
         // Outgoing adapters (output ports)
-        services.AddSingleton<ICheckoutSessionRepository, InMemoryCheckoutSessionRepository>();
+        services.AddSingleton<ICheckoutSessionRepository, DapperCheckoutSessionRepository>();
         services.AddScoped<ICartDataPort, CartDataAdapter>();
         services.AddScoped<ICheckoutArticleDataPort, CompositeCheckoutArticleDataAdapter>();
         services.AddScoped<IStockReservationPort, InventoryStockReservationAdapter>();
         AddPaymentProvider(services, configuration);
         services.AddSingleton<IPaymentProviderRegistry, InMemoryPaymentProviderRegistry>();
         services.AddScoped<IEventListener, CheckoutConfirmedEventPublisher>();
-        services.AddSingleton<IProcessedEvents, InMemoryProcessedEvents>();
+        services.AddSingleton<IProcessedEvents, DapperProcessedEvents>();
         AddMailProvider(services, configuration);
 
         // Incoming event consumers

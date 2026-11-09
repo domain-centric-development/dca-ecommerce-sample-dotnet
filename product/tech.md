@@ -32,12 +32,18 @@ factory, not a side change.
 
 ## Persistence
 
-In-memory only, behind the same ports as in the Java sample. No database.
+PostgreSQL for every store, the same database and the same tables as the Java sample. Each repository is a
+Dapper adapter over Npgsql with hand-written SQL, mapping through the aggregate's `Reconstitute`; uniqueness is a
+database constraint. DbUp applies the migration scripts (`Persistence/Migrations/V<n>__<what>.sql`, Flyway's
+naming) when the shop starts. A use case runs in one database transaction, which the outbox writes its publications
+into; a read that precedes a change of stock or of a checkout session takes a row lock. In-memory repositories exist
+only as test fakes that store copies. Tests start PostgreSQL through Testcontainers, a database of its own for every
+shop a test starts; Docker or Podman is required (ADR-018).
 
 ## Runtime
 
-One ASP.NET Core process on port 5080, started with `dotnet run --project src/DcaShop.Web` or as a
-container (`docker compose up`).
+One ASP.NET Core process on port 5080 with its PostgreSQL (`ConnectionStrings:Shop`), started with `just run`
+(which starts the compose service `postgres` on port 5433 first) or as containers (`docker compose up`).
 
 It is built to run as several instances behind a load balancer without sticky sessions: nothing a later request
 needs lives in one instance's memory. A message for the page a redirect leads to travels with the redirect in a

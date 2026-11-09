@@ -15,11 +15,11 @@ namespace DcaShop.IntegrationTests;
 /// waits for the form the browser sends. The page's translation alone, against input ports that answer what the test
 /// tells them.
 /// </summary>
-public sealed class CartTakeOverPageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CartTakeOverPageTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CartTakeOverPageTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public CartTakeOverPageTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task OpeningThePageAfterTheLoginOffersTheTakeOverAndMovesNoCart()

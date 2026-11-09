@@ -18,7 +18,7 @@ namespace DcaShop.IntegrationTests;
 /// collected nothing, a guest's open checkout follows the cart into the account, and the customer checks out like a guest.
 /// One client is one browser; redirects are not followed, each one is an assertion.
 /// </summary>
-public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CartRecoveryOnLoginTest : IClassFixture<ShopFactory>
 {
     private const string Password = "Secret123";
     private const string CleanArchitecture = "Clean Architecture";
@@ -48,7 +48,7 @@ public sealed class CartRecoveryOnLoginTest : IClassFixture<WebApplicationFactor
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CartRecoveryOnLoginTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public CartRecoveryOnLoginTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task AVisitorWithAnEmptyCartFindsTheAccountsCartAfterLoggingIn()

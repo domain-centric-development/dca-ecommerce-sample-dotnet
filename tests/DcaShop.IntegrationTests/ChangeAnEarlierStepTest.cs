@@ -9,11 +9,11 @@ namespace DcaShop.IntegrationTests;
 /// A guest goes back to a step already done — through its Back and Edit links — finds it filled in, changes it and
 /// keeps the progress made after it, through the real HTTP pipeline.
 /// </summary>
-public sealed class ChangeAnEarlierStepTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ChangeAnEarlierStepTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ChangeAnEarlierStepTest(WebApplicationFactory<Program> factory)
+    public ChangeAnEarlierStepTest(ShopFactory factory)
     {
         _factory = factory;
     }

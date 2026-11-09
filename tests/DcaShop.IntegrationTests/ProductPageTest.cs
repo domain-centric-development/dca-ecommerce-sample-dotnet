@@ -9,14 +9,14 @@ namespace DcaShop.IntegrationTests;
 /// The product page of a seeded product, through the real HTTP pipeline: what it shows about the product, how it
 /// names itself and where it leads back to. The product is found the way a visitor finds it, on its catalogue card.
 /// </summary>
-public sealed class ProductPageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ProductPageTest : IClassFixture<ShopFactory>
 {
     private static readonly Regex CardLink = new(@"href=""(/products/[0-9a-f-]{36})""\s+data-test=""view-product""", RegexOptions.Compiled);
     private static readonly Regex CardTitle = new(@"data-test=""product-card-title"">([^<]*)<", RegexOptions.Compiled);
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ProductPageTest(WebApplicationFactory<Program> factory)
+    public ProductPageTest(ShopFactory factory)
     {
         _factory = factory;
     }

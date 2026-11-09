@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace DcaShop.IntegrationTests;
 
 /// <summary>The payment step shows a guest what the order costs with shipping and how it can be paid, through the real HTTP pipeline.</summary>
-public sealed class PaymentStepTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class PaymentStepTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public PaymentStepTest(WebApplicationFactory<Program> factory)
+    public PaymentStepTest(ShopFactory factory)
     {
         _factory = factory;
     }

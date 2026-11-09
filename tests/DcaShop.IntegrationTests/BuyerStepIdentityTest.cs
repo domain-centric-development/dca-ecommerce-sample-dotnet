@@ -10,14 +10,14 @@ namespace DcaShop.IntegrationTests;
 /// account's email filled in and orders with it — through the real HTTP pipeline. One client is one browser;
 /// redirects are not followed, each one is an assertion.
 /// </summary>
-public sealed class BuyerStepIdentityTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class BuyerStepIdentityTest : IClassFixture<ShopFactory>
 {
     private const string Password = "Secret123";
     private const string DomainDrivenDesign = "Domain-Driven Design";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public BuyerStepIdentityTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public BuyerStepIdentityTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task AGuestOnTheBuyerStepIsOfferedToLogInOrRegisterAndFindsTheEmailEmpty()

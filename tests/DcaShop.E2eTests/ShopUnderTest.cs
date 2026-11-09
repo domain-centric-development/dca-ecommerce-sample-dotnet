@@ -29,7 +29,7 @@ public static class ShopUnderTest
             return Environment.GetEnvironmentVariable("E2E_BASE_URL")!.TrimEnd('/');
         }
 
-        var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        var factory = new ShopFactory().WithWebHostBuilder(builder =>
             builder
                 .UseSetting("Checkout:PaymentProvider:BaseUrl", PaymentProviderStub.Url)
                 .UseSetting("Checkout:PaymentProvider:Timeout", PaymentProviderStub.Timeout));

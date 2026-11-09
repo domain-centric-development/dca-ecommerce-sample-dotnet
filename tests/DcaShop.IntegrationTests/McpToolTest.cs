@@ -17,11 +17,11 @@ namespace DcaShop.IntegrationTests;
 /// names no product and of a blank one — its translation, against an input port that knows no product — and what it
 /// answers for an id <c>all-products</c> listed, against the seeded catalogue.
 /// </summary>
-public sealed class McpToolTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class McpToolTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public McpToolTest(WebApplicationFactory<Program> factory)
+    public McpToolTest(ShopFactory factory)
     {
         _factory = factory;
     }

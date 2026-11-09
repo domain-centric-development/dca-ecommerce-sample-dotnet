@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace DcaShop.IntegrationTests;
 
 /// <summary>What the cart page shows once an order has been placed, through the real HTTP pipeline.</summary>
-public sealed class CartAfterTheOrderTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CartAfterTheOrderTest : IClassFixture<ShopFactory>
 {
     private const string Pin = "\"Bounded Context\" Enamel Pin";
     private const string Hoodie = "\"Domain over Framework\" Hoodie";
@@ -14,7 +14,7 @@ public sealed class CartAfterTheOrderTest : IClassFixture<WebApplicationFactory<
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CartAfterTheOrderTest(WebApplicationFactory<Program> factory)
+    public CartAfterTheOrderTest(ShopFactory factory)
     {
         _factory = factory;
     }

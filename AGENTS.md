@@ -43,13 +43,17 @@ dotnet build
 dotnet test                              # everything
 dotnet test tests/DcaShop.ArchitectureTests   # DCA rule catalog (Debug build required)
 dotnet test tests/DcaShop.UnitTests --filter "FullyQualifiedName~ShoppingCart"
-dotnet run --project src/DcaShop.Web     # http://localhost:5080
+just run                                 # PostgreSQL (compose service, localhost:5433), then the shop on http://localhost:5080
+just db / just db-stop                   # only the database
 dotnet test tests/DcaShop.E2eTests                                       # Playwright; the suite starts the shop on a free port
 E2E_BASE_URL=http://localhost:5080 dotnet test tests/DcaShop.E2eTests   # the same, against a shop started elsewhere
 docker compose --profile tools run --rm e2e                              # same suite, browsers from the image
-docker compose up --build                                                # same shop in a container
+docker compose up --build                                                # same shop and its PostgreSQL in containers
 docker compose run --rm test                                             # tests without a local SDK
 ```
+
+The integration and E2E suites start PostgreSQL through Testcontainers — Docker or Podman must be running. Every
+shop a test starts (`ShopFactory`) gets a database of its own, copied from a migrated template.
 
 The architecture suite runs the experimental rules too: `tests/DcaShop.ArchitectureTests/dca-archunit.properties`
 (copied next to the test assembly) sets `dca.rules.experimental = true`. An enforced experimental rule fails the build like any other; an informational one only lists.
@@ -75,7 +79,8 @@ commit it with the change that caused it. `product/domain.md` is the designed, h
 from NuGet.org (`DomainCentric.BuildingBlocks` 0.3.0, `DomainCentric.ArchRules.Xunit` 0.13.0, pinned in `Directory.Build.props`;
 `-p:UseLocalDcaDotnet=true` references the sibling `../dca-dotnet` as projects for unreleased rules — the counterpart of
 the Java sample's `-PwithDcaJava`; **run the tests once without it before calling anything done**, and CI
-(`.github/workflows/ci.yml`) does exactly that on every push). In-memory persistence only.
+(`.github/workflows/ci.yml`) does exactly that on every push). PostgreSQL for every store: Dapper + Npgsql
+adapters, DbUp migrations at start-up, Testcontainers in the integration and E2E suites (ADR-018).
 
 ## Structure and conventions
 
@@ -106,7 +111,8 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   `Submit*`/`ConfirmCheckout` answer `(SessionId, CurrentStep, Status)`, the queries return the
   `CheckoutCartSnapshot`); Cart results carry `Money`; step access is decided by the `GetCheckoutSession`
   query for a session and a step (`GetCheckoutSessionQuery.ForStep`) and delivered as a `StepAccess` value that the web adapter maps to a route — no `IDomainService` in an
-  incoming adapter (`DCA-HEX-012`); repositories `I<Aggregate>Repository` / `InMemory<Aggregate>Repository`;
+  incoming adapter (`DCA-HEX-012`); repositories `I<Aggregate>Repository` / `Dapper<Aggregate>Repository`
+  (in-memory fakes only in `tests/DcaShop.UnitTests/Fakes`);
   web adapters `*PageController` + `*PageViewModel`; REST adapters `*Resource` (`[ApiController]`,
   `Adapter/Incoming/Api/`) — the layout's `RestControllerSuffix` is set to `Resource` in `ArchitectureRulesTest`
   so `DCA-NAM-006` enforces the Java sample's name rather than the .NET default `Controller`; event adapters `*EventConsumer` (incoming) and
@@ -155,10 +161,11 @@ the Java sample's `-PwithDcaJava`; **run the tests once without it before callin
   whether it consumes a foreign integration event or this context's own domain event. `DomainEventPublisher`
   dispatches to the synchronous kind at once and, when a transactional listener listens, captures the domain event in
   `IEventOutbox` inside the same transaction; integration events are registered there by
-  `OutboxIntegrationEventPublisher`. The outbox makes a publication eligible on commit, discards it on rollback, and
-  `EventDispatcherService` delivers it to the transactional listeners — after the commit, at least once with
-  retry/backoff; consumers are idempotent. Both kinds are registered as `IEventListener`. The outbox is in memory: a
-  process that stops loses what was not yet delivered, which a production outbox table would keep.
+  `OutboxIntegrationEventPublisher`. The outbox is a table (`PostgresEventOutbox`: `event_publications`,
+  `event_publication_deliveries`): a publication is inserted in the use case's transaction, so it exists exactly
+  when that work committed, and `EventDispatcherService` delivers it to the transactional listeners — after the
+  commit, at least once with retry/backoff, and on start-up for what a stopped process left; consumers are
+  idempotent. Both kinds are registered as `IEventListener`.
 - E2E: `tests/DcaShop.E2eTests` is a one-to-one port of the Java `src/test-e2e` page objects and suites: the same
   `data-test` selectors and, test for test, the scenario titles of `product/spec/**/scenarios.md`, which both shops hold alike. Either suite runs against either shop
   (`./gradlew test-e2e -De2e.baseUrl=http://localhost:5080` in the Java repo; `E2E_BASE_URL=http://localhost:8080`
@@ -281,7 +288,7 @@ Superseded confirmation has no completion effect. Abandonment/expiry closes only
 
 Cart reconciliation intersects purchased unit intervals with the current stable position id. Later additions (also of
 the same product), removed/re-added positions and other contents survive. Replay and overlapping completed snapshots
-cannot remove a unit twice. JDBC/JPA cart persistence preserves the interval allocation watermark; in-memory persistence
+cannot remove a unit twice. Cart persistence in PostgreSQL preserves the interval allocation watermark; the in-memory test fake
 retains the same domain state. The legacy Completed cart status remains readable, but snapshot checkout leaves
 an active cart editable and never completes the whole cart.
 
@@ -289,7 +296,7 @@ Confirmation retrieves current price/availability/stock facts before its local t
 immutable line/fact snapshots. The review shows the order at today's prices; "Place Order" carries the order fingerprint
 the review showed. A shortage, or a fingerprint that differs at that moment, is refused and leaves state, totals and
 events unchanged; the review then shows today's order. Success stores the lines at today's prices with their total and
-publishes the same total; there is no confirmation without a fingerprint. Local in-memory repository serialization is not a
+publishes the same total; there is no confirmation without a fingerprint. Local row locking is not a
 claim of durable distributed transactions or universal rollback of unenlisted resources.
 
 ## Delivery pipeline

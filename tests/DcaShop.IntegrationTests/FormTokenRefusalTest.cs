@@ -10,13 +10,13 @@ namespace DcaShop.IntegrationTests;
 /// The account's forms posted without the token their page carries, through the real HTTP pipeline: the shop refuses
 /// them as forbidden and does nothing they asked for.
 /// </summary>
-public sealed class FormTokenRefusalTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class FormTokenRefusalTest : IClassFixture<ShopFactory>
 {
     private const string Password = "Secret123";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public FormTokenRefusalTest(WebApplicationFactory<Program> factory)
+    public FormTokenRefusalTest(ShopFactory factory)
     {
         _factory = factory;
     }

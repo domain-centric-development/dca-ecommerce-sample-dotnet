@@ -14,14 +14,14 @@ namespace DcaShop.IntegrationTests;
 /// recovery from a refused claim happens outside the transaction the claim was attempted in, and a sequential
 /// test never enters that path at all.
 /// </remarks>
-public sealed class ActiveCartRaceTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ActiveCartRaceTest : IClassFixture<ShopFactory>
 {
     private const int ConcurrentCallers = 8;
     private const int Rounds = 10;
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ActiveCartRaceTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public ActiveCartRaceTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task EightSimultaneousCallersShareOneCart()

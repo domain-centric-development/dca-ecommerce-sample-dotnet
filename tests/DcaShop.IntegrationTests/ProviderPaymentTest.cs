@@ -17,7 +17,7 @@ namespace DcaShop.IntegrationTests;
 /// the provider is a stub on a free port that answers what the test arranges. Every answer but an authorization keeps
 /// the customer at the review with the shop's own sentence.
 /// </summary>
-public sealed class ProviderPaymentTest : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public sealed class ProviderPaymentTest : IClassFixture<ShopFactory>, IDisposable
 {
     private const string RefusalText = "The payment was refused. Please choose another way to pay.";
     private const string UnavailableText = "The payment provider is not available right now. Please try again later.";
@@ -34,7 +34,7 @@ public sealed class ProviderPaymentTest : IClassFixture<WebApplicationFactory<Pr
     private readonly WebApplicationFactory<Program> _factory;
     private readonly WireMockServer _provider = WireMockServer.Start();
 
-    public ProviderPaymentTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public ProviderPaymentTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task ARefusedPaymentKeepsTheCustomerAtTheReviewWithTheRefusalText()

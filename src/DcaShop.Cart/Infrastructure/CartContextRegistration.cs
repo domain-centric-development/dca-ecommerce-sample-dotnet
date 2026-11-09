@@ -55,8 +55,8 @@ public static class CartContextRegistration
         services.AddExceptionHandler<CartApiExceptionHandler>();
 
         // Outgoing adapters (output ports)
-        services.AddSingleton<IShoppingCartRepository, InMemoryShoppingCartRepository>();
-        services.AddSingleton<IProcessedEvents, InMemoryProcessedEvents>();
+        services.AddSingleton<IShoppingCartRepository, DapperShoppingCartRepository>();
+        services.AddSingleton<IProcessedEvents, DapperProcessedEvents>();
         services.AddScoped<IArticleDataPort, CompositeArticleDataAdapter>();
         services.AddScoped<IEventListener, CartContentsChangedEventPublisher>();
 

@@ -9,11 +9,11 @@ namespace DcaShop.IntegrationTests;
 /// The event log through its input port, over the outbox the seeded shop filled at start-up: the order in which the
 /// operator reads the entries.
 /// </summary>
-public sealed class EventLogOrderTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class EventLogOrderTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public EventLogOrderTest(WebApplicationFactory<Program> factory)
+    public EventLogOrderTest(ShopFactory factory)
     {
         _factory = factory;
     }

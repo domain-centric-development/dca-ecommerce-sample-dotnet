@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace DcaShop.IntegrationTests;
 
 /// <summary>The buyer step asks a guest for their details and refuses what it cannot take, through the real HTTP pipeline.</summary>
-public sealed class BuyerStepTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class BuyerStepTest : IClassFixture<ShopFactory>
 {
     private const string Refusal = "Please check the details you entered.";
 
@@ -14,7 +14,7 @@ public sealed class BuyerStepTest : IClassFixture<WebApplicationFactory<Program>
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public BuyerStepTest(WebApplicationFactory<Program> factory)
+    public BuyerStepTest(ShopFactory factory)
     {
         _factory = factory;
     }

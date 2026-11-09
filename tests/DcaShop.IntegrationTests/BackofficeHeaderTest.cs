@@ -14,13 +14,13 @@ namespace DcaShop.IntegrationTests;
 /// operator then logs in to the back office sees nothing of the shopper there. The event log's input port answers an
 /// empty log; the header does not depend on it.
 /// </summary>
-public sealed class BackofficeHeaderTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class BackofficeHeaderTest : IClassFixture<ShopFactory>
 {
     private const string Email = "anna.schmidt@example.com";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public BackofficeHeaderTest(WebApplicationFactory<Program> factory)
+    public BackofficeHeaderTest(ShopFactory factory)
     {
         _factory = factory;
     }

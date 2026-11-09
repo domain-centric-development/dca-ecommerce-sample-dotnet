@@ -12,11 +12,11 @@ namespace DcaShop.IntegrationTests;
 /// Adding a product to a cart through the input port in the wired application: one line per product, its quantity
 /// raised when the product is added again.
 /// </summary>
-public sealed class AddItemToCartTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class AddItemToCartTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public AddItemToCartTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public AddItemToCartTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task AddingTheSameProductAgainRaisesTheQuantityOfItsLine()

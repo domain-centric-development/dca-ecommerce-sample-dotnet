@@ -28,8 +28,8 @@ public static class InventoryContextRegistration
         services.AddScoped<IGetLowStockProductsInputPort, GetLowStockProductsUseCase>();
 
         // Outgoing adapters (output ports)
-        services.AddSingleton<IStockLevelRepository, InMemoryStockLevelRepository>();
-        services.AddSingleton<IProcessedEvents, InMemoryProcessedEvents>();
+        services.AddSingleton<IStockLevelRepository, DapperStockLevelRepository>();
+        services.AddSingleton<IProcessedEvents, DapperProcessedEvents>();
 
         // Incoming event adapters
         services.AddScoped<IEventListener, StockInitializationEventConsumer>();

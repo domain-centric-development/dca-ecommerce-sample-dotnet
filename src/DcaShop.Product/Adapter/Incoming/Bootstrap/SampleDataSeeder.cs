@@ -1,4 +1,5 @@
 using DcaShop.Product.Application.CreateProduct;
+using DcaShop.Product.Application.GetAllProducts;
 using DcaShop.SharedKernel.Infrastructure.Events;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -7,14 +8,15 @@ using Microsoft.Extensions.Hosting;
 namespace DcaShop.Product.Adapter.Incoming.Bootstrap;
 
 /// <summary>
-/// Incoming adapter that fills the in-memory catalog at start-up with what this architecture is made of: the books
+/// Incoming adapter that fills an empty catalog at start-up with what this architecture is made of: the books
 /// the guide grew out of, modelling supplies for a design workshop, and hexagon merchandise. Start-up is a driving
 /// protocol like HTTP or an event stream: the seeder drives the catalog through <see cref="ICreateProductInputPort"/>,
 /// the same port the REST resource uses, and therefore lives inside the Product context — the one context it belongs
 /// to — rather than in the host's infrastructure. Only products are created here: the price and the stock of each
 /// product are set by the Pricing and Inventory contexts when they receive <c>ProductCreatedEvent</c>. Delivery is
 /// asynchronous, so the seeder waits until the outbox has no pending publication left — a start-up convenience, not
-/// a pattern: nothing else in the shop waits for an integration event. The Java twin's <c>SampleDataInitializer</c>
+/// a pattern: nothing else in the shop waits for an integration event. The database outlives the process, so a
+/// catalog that already holds products is left as it is. The Java twin's <c>SampleDataInitializer</c>
 /// has the same place and shape.
 /// </summary>
 public sealed class SampleDataSeeder : IHostedService
@@ -63,6 +65,14 @@ public sealed class SampleDataSeeder : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         using var scope = _scopes.CreateScope();
+        var catalog = await scope.ServiceProvider.GetRequiredService<IGetAllProductsInputPort>()
+            .ExecuteAsync(new GetAllProductsQuery(), cancellationToken).ConfigureAwait(false);
+        if (catalog.Products.Count > 0)
+        {
+            return;
+        }
+
+        var startedAt = DateTimeOffset.UtcNow.AddSeconds(-1); // a margin for the clock against the stored time
         var createProduct = scope.ServiceProvider.GetRequiredService<ICreateProductInputPort>();
 
         foreach (var p in Products)
@@ -77,14 +87,18 @@ public sealed class SampleDataSeeder : IHostedService
                 duplicate => throw new InvalidOperationException($"The sample data names SKU {duplicate.Sku.Value} twice"));
         }
 
-        await WaitForOutboxAsync(cancellationToken).ConfigureAwait(false);
+        await WaitForOutboxAsync(startedAt, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Waits until every publication the seeding caused has been delivered (or given up on).</summary>
-    private async Task WaitForOutboxAsync(CancellationToken cancellationToken)
+    /// <summary>
+    /// Waits until every publication the seeding caused has been delivered (or given up on). Only this seeding's: what
+    /// an earlier process left pending is delivered all the same, but the start does not wait for it.
+    /// </summary>
+    private async Task WaitForOutboxAsync(DateTimeOffset startedAt, CancellationToken cancellationToken)
     {
         var deadline = DateTimeOffset.UtcNow + DrainTimeout;
-        while (_outbox.All().Any(publication => publication.Status == PublicationStatus.Pending))
+        while ((await _outbox.AllAsync(cancellationToken).ConfigureAwait(false))
+               .Any(publication => publication.Status == PublicationStatus.Pending && publication.RegisteredOn >= startedAt))
         {
             if (DateTimeOffset.UtcNow > deadline)
             {

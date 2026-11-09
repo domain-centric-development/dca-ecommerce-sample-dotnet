@@ -10,7 +10,7 @@ namespace DcaShop.IntegrationTests;
 /// The step pages show the checkout's progress, and a step ahead of it leads to the step that is open — through the
 /// real HTTP pipeline. One cookie jar is one browser; redirects are not followed, each one is an assertion.
 /// </summary>
-public sealed class StepProgressTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class StepProgressTest : IClassFixture<ShopFactory>
 {
     private static readonly Regex ProgressStep = new(
         @"<div class=""checkout__step(?: checkout__step--(?<state>completed|active))?""><div class=""checkout__step-marker"">(?<number>\d)</div><div class=""checkout__step-label"">(?<label>[^<]*)</div>",
@@ -18,7 +18,7 @@ public sealed class StepProgressTest : IClassFixture<WebApplicationFactory<Progr
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public StepProgressTest(WebApplicationFactory<Program> factory)
+    public StepProgressTest(ShopFactory factory)
     {
         _factory = factory;
     }

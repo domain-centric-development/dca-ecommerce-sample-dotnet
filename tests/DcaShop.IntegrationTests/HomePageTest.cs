@@ -9,11 +9,11 @@ namespace DcaShop.IntegrationTests;
 /// The home page through the real HTTP pipeline: how it names itself, where its links lead, and what its features,
 /// categories and closing call to shop say.
 /// </summary>
-public sealed class HomePageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class HomePageTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public HomePageTest(WebApplicationFactory<Program> factory)
+    public HomePageTest(ShopFactory factory)
     {
         _factory = factory;
     }

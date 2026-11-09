@@ -16,7 +16,7 @@ namespace DcaShop.IntegrationTests;
 /// A guest's cart belongs to their browser: another browser has a cart of its own, and the tabs of one browser
 /// share one cart.
 /// </summary>
-public sealed class GuestCartTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class GuestCartTest : IClassFixture<ShopFactory>
 {
     private const string Mug = "\"Ubiquitous Language\" Mug";
     private const string TeamTopologies = "Team Topologies";
@@ -27,7 +27,7 @@ public sealed class GuestCartTest : IClassFixture<WebApplicationFactory<Program>
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public GuestCartTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public GuestCartTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task AnotherBrowserOpensAnEmptyCart()

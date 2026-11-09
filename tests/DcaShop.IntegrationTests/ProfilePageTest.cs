@@ -11,7 +11,7 @@ namespace DcaShop.IntegrationTests;
 /// logs in afterwards, and how a visitor without a session is sent to the login. Each test that registers Anna does
 /// so in a shop with a store of its own.
 /// </summary>
-public sealed class ProfilePageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ProfilePageTest : IClassFixture<ShopFactory>
 {
     private const string Email = "anna.schmidt@example.com";
     private const string NewEmail = "anna.meyer@example.com";
@@ -19,7 +19,7 @@ public sealed class ProfilePageTest : IClassFixture<WebApplicationFactory<Progra
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ProfilePageTest(WebApplicationFactory<Program> factory)
+    public ProfilePageTest(ShopFactory factory)
     {
         _factory = factory;
     }

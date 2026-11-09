@@ -5,6 +5,10 @@ using DcaShop.Checkout.Domain.Model;
 
 namespace DcaShop.Checkout.Adapter.Outgoing.Persistence;
 
+/// <summary>
+/// In-memory checkout session store — the unit tests' stand-in for the database adapter, storing and handing out
+/// copies as a database does.
+/// </summary>
 public sealed class InMemoryCheckoutSessionRepository : ICheckoutSessionRepository
 {
     private readonly ConcurrentDictionary<CheckoutSessionId, CheckoutSession> _sessions = new();
@@ -12,14 +16,14 @@ public sealed class InMemoryCheckoutSessionRepository : ICheckoutSessionReposito
     private long _sequence;
 
     public Task<CheckoutSession?> FindByIdAsync(CheckoutSessionId id, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_sessions.TryGetValue(id, out var session) ? session : null);
+        Task.FromResult(_sessions.TryGetValue(id, out var session) ? Copy(session) : null);
 
     public Task<CheckoutSession?> FindByIdForCustomerAsync(CheckoutSessionId id, CustomerId customerId, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_sessions.TryGetValue(id, out var session) && session.CustomerId == customerId ? session : null);
+        Task.FromResult(_sessions.TryGetValue(id, out var session) && session.CustomerId == customerId ? Copy(session) : null);
 
     public Task<CheckoutSession> SaveAsync(CheckoutSession aggregate, CancellationToken cancellationToken = default)
     {
-        _sessions[aggregate.Id] = aggregate;
+        _sessions[aggregate.Id] = Copy(aggregate);
         _order[aggregate.Id] = Interlocked.Increment(ref _sequence);   // "latest" = last saved
         return Task.FromResult(aggregate);
     }
@@ -32,7 +36,7 @@ public sealed class InMemoryCheckoutSessionRepository : ICheckoutSessionReposito
     }
 
     public Task<CheckoutSession?> FindActiveByCartIdAsync(CartId cartId, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_sessions.Values.FirstOrDefault(s => s.CartId == cartId && s.IsActive));
+        Task.FromResult(Latest(s => s.CartId == cartId && s.IsActive));
 
     public Task<CheckoutSession?> FindActiveByCustomerAsync(CustomerId customerId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Latest(s => s.CustomerId == customerId && s.IsActive));
@@ -41,5 +45,9 @@ public sealed class InMemoryCheckoutSessionRepository : ICheckoutSessionReposito
         Task.FromResult(Latest(s => s.CustomerId == customerId && s.Status is CheckoutSessionStatus.Confirmed or CheckoutSessionStatus.Completed));
 
     private CheckoutSession? Latest(Func<CheckoutSession, bool> predicate) =>
-        _sessions.Values.Where(predicate).OrderByDescending(s => _order.GetValueOrDefault(s.Id)).FirstOrDefault();
+        _sessions.Values.Where(predicate).OrderByDescending(s => _order.GetValueOrDefault(s.Id)).Select(Copy).FirstOrDefault();
+
+    private static CheckoutSession Copy(CheckoutSession session) => CheckoutSession.Reconstitute(
+        session.Id, session.CartId, session.CustomerId, session.LineItems.ToList(), session.Totals, session.CurrentStep, session.Status,
+        session.BuyerInfo, session.DeliveryAddress, session.ShippingOption, session.PaymentSelection, session.OrderReference);
 }

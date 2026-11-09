@@ -15,11 +15,11 @@ namespace DcaShop.IntegrationTests;
 /// The event chains between the contexts: a new product gets its price and stock, a confirmed checkout
 /// reduces stock, and a cart changed during checkout re-syncs the running session.
 /// </summary>
-public sealed class CrossContextEventFlowTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CrossContextEventFlowTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CrossContextEventFlowTest(WebApplicationFactory<Program> factory)
+    public CrossContextEventFlowTest(ShopFactory factory)
     {
         _factory = factory;
     }

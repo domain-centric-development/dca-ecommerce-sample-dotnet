@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace DcaShop.IntegrationTests;
 
 /// <summary>Starting the checkout again replaces the open one with the current cart, through the real HTTP pipeline.</summary>
-public sealed class CheckoutRestartTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CheckoutRestartTest : IClassFixture<ShopFactory>
 {
     private const string Pin = "\"Bounded Context\" Enamel Pin";
     private const string Hoodie = "\"Domain over Framework\" Hoodie";
@@ -15,7 +15,7 @@ public sealed class CheckoutRestartTest : IClassFixture<WebApplicationFactory<Pr
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CheckoutRestartTest(WebApplicationFactory<Program> factory)
+    public CheckoutRestartTest(ShopFactory factory)
     {
         _factory = factory;
     }

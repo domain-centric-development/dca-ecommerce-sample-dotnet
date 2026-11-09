@@ -19,7 +19,7 @@ public sealed class LoginApiTest : IDisposable
     private const string Email = "ada@example.com";
     private const string Password = "Secret123";
 
-    private readonly WebApplicationFactory<Program> _factory = new();
+    private readonly WebApplicationFactory<Program> _factory = new ShopFactory();
 
     public void Dispose() => _factory.Dispose();
 

@@ -17,12 +17,12 @@ namespace DcaShop.IntegrationTests;
 /// The product resource's translation of a create: what it makes of a request that leaves fields out, and how it
 /// refuses a caller without the staff role. The use case behind it is a stand-in that records what it was asked.
 /// </summary>
-public sealed class ProductCreationResourceTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ProductCreationResourceTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
     private readonly RecordingCreateProduct _createProduct = new();
 
-    public ProductCreationResourceTest(WebApplicationFactory<Program> factory)
+    public ProductCreationResourceTest(ShopFactory factory)
     {
         _factory = factory.WithWebHostBuilder(builder =>
             builder.ConfigureTestServices(s => s.AddSingleton<ICreateProductInputPort>(_createProduct)));

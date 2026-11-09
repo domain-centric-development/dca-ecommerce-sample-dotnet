@@ -15,11 +15,11 @@ namespace DcaShop.IntegrationTests;
 /// The catalogue page's translation of a product that has no image: the page adapter against a catalogue that
 /// answers with such a product, since the seeded catalogue pictures every product it holds.
 /// </summary>
-public sealed class ProductCardWithoutImageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ProductCardWithoutImageTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ProductCardWithoutImageTest(WebApplicationFactory<Program> factory)
+    public ProductCardWithoutImageTest(ShopFactory factory)
     {
         _factory = factory;
     }

@@ -12,11 +12,11 @@ using Microsoft.Extensions.DependencyInjection;
 namespace DcaShop.IntegrationTests;
 
 /// <summary>The outbox is written in the use case's transaction and delivers at least once: transient listener failures are retried, permanent ones end up as Failed.</summary>
-public sealed class IntegrationEventDeliveryTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class IntegrationEventDeliveryTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public IntegrationEventDeliveryTest(WebApplicationFactory<Program> factory)
+    public IntegrationEventDeliveryTest(ShopFactory factory)
     {
         _factory = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
         {
@@ -65,7 +65,7 @@ public sealed class IntegrationEventDeliveryTest : IClassFixture<WebApplicationF
             await publisher.PublishAsync(@event, ct);
             insideTransaction = Publication(@event.EventId);   // outbox row exists together with the aggregate
             await Task.Delay(100, ct);                         // dispatcher must not see it yet
-            Assert.Equal(PublicationStatus.Staged, Publication(@event.EventId).Status);
+            Assert.False(VisibleOutsideTheTransaction(@event.EventId));
             Assert.Equal(0, Publication(@event.EventId).Attempts);
         });
 
@@ -94,6 +94,18 @@ public sealed class IntegrationEventDeliveryTest : IClassFixture<WebApplicationF
     {
         using var scope = _factory.Services.CreateScope();
         await scope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>().PublishAsync(@event);
+    }
+
+    /// <summary>Whether a reader on a connection of its own sees the publication — the dispatcher's view.</summary>
+    private bool VisibleOutsideTheTransaction(Guid id)
+    {
+        using var connection = new Npgsql.NpgsqlConnection(
+            Microsoft.Extensions.Configuration.ConfigurationExtensions.GetConnectionString(
+                _factory.Services.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>(), "Shop"));
+        connection.Open();
+        using var command = new Npgsql.NpgsqlCommand("SELECT COUNT(*) FROM event_publications WHERE id = @id", connection);
+        command.Parameters.AddWithValue("id", id);
+        return (long)command.ExecuteScalar()! > 0;
     }
 
     private IEventOutbox Outbox => _factory.Services.GetRequiredService<IEventOutbox>();

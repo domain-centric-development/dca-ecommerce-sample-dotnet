@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace DcaShop.IntegrationTests;
 
 /// <summary>The cart page a guest lands on after adding a product, through the real HTTP pipeline.</summary>
-public sealed class CartPageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CartPageTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CartPageTest(WebApplicationFactory<Program> factory)
+    public CartPageTest(ShopFactory factory)
     {
         _factory = factory;
     }

@@ -15,7 +15,7 @@ namespace DcaShop.IntegrationTests;
 /// A step's form sent before the earlier steps are done leads to the step that is still open, which says why, and
 /// changes nothing — through the real HTTP pipeline. One cookie jar is one browser; redirects are not followed, each one is an assertion.
 /// </summary>
-public sealed class StepSentTooEarlyTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class StepSentTooEarlyTest : IClassFixture<ShopFactory>
 {
     /// <summary>A delivery address and shipping option the delivery step accepts.</summary>
     private static readonly (string, string)[] DeliveryFields =
@@ -26,7 +26,7 @@ public sealed class StepSentTooEarlyTest : IClassFixture<WebApplicationFactory<P
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public StepSentTooEarlyTest(WebApplicationFactory<Program> factory)
+    public StepSentTooEarlyTest(ShopFactory factory)
     {
         _factory = factory;
     }

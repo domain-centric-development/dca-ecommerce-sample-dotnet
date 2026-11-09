@@ -10,11 +10,11 @@ namespace DcaShop.IntegrationTests;
 /// A guest's checkout stays theirs while a second visitor knows the cart id — through the real HTTP pipeline and the
 /// real session store. One cookie jar is one browser; redirects are not followed, each one is an assertion.
 /// </summary>
-public sealed class CheckoutBetweenVisitorsTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CheckoutBetweenVisitorsTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CheckoutBetweenVisitorsTest(WebApplicationFactory<Program> factory)
+    public CheckoutBetweenVisitorsTest(ShopFactory factory)
     {
         _factory = factory;
     }

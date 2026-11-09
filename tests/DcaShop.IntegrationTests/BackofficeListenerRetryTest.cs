@@ -18,11 +18,11 @@ namespace DcaShop.IntegrationTests;
 /// default retry policy, the outbox the log is read from — and an event with two listeners, one that handles it and one
 /// that fails until it is repaired.
 /// </summary>
-public sealed class BackofficeListenerRetryTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class BackofficeListenerRetryTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public BackofficeListenerRetryTest(WebApplicationFactory<Program> factory)
+    public BackofficeListenerRetryTest(ShopFactory factory)
     {
         _factory = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
         {

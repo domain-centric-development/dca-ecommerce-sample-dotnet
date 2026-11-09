@@ -12,7 +12,7 @@ namespace DcaShop.IntegrationTests;
 /// password logs in afterwards, and how a visitor without a session is sent to the login. Each test that registers
 /// Anna does so in a shop with a store of its own.
 /// </summary>
-public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ChangePasswordPageTest : IClassFixture<ShopFactory>
 {
     private const string Email = "anna.schmidt@example.com";
     private const string Password = "Secret123";
@@ -23,7 +23,7 @@ public sealed class ChangePasswordPageTest : IClassFixture<WebApplicationFactory
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ChangePasswordPageTest(WebApplicationFactory<Program> factory)
+    public ChangePasswordPageTest(ShopFactory factory)
     {
         _factory = factory;
     }

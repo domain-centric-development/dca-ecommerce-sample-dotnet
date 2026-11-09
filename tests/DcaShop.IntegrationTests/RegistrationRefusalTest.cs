@@ -11,11 +11,11 @@ namespace DcaShop.IntegrationTests;
 /// The registration's refusals through its input port, in the wired shop: each is a case of the result, and a refused
 /// registration stores no account.
 /// </summary>
-public sealed class RegistrationRefusalTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class RegistrationRefusalTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public RegistrationRefusalTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public RegistrationRefusalTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task APasswordThePolicyRefusesNamesTheRuleAndStoresNoAccount()

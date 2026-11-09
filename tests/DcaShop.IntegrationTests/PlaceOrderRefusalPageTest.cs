@@ -8,13 +8,13 @@ namespace DcaShop.IntegrationTests;
 /// A "Place Order" for a product another visitor has since sold out is refused: the review again, at its own address,
 /// with the error. A host of its own: the Hexagon is sold out here.
 /// </summary>
-public sealed class PlaceOrderRefusalPageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class PlaceOrderRefusalPageTest : IClassFixture<ShopFactory>
 {
     private const string Hexagon = "Wooden Hexagon Desk Model";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public PlaceOrderRefusalPageTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public PlaceOrderRefusalPageTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task ARefusedPlaceOrderOpensTheReviewAgainWithItsError()

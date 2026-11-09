@@ -21,8 +21,9 @@ public sealed class OwnDomainEventDeliveryTest
     public async Task TheTransactionalListenerRunsAfterTheCommitAndTheSynchronousOneInsideIt()
     {
         var observed = new Observed();
-        var boundary = new InMemoryTransactionBoundary();
-        var outbox = new InMemoryEventOutbox(TimeProvider.System);
+        using var store = new IsolatedDatabase();
+        var boundary = store.Boundary;
+        var outbox = store.Outbox;
         using var services = Services(observed, boundary, outbox);
         using var dispatcher = Dispatcher(outbox, services);
         await dispatcher.StartAsync(default);
@@ -42,6 +43,7 @@ public sealed class OwnDomainEventDeliveryTest
         }
 
         await Until(() => observed.Reactions == 1);
+        await Until(() => outbox.All().Single().Status == PublicationStatus.Completed);
         await dispatcher.StopAsync(default);
         Assert.False(observed.ReactionInTransaction);
         Assert.Equal("fact", observed.Payload);
@@ -52,8 +54,9 @@ public sealed class OwnDomainEventDeliveryTest
     public async Task ARolledBackFactReachesNoTransactionalListener()
     {
         var observed = new Observed();
-        var boundary = new InMemoryTransactionBoundary();
-        var outbox = new InMemoryEventOutbox(TimeProvider.System);
+        using var store = new IsolatedDatabase();
+        var boundary = store.Boundary;
+        var outbox = store.Outbox;
         using var services = Services(observed, boundary, outbox);
         using var dispatcher = Dispatcher(outbox, services);
         await dispatcher.StartAsync(default);
@@ -78,8 +81,9 @@ public sealed class OwnDomainEventDeliveryTest
     public async Task AnEventWithoutATransactionalListenerIsNotCaptured()
     {
         var observed = new Observed();
-        var boundary = new InMemoryTransactionBoundary();
-        var outbox = new InMemoryEventOutbox(TimeProvider.System);
+        using var store = new IsolatedDatabase();
+        var boundary = store.Boundary;
+        var outbox = store.Outbox;
         using var services = Services(observed, boundary, outbox);
 
         using var scope = services.CreateScope();
@@ -93,7 +97,7 @@ public sealed class OwnDomainEventDeliveryTest
         Assert.Empty(outbox.All());
     }
 
-    private static ServiceProvider Services(Observed observed, InMemoryTransactionBoundary boundary, IEventOutbox outbox) =>
+    private static ServiceProvider Services(Observed observed, PostgresTransactionBoundary boundary, IEventOutbox outbox) =>
         new ServiceCollection()
             .AddSingleton(observed)
             .AddSingleton(boundary)
@@ -129,7 +133,7 @@ public sealed class OwnDomainEventDeliveryTest
     }
 
     /// <summary>The synchronous kind: a metric, inside the publishing transaction.</summary>
-    public sealed class ProbeCounter(Observed observed, InMemoryTransactionBoundary boundary) : EventListener<ProbeHappened>
+    public sealed class ProbeCounter(Observed observed, PostgresTransactionBoundary boundary) : EventListener<ProbeHappened>
     {
         protected override Task OnAsync(ProbeHappened value, CancellationToken ct)
         {
@@ -140,7 +144,7 @@ public sealed class OwnDomainEventDeliveryTest
     }
 
     /// <summary>The transactional kind: the reaction, after the commit.</summary>
-    public sealed class ProbeReaction(Observed observed, InMemoryTransactionBoundary boundary) : TransactionalEventListener<ProbeHappened>
+    public sealed class ProbeReaction(Observed observed, PostgresTransactionBoundary boundary) : TransactionalEventListener<ProbeHappened>
     {
         protected override Task OnAsync(ProbeHappened value, CancellationToken ct)
         {

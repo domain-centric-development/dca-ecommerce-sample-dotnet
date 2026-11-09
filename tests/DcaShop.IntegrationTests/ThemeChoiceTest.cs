@@ -9,11 +9,11 @@ namespace DcaShop.IntegrationTests;
 /// The theme choice the shared footer offers, through the real HTTP pipeline, as a browser that never chose a theme
 /// receives it.
 /// </summary>
-public sealed class ThemeChoiceTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ThemeChoiceTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ThemeChoiceTest(WebApplicationFactory<Program> factory)
+    public ThemeChoiceTest(ShopFactory factory)
     {
         _factory = factory;
     }

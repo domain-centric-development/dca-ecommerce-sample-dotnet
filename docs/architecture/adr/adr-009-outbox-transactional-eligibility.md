@@ -1,6 +1,8 @@
 # ADR-009: Outbox eligibility is transactional; completion is per consumer
 
-Date: 2026-09-09 · Status: Accepted
+Date: 2026-09-09 · Status: Accepted — its storage (the `Staged` state, the modeled commit gate, the in-memory store)
+superseded by [ADR-018](adr-018-postgresql-for-every-store.md): a publication is a row written in the use case's
+database transaction. Per-consumer completion, retry and replay stand.
 
 ## Context and decision
 

@@ -24,7 +24,7 @@ public sealed class ProductPriceAndStockRulesTest
     [Fact]
     public async Task APriceOfZeroIsRefusedAndTheCatalogueKeepsItsProducts()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("free-mug@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(
@@ -37,7 +37,7 @@ public sealed class ProductPriceAndStockRulesTest
     [Fact]
     public async Task APriceThatRoundsToZeroIsAnUnacceptableValue()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("tiny-mug@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(
@@ -53,7 +53,7 @@ public sealed class ProductPriceAndStockRulesTest
     [Fact]
     public async Task TheHighestPriceIsAcceptedAndShownOnTheCard()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("priceless@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(
@@ -67,7 +67,7 @@ public sealed class ProductPriceAndStockRulesTest
     [Fact]
     public async Task APriceAboveTheHighestIsAnUnacceptableValue()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("too-precious@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(
@@ -83,7 +83,7 @@ public sealed class ProductPriceAndStockRulesTest
     [Fact]
     public async Task AnInitialStockOfZeroIsAcceptedAndTheCardShowsItOutOfStock()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("sold-out-pin@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(
@@ -98,7 +98,7 @@ public sealed class ProductPriceAndStockRulesTest
     [Fact]
     public async Task ANegativeInitialStockIsRefusedAndTheCatalogueKeepsItsProducts()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("owed-pin@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(
@@ -111,7 +111,7 @@ public sealed class ProductPriceAndStockRulesTest
     [Fact]
     public async Task APriceOfZeroIsAnUnacceptableValueNamedInTheErrorsAndTheCatalogueKeepsItsProducts()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("free-mug-problem@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(
@@ -130,7 +130,7 @@ public sealed class ProductPriceAndStockRulesTest
     [Fact]
     public async Task ANegativeInitialStockIsAnUnacceptableValueNamedInTheErrorsAndTheCatalogueKeepsItsProducts()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("owed-pin-problem@example.com");
 
         var response = await staff.PostAsync("/api/products", Json(

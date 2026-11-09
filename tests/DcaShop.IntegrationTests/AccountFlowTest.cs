@@ -11,14 +11,14 @@ namespace DcaShop.IntegrationTests;
 /// ADR-029/030: an expired session must not cost the visitor their identity, and only an explicit logout may
 /// rotate it.
 /// </summary>
-public sealed class AccountFlowTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class AccountFlowTest : IClassFixture<ShopFactory>
 {
     private const string IdentityCookie = "shop-identity";
     private const string SessionCookie = "shop-session";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public AccountFlowTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public AccountFlowTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task RegisteringStartsASessionAndKeepsTheVisitorIdentity()

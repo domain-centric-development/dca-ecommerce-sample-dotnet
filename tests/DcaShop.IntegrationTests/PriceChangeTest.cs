@@ -22,7 +22,7 @@ public sealed class PriceChangeTest
     [Fact]
     public async Task AStrangerIsChallengedAndThePriceStays()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var productId = await shop.ProductIdAsync("Domain-Driven Design");
         Assert.Equal("54.99 EUR", await PagePriceAsync(shop, productId));
 
@@ -36,7 +36,7 @@ public sealed class PriceChangeTest
     [Fact]
     public async Task ACustomerIsForbiddenAndThePriceStays()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var productId = await shop.ProductIdAsync("Domain-Driven Design");
         Assert.Equal("54.99 EUR", await PagePriceAsync(shop, productId));
         var ada = await shop.CustomerClientAsync("ada@example.com");
@@ -50,7 +50,7 @@ public sealed class PriceChangeTest
     [Fact]
     public async Task APriceOfZeroIsAnUnacceptableValueNamingThePriceAndThePriceStays()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var productId = await shop.ProductIdAsync("Domain-Driven Design");
         Assert.Equal("54.99 EUR", await PagePriceAsync(shop, productId));
         var staff = await shop.StaffClientAsync("price-keeper@example.com");
@@ -69,7 +69,7 @@ public sealed class PriceChangeTest
     [Fact]
     public async Task APriceOfOneCentIsTakenAndShownOnTheProductPage()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var productId = await shop.ProductIdAsync("Domain-Driven Design");
         var staff = await shop.StaffClientAsync("price-keeper@example.com");
 
@@ -82,7 +82,7 @@ public sealed class PriceChangeTest
     [Fact]
     public async Task AChangeForAProductWithoutAPriceIsRefusedAsNotFound()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var unknown = Guid.Parse("00000000-0000-4000-8000-000000000001");
         using var scope = shop.Services.CreateScope();
         var changePrice = scope.ServiceProvider.GetRequiredService<IChangePriceInputPort>();

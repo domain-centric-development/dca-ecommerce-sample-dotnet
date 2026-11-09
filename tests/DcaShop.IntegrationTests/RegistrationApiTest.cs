@@ -17,7 +17,7 @@ namespace DcaShop.IntegrationTests;
 /// </remarks>
 public sealed class RegistrationApiTest : IDisposable
 {
-    private readonly WebApplicationFactory<Program> _factory = new();
+    private readonly WebApplicationFactory<Program> _factory = new ShopFactory();
 
     public void Dispose() => _factory.Dispose();
 

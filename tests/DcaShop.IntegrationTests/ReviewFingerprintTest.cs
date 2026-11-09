@@ -29,7 +29,7 @@ public sealed class ReviewFingerprintTest
     [Fact]
     public async Task OpeningTheReviewLaterShowsTodaysPriceAndTotalAndStoresNothing()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var checkout = await GuestAtTheReviewAsync(shop);
         Assert.Equal(new[] { "Domain-Driven Design x1 54.99 EUR" }, Lines((await ReviewAsync(shop, checkout)).Order));
         await PriceIsSetAsync(shop, checkout.ProductId, 49.99m);
@@ -44,7 +44,7 @@ public sealed class ReviewFingerprintTest
     [Fact]
     public async Task AfterAPriceRefusalTheOrderIsPlacedAtThePriceNowShown()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var checkout = await GuestAtTheReviewAsync(shop);
         var shown = await ReviewAsync(shop, checkout);
         await PriceIsSetAsync(shop, checkout.ProductId, 49.99m);

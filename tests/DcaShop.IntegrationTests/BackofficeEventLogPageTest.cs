@@ -16,7 +16,7 @@ namespace DcaShop.IntegrationTests;
 /// summary above them. The input port is replaced by one that answers a completed delivery and one in each state
 /// that has not completed yet — the states the seeded shop passes through too quickly for a browser to see.
 /// </summary>
-public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class BackofficeEventLogPageTest : IClassFixture<ShopFactory>
 {
     private const string DateForm = @"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$";
 
@@ -26,9 +26,9 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
         Guid.NewGuid(), "DcaShop.Product.Events.ProductCreatedEvent", "{}", "PriceInitializationEventConsumer",
         Published, Published.AddSeconds(2), PublicationStatus.Completed);
 
-    private static readonly EventPublicationEntry Staged = new(
+    private static readonly EventPublicationEntry Undispatched = new(
         Guid.NewGuid(), "DcaShop.Product.Events.ProductCreatedEvent", "{}", "integration-event-dispatcher",
-        Published.AddMinutes(1), null, PublicationStatus.Staged);
+        Published.AddMinutes(1), null, PublicationStatus.Pending);
 
     private static readonly EventPublicationEntry Pending = new(
         Guid.NewGuid(), "DcaShop.Product.Events.ProductCreatedEvent", "{}", "StockInitializationEventConsumer",
@@ -40,7 +40,7 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public BackofficeEventLogPageTest(WebApplicationFactory<Program> factory)
+    public BackofficeEventLogPageTest(ShopFactory factory)
     {
         _factory = factory;
     }
@@ -48,7 +48,7 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
     [Fact]
     public async Task EveryEntryShowsItsBadgeListenerAndDates()
     {
-        var page = await EventLogAsync(Delivered, Staged, Pending, Failed);
+        var page = await EventLogAsync(Delivered, Undispatched, Pending, Failed);
 
         var entries = Entries(page);
         Assert.Equal(4, entries.Count);
@@ -69,7 +69,7 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
     [Fact]
     public async Task TheSummaryCountsTheEntriesByTheirBadge()
     {
-        var page = await EventLogAsync(Delivered, Staged, Pending, Failed);
+        var page = await EventLogAsync(Delivered, Undispatched, Pending, Failed);
 
         var badges = Entries(page).Select(Badge).ToList();
         var total = Number(page, "event-log-total");
@@ -84,7 +84,7 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
     [Fact]
     public async Task AFailedEntryKeepsItsRetryButton()
     {
-        var page = await EventLogAsync(Delivered, Staged, Pending, Failed);
+        var page = await EventLogAsync(Delivered, Undispatched, Pending, Failed);
 
         var retries = Entries(page).Where(entry => entry.Contains("/replay\"", StringComparison.Ordinal)).ToList();
         Assert.Single(retries);
@@ -138,7 +138,7 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
     [Fact]
     public async Task EveryEntryOffersItsEventPayloadClosed()
     {
-        var page = await EventLogAsync(Delivered, Staged, Pending, Failed);
+        var page = await EventLogAsync(Delivered, Undispatched, Pending, Failed);
 
         var entries = Entries(page);
         Assert.Equal(4, entries.Count);
@@ -165,7 +165,7 @@ public sealed class BackofficeEventLogPageTest : IClassFixture<WebApplicationFac
     [Fact]
     public async Task RefreshLoadsTheLogAgainWithItsSummaryAndEntries()
     {
-        var client = await SignedInAsync([Delivered, Staged, Pending, Failed]);
+        var client = await SignedInAsync([Delivered, Undispatched, Pending, Failed]);
         var page = await client.GetStringAsync("/backoffice/events");
         var refresh = Regex.Match(page, @"<a\b[^>]*data-test=""event-log-refresh""[^>]*>");
         Assert.True(refresh.Success, "the page has a Refresh link");

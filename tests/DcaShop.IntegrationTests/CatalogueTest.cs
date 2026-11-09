@@ -9,14 +9,14 @@ namespace DcaShop.IntegrationTests;
 /// The catalogue page with the seeded sample catalogue, through the real HTTP pipeline: the order of its cards, what a
 /// card shows, where a card leads and how the page names itself.
 /// </summary>
-public sealed class CatalogueTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CatalogueTest : IClassFixture<ShopFactory>
 {
     private static readonly Regex CardTitle = new(@"data-test=""product-card-title"">([^<]*)<", RegexOptions.Compiled);
     private static readonly Regex CardAction = new(@"<a\b[^>]*href=""([^""]+)""[^>]*data-test=""view-product"">([^<]*)</a>", RegexOptions.Compiled);
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CatalogueTest(WebApplicationFactory<Program> factory)
+    public CatalogueTest(ShopFactory factory)
     {
         _factory = factory;
     }

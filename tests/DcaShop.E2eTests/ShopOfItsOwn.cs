@@ -28,7 +28,7 @@ public sealed class ShopOfItsOwn : IDisposable
 
     public static ShopOfItsOwn Start()
     {
-        var shop = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
+        var shop = new ShopFactory().WithWebHostBuilder(builder => builder
             .UseSetting("Checkout:PaymentProvider:BaseUrl", PaymentProviderStub.Url)
             .UseSetting("Checkout:PaymentProvider:Timeout", PaymentProviderStub.Timeout)
             .UseSetting("Checkout:MailProvider:BaseUrl", MailProviderStub.Url)

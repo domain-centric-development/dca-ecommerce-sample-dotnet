@@ -12,14 +12,14 @@ namespace DcaShop.IntegrationTests;
 /// same configuration, so the same signing secret and a session cookie that still validates, but no account. One
 /// browser — one cookie jar — visits both, as it would visit the shop before and after the restart.
 /// </summary>
-public sealed class ShopRestartTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ShopRestartTest : IClassFixture<ShopFactory>
 {
     private const string Email = "anna.schmidt@example.com";
     private const string Password = "Secret123";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ShopRestartTest(WebApplicationFactory<Program> factory)
+    public ShopRestartTest(ShopFactory factory)
     {
         _factory = factory;
     }

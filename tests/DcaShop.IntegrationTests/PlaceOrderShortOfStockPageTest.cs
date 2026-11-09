@@ -9,13 +9,13 @@ namespace DcaShop.IntegrationTests;
 /// its own address, naming the product — and neither the stock nor the cart changes. A host of its own: the Hexagon's
 /// stock is used up here.
 /// </summary>
-public sealed class PlaceOrderShortOfStockPageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class PlaceOrderShortOfStockPageTest : IClassFixture<ShopFactory>
 {
     private const string Hexagon = "Wooden Hexagon Desk Model";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public PlaceOrderShortOfStockPageTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public PlaceOrderShortOfStockPageTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task APlaceOrderForMoreThanTheStockLeftNamesTheProductAndChangesNothing()

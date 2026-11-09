@@ -16,12 +16,12 @@ namespace DcaShop.IntegrationTests;
 /// The price resource's translation of a change: the command it makes of the address and the body, and how it answers
 /// each refusal. The use case behind it is a stand-in that records what it was asked and answers as told.
 /// </summary>
-public sealed class ProductPriceResourceTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ProductPriceResourceTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
     private readonly RecordingChangePrice _changePrice = new();
 
-    public ProductPriceResourceTest(WebApplicationFactory<Program> factory)
+    public ProductPriceResourceTest(ShopFactory factory)
     {
         _factory = factory.WithWebHostBuilder(builder =>
             builder.ConfigureTestServices(s => s.AddSingleton<IChangePriceInputPort>(_changePrice)));

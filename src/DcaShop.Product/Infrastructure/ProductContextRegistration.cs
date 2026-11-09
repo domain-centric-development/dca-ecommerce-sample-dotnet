@@ -39,7 +39,7 @@ public static class ProductContextRegistration
         services.AddScoped<ProductArticleAssembler>();
 
         // Outgoing adapters (output ports)
-        services.AddSingleton<IProductRepository, InMemoryProductRepository>();
+        services.AddSingleton<IProductRepository, DapperProductRepository>();
         services.AddScoped<IPricingDataPort, PricingDataAdapter>();
         services.AddScoped<IProductStockDataPort, InventoryStockDataAdapter>();
         services.AddScoped<IEventListener, ProductCreatedEventPublisher>();

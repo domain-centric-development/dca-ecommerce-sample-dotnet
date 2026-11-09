@@ -14,14 +14,14 @@ namespace DcaShop.IntegrationTests;
 /// with Pricing's answer replaced by one that prices only the products a test names — the state of a product nobody
 /// has priced yet. What the browser suite cannot arrange, because it runs against the seeded shop.
 /// </summary>
-public sealed class ProductSliderTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ProductSliderTest : IClassFixture<ShopFactory>
 {
     private static readonly Regex CardLink = new(@"<a\b[^>]*\bdata-test=""product-slider-card-link""[^>]*>", RegexOptions.Compiled);
     private static readonly Regex Href = new(@"\bhref=""/products/([0-9a-f-]{36})""", RegexOptions.Compiled);
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ProductSliderTest(WebApplicationFactory<Program> factory)
+    public ProductSliderTest(ShopFactory factory)
     {
         _factory = factory;
     }

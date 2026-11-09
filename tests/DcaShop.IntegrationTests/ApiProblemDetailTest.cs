@@ -19,11 +19,11 @@ namespace DcaShop.IntegrationTests;
 /// malformed one is a bad request, and both come out of the same endpoint that used to answer 400 with the
 /// bare message for either (ADR-016).
 /// </remarks>
-public sealed class ApiProblemDetailTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ApiProblemDetailTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ApiProblemDetailTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public ApiProblemDetailTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task ADuplicateStockKeepingUnitIsAConflict()

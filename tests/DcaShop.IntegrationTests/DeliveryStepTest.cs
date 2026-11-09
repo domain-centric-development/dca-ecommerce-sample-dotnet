@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace DcaShop.IntegrationTests;
 
 /// <summary>The delivery step asks a guest where the order goes and how fast, and refuses what it cannot take, through the real HTTP pipeline.</summary>
-public sealed class DeliveryStepTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class DeliveryStepTest : IClassFixture<ShopFactory>
 {
     private const string Refusal = "Please check the delivery address you entered.";
 
@@ -14,7 +14,7 @@ public sealed class DeliveryStepTest : IClassFixture<WebApplicationFactory<Progr
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public DeliveryStepTest(WebApplicationFactory<Program> factory)
+    public DeliveryStepTest(ShopFactory factory)
     {
         _factory = factory;
     }

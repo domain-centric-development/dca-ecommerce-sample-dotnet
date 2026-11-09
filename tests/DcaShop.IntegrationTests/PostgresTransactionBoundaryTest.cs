@@ -1,19 +1,59 @@
+using Dapper;
+
+using DcaShop.SharedKernel.Infrastructure.Persistence;
 using DcaShop.SharedKernel.Infrastructure.Transactions;
 
 using DomainCentric.BuildingBlocks.Application;
 using DomainCentric.BuildingBlocks.Application.Transactions;
 using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 
+using Npgsql;
+
 using OneOf;
 
-namespace DcaShop.UnitTests.SharedKernel;
+namespace DcaShop.IntegrationTests;
 
-public sealed class InMemoryTransactionBoundaryTest
+/// <summary>
+/// The transaction boundary against PostgreSQL: what a block writes commits with the outermost block or not at all,
+/// and the hooks follow the outcome.
+/// </summary>
+public sealed class PostgresTransactionBoundaryTest : IDisposable
 {
+    private readonly NpgsqlDataSource _source = NpgsqlDataSource.Create(TestDatabase.Create());
+    private readonly Database _database;
+    private readonly PostgresTransactionBoundary _boundary;
+
+    public PostgresTransactionBoundaryTest()
+    {
+        _database = new Database(_source);
+        _boundary = new PostgresTransactionBoundary(_database);
+    }
+
+    public void Dispose() => _source.Dispose();
+
+    /// <summary>Writes a row in the current transaction (or on its own) and answers its key.</summary>
+    private Task<Guid> WriteAsync()
+    {
+        var key = Guid.NewGuid();
+        return _database.RunAsync(async (connection, transaction) =>
+        {
+            await connection.ExecuteAsync(
+                "INSERT INTO pricing_processed_events (effect, event_id) VALUES ('probe', @Key)", new { Key = key }, transaction);
+            return key;
+        });
+    }
+
+    /// <summary>Whether a row is there for a reader outside every transaction.</summary>
+    private async Task<bool> WrittenAsync(Guid key)
+    {
+        await using var connection = await _source.OpenConnectionAsync();
+        return await connection.ExecuteScalarAsync<bool>(
+            "SELECT EXISTS (SELECT 1 FROM pricing_processed_events WHERE event_id = @Key)", new { Key = key });
+    }
     [Fact]
     public async Task AfterCommitHooksRunOnceTheOutermostWorkCompleted()
     {
-        var impl = new InMemoryTransactionBoundary();
+        var impl = _boundary;
         ITransactionBoundary uow = impl;
         var log = new List<string>();
 
@@ -38,7 +78,7 @@ public sealed class InMemoryTransactionBoundaryTest
     [Fact]
     public async Task RollbackDropsCommitHooksAndRunsRollbackHooks()
     {
-        var uow = new InMemoryTransactionBoundary();
+        var uow = _boundary;
         var committed = false;
         var rolledBack = false;
 
@@ -57,7 +97,7 @@ public sealed class InMemoryTransactionBoundaryTest
     [Fact]
     public async Task SwallowedInnerFailureMarksTheTransactionRollbackOnly()
     {
-        var impl = new InMemoryTransactionBoundary();
+        var impl = _boundary;
         ITransactionBoundary boundary = impl;
         var committed = false;
         var rolledBack = false;
@@ -84,7 +124,7 @@ public sealed class InMemoryTransactionBoundaryTest
     [Fact]
     public async Task RollbackOnlyDoesNotLeakIntoTheNextTransaction()
     {
-        var impl = new InMemoryTransactionBoundary();
+        var impl = _boundary;
         ITransactionBoundary boundary = impl;
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => boundary.InTransactionAsync<int>(_ => throw new InvalidOperationException("boom")));
@@ -101,7 +141,7 @@ public sealed class InMemoryTransactionBoundaryTest
     [Fact]
     public async Task CommitDropsRollbackHooks()
     {
-        var uow = new InMemoryTransactionBoundary();
+        var uow = _boundary;
         var rolledBack = false;
 
         await ((ITransactionBoundary)uow).InTransactionAsync(_ =>
@@ -116,7 +156,7 @@ public sealed class InMemoryTransactionBoundaryTest
     [Fact]
     public void OutsideATransactionBoundaryHooksRunImmediately()
     {
-        var uow = new InMemoryTransactionBoundary();
+        var uow = _boundary;
         var ran = false;
 
         uow.AfterCommit(() => ran = true);
@@ -127,7 +167,7 @@ public sealed class InMemoryTransactionBoundaryTest
     [Fact]
     public void OutsideATransactionBoundaryRollbackHooksAreDiscarded()
     {
-        var uow = new InMemoryTransactionBoundary();
+        var uow = _boundary;
         var ran = false;
 
         uow.AfterRollback(() => ran = true);
@@ -138,21 +178,21 @@ public sealed class InMemoryTransactionBoundaryTest
     [Fact]
     public async Task AReturnedRefusalRollsBackTheWriteBeforeItAndIsReturnedUnchanged()
     {
-        var impl = new InMemoryTransactionBoundary();
+        var impl = _boundary;
         ITransactionBoundary boundary = impl;
-        var written = false;
+        var key = Guid.Empty;
         var rolledBack = false;
         var refusal = new Refused("no");
 
-        var result = await boundary.InTransactionAsync<OneOf<Done, Refused>>(_ =>
+        var result = await boundary.InTransactionAsync<OneOf<Done, Refused>>(async _ =>
         {
-            impl.EnlistCommit(() => written = true);
+            key = await WriteAsync();
             impl.AfterRollback(() => rolledBack = true);
-            return Task.FromResult<OneOf<Done, Refused>>(refusal);
+            return refusal;
         });
 
         Assert.Same(refusal, result.AsT1);
-        Assert.False(written);
+        Assert.False(await WrittenAsync(key));
         Assert.True(rolledBack);
         Assert.False(impl.InTransaction);
     }
@@ -160,79 +200,79 @@ public sealed class InMemoryTransactionBoundaryTest
     [Fact]
     public async Task ARefusalReturnedDirectlyRollsBackToo()
     {
-        var impl = new InMemoryTransactionBoundary();
-        var written = false;
+        var impl = _boundary;
+        var key = Guid.Empty;
 
-        var result = await impl.InTransactionAsync<object>(_ =>
+        var result = await impl.InTransactionAsync<object>(async _ =>
         {
-            impl.EnlistCommit(() => written = true);
-            return Task.FromResult<object>(new Refused("no"));
+            key = await WriteAsync();
+            return new Refused("no");
         });
 
         Assert.IsType<Refused>(result);
-        Assert.False(written);
+        Assert.False(await WrittenAsync(key));
     }
 
     [Fact]
     public async Task AReturnedSuccessCommits()
     {
-        var impl = new InMemoryTransactionBoundary();
-        var written = false;
+        var impl = _boundary;
+        var key = Guid.Empty;
 
-        var result = await impl.InTransactionAsync<OneOf<Done, Refused>>(_ =>
+        var result = await impl.InTransactionAsync<OneOf<Done, Refused>>(async _ =>
         {
-            impl.EnlistCommit(() => written = true);
-            return Task.FromResult<OneOf<Done, Refused>>(new Done());
+            key = await WriteAsync();
+            return new Done();
         });
 
         Assert.True(result.IsT0);
-        Assert.True(written);
+        Assert.True(await WrittenAsync(key));
     }
 
     [Fact]
     public async Task AThrownFailureStillRollsBack()
     {
-        var impl = new InMemoryTransactionBoundary();
-        var written = false;
+        var impl = _boundary;
+        var key = Guid.Empty;
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => impl.InTransactionAsync<OneOf<Done, Refused>>(_ =>
+        await Assert.ThrowsAsync<InvalidOperationException>(() => impl.InTransactionAsync<OneOf<Done, Refused>>(async _ =>
         {
-            impl.EnlistCommit(() => written = true);
+            key = await WriteAsync();
             throw new InvalidOperationException("boom");
         }));
 
-        Assert.False(written);
+        Assert.False(await WrittenAsync(key));
         Assert.False(impl.InTransaction);
     }
 
     [Fact]
     public async Task AnInnerRefusalThenAnOuterSuccessThrowsAndRollsBack()
     {
-        var impl = new InMemoryTransactionBoundary();
+        var impl = _boundary;
         ITransactionBoundary boundary = impl;
-        var written = false;
+        var key = Guid.Empty;
 
         await Assert.ThrowsAsync<TransactionRolledBackException>(() => boundary.InTransactionAsync<OneOf<Done, Refused>>(async ct =>
         {
-            impl.EnlistCommit(() => written = true);
+            key = await WriteAsync();
             await boundary.InTransactionAsync<OneOf<Done, Refused>>(_ => Task.FromResult<OneOf<Done, Refused>>(new Refused("inner")), ct);
             return new Done();
         }));
 
-        Assert.False(written);
+        Assert.False(await WrittenAsync(key));
         Assert.False(impl.InTransaction);
     }
 
     [Fact]
     public async Task AnOuterRefusalAfterACaughtInnerFailureRollsBackWithoutThrowing()
     {
-        var impl = new InMemoryTransactionBoundary();
+        var impl = _boundary;
         ITransactionBoundary boundary = impl;
-        var written = false;
+        var key = Guid.Empty;
 
         var result = await boundary.InTransactionAsync<OneOf<Done, Refused>>(async ct =>
         {
-            impl.EnlistCommit(() => written = true);
+            key = await WriteAsync();
             try
             {
                 await boundary.InTransactionAsync(_ => throw new InvalidOperationException("inner"), ct);
@@ -246,24 +286,24 @@ public sealed class InMemoryTransactionBoundaryTest
         });
 
         Assert.True(result.IsT1);
-        Assert.False(written);
+        Assert.False(await WrittenAsync(key));
         Assert.False(impl.InTransaction);
     }
 
     [Fact]
     public async Task ATransactionAfterARefusalStartsClean()
     {
-        var impl = new InMemoryTransactionBoundary();
-        var written = false;
+        var impl = _boundary;
+        var key = Guid.Empty;
 
         await impl.InTransactionAsync<OneOf<Done, Refused>>(_ => Task.FromResult<OneOf<Done, Refused>>(new Refused("first")));
-        await impl.InTransactionAsync<OneOf<Done, Refused>>(_ =>
+        await impl.InTransactionAsync<OneOf<Done, Refused>>(async _ =>
         {
-            impl.EnlistCommit(() => written = true);
-            return Task.FromResult<OneOf<Done, Refused>>(new Done());
+            key = await WriteAsync();
+            return new Done();
         });
 
-        Assert.True(written);
+        Assert.True(await WrittenAsync(key));
     }
 
     private sealed record Done;

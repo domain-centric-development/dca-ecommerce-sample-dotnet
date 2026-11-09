@@ -17,5 +17,11 @@
     <DcaArchRulesVersion>0.13.0</DcaArchRulesVersion>
     <!-- A closed use-case result (WP-171): OneOf until C# 15 unions are released for the .NET the samples run on. -->
     <OneOfVersion>3.0.271</OneOfVersion>
+    <!-- PostgreSQL in every store (WP-120): Npgsql + Dapper in the adapters, DbUp for the migrations,
+         Testcontainers in the tests. -->
+    <NpgsqlVersion>10.0.3</NpgsqlVersion>
+    <DapperVersion>2.1.89</DapperVersion>
+    <DbUpPostgresqlVersion>7.0.1</DbUpPostgresqlVersion>
+    <TestcontainersVersion>4.16.0</TestcontainersVersion>
   </PropertyGroup>
 </Project>

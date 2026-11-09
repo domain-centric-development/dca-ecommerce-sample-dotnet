@@ -8,11 +8,11 @@ namespace DcaShop.IntegrationTests;
 /// A "Place Order" from a review shown before another tab of the same browser changed the checkout is refused: the
 /// review again, at its own address, with the error and the order as it is now. The second tab is the same cookies.
 /// </summary>
-public sealed class OrderChangedInAnotherTabPageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class OrderChangedInAnotherTabPageTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public OrderChangedInAnotherTabPageTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public OrderChangedInAnotherTabPageTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task AShippingChosenInAnotherTabRefusesTheReviewedOrder()

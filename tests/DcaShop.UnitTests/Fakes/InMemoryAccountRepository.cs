@@ -7,8 +7,8 @@ using DcaShop.SharedKernel.Domain.Model;
 namespace DcaShop.Account.Adapter.Outgoing.Persistence;
 
 /// <summary>
-/// In-memory account store with indexes by email and by linked identity — demo stand-in for a real database
-/// adapter; it hands out the stored instances, so it shares the aggregate between requests (sample ADR-001).
+/// In-memory account store with indexes by email and by linked identity — the unit tests' stand-in for the database
+/// adapter. It stores and hands out copies, as a database does: a change nobody saved is not seen by the next load.
 /// </summary>
 public sealed class InMemoryAccountRepository : IAccountRepository
 {
@@ -18,7 +18,7 @@ public sealed class InMemoryAccountRepository : IAccountRepository
     private readonly ConcurrentDictionary<AccountId, string> _indexedEmailByAccount = new();
 
     public Task<Domain.Model.Account?> FindByIdAsync(AccountId id, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_accounts.TryGetValue(id, out var account) ? account : null);
+        Task.FromResult(_accounts.TryGetValue(id, out var account) ? Copy(account) : null);
 
     public Task<Domain.Model.Account?> FindByEmailAsync(Email email, CancellationToken cancellationToken = default)
     {
@@ -39,14 +39,17 @@ public sealed class InMemoryAccountRepository : IAccountRepository
         Claim(_byLinkedUserId, aggregate.LinkedUserId, aggregate.Id, "Linked user id");
         ReleasePreviousEmail(aggregate);
 
-        _accounts[aggregate.Id] = aggregate;
+        _accounts[aggregate.Id] = Copy(aggregate);
         return Task.FromResult(aggregate);
     }
 
+    private static Domain.Model.Account Copy(Domain.Model.Account account) => Domain.Model.Account.Reconstitute(
+        account.Id, account.Email, account.Owner, account.LinkedUserId, account.Password, account.Status, account.Roles,
+        account.CreatedAt, account.LastLoginAt);
+
     /// <summary>
     /// The email is the login credential and can change, so a stale index entry would keep answering under the old
-    /// address. The stored instance is the one just changed and no longer knows that address, so the address each
-    /// account is indexed under is kept apart and released once the new one is claimed.
+    /// address; the address each account is indexed under is kept apart and released once the new one is claimed.
     /// </summary>
     private void ReleasePreviousEmail(Domain.Model.Account account)
     {
@@ -87,5 +90,5 @@ public sealed class InMemoryAccountRepository : IAccountRepository
 
     private Domain.Model.Account? Lookup<TKey>(ConcurrentDictionary<TKey, AccountId> index, TKey key)
         where TKey : notnull =>
-        index.TryGetValue(key, out var id) && _accounts.TryGetValue(id, out var account) ? account : null;
+        index.TryGetValue(key, out var id) && _accounts.TryGetValue(id, out var account) ? Copy(account) : null;
 }

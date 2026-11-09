@@ -10,11 +10,11 @@ namespace DcaShop.IntegrationTests;
 /// The catalogue read through the REST API by a client without a token, against the seeded sample catalogue: the
 /// listing's order and size, what one entry carries, and a product read by the id the listing gave.
 /// </summary>
-public sealed class ProductCatalogueApiTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ProductCatalogueApiTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ProductCatalogueApiTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public ProductCatalogueApiTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task TheListingReturnsTheSeededRangeInOrdinalNameOrderStartingWithTheEnamelPin()

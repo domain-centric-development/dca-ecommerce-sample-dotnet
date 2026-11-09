@@ -15,7 +15,7 @@ namespace DcaShop.IntegrationTests;
 /// once the order's checks and its stock hold. Through the input ports, the shop wired to a payment provider that is a
 /// stub on a free port; each test a shop of its own, so every product starts at its seeded stock.
 /// </summary>
-public sealed class PlaceOrderPaymentTest : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public sealed class PlaceOrderPaymentTest : IClassFixture<ShopFactory>, IDisposable
 {
     private const string Hexagon = "Wooden Hexagon Desk Model";
 
@@ -23,7 +23,7 @@ public sealed class PlaceOrderPaymentTest : IClassFixture<WebApplicationFactory<
     private readonly WireMockServer _provider = WireMockServer.Start();
     private WebApplicationFactory<Program>? _shop;
 
-    public PlaceOrderPaymentTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public PlaceOrderPaymentTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task ChoosingHowToPayOpensTheReviewWithoutAPaymentRequest()

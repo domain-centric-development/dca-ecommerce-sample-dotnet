@@ -1,6 +1,6 @@
 # ADR-014: Uniqueness That Spans Aggregates Is Claimed in the Store, Not Checked Before It
 
-**Date**: 2026-09-20 · **Status**: Accepted
+**Date**: 2026-09-20 · **Status**: Accepted · Amended 2026-11-09 by [ADR-018](./adr-018-postgresql-for-every-store.md): the claims are database constraints (the SKU, an account's email and linked identity, the partial unique index `uq_carts_active_customer`) translated by the `Dapper*Repository` adapters; the in-memory indexes below live on in the test fakes
 
 ## Context
 

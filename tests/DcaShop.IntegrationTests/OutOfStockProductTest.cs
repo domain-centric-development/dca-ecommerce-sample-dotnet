@@ -9,13 +9,13 @@ namespace DcaShop.IntegrationTests;
 /// A seeded product whose stock has run out, as the catalogue and its product page show it. The stock is taken to
 /// 0 through Inventory's own input port; this class has a host of its own, so no other test sees the product gone.
 /// </summary>
-public sealed class OutOfStockProductTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class OutOfStockProductTest : IClassFixture<ShopFactory>
 {
     private const string SoldOut = "Wooden Hexagon Desk Model";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public OutOfStockProductTest(WebApplicationFactory<Program> factory)
+    public OutOfStockProductTest(ShopFactory factory)
     {
         _factory = factory;
     }

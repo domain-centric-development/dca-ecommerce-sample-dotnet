@@ -5,7 +5,7 @@ using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.SharedKernel.Infrastructure.Events;
 
-public enum PublicationStatus { Staged, Pending, Completed, Failed }
+public enum PublicationStatus { Pending, Completed, Failed }
 
 /// <summary>Retained progress for one consumer. Attempts counts failed deliveries; identity survives manual replay.</summary>
 public sealed record ConsumerDelivery(string ConsumerId, PublicationStatus Status, int Attempts,

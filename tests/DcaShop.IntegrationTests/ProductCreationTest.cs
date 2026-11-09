@@ -23,7 +23,7 @@ public sealed class ProductCreationTest
     [Fact]
     public async Task ACreatedProductJoinsTheCatalogueWithItsPriceAndStock()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         using (var scope = shop.Services.CreateScope())
         {
             var created = await scope.ServiceProvider.GetRequiredService<ICreateProductInputPort>().ExecuteAsync(new CreateProductCommand(
@@ -45,7 +45,7 @@ public sealed class ProductCreationTest
     [Fact]
     public async Task AStrangerCreatingAProductIsChallengedAndTheCatalogueKeepsItsProducts()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
 
         var response = await shop.CreateClient().PostAsync("/api/products", new StringContent(
             """{"sku":"MUG-004","name":"Stranger Mug","description":"","imageUrl":"","price":9.99,"category":"Desk & Office","stock":1}""",

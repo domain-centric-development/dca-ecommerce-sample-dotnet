@@ -52,7 +52,7 @@ public sealed class UnsafeDefaultsTest
     [Fact]
     public async Task ADevelopmentRunStartsOnTheShippedValues()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new ShopFactory();
 
         var response = await factory.CreateClient().GetAsync("/products");
 
@@ -61,7 +61,7 @@ public sealed class UnsafeDefaultsTest
 
     private static HttpClient Start(params (string Key, string Value)[] settings)
     {
-        var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        var factory = new ShopFactory().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Production");
             foreach (var (key, value) in settings)

@@ -9,13 +9,13 @@ namespace DcaShop.IntegrationTests;
 /// The page the shop answers for a product address no product has, through the real HTTP pipeline: where its two
 /// ways on lead.
 /// </summary>
-public sealed class NotFoundPageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class NotFoundPageTest : IClassFixture<ShopFactory>
 {
     private const string UnknownProduct = "/products/no-such-product";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public NotFoundPageTest(WebApplicationFactory<Program> factory)
+    public NotFoundPageTest(ShopFactory factory)
     {
         _factory = factory;
     }

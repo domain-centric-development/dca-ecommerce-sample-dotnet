@@ -7,8 +7,8 @@ using DcaShop.SharedKernel.Domain.Model;
 namespace DcaShop.Pricing.Adapter.Outgoing.Persistence;
 
 /// <summary>
-/// In-memory price store with an index by product — demo stand-in for a real database adapter; it hands out the
-/// stored instances, so it shares the aggregate between requests (see the sample's ADR-001).
+/// In-memory price store with an index by product — the unit tests' stand-in for the database adapter, storing and
+/// handing out copies as a database does.
 /// </summary>
 public sealed class InMemoryProductPriceRepository : IProductPriceRepository
 {
@@ -16,13 +16,13 @@ public sealed class InMemoryProductPriceRepository : IProductPriceRepository
     private readonly ConcurrentDictionary<ProductId, PriceId> _byProduct = new();
 
     public Task<ProductPrice?> FindByIdAsync(PriceId id, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_prices.TryGetValue(id, out var price) ? price : null);
+        Task.FromResult(_prices.TryGetValue(id, out var price) ? Copy(price) : null);
 
     public Task<ProductPrice?> FindByProductIdAsync(ProductId productId, CancellationToken cancellationToken = default)
     {
         if (_byProduct.TryGetValue(productId, out var priceId) && _prices.TryGetValue(priceId, out var price))
         {
-            return Task.FromResult<ProductPrice?>(price);
+            return Task.FromResult<ProductPrice?>(Copy(price));
         }
 
         return Task.FromResult<ProductPrice?>(null);
@@ -33,7 +33,7 @@ public sealed class InMemoryProductPriceRepository : IProductPriceRepository
         var found = productIds
             .Select(id => _byProduct.TryGetValue(id, out var priceId) && _prices.TryGetValue(priceId, out var price) ? price : null)
             .Where(price => price is not null)
-            .Select(price => price!)
+            .Select(price => Copy(price!))
             .ToList();
         return Task.FromResult<IReadOnlyList<ProductPrice>>(found);
     }
@@ -41,7 +41,7 @@ public sealed class InMemoryProductPriceRepository : IProductPriceRepository
     public Task<ProductPrice> SaveAsync(ProductPrice aggregate, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(aggregate);
-        _prices[aggregate.Id] = aggregate;
+        _prices[aggregate.Id] = Copy(aggregate);
         _byProduct[aggregate.ProductId] = aggregate.Id;
         return Task.FromResult(aggregate);
     }
@@ -55,4 +55,7 @@ public sealed class InMemoryProductPriceRepository : IProductPriceRepository
 
         return Task.CompletedTask;
     }
+
+    private static ProductPrice Copy(ProductPrice price) =>
+        ProductPrice.Reconstitute(price.Id, price.ProductId, price.CurrentPrice, price.EffectiveFrom);
 }

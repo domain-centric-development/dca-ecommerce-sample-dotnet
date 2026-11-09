@@ -149,7 +149,7 @@ way, or that waits for its automatic retry, has not failed and offers none.
 
 **Notes:** The outbox sets the Publication Status `Failed` only once the attempts are used up;
 while attempts are left the delivery stays `Pending` with its next attempt scheduled
-(`InMemoryEventOutbox.RecordConsumerFailure`).
+(`PostgresEventOutbox.RecordConsumerFailureAsync`).
 
 ---
 

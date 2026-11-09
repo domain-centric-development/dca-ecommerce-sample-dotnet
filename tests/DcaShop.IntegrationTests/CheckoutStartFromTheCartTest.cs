@@ -10,13 +10,13 @@ namespace DcaShop.IntegrationTests;
 /// another guest's order, or emptied by the guest's own order — through the real pages. The class runs a host of its
 /// own, since the orders use up seeded stock; its tests order different products, so neither touches the other's.
 /// </summary>
-public sealed class CheckoutStartFromTheCartTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CheckoutStartFromTheCartTest : IClassFixture<ShopFactory>
 {
     private const string Hexagon = "Wooden Hexagon Desk Model";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CheckoutStartFromTheCartTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public CheckoutStartFromTheCartTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task ACartShortOfStockOffersNoCheckoutAndSaysWhy()

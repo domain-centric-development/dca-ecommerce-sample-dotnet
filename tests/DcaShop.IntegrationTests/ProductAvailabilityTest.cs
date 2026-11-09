@@ -9,11 +9,11 @@ namespace DcaShop.IntegrationTests;
 /// What the catalogue and the product page say about the stock of the seeded products, through the real HTTP
 /// pipeline: the badge, the units left and whether the page offers to add the product to the cart.
 /// </summary>
-public sealed class ProductAvailabilityTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ProductAvailabilityTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ProductAvailabilityTest(WebApplicationFactory<Program> factory)
+    public ProductAvailabilityTest(ShopFactory factory)
     {
         _factory = factory;
     }

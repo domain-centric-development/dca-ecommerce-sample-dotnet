@@ -16,11 +16,11 @@ namespace DcaShop.IntegrationTests;
 /// One event, two listeners: the wired shop with its real dispatcher and its default retry policy, one listener that
 /// fails on every delivery and one that handles the event at once, and the event log page read afterwards.
 /// </summary>
-public sealed class BackofficeListenerAttemptsTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class BackofficeListenerAttemptsTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public BackofficeListenerAttemptsTest(WebApplicationFactory<Program> factory)
+    public BackofficeListenerAttemptsTest(ShopFactory factory)
     {
         _factory = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
         {

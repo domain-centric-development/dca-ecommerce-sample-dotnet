@@ -15,12 +15,12 @@ namespace DcaShop.IntegrationTests;
 /// The cart resource's translation of a removal: what it answers for a product id it cannot even read. The removal
 /// behind it is a stand-in that records what it was asked; the cart is filled and read through the real use cases.
 /// </summary>
-public sealed class CartItemRemovalResourceTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CartItemRemovalResourceTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
     private readonly RecordingRemoveItemFromCart _removeItemFromCart = new();
 
-    public CartItemRemovalResourceTest(WebApplicationFactory<Program> factory)
+    public CartItemRemovalResourceTest(ShopFactory factory)
     {
         _factory = factory.WithWebHostBuilder(builder =>
             builder.ConfigureTestServices(s => s.AddSingleton<IRemoveItemFromCartInputPort>(_removeItemFromCart)));

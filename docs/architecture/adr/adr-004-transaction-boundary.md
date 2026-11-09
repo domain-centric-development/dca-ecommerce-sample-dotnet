@@ -1,6 +1,6 @@
 # ADR-004: Transaction Boundary via `ITransactionBoundary`, Remote Calls Outside It
 
-**Date**: 2026-08-30 · **Status**: Accepted
+**Date**: 2026-08-30 · **Status**: Accepted · Amended 2026-11-09 by [ADR-018](./adr-018-postgresql-for-every-store.md)
 
 ## Context
 
@@ -45,3 +45,5 @@ smaller than the use case.
   boundary; the sample prefers the explicit form so both shapes stay readable side by side.
 
 Amended 2026-09-09 by [ADR-009](./adr-009-outbox-transactional-eligibility.md): registration is Staged; an enlisted commit participant establishes Pending eligibility; after-commit release is a wakeup only. Completion/retry are per consumer. The in-memory boundary models enlisted resources, not universal rollback of live repository objects.
+
+Amended 2026-11-09 by [ADR-018](./adr-018-postgresql-for-every-store.md): `PostgresTransactionBoundary` replaces `InMemoryTransactionBoundary` — one database transaction per use case, current for its asynchronous flow, rolled back with everything written in it; nested blocks join, an inner failure or refusal marks it rollback-only. `ITransactionHooks` keeps `InTransaction`, `AfterCommit` and `AfterRollback`; the enlisted commit participant is gone.

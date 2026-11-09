@@ -16,7 +16,7 @@ public sealed class CartStockWarningsTest
     [Fact]
     public async Task ALineWhoseProductSoldOutSaysOnlyThatItIsNoLongerAvailable()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new ShopFactory();
         var guest = GuestOrders.Guest(factory);
         var hexagon = await AvailabilityPages.ProductPathAsync(guest, Hexagon);
         Assert.Equal("8 units available", await GuestOrders.AvailabilityAsync(guest, hexagon));
@@ -33,7 +33,7 @@ public sealed class CartStockWarningsTest
     [Fact]
     public async Task OnlyTheLineThatIsShortOfStockWarns()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new ShopFactory();
         var guest = GuestOrders.Guest(factory);
         var teamTopologies = await AvailabilityPages.ProductPathAsync(guest, "Team Topologies");
         var hexagon = await AvailabilityPages.ProductPathAsync(guest, Hexagon);

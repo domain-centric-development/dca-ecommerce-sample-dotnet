@@ -17,7 +17,6 @@ namespace DcaShop.Backoffice.Adapter.Outgoing.Persistence;
 /// The outbox also holds the domain events a context captures for its own reactions; the log lists only the integration
 /// events. The outbox retains one immutable integration-event snapshot with per-consumer completion; the log lists one entry
 /// per event and listener, each with that listener's own state, as Java's registry does with one row per listener.
-/// Staged records are visible to operators but not eligible for dispatch until commit.
 /// </remarks>
 public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
 {
@@ -30,15 +29,14 @@ public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
 
     public OutboxEventPublicationLogStore(IEventOutbox outbox) => _outbox = outbox;
 
-    public Task<IReadOnlyList<EventPublicationEntry>> FindAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<EventPublicationEntry>> FindAllAsync(CancellationToken cancellationToken = default)
     {
-        var entries = _outbox.All()
+        var publications = await _outbox.AllAsync(cancellationToken).ConfigureAwait(false);
+        return publications
             .Where(publication => typeof(IIntegrationEvent).IsAssignableFrom(publication.EventType))
             .OrderByDescending(publication => publication.RegisteredOn)
             .SelectMany(ToEntries)
             .ToList();
-
-        return Task.FromResult<IReadOnlyList<EventPublicationEntry>>(entries);
     }
 
     private static IEnumerable<EventPublicationEntry> ToEntries(EventPublication publication) =>
@@ -74,7 +72,6 @@ public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
     /// </summary>
     private static string Spell(OutboxStatus status) => status switch
     {
-        OutboxStatus.Staged => "Staged",
         OutboxStatus.Pending => "Pending",
         OutboxStatus.Completed => "Completed",
         OutboxStatus.Failed => "Failed",
@@ -84,7 +81,6 @@ public sealed class OutboxEventPublicationLogStore : IEventPublicationLogStore
     /// <summary>The outbox's status of a delivery in the log's own type, written out per value.</summary>
     private static PublicationStatus StatusOf(OutboxStatus status) => status switch
     {
-        OutboxStatus.Staged => PublicationStatus.Staged,
         OutboxStatus.Pending => PublicationStatus.Pending,
         OutboxStatus.Completed => PublicationStatus.Completed,
         OutboxStatus.Failed => PublicationStatus.Failed,

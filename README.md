@@ -13,17 +13,20 @@ Java twin (`dca-ecommerce-sample-java`), plus the REST API and an MCP server.
 
 ## Run
 
-Requires the .NET 10 SDK (pinned by `global.json`).
+Requires the .NET 10 SDK (pinned by `global.json`) and Docker or Podman: the shop keeps its data in PostgreSQL,
+and the integration and browser tests start their own PostgreSQL through Testcontainers.
 
 ```bash
 dotnet build
 dotnet test                                   # unit, integration, architecture (DCA rule catalog)
-dotnet run --project src/DcaShop.Web          # http://localhost:5080
+just run                                      # PostgreSQL on localhost:5433, then the shop on http://localhost:5080
 ```
 
 Browse `/products`, add items to the cart, check out in five steps (buyer → delivery → payment → review →
-confirmation), register an account and log in. All state is in memory; restarting resets the shop, accounts
-included.
+confirmation), register an account and log in. Everything is stored in PostgreSQL, so a restart keeps carts,
+orders and accounts; the seeder fills only an empty catalogue. `just db` starts the database alone and `just db-stop`
+stops it; without `just`, `docker compose up -d --wait postgres`, then `dotnet run --project src/DcaShop.Web`. The
+connection string is `ConnectionStrings:Shop` (default `Host=localhost;Port=5433;Database=shop;Username=shop;Password=shop`).
 
 Payment goes to a stand-in inside the sample. To pay through a payment service provider over REST, give its address
 as `Checkout:PaymentProvider:BaseUrl` (environment: `Checkout__PaymentProvider__BaseUrl`); `RestPaymentProvider`
@@ -62,7 +65,7 @@ unreleased rules, `-p:UseLocalDcaDotnet=true` references the sibling checkout `.
 No local SDK needed:
 
 ```bash
-docker compose up --build                 # http://localhost:5080
+docker compose up --build                 # the shop and its PostgreSQL, http://localhost:5080
 docker compose run --rm test              # unit, integration, architecture tests (Debug build)
                                           # (podman-compose: podman-compose --profile tools run --rm test)
 docker compose run --rm dotnet build      # any other dotnet command, packages cached in a volume
@@ -75,8 +78,8 @@ works against the sibling `../dca-dotnet` checkout as well.
 ## End-to-end tests
 
 `tests/DcaShop.E2eTests` drives the shop through a real browser (Playwright, page objects, `data-test`
-selectors). The suite starts the shop itself, once per run, in the test process and on a free port — nothing has to
-run beforehand:
+selectors). The suite starts the shop itself, once per run, in the test process and on a free port, with a PostgreSQL
+of its own through Testcontainers — nothing has to run beforehand but Docker or Podman:
 
 ```bash
 dotnet test tests/DcaShop.E2eTests
@@ -158,7 +161,7 @@ DcaShop.Cart/
 ├── Adapter/
 │   ├── Incoming/Web/            protocol first, feature below: Shopping/CartPageController, CartRecovery/CartMergePageController
 │   ├── Incoming/Event/          CartCheckout/CartCompletionEventConsumer
-│   └── Outgoing/                Persistence/ (in-memory repository), Product/ (ACL to Product/Pricing/Inventory), Event/
+│   └── Outgoing/                Persistence/ (Dapper repository), Product/ (ACL to Product/Pricing/Inventory), Event/
 ├── Api/                         CartService — Open Host Service for other contexts
 ├── Events/                      CartContentsChangedEvent, ICartCompletionTrigger — published language
 └── Infrastructure/              CartContextRegistration.AddCartContext() — explicit DI wiring
@@ -310,12 +313,9 @@ a page waits for a human's acceptance before it counts as delivered.
 
 This is an architecture sample, not a production template. These pieces are intentionally minimal:
 
-- **In-memory persistence** shares mutable aggregate instances between requests and has no optimistic
-  concurrency; see ADR-001. `InMemoryTransactionBoundary` draws the boundary and runs after-commit/after-rollback hooks,
-  but repositories have nothing to roll back; see ADR-004.
-- **The event outbox is in-memory**: at-least-once delivery with retries and a visible `Failed` state,
-  but durable only within the process — a restart loses outstanding publications; see ADR-002 for the
-  database-backed variant.
+- **No optimistic concurrency.** A use case runs in one PostgreSQL transaction; only a stock level and a checkout
+  session are read under a row lock. A checkout *start* — before any session row exists to lock — is serialized
+  within one process only; see ADR-018.
 - **The staff role has no provisioning path.** `Role.Staff` guards the operator routes of the API, but no
   registration grants it — the tests mint such a token out of band. Authorization also lives in each resource
   rather than in a policy the pipeline enforces; see ADR-007.
@@ -346,7 +346,7 @@ consumer. Automatic retry is bounded (five attempts, 200 ms exponential backoff)
 stays inspectable, and the Backoffice replays it on an authenticated, antiforgery-protected request with its original
 payload and identity, leaving consumers that already completed untouched. Suppressing an external duplicate after the
 provider accepted but before the acknowledgement needs the provider's idempotency; local keys alone do not suffice.
-Storage limits and replay behaviour: ADR-002 and ADR-009.
+Delivery, storage and replay: ADR-002, ADR-009 and ADR-018.
 
 ## Shared business specification
 
@@ -363,7 +363,7 @@ Confirmation retrieves current price/availability/stock facts before its local t
 immutable line/fact snapshots. The review shows the order at today's prices; "Place Order" carries the order fingerprint
 the review showed. A shortage, or a fingerprint that differs at that moment, is refused and leaves state, totals and
 events unchanged; the review then shows today's order. Success stores the lines at today's prices with their total and
-publishes the same total; there is no confirmation without a fingerprint. Local in-memory repository serialization is not a
+publishes the same total; there is no confirmation without a fingerprint. Local row locking is not a
 claim of durable distributed transactions or universal rollback of unenlisted resources.
 
 The language-neutral specification is an independently owned, currently unpublished repository. It is **not part of the

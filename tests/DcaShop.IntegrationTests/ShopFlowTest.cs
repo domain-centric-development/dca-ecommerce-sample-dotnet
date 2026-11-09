@@ -10,11 +10,11 @@ using Microsoft.Extensions.DependencyInjection;
 namespace DcaShop.IntegrationTests;
 
 /// <summary>Browse → add to cart → checkout in five steps → confirmation, through the real HTTP pipeline.</summary>
-public sealed class ShopFlowTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ShopFlowTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ShopFlowTest(WebApplicationFactory<Program> factory)
+    public ShopFlowTest(ShopFactory factory)
     {
         _factory = factory;
     }

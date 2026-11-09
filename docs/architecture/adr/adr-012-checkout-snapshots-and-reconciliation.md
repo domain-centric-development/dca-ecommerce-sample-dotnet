@@ -1,6 +1,6 @@
 # ADR-012: Checkout snapshots and reconciliation
 
-Status: Accepted, 2026-09-09 (approved review batch) — amended 2026-09-16 (see the amendment at the end)
+Status: Accepted, 2026-09-09 (approved review batch) — amended 2026-09-16 (see the amendment at the end); persistence amended 2026-11-09 by [ADR-018](./adr-018-postgresql-for-every-store.md): the cart is stored in PostgreSQL, the in-memory repository is a test fake, and a checkout session is read under a row lock
 
 ## Context and decision
 

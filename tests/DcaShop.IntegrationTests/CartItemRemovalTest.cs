@@ -8,7 +8,7 @@ namespace DcaShop.IntegrationTests;
 /// "Remove" on the cart page, through the real HTTP pipeline. One client is one browser; the redirect is not followed,
 /// it is an assertion.
 /// </summary>
-public sealed class CartItemRemovalTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CartItemRemovalTest : IClassFixture<ShopFactory>
 {
     private const string CleanArchitecture = "Clean Architecture";
     private const string DomainDrivenDesign = "Domain-Driven Design";
@@ -17,7 +17,7 @@ public sealed class CartItemRemovalTest : IClassFixture<WebApplicationFactory<Pr
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CartItemRemovalTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public CartItemRemovalTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task RemovingALineTakesItsWholeQuantityOut()

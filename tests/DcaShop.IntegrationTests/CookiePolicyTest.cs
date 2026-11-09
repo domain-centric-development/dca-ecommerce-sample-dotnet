@@ -15,13 +15,13 @@ namespace DcaShop.IntegrationTests;
 /// Same scenarios as the Java sample's <c>CookiePolicyIntegrationTest</c>,
 /// <c>HardenedShopCookiePolicyIntegrationTest</c> and <c>EmbeddedShopCookiePolicyIntegrationTest</c>.
 /// </summary>
-public sealed class CookiePolicyTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CookiePolicyTest : IClassFixture<ShopFactory>
 {
     private static readonly Regex ProductLink = new(@"href=""/products/([0-9a-f-]{36})""", RegexOptions.Compiled);
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CookiePolicyTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public CookiePolicyTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task TheUnconfiguredSampleKeepsItsCookiesSameSiteAndMayBeFramed()

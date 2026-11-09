@@ -30,7 +30,7 @@ public sealed class SideShop : IDisposable
 
     public static SideShop Start(Action<IServiceCollection>? testServices = null)
     {
-        var shop = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
+        var shop = new ShopFactory().WithWebHostBuilder(builder => builder
             .UseSetting("Checkout:PaymentProvider:BaseUrl", PaymentProviderStub.Url)
             .UseSetting("Checkout:PaymentProvider:Timeout", PaymentProviderStub.Timeout)
             .ConfigureKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, 0))

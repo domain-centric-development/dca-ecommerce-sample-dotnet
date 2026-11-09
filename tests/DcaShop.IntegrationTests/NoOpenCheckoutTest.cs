@@ -11,11 +11,11 @@ namespace DcaShop.IntegrationTests;
 /// available after an order — through the real HTTP pipeline. One cookie jar is one browser; redirects are not
 /// followed, each one is an assertion.
 /// </summary>
-public sealed class NoOpenCheckoutTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class NoOpenCheckoutTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public NoOpenCheckoutTest(WebApplicationFactory<Program> factory)
+    public NoOpenCheckoutTest(ShopFactory factory)
     {
         _factory = factory;
     }

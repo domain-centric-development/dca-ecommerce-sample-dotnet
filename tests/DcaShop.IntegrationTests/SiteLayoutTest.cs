@@ -9,11 +9,11 @@ namespace DcaShop.IntegrationTests;
 /// The header and footer every page shares, through the real HTTP pipeline: where the header navigation leads, what
 /// the footer says, and that the home page carries the same frame as the catalogue.
 /// </summary>
-public sealed class SiteLayoutTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class SiteLayoutTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public SiteLayoutTest(WebApplicationFactory<Program> factory)
+    public SiteLayoutTest(ShopFactory factory)
     {
         _factory = factory;
     }

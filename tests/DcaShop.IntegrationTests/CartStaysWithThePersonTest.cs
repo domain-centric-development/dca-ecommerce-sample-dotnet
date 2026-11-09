@@ -10,7 +10,7 @@ namespace DcaShop.IntegrationTests;
 /// The cart follows the person, not the browser, through registration, logout and a lapsed login — through the real
 /// HTTP pipeline. One client is one browser; redirects are not followed, each one is an assertion.
 /// </summary>
-public sealed class CartStaysWithThePersonTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CartStaysWithThePersonTest : IClassFixture<ShopFactory>
 {
     private const string IdentityCookie = "shop-identity";
     private const string Password = "Secret123";
@@ -24,7 +24,7 @@ public sealed class CartStaysWithThePersonTest : IClassFixture<WebApplicationFac
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CartStaysWithThePersonTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public CartStaysWithThePersonTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task RegisteringFromTheCheckoutReturnsToTheBuyerStepWithTheGuestsOrder()

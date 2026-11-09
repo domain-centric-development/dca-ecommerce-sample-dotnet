@@ -22,11 +22,11 @@ namespace DcaShop.IntegrationTests;
 /// The rule therefore lives in the use case: every step asks the repository a question scoped to the caller, so a
 /// session that is not theirs is indistinguishable from one that does not exist.
 /// </remarks>
-public sealed class CheckoutOwnershipTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CheckoutOwnershipTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CheckoutOwnershipTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public CheckoutOwnershipTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task ReadingAStrangersSessionFindsNothing()

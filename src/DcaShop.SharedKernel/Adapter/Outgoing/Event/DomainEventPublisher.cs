@@ -11,8 +11,8 @@ namespace DcaShop.SharedKernel.Adapter.Outgoing.Event;
 /// <summary>
 /// Publishes domain events to both listener kinds and clears them from the aggregate. The synchronous listeners run
 /// now, inside the use case's transaction — the translators that capture integration events. When a transactional
-/// listener listens to the event, the event is also captured in the outbox inside the same transaction, made eligible
-/// on commit and discarded on rollback; the dispatcher delivers it after the commit.
+/// listener listens to the event, the event is also captured in the outbox inside the same transaction, so it commits
+/// and rolls back with the use case's work; the dispatcher delivers it after the commit.
 /// </summary>
 public sealed class DomainEventPublisher : IDomainEventPublisher
 {
@@ -33,7 +33,7 @@ public sealed class DomainEventPublisher : IDomainEventPublisher
     {
         ArgumentNullException.ThrowIfNull(@event);
         await _dispatcher.DispatchAsync(@event, cancellationToken).ConfigureAwait(false);
-        Capture(@event);
+        await CaptureAsync(@event, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task PublishAndClearEventsAsync(IAggregateRoot aggregate, CancellationToken cancellationToken = default)
@@ -44,25 +44,20 @@ public sealed class DomainEventPublisher : IDomainEventPublisher
         foreach (var @event in aggregate.DomainEvents.ToArray())
         {
             await _dispatcher.DispatchAsync(@event, cancellationToken).ConfigureAwait(false);
-            Capture(@event);
+            await CaptureAsync(@event, cancellationToken).ConfigureAwait(false);
         }
 
         aggregate.ClearDomainEvents();
     }
 
-    private void Capture(IDomainEvent @event)
+    private async Task CaptureAsync(IDomainEvent @event, CancellationToken cancellationToken)
     {
         if (!_services.GetServices<IEventListener>().OfType<ITransactionalEventListener>().Any(l => l.Listens(@event)))
         {
             return;
         }
 
-        var publication = _outbox.Register(@event);
-        _transaction.EnlistCommit(() => _outbox.Commit(publication.Id));
+        var publication = await _outbox.RegisterAsync(@event, cancellationToken).ConfigureAwait(false);
         _transaction.AfterCommit(() => _outbox.Release(publication.Id));
-        if (publication.Status == PublicationStatus.Staged)
-        {
-            _transaction.AfterRollback(() => _outbox.Discard(publication.Id));
-        }
     }
 }

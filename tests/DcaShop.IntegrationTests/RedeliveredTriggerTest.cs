@@ -19,11 +19,11 @@ namespace DcaShop.IntegrationTests;
 /// twice changes the consuming context's state once. Each test changes the state between the two deliveries, so a
 /// consumer that acted again would be seen. The record is per effect: two effects of one event both happen.
 /// </summary>
-public sealed class RedeliveredTriggerTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class RedeliveredTriggerTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public RedeliveredTriggerTest(WebApplicationFactory<Program> factory)
+    public RedeliveredTriggerTest(ShopFactory factory)
     {
         _factory = factory;
     }

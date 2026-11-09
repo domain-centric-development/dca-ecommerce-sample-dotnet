@@ -1,6 +1,6 @@
 # ADR-017: Expected Refusals Are Closed Use-Case Results
 
-**Date**: 2026-11-07 · **Status**: Accepted · amends ADR-016
+**Date**: 2026-11-07 · **Status**: Accepted · amends ADR-016 · the boundary below is `PostgresTransactionBoundary` since [ADR-018](./adr-018-postgresql-for-every-store.md), with the same contract
 
 ## Context
 

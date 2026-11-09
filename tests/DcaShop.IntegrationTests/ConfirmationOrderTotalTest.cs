@@ -17,11 +17,11 @@ namespace DcaShop.IntegrationTests;
 /// The confirmation page's translation of a confirmed order: the amount is the order's total, not an amount paid —
 /// against a stubbed query that answers with the confirmed order.
 /// </summary>
-public sealed class ConfirmationOrderTotalTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ConfirmationOrderTotalTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ConfirmationOrderTotalTest(WebApplicationFactory<Program> factory)
+    public ConfirmationOrderTotalTest(ShopFactory factory)
     {
         _factory = factory;
     }

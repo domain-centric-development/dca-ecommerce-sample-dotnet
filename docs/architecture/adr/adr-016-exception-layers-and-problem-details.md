@@ -1,6 +1,6 @@
 # ADR-016: A Failure Carries Its Own Type, and Only the Adapter Turns It Into an Answer
 
-**Date**: 2026-09-21 · **Status**: Accepted, amended by ADR-017
+**Date**: 2026-09-21 · **Status**: Accepted, amended by ADR-017 · the active-cart claim below is the constraint `uq_carts_active_customer` since [ADR-018](./adr-018-postgresql-for-every-store.md)
 
 ## Context
 

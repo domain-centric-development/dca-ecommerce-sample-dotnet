@@ -12,12 +12,20 @@ default:
     @just --list
 
 # the shop on the port (default 5080), paying through the stand-in inside the shop
-run port=port:
+run port=port: db
     dotnet run --project src/DcaShop.Web -- --urls http://localhost:{{port}}
 
 # the shop paying through the stub — authorize (default), refuse or slow; the stub stops with the shop
-run-with-provider mode=payment_stub port=port: (stub mode)
+run-with-provider mode=payment_stub port=port: db (stub mode)
     trap 'just stub-stop' EXIT; Checkout__PaymentProvider__BaseUrl={{stub_url}} dotnet run --project src/DcaShop.Web -- --urls http://localhost:{{port}}
+
+# start the shop's PostgreSQL on localhost:5433 and wait until it answers; it keeps running, and keeps its data
+db:
+    {{compose}} up -d --wait postgres
+
+# stop the shop's PostgreSQL; its data goes with the container
+db-stop:
+    {{compose}} down postgres
 
 # start the payment provider's stub on localhost:8089 — authorize (default), refuse or slow
 stub mode=payment_stub:

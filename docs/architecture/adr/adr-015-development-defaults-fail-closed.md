@@ -37,7 +37,7 @@ one least entitled to.
   `launchSettings.json` and the test host, so the demo and the suites are unaffected; `docker run` of the image is
   a production run and now refuses to start.
 
-The Java twin decides the same rule from the active Spring profile (`dev | inmemory`, its ADR-043), because that
+The Java twin decides the same rule from the active Spring profile (`dev`, its ADR-043), because that
 is the platform's own switch for the same question.
 
 ## Consequences

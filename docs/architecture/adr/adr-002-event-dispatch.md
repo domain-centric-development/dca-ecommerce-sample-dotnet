@@ -47,6 +47,8 @@ port and blurs the distinction between commands and events.
 
 Amended 2026-09-09 by [ADR-009](./adr-009-outbox-transactional-eligibility.md): registration is Staged; an enlisted commit participant establishes Pending eligibility; after-commit release is a wakeup only. Completion/retry are per consumer. The in-memory boundary models enlisted resources, not universal rollback of live repository objects.
 
+Amended 2026-11-09 by [ADR-018](./adr-018-postgresql-for-every-store.md): the outbox is `PostgresEventOutbox` (`event_publications`, `event_publication_deliveries`); a publication is inserted in the use case's transaction, so registration is atomic with the aggregate's save and survives a restart. `InMemoryEventOutbox` and the `Staged` state are gone.
+
 ## Amendment 2026-10-28 — two listener kinds
 
 A reaction to a domain event of the publishing context runs after the commit, like a reaction to an integration event.

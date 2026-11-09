@@ -7,13 +7,11 @@ using OneOf;
 namespace DcaShop.SharedKernel.Infrastructure.Transactions;
 
 /// <summary>
-/// Implements <see cref="ITransactionBoundary"/> for the in-memory stage — infrastructure, not an adapter, because
-/// the boundary is an execution abstraction of the application layer rather than an output port: there is nothing to roll back, but the
-/// boundary is real — nested calls join the outer transaction (an inner failure marks it rollback-only, as
-/// Spring's REQUIRED propagation does, so the outermost block cannot commit it), after-commit hooks (waking the outbox dispatcher)
-/// run once the outermost work completed, after-rollback hooks (discarding in-memory outbox entries) run when it
-/// throws. A database adapter replaces this class with one that opens the transaction (EF Core
-/// <c>DbContext</c>, <c>TransactionScope</c>) and keeps the same hooks.
+/// The transaction boundary of the unit tests, beside the in-memory fakes: there is nothing to roll back, but the
+/// boundary keeps the production one's rules — nested calls join the outer transaction (an inner failure marks it
+/// rollback-only, so the outermost block cannot commit it), after-commit hooks run once the outermost work completed,
+/// after-rollback hooks when it failed or refused. The fakes store copies, so a rolled-back change that was never
+/// saved is not seen; one that was saved stays, which a database would have undone.
 /// </summary>
 /// <remarks>
 /// A returned refusal rolls back like a thrown failure (WP-171): when the work completes with an
@@ -24,8 +22,6 @@ namespace DcaShop.SharedKernel.Infrastructure.Transactions;
 /// </remarks>
 public sealed class InMemoryTransactionBoundary : ITransactionBoundary, ITransactionHooks
 {
-    internal static readonly object CommitGate = new();
-    private readonly List<Action> _commitParticipants = new();
     private bool _committed;
     private readonly List<Action> _afterCommit = new();
     private readonly List<Action> _afterRollback = new();
@@ -33,13 +29,6 @@ public sealed class InMemoryTransactionBoundary : ITransactionBoundary, ITransac
     private bool _rollbackOnly;
 
     public bool InTransaction => _depth > 0;
-
-    public void EnlistCommit(Action action)
-    {
-        ArgumentNullException.ThrowIfNull(action);
-        if (InTransaction) _commitParticipants.Add(action);
-        else lock (CommitGate) action();
-    }
 
     public void AfterCommit(Action action)
     {
@@ -122,20 +111,14 @@ public sealed class InMemoryTransactionBoundary : ITransactionBoundary, ITransac
 
     private void Commit()
     {
-        lock (CommitGate)
-        {
-            try { Run(_commitParticipants); }
-            catch { Rollback(); throw; }
-            _committed = true;
-            _afterRollback.Clear();
-        }
+        _committed = true;
+        _afterRollback.Clear();
         Run(_afterCommit);
     }
 
     private void Rollback()
     {
         _rollbackOnly = false;
-        _commitParticipants.Clear();
         _afterCommit.Clear();
         Run(_afterRollback);
     }

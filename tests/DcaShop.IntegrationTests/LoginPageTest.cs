@@ -10,13 +10,13 @@ namespace DcaShop.IntegrationTests;
 /// The login page and the logout through the real HTTP pipeline, each test as a browser with no cookies: how the
 /// header leads there, what the form asks for, where a login opened for another page leads, and what a logout says.
 /// </summary>
-public sealed class LoginPageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class LoginPageTest : IClassFixture<ShopFactory>
 {
     private const string Password = "Secret123";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public LoginPageTest(WebApplicationFactory<Program> factory)
+    public LoginPageTest(ShopFactory factory)
     {
         _factory = factory;
     }

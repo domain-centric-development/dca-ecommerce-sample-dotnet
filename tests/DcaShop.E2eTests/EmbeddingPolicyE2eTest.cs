@@ -117,7 +117,7 @@ public sealed class EmbeddingPolicyE2eTest : BaseE2eTest, IDisposable
     /// </summary>
     private string StartOwnShop(bool overTls, params (string Key, string Value)[] settings)
     {
-        var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        var factory = new ShopFactory().WithWebHostBuilder(builder =>
         {
             foreach (var (key, value) in settings)
             {

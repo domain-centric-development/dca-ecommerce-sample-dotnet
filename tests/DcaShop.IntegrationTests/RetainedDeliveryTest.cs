@@ -42,8 +42,9 @@ public sealed class RetainedDeliveryTest
     [InlineData(true)]
     public async Task ReconstructedDispatcherReplaysCommittedSnapshotWithOrWithoutWakeup(bool wakeup)
     {
-        var outbox = new InMemoryEventOutbox(TimeProvider.System);
-        var boundary = new InMemoryTransactionBoundary();
+        using var store = new IsolatedDatabase();
+        var outbox = store.Outbox;
+        var boundary = store.Boundary;
         var probe = new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "captured");
         var publisher = new OutboxIntegrationEventPublisher(outbox, new Hooks(boundary, wakeup));
         await boundary.InTransactionAsync(async ct => { await publisher.PublishAsync(probe, ct); return 0; });
@@ -69,25 +70,28 @@ public sealed class RetainedDeliveryTest
     [InlineData(true)]
     public async Task UncommittedAndRolledBackWorkCannotBeReplayed(bool rollback)
     {
-        var outbox = new InMemoryEventOutbox(TimeProvider.System);
-        var boundary = new InMemoryTransactionBoundary();
+        using var store = new IsolatedDatabase();
+        var outbox = store.Outbox;
+        var boundary = store.Boundary;
         var publisher = new OutboxIntegrationEventPublisher(outbox, boundary);
         var observed = new Observed();
         using var services = Services(observed);
         using var dispatcher = Dispatcher(outbox, services);
+        // the dispatcher runs before the transaction starts, so it never runs inside it
+        if (!rollback) await dispatcher.StartAsync(default);
         await Assert.ThrowsAsync<InvalidOperationException>(() => boundary.InTransactionAsync<int>(async ct =>
         {
-            await publisher.PublishAsync(new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "staged"), ct);
+            await publisher.PublishAsync(new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "uncommitted"), ct);
             if (!rollback)
             {
-                await dispatcher.StartAsync(default);
-                await Task.Delay(30);
+                await Task.Delay(30, ct);
                 Assert.Equal(0, observed.FirstCalls);
-                Assert.Equal(PublicationStatus.Staged, outbox.All().Single().Status);
+                Assert.Equal(0, store.Committed());
             }
             throw new InvalidOperationException("rollback");
         }));
-        if (rollback) { await dispatcher.StartAsync(default); await Task.Delay(30); }
+        if (rollback) { await dispatcher.StartAsync(default); }
+        await Task.Delay(30);
         await dispatcher.StopAsync(default);
         Assert.Empty(outbox.All()); Assert.Equal(0, observed.FirstCalls);
     }
@@ -97,11 +101,12 @@ public sealed class RetainedDeliveryTest
     [InlineData(false, 2)]
     public async Task AcceptanceBeforeAcknowledgementRetriesSameConsumerKeyAndSnapshot(bool providerIdempotency, int externalEffects)
     {
-        var outbox = new InMemoryEventOutbox(TimeProvider.System);
+        using var store = new IsolatedDatabase();
+        var outbox = store.Outbox;
         var observed = new Observed { CrashAfterAcceptance = true, ProviderIdempotency = providerIdempotency };
         using var services = Services(observed);
         var probe = new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "original");
-        await new OutboxIntegrationEventPublisher(outbox, new InMemoryTransactionBoundary()).PublishAsync(probe);
+        await new OutboxIntegrationEventPublisher(outbox, store.Boundary).PublishAsync(probe);
         probe.Content = "current business state";
         using var dispatcher = Dispatcher(outbox, services);
         await dispatcher.StartAsync(default);
@@ -118,11 +123,12 @@ public sealed class RetainedDeliveryTest
     [Fact]
     public async Task ExhaustionIsInspectableAndManualReplayTouchesOnlyFailedConsumer()
     {
-        var outbox = new InMemoryEventOutbox(TimeProvider.System);
+        using var store = new IsolatedDatabase();
+        var outbox = store.Outbox;
         var observed = new Observed { AlwaysFail = true };
         using var services = Services(observed);
         var id = Guid.NewGuid();
-        await new OutboxIntegrationEventPublisher(outbox, new InMemoryTransactionBoundary()).PublishAsync(new ProbeEvent(id, DateTimeOffset.UtcNow, "original"));
+        await new OutboxIntegrationEventPublisher(outbox, store.Boundary).PublishAsync(new ProbeEvent(id, DateTimeOffset.UtcNow, "original"));
         using var dispatcher = Dispatcher(outbox, services);
         await dispatcher.StartAsync(default);
         await Until(() => outbox.All().Single().Status == PublicationStatus.Failed);
@@ -130,7 +136,7 @@ public sealed class RetainedDeliveryTest
         Assert.Equal(2, failed.Consumers.Values.Single(c => c.Status == PublicationStatus.Failed).Attempts);
         Assert.NotNull(failed.LastError); Assert.Equal(1, observed.FirstCalls);
         observed.AlwaysFail = false;
-        outbox.ReplayFailed(id);
+        await outbox.ReplayFailedAsync(id);
         await Until(() => outbox.All().Single().Status == PublicationStatus.Completed);
         await dispatcher.StopAsync(default);
         Assert.Equal(1, observed.FirstCalls); Assert.Equal(3, observed.SecondCalls);
@@ -176,10 +182,9 @@ public sealed class RetainedDeliveryTest
             return Task.CompletedTask;
         }
     }
-    private sealed class Hooks(InMemoryTransactionBoundary boundary, bool wakeup) : ITransactionHooks
+    private sealed class Hooks(PostgresTransactionBoundary boundary, bool wakeup) : ITransactionHooks
     {
         public bool InTransaction => boundary.InTransaction;
-        public void EnlistCommit(Action action) => boundary.EnlistCommit(action);
         public void AfterCommit(Action action) { if (wakeup) boundary.AfterCommit(action); }
         public void AfterRollback(Action action) => boundary.AfterRollback(action);
     }

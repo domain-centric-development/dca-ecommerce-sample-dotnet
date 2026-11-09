@@ -7,8 +7,9 @@ using DcaShop.SharedKernel.Domain.Model;
 namespace DcaShop.Product.Adapter.Outgoing.Persistence;
 
 /// <summary>
-/// In-memory <see cref="IProductRepository"/>. A concurrent dictionary has no order of its own, so listings sort by
-/// product name as the contract requires.
+/// In-memory <see cref="IProductRepository"/> — the unit tests' stand-in for the database adapter, storing and handing
+/// out copies as a database does. A concurrent dictionary has no order of its own, so listings sort by product name as
+/// the contract requires.
 /// </summary>
 public sealed class InMemoryProductRepository : IProductRepository
 {
@@ -18,7 +19,7 @@ public sealed class InMemoryProductRepository : IProductRepository
     private readonly ConcurrentDictionary<Sku, ProductId> _bySku = new();
 
     public Task<Domain.Model.Product?> FindByIdAsync(ProductId id, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_products.TryGetValue(id, out var product) ? product : null);
+        Task.FromResult(_products.TryGetValue(id, out var product) ? Copy(product) : null);
 
     /// <exception cref="InvalidOperationException">Another product already carries this SKU.</exception>
     public Task<Domain.Model.Product> SaveAsync(Domain.Model.Product aggregate, CancellationToken cancellationToken = default)
@@ -35,7 +36,7 @@ public sealed class InMemoryProductRepository : IProductRepository
             _bySku.TryRemove(stale);
         }
 
-        _products[aggregate.Id] = aggregate;
+        _products[aggregate.Id] = Copy(aggregate);
         return Task.FromResult(aggregate);
     }
 
@@ -50,8 +51,11 @@ public sealed class InMemoryProductRepository : IProductRepository
     }
 
     public Task<IReadOnlyList<Domain.Model.Product>> FindAllAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<Domain.Model.Product>>(_products.Values.OrderBy(p => p.Name.Value, StringComparer.Ordinal).ToList());
+        Task.FromResult<IReadOnlyList<Domain.Model.Product>>(_products.Values.OrderBy(p => p.Name.Value, StringComparer.Ordinal).Select(Copy).ToList());
 
     public Task<Domain.Model.Product?> FindBySkuAsync(Sku sku, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_bySku.TryGetValue(sku, out var id) && _products.TryGetValue(id, out var product) ? product : null);
+        Task.FromResult(_bySku.TryGetValue(sku, out var id) && _products.TryGetValue(id, out var product) ? Copy(product) : null);
+
+    private static Domain.Model.Product Copy(Domain.Model.Product product) => Domain.Model.Product.Reconstitute(
+        product.Id, product.Sku, product.Name, product.Description, product.Category, product.ImageUrl);
 }

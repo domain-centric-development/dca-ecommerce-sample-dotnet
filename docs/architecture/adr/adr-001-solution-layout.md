@@ -1,6 +1,6 @@
 # ADR-001: One Project per Bounded Context, Layers as Folders
 
-**Date**: 2026-08-30 · **Status**: Accepted
+**Date**: 2026-08-30 · **Status**: Accepted · Amended 2026-11-09 by [ADR-018](./adr-018-postgresql-for-every-store.md): every store is a PostgreSQL adapter; the in-memory repositories are copying test fakes
 
 ## Context
 

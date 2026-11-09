@@ -37,6 +37,32 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         return session;
     }
 
+    /// <summary>Restores a stored session as it was — a fact to restore, not a decision to re-make: no event is raised.</summary>
+    public static CheckoutSession Reconstitute(
+        CheckoutSessionId id,
+        CartId cartId,
+        CustomerId customerId,
+        IReadOnlyList<CheckoutLineItem> lineItems,
+        CheckoutTotals totals,
+        CheckoutStep currentStep,
+        CheckoutSessionStatus status,
+        BuyerInfo? buyerInfo,
+        DeliveryAddress? deliveryAddress,
+        ShippingOption? shippingOption,
+        PaymentSelection? paymentSelection,
+        string? orderReference) =>
+        new(id, cartId, customerId, lineItems, totals.Subtotal)
+        {
+            Totals = totals,
+            CurrentStep = currentStep,
+            Status = status,
+            BuyerInfo = buyerInfo,
+            DeliveryAddress = deliveryAddress,
+            ShippingOption = shippingOption,
+            PaymentSelection = paymentSelection,
+            OrderReference = orderReference,
+        };
+
     public void Supersede() { EnsureModifiable(); Status = CheckoutSessionStatus.Superseded; }
 
     public override CheckoutSessionId Id { get; }

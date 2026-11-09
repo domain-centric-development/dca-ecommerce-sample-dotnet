@@ -23,8 +23,8 @@ public static class PricingContextRegistration
         services.AddScoped<IChangePriceInputPort, ChangePriceUseCase>();
 
         // Outgoing adapters (output ports)
-        services.AddSingleton<IProductPriceRepository, InMemoryProductPriceRepository>();
-        services.AddSingleton<IProcessedEvents, InMemoryProcessedEvents>();
+        services.AddSingleton<IProductPriceRepository, DapperProductPriceRepository>();
+        services.AddSingleton<IProcessedEvents, DapperProcessedEvents>();
 
         // Incoming event adapters
         services.AddScoped<IEventListener, PriceInitializationEventConsumer>();

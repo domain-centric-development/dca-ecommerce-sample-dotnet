@@ -20,7 +20,7 @@ public sealed class ProductSkuNameAndTextRulesTest
     [Fact]
     public async Task ALowerCaseSkuIsAnUnacceptableValue()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("lower-case-mug@example.com");
 
         var response = await staff.PostAsJsonAsync("/api/products", new
@@ -44,7 +44,7 @@ public sealed class ProductSkuNameAndTextRulesTest
     [Fact]
     public async Task ANameOf256CharactersIsAnUnacceptableValue()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("long-name@example.com");
 
         var response = await staff.PostAsJsonAsync("/api/products", ProductWith("LONG-001", new string('A', 256)));
@@ -59,7 +59,7 @@ public sealed class ProductSkuNameAndTextRulesTest
     [Fact]
     public async Task ANameOf255CharactersIsAccepted()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("longest-name@example.com");
 
         var response = await staff.PostAsJsonAsync("/api/products", ProductWith("LONG-002", new string('A', 255)));
@@ -70,7 +70,7 @@ public sealed class ProductSkuNameAndTextRulesTest
     [Fact]
     public async Task ABlankNameIsRefusedAndTheCatalogueKeepsItsProducts()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("blank-name@example.com");
 
         var response = await staff.PostAsJsonAsync("/api/products", ProductWith("BLANK-001", "   "));
@@ -82,7 +82,7 @@ public sealed class ProductSkuNameAndTextRulesTest
     [Fact]
     public async Task ADescriptionOf2001CharactersIsAnUnacceptableValue()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("long-story@example.com");
 
         var response = await staff.PostAsJsonAsync("/api/products", new
@@ -106,7 +106,7 @@ public sealed class ProductSkuNameAndTextRulesTest
     [Fact]
     public async Task AnImageUrlOf2001CharactersIsAnUnacceptableValue()
     {
-        using var shop = new WebApplicationFactory<Program>();
+        using var shop = new ShopFactory();
         var staff = await shop.StaffClientAsync("big-picture@example.com");
         var imageUrl = "https://images.example.com/" + new string('a', 2001 - "https://images.example.com/".Length);
 

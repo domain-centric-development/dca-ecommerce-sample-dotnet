@@ -4,6 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="dbup-postgresql" Version="$(DbUpPostgresqlVersion)" />
+    <EmbeddedResource Include="Persistence/Migrations/*.sql" />
     <ProjectReference Include="../DcaShop.SharedKernel/DcaShop.SharedKernel.csproj" />
     <ProjectReference Include="../DcaShop.Pricing/DcaShop.Pricing.csproj" />
     <ProjectReference Include="../DcaShop.Inventory/DcaShop.Inventory.csproj" />

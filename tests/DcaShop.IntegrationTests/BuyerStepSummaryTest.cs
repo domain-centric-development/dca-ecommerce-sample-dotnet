@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace DcaShop.IntegrationTests;
 
 /// <summary>The buyer step summarises the cart the checkout was started from, through the real HTTP pipeline.</summary>
-public sealed class BuyerStepSummaryTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class BuyerStepSummaryTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public BuyerStepSummaryTest(WebApplicationFactory<Program> factory)
+    public BuyerStepSummaryTest(ShopFactory factory)
     {
         _factory = factory;
     }

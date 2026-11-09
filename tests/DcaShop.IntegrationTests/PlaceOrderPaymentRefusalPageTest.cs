@@ -15,11 +15,11 @@ namespace DcaShop.IntegrationTests;
 /// shop's own sentence and no confirmation — against a stubbed "Place Order" that answers with the provider's refusal
 /// or its absence.
 /// </summary>
-public sealed class PlaceOrderPaymentRefusalPageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class PlaceOrderPaymentRefusalPageTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public PlaceOrderPaymentRefusalPageTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public PlaceOrderPaymentRefusalPageTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task ARefusedPaymentKeepsTheCustomerAtTheReviewWithTheRefusalText()

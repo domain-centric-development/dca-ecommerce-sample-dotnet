@@ -10,11 +10,11 @@ namespace DcaShop.IntegrationTests;
 /// form asks for, and what a login with wrong credentials leads to. The development run's operator is
 /// <c>admin</c>/<c>admin</c>.
 /// </summary>
-public sealed class BackofficeLoginPageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class BackofficeLoginPageTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public BackofficeLoginPageTest(WebApplicationFactory<Program> factory)
+    public BackofficeLoginPageTest(ShopFactory factory)
     {
         _factory = factory;
     }

@@ -11,11 +11,11 @@ namespace DcaShop.IntegrationTests;
 /// The overview an operator asks for before a product runs out: which products hold less than the quantity
 /// they name. Driven through the wired application, so the answer is the one a caller really gets.
 /// </summary>
-public sealed class LowStockOverviewTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class LowStockOverviewTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public LowStockOverviewTest(WebApplicationFactory<Program> factory)
+    public LowStockOverviewTest(ShopFactory factory)
     {
         _factory = factory;
     }

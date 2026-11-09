@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace DcaShop.IntegrationTests;
 
 /// <summary>The cart entry in the header every page shares, through the real HTTP pipeline: where it leads and what its badge counts.</summary>
-public sealed class HeaderBasketTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class HeaderBasketTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public HeaderBasketTest(WebApplicationFactory<Program> factory)
+    public HeaderBasketTest(ShopFactory factory)
     {
         _factory = factory;
     }

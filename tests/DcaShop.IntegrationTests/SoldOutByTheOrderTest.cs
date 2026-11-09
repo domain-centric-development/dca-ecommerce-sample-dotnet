@@ -5,13 +5,13 @@ namespace DcaShop.IntegrationTests;
 /// <summary>
 /// The last units of a product bought by one order sell it out. A host of its own: the product is gone afterwards.
 /// </summary>
-public sealed class SoldOutByTheOrderTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class SoldOutByTheOrderTest : IClassFixture<ShopFactory>
 {
     private const string Hexagon = "Wooden Hexagon Desk Model";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public SoldOutByTheOrderTest(WebApplicationFactory<Program> factory)
+    public SoldOutByTheOrderTest(ShopFactory factory)
     {
         _factory = factory;
     }

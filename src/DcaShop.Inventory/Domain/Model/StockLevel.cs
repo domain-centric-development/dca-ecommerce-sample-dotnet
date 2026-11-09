@@ -40,6 +40,10 @@ public sealed class StockLevel : AggregateRootBase<StockLevel, StockLevelId>
         return stockLevel;
     }
 
+    /// <summary>Restores a stored stock level as it was — a fact to restore, not a decision to re-make: no event is raised.</summary>
+    public static StockLevel Reconstitute(StockLevelId id, ProductId productId, int availableQuantity, int reservedQuantity) =>
+        new(id, productId, StockQuantity.Of(availableQuantity), StockQuantity.Of(reservedQuantity));
+
     public void IncreaseStock(int amount)
     {
         RequireNotNegative(amount);

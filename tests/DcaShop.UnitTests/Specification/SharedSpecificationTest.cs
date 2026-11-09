@@ -98,7 +98,7 @@ public sealed class SharedSpecificationTest
                 var outbox = new DcaShop.SharedKernel.Infrastructure.Events.InMemoryEventOutbox(TimeProvider.System);
                 var publisher = new DcaShop.SharedKernel.Adapter.Outgoing.Event.OutboxIntegrationEventPublisher(outbox, new DcaShop.SharedKernel.Infrastructure.Transactions.InMemoryTransactionBoundary());
                 new DcaShop.Product.Adapter.Outgoing.Event.ProductCreatedEventPublisher(publisher).OnAsync((object)product.DomainEvents.Single()).GetAwaiter().GetResult();
-                using var payload = JsonDocument.Parse(outbox.All().Single().Payload);
+                using var payload = JsonDocument.Parse(outbox.AllAsync().GetAwaiter().GetResult().Single().Payload);
                 Assert.Equal(fields.EnumerateArray().Select(f => f.GetString()).Order(), payload.RootElement.EnumerateObject().Select(p => p.Name).Order());
                 Assert.Equal("1.00", payload.RootElement.GetProperty("amount").GetString());
                 Assert.Equal("EUR", payload.RootElement.GetProperty("currency").GetString());

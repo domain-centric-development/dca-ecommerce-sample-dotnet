@@ -6,11 +6,11 @@ namespace DcaShop.IntegrationTests;
 /// The amounts below the cart's lines, read from the cart page of the wired application: the subtotal at today's
 /// prices and the VAT it contains at 19 %, rounded to the cent half-up.
 /// </summary>
-public sealed class CartTotalsTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CartTotalsTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CartTotalsTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public CartTotalsTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task TheSubtotalAddsUpTheLineTotals()

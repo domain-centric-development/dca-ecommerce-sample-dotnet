@@ -10,13 +10,13 @@ namespace DcaShop.IntegrationTests;
 /// The password change through its input port in the wired application: which refusal the use case reports when
 /// more than one rule is broken.
 /// </summary>
-public sealed class ChangePasswordRefusalTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ChangePasswordRefusalTest : IClassFixture<ShopFactory>
 {
     private const string Password = "Secret123";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ChangePasswordRefusalTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public ChangePasswordRefusalTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task AWrongCurrentPasswordIsReportedBeforeAWeakNewOne()

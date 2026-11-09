@@ -16,13 +16,13 @@ namespace DcaShop.IntegrationTests;
 /// What the operator sees of the shop's own retries: the wired shop with its real dispatcher and its default retry
 /// policy, a listener that fails once and one that fails on every delivery, and the event log page read afterwards.
 /// </summary>
-public sealed class BackofficeRedeliveryTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class BackofficeRedeliveryTest : IClassFixture<ShopFactory>
 {
     private const string DateForm = @"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public BackofficeRedeliveryTest(WebApplicationFactory<Program> factory)
+    public BackofficeRedeliveryTest(ShopFactory factory)
     {
         _factory = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
         {

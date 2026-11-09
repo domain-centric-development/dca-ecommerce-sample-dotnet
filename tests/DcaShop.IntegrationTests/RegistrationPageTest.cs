@@ -16,11 +16,11 @@ namespace DcaShop.IntegrationTests;
 /// there, what the form asks for, and where a registration and the login link lead when the page was opened for
 /// another page.
 /// </summary>
-public sealed class RegistrationPageTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class RegistrationPageTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public RegistrationPageTest(WebApplicationFactory<Program> factory)
+    public RegistrationPageTest(ShopFactory factory)
     {
         _factory = factory;
     }

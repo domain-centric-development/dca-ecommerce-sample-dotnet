@@ -11,13 +11,13 @@ namespace DcaShop.IntegrationTests;
 /// Every payment request "Place Order" sends names the checkout it pays for: the order through its input port, the shop
 /// wired to a payment provider that is a stub on a free port, answering per checkout reference what the test arranges.
 /// </summary>
-public sealed class PaymentReferenceTest : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public sealed class PaymentReferenceTest : IClassFixture<ShopFactory>, IDisposable
 {
     private readonly WireMockServer _provider = WireMockServer.Start();
     private readonly WebApplicationFactory<Program> _shop;
     private readonly PortCheckouts _checkouts;
 
-    public PaymentReferenceTest(WebApplicationFactory<Program> factory)
+    public PaymentReferenceTest(ShopFactory factory)
     {
         _shop = PortCheckouts.ShopWith(factory, _provider);
         _checkouts = new PortCheckouts(_shop);

@@ -15,13 +15,13 @@ namespace DcaShop.IntegrationTests;
 /// The product page's translation of a product that has no description: the page adapter against a product lookup
 /// that answers with such a product, since the seeded catalogue describes every product it holds.
 /// </summary>
-public sealed class ProductPageWithoutDescriptionTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ProductPageWithoutDescriptionTest : IClassFixture<ShopFactory>
 {
     private static readonly ProductId Tote = new(Guid.Parse("6c1f7a52-0d3e-4b8a-9f61-2a7e5c4d9b10"));
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ProductPageWithoutDescriptionTest(WebApplicationFactory<Program> factory)
+    public ProductPageWithoutDescriptionTest(ShopFactory factory)
     {
         _factory = factory;
     }

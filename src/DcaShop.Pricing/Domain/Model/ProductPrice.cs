@@ -37,6 +37,10 @@ public sealed class ProductPrice : AggregateRootBase<ProductPrice, PriceId>
         return productPrice;
     }
 
+    /// <summary>Restores a stored price as it was — a fact to restore, not a decision to re-make: no event is raised.</summary>
+    public static ProductPrice Reconstitute(PriceId id, ProductId productId, Price currentPrice, DateTimeOffset effectiveFrom) =>
+        new(id, productId, currentPrice, effectiveFrom);
+
     /// <summary>Sets a new price and registers <see cref="PriceChanged"/> with the previous one.</summary>
     public void UpdatePrice(Price newPrice)
     {

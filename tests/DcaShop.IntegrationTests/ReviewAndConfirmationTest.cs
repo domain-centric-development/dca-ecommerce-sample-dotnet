@@ -9,11 +9,11 @@ namespace DcaShop.IntegrationTests;
 /// The review step shows a guest everything entered and what the order costs; placing the order opens the
 /// confirmation, which repeats what was ordered — through the real HTTP pipeline.
 /// </summary>
-public sealed class ReviewAndConfirmationTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ReviewAndConfirmationTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ReviewAndConfirmationTest(WebApplicationFactory<Program> factory)
+    public ReviewAndConfirmationTest(ShopFactory factory)
     {
         _factory = factory;
     }

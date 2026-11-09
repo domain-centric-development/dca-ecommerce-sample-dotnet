@@ -55,7 +55,7 @@ public static class AccountContextRegistration
         services.AddScoped<IIsAccountRegisteredInputPort, IsAccountRegisteredUseCase>();
 
         // Outgoing adapters (output ports)
-        services.AddSingleton<IAccountRepository, InMemoryAccountRepository>();
+        services.AddSingleton<IAccountRepository, DapperAccountRepository>();
 
         // Token and cookie mechanics of the incoming adapters — interfaces without a port marker, implemented in
         // the security adapter

@@ -11,13 +11,13 @@ namespace DcaShop.IntegrationTests;
 /// The profile change through its input port in the wired application: a refused change leaves the stored profile
 /// as it was, the valid half of it included.
 /// </summary>
-public sealed class ProfileRefusalTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ProfileRefusalTest : IClassFixture<ShopFactory>
 {
     private const string Password = "Secret123";
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ProfileRefusalTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public ProfileRefusalTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task ARefusedChangeKeepsTheStoredAddressAndDateOfBirth()

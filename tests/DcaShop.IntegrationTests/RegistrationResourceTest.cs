@@ -16,12 +16,12 @@ namespace DcaShop.IntegrationTests;
 /// The auth resource's translation of a registration: which bodies it hands on to the use case and how it refuses the
 /// others. The use case behind it is a stand-in that records what it was asked.
 /// </summary>
-public sealed class RegistrationResourceTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class RegistrationResourceTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
     private readonly RecordingRegisterAccount _registerAccount = new();
 
-    public RegistrationResourceTest(WebApplicationFactory<Program> factory)
+    public RegistrationResourceTest(ShopFactory factory)
     {
         _factory = factory.WithWebHostBuilder(builder =>
             builder.ConfigureTestServices(s => s.AddSingleton<IRegisterAccountInputPort>(_registerAccount)));

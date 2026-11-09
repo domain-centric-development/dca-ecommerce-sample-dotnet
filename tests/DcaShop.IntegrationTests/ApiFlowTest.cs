@@ -14,11 +14,11 @@ namespace DcaShop.IntegrationTests;
 /// (ADR-007). Both halves of that boundary are asserted here — no cookie authenticates an API call, and no API
 /// call hands one out — because either half alone would make the exemption unsound.
 /// </summary>
-public sealed class ApiFlowTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ApiFlowTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ApiFlowTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public ApiFlowTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task TheCatalogIsPublicButCreatingAProductNeedsStaff()

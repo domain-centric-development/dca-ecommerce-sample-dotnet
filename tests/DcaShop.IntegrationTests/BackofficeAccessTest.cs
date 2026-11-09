@@ -10,13 +10,13 @@ namespace DcaShop.IntegrationTests;
 /// address below the back office leads through the login to the event log, and a logout closes it again and says so.
 /// Each test is a browser of its own that keeps its cookies; redirects are not followed — each one is an assertion.
 /// </summary>
-public sealed class BackofficeAccessTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class BackofficeAccessTest : IClassFixture<ShopFactory>
 {
     private static readonly Uri Origin = new("http://localhost");
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public BackofficeAccessTest(WebApplicationFactory<Program> factory)
+    public BackofficeAccessTest(ShopFactory factory)
     {
         _factory = factory;
     }

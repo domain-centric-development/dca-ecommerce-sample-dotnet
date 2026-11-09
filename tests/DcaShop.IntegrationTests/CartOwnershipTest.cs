@@ -17,11 +17,11 @@ namespace DcaShop.IntegrationTests;
 /// The rule is enforced by the use cases, not by the adapters, which is why the web POST below is covered at all:
 /// no amount of discipline in the REST resource would have reached it.
 /// </remarks>
-public sealed class CartOwnershipTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class CartOwnershipTest : IClassFixture<ShopFactory>
 {
     private readonly WebApplicationFactory<Program> _factory;
 
-    public CartOwnershipTest(WebApplicationFactory<Program> factory) => _factory = factory;
+    public CartOwnershipTest(ShopFactory factory) => _factory = factory;
 
     [Fact]
     public async Task AStrangerCannotStartACheckoutOnSomebodyElsesCart()

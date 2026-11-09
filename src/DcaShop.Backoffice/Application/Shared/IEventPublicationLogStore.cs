@@ -33,10 +33,7 @@ public sealed record EventPublicationEntry(
 /// <summary>The status of a delivery to one listener, as the outbox keeps it.</summary>
 public enum PublicationStatus
 {
-    /// <summary>Registered inside the publishing use case's transaction, not yet released.</summary>
-    Staged,
-
-    /// <summary>Released and waiting for its delivery, a first one or a retry.</summary>
+    /// <summary>Committed and waiting for its delivery, a first one or a retry.</summary>
     Pending,
 
     /// <summary>Delivered.</summary>

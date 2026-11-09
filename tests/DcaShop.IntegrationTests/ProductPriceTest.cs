@@ -9,7 +9,7 @@ namespace DcaShop.IntegrationTests;
 /// The price of a seeded product on its catalogue card and on its product page, through the real HTTP pipeline: the
 /// price Pricing set from the product's creation, written as its amount with two decimals and the currency code.
 /// </summary>
-public sealed class ProductPriceTest : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ProductPriceTest : IClassFixture<ShopFactory>
 {
     private static readonly Regex CardTitle = new(@"data-test=""product-card-title"">([^<]*)<", RegexOptions.Compiled);
     private static readonly Regex CardLink = new(@"href=""(/products/[0-9a-f-]{36})""\s+data-test=""view-product""", RegexOptions.Compiled);
@@ -46,7 +46,7 @@ public sealed class ProductPriceTest : IClassFixture<WebApplicationFactory<Progr
 
     private readonly WebApplicationFactory<Program> _factory;
 
-    public ProductPriceTest(WebApplicationFactory<Program> factory)
+    public ProductPriceTest(ShopFactory factory)
     {
         _factory = factory;
     }
