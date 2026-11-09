@@ -74,7 +74,7 @@ public sealed class SharedSpecificationTest
         foreach (var edit in v.GetProperty("edits").EnumerateArray())
         {
             if (edit.TryGetProperty("add", out var add)) cart.AddItem(product, Quantity.Of(add.GetInt32()), price);
-            else if (edit.TryGetProperty("set", out var quantity)) cart.UpdateItemQuantity(cart.Items[0].Id, Quantity.Of(quantity.GetInt32()));
+            else if (edit.TryGetProperty("set", out var quantity)) cart = WithFirstLineSetTo(cart, quantity.GetInt32());
             else if (edit.TryGetProperty("remove", out _)) cart.RemoveItemByProductId(product);
             else if (edit.TryGetProperty("other", out var other)) cart.AddItem(ProductId.Generate(), Quantity.Of(other.GetInt32()), price);
             else Assert.Fail("Unknown edit " + edit);
@@ -87,6 +87,16 @@ public sealed class SharedSpecificationTest
         cart.ClearDomainEvents(); cart.ReconcileCheckout("session-1", new[] { snapshot });
         Assert.Equal(v.GetProperty("remaining").GetInt32(), cart.TotalQuantity); Assert.Empty(cart.DomainEvents);
     }
+    /// <summary>
+    /// The cart with its first line set to <paramref name="quantity"/> as the store would hand it back — a reduction drops
+    /// the oldest units first. No use case of the shop sets a quantity, so the vector's edit is built through
+    /// <see cref="ShoppingCart.Reconstitute"/>.
+    /// </summary>
+    private static ShoppingCart WithFirstLineSetTo(ShoppingCart cart, int quantity) =>
+        ShoppingCart.Reconstitute(cart.Id, cart.CustomerId, cart.Status, cart.Items.Select((i, index) => index == 0
+            ? new ShoppingCart.StoredItem(i.Id, i.ProductId, Quantity.Of(quantity), i.PriceAtAddition, PositionUnits.Parse(i.StoredUnits).Resize(quantity).Serialize())
+            : new ShoppingCart.StoredItem(i.Id, i.ProductId, i.Quantity, i.PriceAtAddition, i.StoredUnits)));
+
     private static void Product(JsonElement v)
     {
         Action action = () =>

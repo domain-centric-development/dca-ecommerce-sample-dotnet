@@ -111,61 +111,12 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>, IOwn
         RegisterEvent(ProductRemovedFromCart.Now(Id, productId));
     }
 
-    public void UpdateItemQuantity(CartItemId itemId, Quantity newQuantity)
-    {
-        EnsureCartIsActive();
-        var item = FindItem(itemId);
-        var oldQuantity = item.Quantity;
-        item.UpdateQuantity(newQuantity);
-        RegisterEvent(CartItemQuantityChanged.Now(Id, itemId, item.ProductId, oldQuantity, newQuantity));
-    }
-
-    public void IncreaseItemQuantity(CartItemId itemId)
-    {
-        EnsureCartIsActive();
-        var item = FindItem(itemId);
-        var oldQuantity = item.Quantity;
-        item.IncreaseQuantity();
-        RegisterEvent(CartItemQuantityChanged.Now(Id, itemId, item.ProductId, oldQuantity, item.Quantity));
-    }
-
-    public void DecreaseItemQuantity(CartItemId itemId)
-    {
-        EnsureCartIsActive();
-        var item = FindItem(itemId);
-        var oldQuantity = item.Quantity;
-        item.DecreaseQuantity();
-        RegisterEvent(CartItemQuantityChanged.Now(Id, itemId, item.ProductId, oldQuantity, item.Quantity));
-    }
-
     public void Clear()
     {
         EnsureCartIsActive();
         var count = _items.Count;
         _items.Clear();
         RegisterEvent(CartCleared.Now(Id, count));
-    }
-
-    public void Abandon()
-    {
-        Status = CartStatus.Abandoned;
-        RegisterEvent(CartAbandoned.Now(Id));
-    }
-
-    public void Complete()
-    {
-        if (Status == CartStatus.Completed)
-        {
-            throw new CartAlreadyCompletedException(Id);
-        }
-
-        if (Status == CartStatus.Abandoned)
-        {
-            throw new AbandonedCartCannotBeCompletedException(Id);
-        }
-
-        Status = CartStatus.Completed;
-        RegisterEvent(CartCompleted.Now(Id));
     }
 
     /// <summary>Total from the prices captured at addition — the settlement price is resolved fresh at checkout.</summary>
@@ -179,8 +130,6 @@ public sealed class ShoppingCart : AggregateRootBase<ShoppingCart, CartId>, IOwn
 
         return total;
     }
-
-
 
     /// <summary>
     /// Takes over every line of another cart, keeping the price each was added at, and answers how many lines

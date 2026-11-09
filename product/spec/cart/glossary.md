@@ -38,26 +38,13 @@ An editable collection of stable positions. Checkout copies a snapshot through t
 - `Create` — the cart comes into existence, active and empty
 - `Reconstitute` — restores a stored cart; no rule re-evaluated, no event
 - `AddItem` — a product goes into the cart as a new position, or the position already holding it grows by the quantity
-- `RemoveItem`, `RemoveItemByProductId` — the position is gone from the cart, whatever its quantity. Remove cart item
-  (`RemoveCartItem`) is the Shopping use case that takes one item out of the caller's active cart by its `CartItemId`
-  (the cart page's "Remove"); `RemoveItemFromCart` names the item by its product in a cart named by its `CartId` (the cart API)
-- `UpdateItemQuantity` — sets a position's quantity; `IncreaseItemQuantity` / `DecreaseItemQuantity` change it by one
+- `RemoveItem`, `RemoveItemByProductId` — the position is gone from the cart, whatever its quantity. Remove cart item (`RemoveCartItem`) is the Shopping use case that takes one item out of the caller's active cart by its `CartItemId` (the cart page's "Remove"); `RemoveItemFromCart` names the item by its product in a cart named by its `CartId` (the cart API)
 - `Merge` — the positions of another cart are added to this one; the source cart is left untouched
-- Take over the guest cart (`RecoverCart`) — the Cart recovery use case that makes the guest cart the account's after
-  the login: when the account's cart holds nothing, the guest cart itself is handed over (`HandOverTo`) and an empty
-  cart the account had is deleted; when the account's cart holds items as well, the guest's lines are appended to it
-  and the guest cart is deleted. Sent by the form of the page after the login (`POST /cart/merge/take-over`), never
-  on opening that page. `GetCartMergeOptions` answers when the take-over is due
-- Hand over the cart (`HandOverTo`) — the cart itself, with its id and its positions, becomes another customer's:
-  the account a guest logged in to. Only an active cart is handed over (else `CartNotModifiable`); a checkout
-  captured from the cart stays the checkout of that cart, so the Checkout context finds it through the account's
-  active cart (Resume checkout, in the Checkout glossary). The store releases the active-cart claim the cart held
-  for the former customer (ADR-014)
+- Take over the guest cart (`RecoverCart`) — the Cart recovery use case that makes the guest cart the account's after the login: when the account's cart holds nothing, the guest cart itself is handed over (`HandOverTo`) and an empty cart the account had is deleted; when the account's cart holds items as well, the guest's lines are appended to it and the guest cart is deleted. Sent by the form of the page after the login (`POST /cart/merge/take-over`), never on opening that page. `GetCartMergeOptions` answers when the take-over is due
+- Hand over the cart (`HandOverTo`) — the cart itself, with its id and its positions, becomes another customer's: the account a guest logged in to. Only an active cart is handed over (else `CartNotModifiable`); a checkout captured from the cart stays the checkout of that cart, so the Checkout context finds it through the account's active cart (Resume checkout, in the Checkout glossary). The store releases the active-cart claim the cart held for the former customer (ADR-014)
 - `QuantityOf` — the quantity of the position holding a product; 0 for a product the cart does not hold
 - `Clear` — every position is gone; the cart itself stays, active
 - `ReconcileCheckout` — the units a checkout bought are taken out of their positions, positions left without units are gone; the cart stays active and editable
-- `Abandon` — the cart is kept with status abandoned and rejects edits; it is not deleted
-- `Complete` — the whole cart is kept with status completed; no use case calls it, checkout completion goes through `ReconcileCheckout`
 
 ### CartItem
 
@@ -74,8 +61,7 @@ product, the desired quantity, and the price captured at the time it was added
 **Related terms:** `Quantity`, `ProductId`, `Price` (Shared Kernel),
 `PriceAtAddition`
 
-**Operations:** Assembly-internal only, via `ShoppingCart`: `UpdateQuantity`,
-`IncreaseQuantity`, `DecreaseQuantity`
+**Operations:** Assembly-internal only, via `ShoppingCart`: `UpdateQuantity`
 
 **Notes:** Exists only within a `ShoppingCart` aggregate; no dedicated
 repository. A repository restoring a stored cart passes `ShoppingCart.StoredItem`
@@ -185,13 +171,6 @@ related items deleted).
 a duplicate in the DCA review. If item-level removal is to be modeled
 separately, clarify with the domain expert.
 
-### CartItemQuantityChanged
-
-**Definition:** The quantity of an existing cart item was changed (increased
-or decreased). Carries the old and new quantity.
-
-**Type:** Domain Event
-
 ### CartCleared
 
 **Definition:** All items were removed from the shopping cart at once (e.g.,
@@ -203,12 +182,17 @@ via "clear cart").
 
 Legacy event name retained for the cart reconciliation notification. The current completion handler removes only captured units; it does not change an active cart to Completed. Replays with no intersection emit nothing. The handler, `CartCompletionEventConsumer`, hands the `EventId` of the `ICartCompletionTrigger` (an `IIntegrationEvent`) to `CompleteCartUseCase`, which skips an event `IProcessedEvents` has already recorded for its effect, `complete-cart`, and records it in the same transaction.
 
-### CartAbandoned
 
-**Definition:** The shopping cart was abandoned by the customer (e.g., after
-an inactivity threshold). Final state.
+## Integration Events
 
-**Type:** Domain Event
+### CartContentsChangedEvent
+
+**Definition:** Published when what a cart holds changed — a line added, a line removed, the cart cleared. Checkout
+reads it to keep an open session in step with its cart.
+
+**Type:** Integration Event
+
+**Related terms:** `CartItemAddedToCart`, `ProductRemovedFromCart`, `CartCleared` (the domain events it is made of)
 
 ## Domain Services
 
@@ -339,7 +323,7 @@ product-created v1 exposes only eventId, occurredOn, productId, amount, currency
 
 ## Failures
 
-Named refusals. The first three are rules of the cart itself; the rest are failures of a request, raised by
+Named refusals. The first two are rules of the cart itself; the rest are failures of a request, raised by
 the use case or by the store that sees every cart of a customer.
 
 ### CartNotModifiable
@@ -347,14 +331,6 @@ the use case or by the store that sees every cart of a customer.
 **Definition:** A cart that is no longer active would be changed.
 
 **Type:** Domain failure (`DomainException`) · **Related terms:** `CartStatus`, `ShoppingCart.AddItem`, merge
-
----
-
-### CartAlreadyCompleted / AbandonedCartCannotBeCompleted
-
-**Definition:** Completion was asked for twice, or asked for on a cart the customer abandoned.
-
-**Type:** Domain failure (`DomainException`) · **Related terms:** `ShoppingCart.Complete`, `CartCompleted`
 
 ---
 

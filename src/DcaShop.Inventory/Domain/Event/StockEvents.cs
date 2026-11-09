@@ -17,19 +17,6 @@ public sealed record StockLevelCreated(
         new(Guid.NewGuid(), DateTimeOffset.UtcNow, stockLevelId, productId, initialQuantity);
 }
 
-/// <summary>Stock was added.</summary>
-public sealed record StockIncreased(
-    Guid EventId,
-    DateTimeOffset OccurredOn,
-    StockLevelId StockLevelId,
-    ProductId ProductId,
-    StockQuantity AddedQuantity,
-    StockQuantity AvailableQuantity) : IDomainEvent
-{
-    public static StockIncreased Now(StockLevelId stockLevelId, ProductId productId, StockQuantity added, StockQuantity available) =>
-        new(Guid.NewGuid(), DateTimeOffset.UtcNow, stockLevelId, productId, added, available);
-}
-
 /// <summary>Stock was taken out — the counterpart of a shipped or sold item.</summary>
 public sealed record StockDecreased(
     Guid EventId,

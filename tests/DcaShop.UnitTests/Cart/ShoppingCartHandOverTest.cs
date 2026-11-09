@@ -13,8 +13,7 @@ public sealed class ShoppingCartHandOverTest
     [Fact]
     public void AnAbandonedCartIsNotHandedOver()
     {
-        var cart = ShoppingCart.Create(CartId.Generate(), Guest);
-        cart.Abandon();
+        var cart = ShoppingCart.Reconstitute(CartId.Generate(), Guest, CartStatus.Abandoned, []);
 
         Assert.Throws<CartNotModifiableException>(() => cart.HandOverTo(Account));
         Assert.Equal(Guest, cart.CustomerId);

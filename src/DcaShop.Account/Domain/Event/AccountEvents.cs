@@ -80,24 +80,3 @@ public sealed record AccountOwnerDateOfBirthChanged(
         AccountId accountId, DateOnly previousDateOfBirth, DateOnly newDateOfBirth) =>
         new(Guid.NewGuid(), DateTimeOffset.UtcNow, accountId, previousDateOfBirth, newDateOfBirth);
 }
-
-/// <summary>An account has been temporarily blocked and can no longer log in.</summary>
-public sealed record AccountSuspended(Guid EventId, DateTimeOffset OccurredOn, AccountId AccountId) : IDomainEvent
-{
-    public static AccountSuspended Now(AccountId accountId) =>
-        new(Guid.NewGuid(), DateTimeOffset.UtcNow, accountId);
-}
-
-/// <summary>A previously suspended account has been re-enabled.</summary>
-public sealed record AccountReactivated(Guid EventId, DateTimeOffset OccurredOn, AccountId AccountId) : IDomainEvent
-{
-    public static AccountReactivated Now(AccountId accountId) =>
-        new(Guid.NewGuid(), DateTimeOffset.UtcNow, accountId);
-}
-
-/// <summary>An account has been permanently closed; the terminal state of the lifecycle.</summary>
-public sealed record AccountClosed(Guid EventId, DateTimeOffset OccurredOn, AccountId AccountId) : IDomainEvent
-{
-    public static AccountClosed Now(AccountId accountId) =>
-        new(Guid.NewGuid(), DateTimeOffset.UtcNow, accountId);
-}

@@ -28,10 +28,7 @@ truth for product identity and descriptive attributes.
 - `EnrichedProduct` — enriched read model for display
 - `ProductFactory` — creation with initial price and stock
 
-**Operations:** `Create` (the product comes into existence with a new `ProductId`; its initial price and
-stock travel only in `ProductCreated`, the aggregate holds neither; `ProductFactory` delegates here),
-`Reconstitute` (restores a stored product; no rule re-evaluated, no event),
-`UpdateName`, `UpdateDescription`, `UpdateCategory` (each replaces the attribute and raises its `…Changed` event)
+**Operations:** `Create` (the product comes into existence with a new `ProductId`; its initial price and stock travel only in `ProductCreated`, the aggregate holds neither; `ProductFactory` delegates here), `Reconstitute` (restores a stored product; no rule re-evaluated, no event), `UpdateName`, `UpdateDescription`, `UpdateCategory` (each replaces the attribute and raises its `…Changed` event)
 
 **Notes:** Prices and stock levels are NOT managed by the Product aggregate —
 they reside in the Pricing and Inventory contexts respectively.
@@ -158,6 +155,19 @@ old and new description.
 the old and new category.
 
 **Type:** Domain Event
+
+
+## Integration Events
+
+### ProductCreatedEvent
+
+**Definition:** Published when a product is created, with its initial price and stock. Pricing sets the product's
+first price from it; Inventory provisions its first stock level.
+
+**Type:** Integration Event
+
+**Related terms:** `ProductCreated` (the domain event it is made of); it implements the consumers' trigger contracts
+`IPriceInitializationTrigger` (Pricing) and `IStockInitializationTrigger` (Inventory)
 
 ## Factories
 

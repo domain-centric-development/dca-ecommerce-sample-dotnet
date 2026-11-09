@@ -51,9 +51,7 @@ event's listeners) together with `ListenerId` — a technical key, not a busines
 **Operations:**
 - `IsCompleted` — has the delivery to this listener been made?
 - `ShortEventType` — type name of the event without its namespace
-- Retry failed listener (`ReplayFailed`) — delivers a failed entry's event once more
-  to that entry's listener alone; the other listeners' entries stay as they were
-  (use case `ReplayFailedPublication`)
+- Retry failed listener (`ReplayFailed`) — delivers a failed entry's event once more to that entry's listener alone; the other listeners' entries stay as they were (use case `ReplayFailedPublication`)
 
 **Notes:** Belongs to the Store as its **read schema** and is deliberately
 decoupled from the use-case API (see `EventPublicationSummary`). The listener is

@@ -19,13 +19,6 @@ public sealed record ProductRemovedFromCart(Guid EventId, DateTimeOffset Occurre
         new(Guid.NewGuid(), DateTimeOffset.UtcNow, cartId, productId);
 }
 
-/// <summary>The quantity of an existing item changed.</summary>
-public sealed record CartItemQuantityChanged(Guid EventId, DateTimeOffset OccurredOn, CartId CartId, CartItemId ItemId, ProductId ProductId, Quantity OldQuantity, Quantity NewQuantity) : IDomainEvent
-{
-    public static CartItemQuantityChanged Now(CartId cartId, CartItemId itemId, ProductId productId, Quantity oldQuantity, Quantity newQuantity) =>
-        new(Guid.NewGuid(), DateTimeOffset.UtcNow, cartId, itemId, productId, oldQuantity, newQuantity);
-}
-
 /// <summary>All items were removed at once.</summary>
 public sealed record CartCleared(Guid EventId, DateTimeOffset OccurredOn, CartId CartId, int RemovedItemCount) : IDomainEvent
 {
@@ -37,10 +30,4 @@ public sealed record CartCleared(Guid EventId, DateTimeOffset OccurredOn, CartId
 public sealed record CartCompleted(Guid EventId, DateTimeOffset OccurredOn, CartId CartId) : IDomainEvent
 {
     public static CartCompleted Now(CartId cartId) => new(Guid.NewGuid(), DateTimeOffset.UtcNow, cartId);
-}
-
-/// <summary>The customer gave the cart up.</summary>
-public sealed record CartAbandoned(Guid EventId, DateTimeOffset OccurredOn, CartId CartId) : IDomainEvent
-{
-    public static CartAbandoned Now(CartId cartId) => new(Guid.NewGuid(), DateTimeOffset.UtcNow, cartId);
 }

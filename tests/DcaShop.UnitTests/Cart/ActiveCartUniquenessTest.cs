@@ -57,8 +57,7 @@ public sealed class ActiveCartUniquenessTest
         var first = ShoppingCart.Create(CartId.Generate(), customer);
         await carts.SaveAsync(first);
 
-        first.Complete();
-        await carts.SaveAsync(first);
+        await carts.SaveAsync(ShoppingCart.Reconstitute(first.Id, customer, CartStatus.Completed, []));
 
         var second = ShoppingCart.Create(CartId.Generate(), customer);
         await carts.SaveAsync(second);

@@ -37,21 +37,3 @@ public sealed record CheckoutConfirmed(Guid EventId, DateTimeOffset OccurredOn, 
     public static CheckoutConfirmed Now(CheckoutSessionId sessionId, CartId cartId, CustomerId customerId, Money totalAmount, IEnumerable<CheckoutLineItem> items) =>
         new(Guid.NewGuid(), DateTimeOffset.UtcNow, sessionId, cartId, customerId, totalAmount, items.Select(i => new LineItemInfo(i.ProductId, i.Quantity, i.PositionSnapshot)).ToList());
 }
-
-public sealed record CheckoutCompleted(Guid EventId, DateTimeOffset OccurredOn, CheckoutSessionId SessionId, Money TotalAmount, string? OrderReference) : IDomainEvent
-{
-    public static CheckoutCompleted Now(CheckoutSessionId sessionId, Money totalAmount, string? orderReference) =>
-        new(Guid.NewGuid(), DateTimeOffset.UtcNow, sessionId, totalAmount, orderReference);
-}
-
-public sealed record CheckoutAbandoned(Guid EventId, DateTimeOffset OccurredOn, CheckoutSessionId SessionId, CheckoutStep AbandonedAt) : IDomainEvent
-{
-    public static CheckoutAbandoned Now(CheckoutSessionId sessionId, CheckoutStep abandonedAt) =>
-        new(Guid.NewGuid(), DateTimeOffset.UtcNow, sessionId, abandonedAt);
-}
-
-public sealed record CheckoutExpired(Guid EventId, DateTimeOffset OccurredOn, CheckoutSessionId SessionId, CheckoutStep ExpiredAt) : IDomainEvent
-{
-    public static CheckoutExpired Now(CheckoutSessionId sessionId, CheckoutStep expiredAt) =>
-        new(Guid.NewGuid(), DateTimeOffset.UtcNow, sessionId, expiredAt);
-}

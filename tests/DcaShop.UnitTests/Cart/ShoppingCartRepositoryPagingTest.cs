@@ -23,9 +23,7 @@ public sealed class ShoppingCartRepositoryPagingTest
             await repository.SaveAsync(CartWith(Quantity.Of(1)));
         }
 
-        var checkedOut = CartWith(Quantity.Of(1));
-        checkedOut.Abandon();
-        await repository.SaveAsync(checkedOut);
+        await repository.SaveAsync(CartWith(Quantity.Of(1), CartStatus.Abandoned));
 
         var firstPage = await repository.FindByAsync(new ActiveCart(), PagingRequest.Of(0, 2));
         var lastPage = await repository.FindByAsync(new ActiveCart(), PagingRequest.Of(2, 2));
@@ -41,10 +39,11 @@ public sealed class ShoppingCartRepositoryPagingTest
     {
         var repository = new InMemoryShoppingCartRepository();
         var customerId = CustomerId.Of("customer-1");
-        var first = ShoppingCart.Create(CartId.Generate(), customerId);
-        first.AddItem(ProductId.Generate(), Quantity.Of(1), Ten);
-        first.Abandon();
-        await repository.SaveAsync(first);
+        await repository.SaveAsync(ShoppingCart.Reconstitute(
+            CartId.Generate(),
+            customerId,
+            CartStatus.Abandoned,
+            [new ShoppingCart.StoredItem(CartItemId.Generate(), ProductId.Generate(), Quantity.Of(1), Ten)]));
         await repository.SaveAsync(ShoppingCart.Create(CartId.Generate(), customerId));
         await repository.SaveAsync(CartWith(Quantity.Of(1)));
 
@@ -53,10 +52,10 @@ public sealed class ShoppingCartRepositoryPagingTest
         Assert.Equal(2, carts.Count);
     }
 
-    private static ShoppingCart CartWith(Quantity quantity)
-    {
-        var cart = ShoppingCart.Create(CartId.Generate(), CustomerId.Of($"customer-{Guid.NewGuid()}"));
-        cart.AddItem(ProductId.Generate(), quantity, Ten);
-        return cart;
-    }
+    private static ShoppingCart CartWith(Quantity quantity, CartStatus status = CartStatus.Active) =>
+        ShoppingCart.Reconstitute(
+            CartId.Generate(),
+            CustomerId.Of($"customer-{Guid.NewGuid()}"),
+            status,
+            [new ShoppingCart.StoredItem(CartItemId.Generate(), ProductId.Generate(), quantity, Ten)]);
 }

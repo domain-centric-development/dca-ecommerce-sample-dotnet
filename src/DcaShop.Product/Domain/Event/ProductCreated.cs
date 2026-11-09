@@ -12,10 +12,9 @@ public sealed record ProductCreated(
     ProductId ProductId,
     Sku Sku,
     ProductName Name,
-    Category Category,
     Price InitialPrice,
     int InitialStock) : IDomainEvent
 {
-    public static ProductCreated Now(ProductId productId, Sku sku, ProductName name, Category category, Price initialPrice, int initialStock) =>
-        new(Guid.NewGuid(), DateTimeOffset.UtcNow, productId, sku, name, category, initialPrice, initialStock);
+    public static ProductCreated Now(ProductId productId, Sku sku, ProductName name, Price initialPrice, int initialStock) =>
+        new(Guid.NewGuid(), DateTimeOffset.UtcNow, productId, sku, name, initialPrice, initialStock);
 }

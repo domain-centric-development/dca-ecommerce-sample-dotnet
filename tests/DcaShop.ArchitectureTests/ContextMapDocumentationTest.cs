@@ -33,7 +33,7 @@ public sealed class ContextMapDocumentationTest
             typeof(Cart.CartContext).Assembly,
             typeof(Checkout.CheckoutContext).Assembly);
 
-        var generated = ContextMapRenderer.Of(arch).WithTitle("DcaShop Context Map").Render();
+        var generated = ContextMapRenderer.Of(arch).Render();
         Assert.Contains("Shopping Cart", generated, StringComparison.Ordinal);
 
         var root = FindRepositoryRoot();

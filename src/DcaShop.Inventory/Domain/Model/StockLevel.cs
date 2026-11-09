@@ -44,13 +44,6 @@ public sealed class StockLevel : AggregateRootBase<StockLevel, StockLevelId>
     public static StockLevel Reconstitute(StockLevelId id, ProductId productId, int availableQuantity, int reservedQuantity) =>
         new(id, productId, StockQuantity.Of(availableQuantity), StockQuantity.Of(reservedQuantity));
 
-    public void IncreaseStock(int amount)
-    {
-        RequireNotNegative(amount);
-        AvailableQuantity = StockQuantity.Of(AvailableQuantity.Value + amount);
-        RegisterEvent(StockIncreased.Now(Id, ProductId, StockQuantity.Of(amount), AvailableQuantity));
-    }
-
     public void DecreaseStock(int amount)
     {
         RequireNotNegative(amount);

@@ -22,11 +22,26 @@ public sealed class CheckoutConfirmationReadinessTest
         return session;
     }
 
+    /// <summary>The session as the store would hand it back in <paramref name="status"/>, on <paramref name="step"/>.</summary>
+    private static CheckoutSession Stored(CheckoutSession session, CheckoutSessionStatus status, CheckoutStep step, string? orderReference = null) =>
+        CheckoutSession.Reconstitute(
+            session.Id,
+            session.CartId,
+            session.CustomerId,
+            session.LineItems,
+            session.Totals,
+            step,
+            status,
+            session.BuyerInfo,
+            session.DeliveryAddress,
+            session.ShippingOption,
+            session.PaymentSelection,
+            orderReference);
+
     [Fact]
     public void ASessionNoLongerModifiableIsNotReady()
     {
-        var session = AtTheReview();
-        session.Abandon();
+        var session = Stored(AtTheReview(), CheckoutSessionStatus.Abandoned, CheckoutStep.Review);
 
         Assert.Throws<CheckoutNotModifiableException>(() => session.AssertReadyForConfirmation(CheckoutValidationResult.Valid()));
     }
@@ -44,8 +59,7 @@ public sealed class CheckoutConfirmationReadinessTest
     [Fact]
     public void ASessionNotAtTheReviewIsNotReady()
     {
-        var session = AtTheReview();
-        session.GoBackTo(CheckoutStep.Delivery);
+        var session = Stored(AtTheReview(), CheckoutSessionStatus.Active, CheckoutStep.Delivery);
 
         Assert.Throws<CheckoutStepOutOfOrderException>(() => session.AssertReadyForConfirmation(CheckoutValidationResult.Valid()));
     }

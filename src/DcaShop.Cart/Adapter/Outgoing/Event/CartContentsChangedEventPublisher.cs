@@ -7,7 +7,7 @@ using DomainCentric.BuildingBlocks.Hexagonal.Ports.Out;
 namespace DcaShop.Cart.Adapter.Outgoing.Event;
 
 /// <summary>
-/// Translates the four content-changing domain events into the single published
+/// Translates the three content-changing domain events into the single published
 /// <see cref="CartContentsChangedEvent"/>. Listening on several event types at once is why this
 /// adapter implements <see cref="IEventListener"/> directly instead of deriving from
 /// <see cref="EventListener{TEvent}"/>.
@@ -39,7 +39,6 @@ public sealed class CartContentsChangedEventPublisher : IEventListener
     {
         CartItemAddedToCart e => (e.EventId, e.OccurredOn, e.CartId.Value, CartContentsChangedEvent.ChangeType.ItemAdded),
         ProductRemovedFromCart e => (e.EventId, e.OccurredOn, e.CartId.Value, CartContentsChangedEvent.ChangeType.ItemRemoved),
-        CartItemQuantityChanged e => (e.EventId, e.OccurredOn, e.CartId.Value, CartContentsChangedEvent.ChangeType.QuantityChanged),
         CartCleared e => (e.EventId, e.OccurredOn, e.CartId.Value, CartContentsChangedEvent.ChangeType.CartCleared),
         _ => null,
     };

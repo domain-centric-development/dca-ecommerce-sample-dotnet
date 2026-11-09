@@ -63,7 +63,7 @@ public sealed class Product : AggregateRootBase<Product, ProductId>
         if (initialStock < 0) throw new ArgumentOutOfRangeException(nameof(initialStock));
         ArgumentNullException.ThrowIfNull(initialPrice);
         var product = new Product(ProductId.Generate(), sku, name, description, category, imageUrl);
-        product.RegisterEvent(ProductCreated.Now(product.Id, sku, name, category, initialPrice, initialStock));
+        product.RegisterEvent(ProductCreated.Now(product.Id, sku, name, initialPrice, initialStock));
         return product;
     }
 

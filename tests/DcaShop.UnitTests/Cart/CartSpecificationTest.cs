@@ -16,14 +16,10 @@ public sealed class CartSpecificationTest
     [Fact]
     public void ActiveCartHoldsUntilTheCartIsAbandoned()
     {
-        var cart = CartWithOneItem();
         var specification = new ActiveCart();
 
-        Assert.True(specification.IsSatisfiedBy(cart));
-
-        cart.Abandon();
-
-        Assert.False(specification.IsSatisfiedBy(cart));
+        Assert.True(specification.IsSatisfiedBy(CartWithOneItem()));
+        Assert.False(specification.IsSatisfiedBy(CartWithOneItem(CartStatus.Abandoned)));
     }
 
     [Fact]
@@ -73,12 +69,12 @@ public sealed class CartSpecificationTest
         Assert.Equal("LastUpdatedBefore", new LastUpdatedBefore(DateTimeOffset.UnixEpoch).Accept(visitor));
     }
 
-    private static ShoppingCart CartWithOneItem()
-    {
-        var cart = ShoppingCart.Create(CartId.Generate(), CustomerId.Of("customer-1"));
-        cart.AddItem(ProductId.Generate(), Quantity.Of(1), Ten);
-        return cart;
-    }
+    private static ShoppingCart CartWithOneItem(CartStatus status = CartStatus.Active) =>
+        ShoppingCart.Reconstitute(
+            CartId.Generate(),
+            CustomerId.Of("customer-1"),
+            status,
+            [new ShoppingCart.StoredItem(CartItemId.Generate(), ProductId.Generate(), Quantity.Of(1), Ten)]);
 
     private sealed class NameCollectingVisitor : ICartSpecificationVisitor<string>
     {

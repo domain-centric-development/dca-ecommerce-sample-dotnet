@@ -20,7 +20,6 @@ public sealed class ShoppingCartTest
         cart.AddItem(product, Quantity.Of(2), Ten);
         cart.ClearDomainEvents();
         Assert.Throws<ArgumentException>(() => cart.AddItem(product, default, Ten));
-        Assert.Throws<ArgumentException>(() => cart.UpdateItemQuantity(cart.Items[0].Id, default));
         Assert.Equal(2, cart.Items[0].Quantity.Value);
         Assert.Empty(cart.DomainEvents);
         var stored = new ShoppingCart.StoredItem(CartItemId.Generate(), product, default, Ten);
@@ -74,18 +73,6 @@ public sealed class ShoppingCartTest
         Assert.Empty(cart.Items);
         var removed = Assert.IsType<ProductRemovedFromCart>(Assert.Single(cart.DomainEvents));
         Assert.Equal(productId, removed.ProductId);
-    }
-
-    [Fact]
-    public void CompleteFromActiveIsAllowedButNotFromAbandoned()
-    {
-        var cart = NewCart();
-        cart.Complete();
-        Assert.Equal(CartStatus.Completed, cart.Status);
-
-        var abandoned = NewCart();
-        abandoned.Abandon();
-        Assert.Throws<AbandonedCartCannotBeCompletedException>(abandoned.Complete);
     }
 
     [Fact]

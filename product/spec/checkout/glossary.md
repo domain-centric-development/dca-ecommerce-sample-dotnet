@@ -59,31 +59,13 @@ claim of durable distributed transactions or universal rollback of unenlisted re
 **Operations:**
 - `Start` — the session comes into existence over a snapshot of the cart's positions, quantities and prices
 - `Supersede` — kept with status superseded when a new checkout action replaces it; no event; only an active session can be superseded
-- `SubmitBuyerInfo`, `SubmitDelivery`, `SubmitPayment` — record the step's data and move on to the next step when standing on it.
-  `SubmitPayment` records only the chosen provider: no payment is requested and no event is published; a total of zero
-  is refused (`NothingToPay`)
-- `GoBackTo` — moves the current step back; data already submitted stays
+- `SubmitBuyerInfo`, `SubmitDelivery`, `SubmitPayment` — record the step's data and move on to the next step when standing on it. `SubmitPayment` records only the chosen provider: no payment is requested and no event is published; a total of zero is refused (`NothingToPay`)
 - `LinesAt`, `TotalsAt`, `FingerprintAt` — questions: the lines, the totals and the order fingerprint at today's prices, as the article facts state them; a line whose article is not available keeps its own price
 - Get review (`GetReview`) — the use case the review page reads: the session at today's prices with its order fingerprint; no transaction, nothing stored
 - `AssertReadyForConfirmation` — a question: the preconditions of `Confirm` against a pricing verdict and the order fingerprint shown, checked without changing anything
-- `Confirm` — status confirmed, the lines and totals at today's prices, the authorized payment recorded; publishes
-  `PaymentSubmitted`, then `CheckoutConfirmed`. Refused while the pricing verdict reports a shortage, when the order
-  fingerprint at today's prices differs from the one the review showed (`PriceChangedSinceReview` names the first line
-  that differs, `OrderChangedSinceReview` anything else), and for a payment that does not pay exactly the confirmed
-  total through the chosen provider (`PaymentDoesNotCoverTotal`). Place Order (`ConfirmCheckout`) checks the session
-  and the fingerprint, reserves its stock in Inventory, has the chosen provider authorize the total the review showed,
-  then confirms: an order changed since the review, or a line the stock no longer covers, is refused and requests no
-  payment; a payment refused or unanswered, or a confirmation that then fails, releases the reservation
-- `Complete` — after payment: status completed, with the order reference
-- `Abandon` — kept with status abandoned; the cart's contents stay
-- `Expire` — kept with status expired, for inactivity; the cart's contents stay
-- Hand over the checkout (`HandOverTo`) — the open session follows its cart to the customer who owns the cart now: a
-  guest's checkout becomes the account's when the guest cart was handed over at a login. Cart, lines and the step
-  reached stay as they are; only an open session is handed over (else `CheckoutNotModifiable`)
-- Resume checkout (`ResumeCheckout`) — the use case a step page runs when the customer has no session of their own:
-  it finds the open session of the customer's active cart (which cart that is, Cart's Open Host Service says) and
-  hands it to the customer. The one step-page GET that updates a session; it never creates one, so a cart without an
-  open checkout still leads to the cart (ADR-012)
+- `Confirm` — status confirmed, the lines and totals at today's prices, the authorized payment recorded; publishes `PaymentSubmitted`, then `CheckoutConfirmed`. Refused while the pricing verdict reports a shortage, when the order fingerprint at today's prices differs from the one the review showed (`PriceChangedSinceReview` names the first line that differs, `OrderChangedSinceReview` anything else), and for a payment that does not pay exactly the confirmed total through the chosen provider (`PaymentDoesNotCoverTotal`). Place Order (`ConfirmCheckout`) checks the session and the fingerprint, reserves its stock in Inventory, has the chosen provider authorize the total the review showed, then confirms: an order changed since the review, or a line the stock no longer covers, is refused and requests no payment; a payment refused or unanswered, or a confirmation that then fails, releases the reservation
+- Hand over the checkout (`HandOverTo`) — the open session follows its cart to the customer who owns the cart now: a guest's checkout becomes the account's when the guest cart was handed over at a login. Cart, lines and the step reached stay as they are; only an open session is handed over (else `CheckoutNotModifiable`)
+- Resume checkout (`ResumeCheckout`) — the use case a step page runs when the customer has no session of their own: it finds the open session of the customer's active cart (which cart that is, Cart's Open Host Service says) and hands it to the customer. The one step-page GET that updates a session; it never creates one, so a cart without an open checkout still leads to the cart (ADR-012)
 - `SyncLineItems` — exists only to refuse: a session's positions are immutable, a changed cart needs a new session
 
 
@@ -136,10 +118,7 @@ authorized the payment at Place Order, the provider reference (e.g. payment inte
 
 **Related terms:** `PaymentProviderId`, `PaymentSubmitted`, Authorized amount, Payment cancellation.
 
-**Operations:** `Authorized` — the chosen way to pay with the reference and the amount its provider authorized;
-`WithReference`, `HasReference`, `Covers` — whether the payment, authorized by the given provider,
-pays exactly the given total: it needs a payment reference, the same provider and an authorized amount equal to the
-total.
+**Operations:** `Authorized` — the chosen way to pay with the reference and the amount its provider authorized; `WithReference`, `HasReference`, `Covers` — whether the payment, authorized by the given provider, pays exactly the given total: it needs a payment reference, the same provider and an authorized amount equal to the total.
 
 ### Authorized amount (AuthorizedAmount)
 
@@ -191,8 +170,7 @@ data; enables business comparisons such as price change since addition and suffi
 
 **Related terms:** `CheckoutLineItem`, `CheckoutArticle`, `CheckoutCart`.
 
-**Operations:** `CurrentLineTotal`, `OriginalLineTotal`, `HasPriceChanged`, `PriceDifference`,
-`HasSufficientStock`, `IsValidForCheckout`.
+**Operations:** `CurrentLineTotal`, `OriginalLineTotal`, `HasPriceChanged`, `PriceDifference`, `HasSufficientStock`, `IsValidForCheckout`.
 
 ### CheckoutCart
 
@@ -205,9 +183,7 @@ read-optimized view for the summary and review screens.
 **Related terms:** `CartId`, `CustomerId`, `EnrichedCheckoutLineItem`, `CheckoutCartFactory`,
 `CheckoutCartSnapshot`.
 
-**Operations:** `CalculateCurrentSubtotal`, `CalculateOriginalSubtotal`, `TotalPriceDifference`,
-`HasAnyPriceChanges`, `ItemsWithPriceChanges`, `IsValidForCheckout`, `InvalidItems`,
-`UnavailableItems`, `ItemsWithInsufficientStock`, `ItemCount`, `TotalQuantity`.
+**Operations:** `CalculateCurrentSubtotal`, `CalculateOriginalSubtotal`, `TotalPriceDifference`, `HasAnyPriceChanges`, `ItemsWithPriceChanges`, `IsValidForCheckout`, `InvalidItems`, `UnavailableItems`, `ItemsWithInsufficientStock`, `ItemCount`, `TotalQuantity`.
 
 **Notes:** Conflicts with `CheckoutSession.LineItems` — both represent "cart inside checkout",
 but `CheckoutSession` holds raw snapshots while `CheckoutCart` holds the enriched view. Also
@@ -224,7 +200,7 @@ total (`Total`) — the amount of the order, not an amount paid: the payment is 
 
 **Related terms:** `CheckoutSession`, `Money`, `ShippingOption`.
 
-**Operations:** `Of`, `Calculate`, `Zero`, `WithShipping`, `WithTax`.
+**Operations:** `Calculate`, `WithShipping`, `WithTax`.
 
 ### CheckoutValidationResult
 
@@ -235,8 +211,7 @@ contains a list of `ValidationError` entries.
 
 **Related terms:** `ValidationError`, `ICheckoutArticlePriceResolver`, `CheckoutSession`.
 
-**Operations:** `IsValid`, `Valid`, `WithErrors`, `WithError`, `ShortOfStock` (the first line, in line
-order, that is unavailable or short of stock).
+**Operations:** `IsValid`, `Valid`, `WithErrors`, `WithError`, `ShortOfStock` (the first line, in line order, that is unavailable or short of stock).
 
 ### ValidationError
 
@@ -287,8 +262,6 @@ ACTIVE/Active is the open, modifiable session. CONFIRMED/Confirmed may complete;
 **Definition:** Unique identifier of a checkout session.
 
 **Type:** Value Object (ID)
-
-**Operations:** `Generate`, `Of`.
 
 ### CheckoutLineItemId
 
@@ -344,8 +317,7 @@ moment refuses the order; a missing or garbled one matches no order.
 
 **Related terms:** `CheckoutSession`, Get review, `PriceChangedSinceReview`, `OrderChangedSinceReview`.
 
-**Operations:** `Of`, `From`, `FirstChangedLine` — the first line whose digest differs from the fingerprint shown; none
-when the lines agree or their number differs.
+**Operations:** `FirstChangedLine` — the first line whose digest differs from the fingerprint shown; none when the lines agree or their number differs.
 
 ---
 
@@ -398,31 +370,20 @@ event `CheckoutConfirmedEvent`. `LineItemInfo` (in the payload) conflicts with `
 and `LineItemSnapshot` — all three structurally describe the same line item for different
 purposes.
 
-### CheckoutCompleted
-
-**Definition:** Payment was processed successfully and the order has been finalized.
-
-**Type:** Domain Event
-
-**Related terms:** `Money`, `OrderReference`.
-
-### CheckoutAbandoned
-
-**Definition:** The customer has actively abandoned the checkout.
-
-**Type:** Domain Event
-
-**Related terms:** `CheckoutStep`.
-
-### CheckoutExpired
-
-**Definition:** The checkout session has been invalidated by the system due to inactivity.
-
-**Type:** Domain Event
-
-**Related terms:** `CheckoutStep`.
-
 ---
+
+
+## Integration Events
+
+### CheckoutConfirmedEvent
+
+**Definition:** Published when an order is placed: the confirmed session's cart, customer, purchased positions and
+total. Cart takes the purchased positions out of the cart; Inventory reduces the stock.
+
+**Type:** Integration Event
+
+**Related terms:** `CheckoutConfirmed` (the domain event it is made of); it implements the consumers' trigger
+contracts `ICartCompletionTrigger` (Cart) and `IStockReductionTrigger` (Inventory)
 
 ## Domain Services
 
@@ -478,9 +439,7 @@ and read purposes.
 
 **Related terms:** `CheckoutSession`, `LineItemSnapshot`.
 
-**Operations:** `From`, `AtTodaysPrices` (the session as the review shows it), `ItemCount`, `TotalQuantity`, `HasBuyerInfo`, `HasDeliveryAddress`,
-`HasShippingOption`, `HasPaymentSelection`, `HasTotals`, `HasOrderReference`, `IsActive`,
-`IsCompleted`, `IsConfirmed`.
+**Operations:** `AtTodaysPrices` (the session as the review shows it), `ItemCount`, `TotalQuantity`, `HasBuyerInfo`, `HasDeliveryAddress`, `HasShippingOption`, `HasPaymentSelection`, `HasTotals`, `HasOrderReference`, `IsActive`, `IsCompleted`, `IsConfirmed`.
 
 ### LineItemSnapshot
 
@@ -522,19 +481,17 @@ product-created v1 exposes only eventId, occurredOn, productId, amount, currency
 
 Named refusals. The session states its own rules; the use case states what it could not get hold of.
 
-### CheckoutNotModifiable / CheckoutNotConfirmed
+### CheckoutNotModifiable
 
-**Definition:** A session that is no longer open would be changed, or one that was never confirmed would be
-completed.
+**Definition:** A session that is no longer open would be changed.
 
 **Type:** Domain failure (`DomainException`) · **Related terms:** `CheckoutSessionStatus`
 
 ---
 
-### CheckoutStepNotCompleted / CheckoutStepOutOfOrder / CheckoutStepNotNavigable
+### CheckoutStepNotCompleted / CheckoutStepOutOfOrder
 
-**Definition:** A step is missing the data a later one needs; a step ahead of the current one was asked for; the
-confirmation step was navigated to directly.
+**Definition:** A step is missing the data a later one needs; a step ahead of the current one was asked for.
 
 **Type:** Domain failure (`DomainException`) · **Related terms:** `CheckoutStep`
 
@@ -622,7 +579,7 @@ no such session, or it has no buyer info — its first step was never submitted,
 Nothing can be sent, now or later; the event consumer logs it and completes the delivery. No customer sees it.
 
 **Type:** Refusal case of `SendOrderConfirmation`'s result (`IRefusal`) · **Related terms:** `BuyerInfo`, Order
-confirmation, `CheckoutNotConfirmed`
+confirmation
 
 ---
 
@@ -738,9 +695,7 @@ accept the mail delays it — the delivery is tried again later — and never un
 
 **Type:** Feature
 
-**Operations:** send the order confirmation (`sendorderconfirmation`) — mails a confirmed checkout's total to its
-buyer e-mail, once per order (`SendOrderConfirmation`, run by `CheckoutConfirmedEventConsumer` after
-`CheckoutConfirmed` is committed).
+**Operations:** send the order confirmation (`sendorderconfirmation`) — mails a confirmed checkout's total to its buyer e-mail, once per order (`SendOrderConfirmation`, run by `CheckoutConfirmedEventConsumer` after `CheckoutConfirmed` is committed).
 
 **Related terms:** `CheckoutConfirmed`, `BuyerInfo`, `CheckoutTotals`, `MailProviderUnavailable`, `NoPlacedOrder`.
 

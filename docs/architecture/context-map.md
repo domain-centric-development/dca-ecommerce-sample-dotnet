@@ -1,4 +1,4 @@
-# DcaShop Context Map
+# Context Map
 
 > **Generated file — do not edit.** Derived from the `[BoundedContext]`, `[Upstream]`,
 > `[ExternalUpstream]`, and `[Partnership]` context attributes by
@@ -90,8 +90,8 @@ Edges labeled `planned` are declared intent without a code dependency yet.
 
 | Consumer | External system | Interaction | Protocol | Exchanges | Translation | Status | Rationale |
 |---|---|---|---|---|---|---|---|
-| Checkout | Mail Provider | outbound | REST | order confirmation mails | ACL | implemented | Behind the caller-owned IOrderConfirmationMailer port; RestMailProvider translates the provider's REST contract, the in-sample stand-in takes mails and sends nothing where no provider address is configured |
-| Checkout | Payment Service Provider | outbound | REST | payment operations (initiate, confirm, refund) | ACL | implemented | Behind the caller-owned IPaymentProviderRegistry port; RestPaymentProvider translates the provider's REST contract, the in-sample stand-in takes payments where no provider address is configured |
+| Checkout | Mail Provider | outbound | REST | order confirmation mail (recipient, template, idempotency key, total) and its answer (accepted, unavailable) | ACL | implemented | Behind the caller-owned IOrderConfirmationMailer port; a REST adapter translates the provider's answers where its address is configured, a stand-in accepts every mail and sends nothing otherwise |
+| Checkout | Payment Service Provider | outbound | REST | payment operations (initiate, confirm, cancel) | ACL | implemented | Behind a caller-owned port per provider and a registry that chooses one; a REST adapter translates the provider's answers where its address is configured, a stand-in takes payments otherwise |
 
 ## Partnerships
 

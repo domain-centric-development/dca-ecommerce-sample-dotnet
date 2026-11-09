@@ -15,11 +15,26 @@ public sealed class CheckoutSessionHandOverTest
         return CheckoutSession.Start(cartId, Guest, new[] { line }, line.LineTotal);
     }
 
+    /// <summary>The session as the store would hand it back in <paramref name="status"/>, on <paramref name="step"/>.</summary>
+    private static CheckoutSession Stored(CheckoutSession session, CheckoutSessionStatus status, CheckoutStep step, string? orderReference = null) =>
+        CheckoutSession.Reconstitute(
+            session.Id,
+            session.CartId,
+            session.CustomerId,
+            session.LineItems,
+            session.Totals,
+            step,
+            status,
+            session.BuyerInfo,
+            session.DeliveryAddress,
+            session.ShippingOption,
+            session.PaymentSelection,
+            orderReference);
+
     [Fact]
     public void AnAbandonedSessionIsNotHandedOver()
     {
-        var session = Started(new CartId(Guid.NewGuid()));
-        session.Abandon();
+        var session = Stored(Started(new CartId(Guid.NewGuid())), CheckoutSessionStatus.Abandoned, CheckoutStep.BuyerInfo);
 
         Assert.Throws<CheckoutNotModifiableException>(() => session.HandOverTo(Account));
         Assert.Equal(Guest, session.CustomerId);

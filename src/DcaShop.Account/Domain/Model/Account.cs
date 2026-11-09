@@ -178,44 +178,4 @@ public sealed class Account : AggregateRootBase<Account, AccountId>
         Owner = Owner.WithDateOfBirth(newDateOfBirth);
         RegisterEvent(AccountOwnerDateOfBirthChanged.Now(Id, previousDateOfBirth, newDateOfBirth));
     }
-
-    /// <summary>Temporarily blocks the account.</summary>
-    public void Suspend()
-    {
-        if (Status.IsTerminal())
-        {
-            throw new AccountClosedException(Id);
-        }
-
-        Status = AccountStatus.Suspended;
-        RegisterEvent(AccountSuspended.Now(Id));
-    }
-
-    /// <summary>Re-enables a suspended account.</summary>
-    public void Reactivate()
-    {
-        if (Status != AccountStatus.Suspended)
-        {
-            throw new AccountNotSuspendedException(Id, Status);
-        }
-
-        Status = AccountStatus.Active;
-        RegisterEvent(AccountReactivated.Now(Id));
-    }
-
-    /// <summary>Ends the account permanently.</summary>
-    public void Close()
-    {
-        if (Status.IsTerminal())
-        {
-            throw new AccountClosedException(Id);
-        }
-
-        Status = AccountStatus.Closed;
-        RegisterEvent(AccountClosed.Now(Id));
-    }
-
-    public void AddRole(Role role) => _roles.Add(role);
-
-    public void RemoveRole(Role role) => _roles.Remove(role);
 }

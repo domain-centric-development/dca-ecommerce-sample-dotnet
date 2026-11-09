@@ -108,11 +108,14 @@ public sealed class ShoppingCartMergeTest
     public void AnAbandonedTargetRefusesTheMerge()
     {
         var productId = ProductId.Generate();
-        _target.AddItem(productId, Quantity.Of(1), Ten);
-        _target.Abandon();
+        var target = ShoppingCart.Reconstitute(
+            CartId.Generate(),
+            CustomerId.Of("target-customer"),
+            CartStatus.Abandoned,
+            [new ShoppingCart.StoredItem(CartItemId.Generate(), productId, Quantity.Of(1), Ten)]);
         _source.AddItem(productId, Quantity.Of(1), Ten);
 
-        Assert.Throws<CartNotModifiableException>(() => _target.Merge(_source));
+        Assert.Throws<CartNotModifiableException>(() => target.Merge(_source));
     }
 
     [Fact]

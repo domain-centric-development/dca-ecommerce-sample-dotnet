@@ -24,12 +24,7 @@ authentication, roles, and the lifecycle (active, suspended, closed).
 **Related terms:** `Email`, `Owner`, `HashedPassword`, `AccountStatus`, `UserId`,
 `PasswordHasher`, `Role`.
 
-**Operations:** `Register` (the account comes into existence, linked to the caller's `UserId`),
-`Reconstitute` (restores a stored account; no rule re-evaluated, no event), `CheckPassword` (a
-question; changes nothing), `RecordLogin`, `ChangePassword`, `ChangeEmail`,
-`ChangeOwnerDateOfBirth`, `Suspend` (kept with status suspended; `Reactivate` undoes it),
-`Reactivate`, `Close` (kept with status closed, for good — the account is not deleted), `AddRole` /
-`RemoveRole` (a role goes into or out of the account's role set; no event).
+**Operations:** `Register` (the account comes into existence, linked to the caller's `UserId`), `Reconstitute` (restores a stored account; no rule re-evaluated, no event), `CheckPassword` (a question; changes nothing), `RecordLogin`, `ChangePassword`, `ChangeEmail`, `ChangeOwnerDateOfBirth`.
 
 **Notes:** The account belongs to an **`Owner`**, whose **name is fixed at registration**: no
 operation on the aggregate accepts an `Owner` or mentions a name, so the only way a name enters the
@@ -51,7 +46,7 @@ login credential.
 
 **Type:** Value Object
 
-**Operations:** `of`, `localPart`, `domain`.
+**Operations:** `localPart`, `domain`.
 
 ### Owner
 
@@ -65,7 +60,7 @@ Its **full name** is the first and the last name joined by one space, as the pro
 
 **Type:** Value Object
 
-**Operations:** `Of`, `WithDateOfBirth`, `FullName`.
+**Operations:** `WithDateOfBirth`, `FullName`.
 
 **Notes:** Names are trimmed but never otherwise normalized — capitalization, particles and spelling
 of a person's own name are not the account's to correct — and are limited to 100 characters. A date
@@ -84,7 +79,7 @@ the actual cryptographic operation to the `PasswordHasher` domain gateway.
 
 **Related terms:** `IPasswordHasher` (Domain Gateway in `DcaShop.Account.Domain.Gateway`).
 
-**Operations:** `FromPlaintext`, `FromHash`, `Matches`, `ValidatePasswordStrength`.
+**Operations:** `Matches`, `ValidatePasswordStrength`.
 
 **Notes:** `ToString()` is deliberately masked. The rules themselves are named below as **Password
 Policy**; change them there and here together.
@@ -132,8 +127,6 @@ plausible ages — an arbitrary upper bound would refuse real people.
 has exactly one `AccountId` and is linked to exactly one `UserId`.
 
 **Type:** Value Object (ID)
-
-**Operations:** `Of`, `Generate`.
 
 ### AccountStatus
 
@@ -240,24 +233,6 @@ deliberately no counterpart for the owner's name, because no operation changes i
 
 **Related terms:** `Account`, `Owner`.
 
-### AccountSuspended
-
-**Definition:** An account has been temporarily blocked and can no longer log in.
-
-**Type:** Domain Event
-
-### AccountReactivated
-
-**Definition:** A previously suspended account has been re-enabled.
-
-**Type:** Domain Event
-
-### AccountClosed
-
-**Definition:** An account has been permanently closed; terminal state of the lifecycle.
-
-**Type:** Domain Event
-
 ---
 
 ## Domain Gateways
@@ -323,14 +298,6 @@ Named refusals of the account model, plus the two the registration use case owns
 **Definition:** An account whose status does not allow signing in would record a login.
 
 **Type:** Domain failure (`DomainException`) · **Related terms:** `Account.RecordLogin`, `AccountStatus`
-
----
-
-### AccountNotSuspended
-
-**Definition:** An account that is not suspended would be reactivated.
-
-**Type:** Domain failure (`DomainException`) · **Related terms:** `Account.Reactivate`
 
 ---
 

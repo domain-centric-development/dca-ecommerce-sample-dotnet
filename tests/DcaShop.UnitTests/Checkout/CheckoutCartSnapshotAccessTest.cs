@@ -31,6 +31,22 @@ public sealed class CheckoutCartSnapshotAccessTest
         return session;
     }
 
+    /// <summary>The session as the store would hand it back in <paramref name="status"/>, on <paramref name="step"/>.</summary>
+    private static CheckoutSession Stored(CheckoutSession session, CheckoutSessionStatus status, CheckoutStep step, string? orderReference = null) =>
+        CheckoutSession.Reconstitute(
+            session.Id,
+            session.CartId,
+            session.CustomerId,
+            session.LineItems,
+            session.Totals,
+            step,
+            status,
+            session.BuyerInfo,
+            session.DeliveryAddress,
+            session.ShippingOption,
+            session.PaymentSelection,
+            orderReference);
+
     private static CheckoutCartSnapshot Snapshot(CheckoutSession session) => CheckoutCartSnapshot.From(session);
 
     private sealed class AlwaysAvailable : ICheckoutArticlePriceResolver
@@ -76,9 +92,8 @@ public sealed class CheckoutCartSnapshotAccessTest
     [Fact]
     public void CompletedSessionOnlyReachesTheConfirmation()
     {
-        var session = Confirmed();
-        session.Complete("ORDER-1");
-        var snapshot = Snapshot(session);
+        var confirmed = Confirmed();
+        var snapshot = Snapshot(Stored(confirmed, CheckoutSessionStatus.Completed, confirmed.CurrentStep, "ORDER-1"));
 
         Assert.Equal(StepAccess.Grant(), snapshot.AccessTo(CheckoutStep.Confirmation));
         Assert.Equal(StepAccess.RedirectTo(CheckoutStep.Confirmation), snapshot.AccessTo(CheckoutStep.BuyerInfo));
@@ -87,8 +102,7 @@ public sealed class CheckoutCartSnapshotAccessTest
     [Fact]
     public void AbandonedSessionStartsOverAtTheCart()
     {
-        var session = Started();
-        session.Abandon();
+        var session = Stored(Started(), CheckoutSessionStatus.Abandoned, CheckoutStep.BuyerInfo);
 
         Assert.Equal(StepAccess.BackToCart(), Snapshot(session).AccessTo(CheckoutStep.BuyerInfo));
     }
@@ -96,8 +110,7 @@ public sealed class CheckoutCartSnapshotAccessTest
     [Fact]
     public void ExpiredSessionStartsOverAtTheCart()
     {
-        var session = Started();
-        session.Expire();
+        var session = Stored(Started(), CheckoutSessionStatus.Expired, CheckoutStep.BuyerInfo);
 
         Assert.Equal(StepAccess.BackToCart(), Snapshot(session).AccessTo(CheckoutStep.Confirmation));
     }

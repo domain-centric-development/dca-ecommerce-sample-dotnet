@@ -242,42 +242,6 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         }
     }
 
-    public void Complete(string? orderReference)
-    {
-        if (!Status.CanComplete())
-        {
-            throw new CheckoutNotConfirmedException(Id, Status);
-        }
-
-        OrderReference = orderReference;
-        Status = CheckoutSessionStatus.Completed;
-        RegisterEvent(CheckoutCompleted.Now(Id, Totals.Total, orderReference));
-    }
-
-    public void Abandon()
-    {
-        if (!Status.IsModifiable())
-        {
-            throw new CheckoutNotModifiableException(Id, Status);
-        }
-
-        var abandonedAt = CurrentStep;
-        Status = CheckoutSessionStatus.Abandoned;
-        RegisterEvent(CheckoutAbandoned.Now(Id, abandonedAt));
-    }
-
-    public void Expire()
-    {
-        if (!Status.IsModifiable())
-        {
-            throw new CheckoutNotModifiableException(Id, Status);
-        }
-
-        var expiredAt = CurrentStep;
-        Status = CheckoutSessionStatus.Expired;
-        RegisterEvent(CheckoutExpired.Now(Id, expiredAt));
-    }
-
     /// <summary>
     /// Hands the open checkout to the customer who owns its cart now — a guest's checkout follows the cart into the
     /// account at a login. Cart, lines and the step reached stay as they are.
@@ -286,22 +250,6 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
     {
         EnsureModifiable();
         CustomerId = customerId;
-    }
-
-    public void GoBackTo(CheckoutStep step)
-    {
-        EnsureModifiable();
-        if (step == CheckoutStep.Confirmation)
-        {
-            throw new CheckoutStepNotNavigableException(Id, step);
-        }
-
-        if (step.IsAfter(CurrentStep))
-        {
-            throw new CheckoutStepOutOfOrderException(Id, step, CurrentStep);
-        }
-
-        CurrentStep = step;
     }
 
     public bool IsStepCompleted(CheckoutStep step) => step switch

@@ -55,12 +55,12 @@ public sealed class CheckoutSpecificationTest
                 }
             case "checkout.abandon.preserves-cart":
                 {
-                    var snapshot = f.Cart.Items[0].PositionSnapshot; session.Abandon(); Assert.Equal(snapshot, f.Cart.Items[0].PositionSnapshot);
+                    var snapshot = f.Cart.Items[0].PositionSnapshot; session = await f.Store(session, CheckoutSessionStatus.Abandoned); Assert.Equal(snapshot, f.Cart.Items[0].PositionSnapshot);
                     var next = await f.Start(); Assert.NotEqual(session.Id, next.Id); Assert.Equal(CheckoutSessionStatus.Abandoned, session.Status); break;
                 }
             case "checkout.completed.not-superseded":
                 {
-                    Assert.IsType<ConfirmCheckoutResult.Confirmed>((await f.Confirm(session)).Value); session.Complete("order"); await f.Start(); Assert.Equal(CheckoutSessionStatus.Completed, session.Status); break;
+                    Assert.IsType<ConfirmCheckoutResult.Confirmed>((await f.Confirm(session)).Value); session = await f.Store((await f.Repository.FindByIdAsync(session.Id))!, CheckoutSessionStatus.Completed, "order"); await f.Start(); Assert.Equal(CheckoutSessionStatus.Completed, session.Status); break;
                 }
             case "checkout.confirm.out-of-stock":
                 {
@@ -135,6 +135,9 @@ public sealed class CheckoutSpecificationTest
                 .ExecuteAsync(new StartCheckoutCommand(Cart.Id.Value, Cart.CustomerId.Value));
             return (await Repository.FindByIdAsync(new CheckoutSessionId(Assert.IsType<StartCheckoutResult.Started>(result.Value).SessionId)))!;
         }
+        /// <summary>Stores the session as it would be in <paramref name="status"/> — a state no use case of the shop brings it into.</summary>
+        public async Task<CheckoutSession> Store(CheckoutSession s, CheckoutSessionStatus status, string? orderReference = null) =>
+            await Repository.SaveAsync(CheckoutSession.Reconstitute(s.Id, s.CartId, s.CustomerId, s.LineItems, s.Totals, s.CurrentStep, status, s.BuyerInfo, s.DeliveryAddress, s.ShippingOption, s.PaymentSelection, orderReference));
         /// <summary>Places the order with the fingerprint the review <paramref name="shown"/> — by default the one it shows now.</summary>
         public Task<ConfirmCheckoutResult> Confirm(CheckoutSession session, string? shown = null) => new ConfirmCheckoutUseCase(Repository, this, this, new InMemoryPaymentProviderRegistry([new StandIn()]), new CheckoutPricing(), Events, new InMemoryTransactionBoundary(), NullLogger<ConfirmCheckoutUseCase>.Instance).ExecuteAsync(new ConfirmCheckoutCommand(session.Id.Value, session.CustomerId.Value, shown ?? Review(session)));
         /// <summary>The fingerprint the review shows for the session at the fixture's price and stock.</summary>

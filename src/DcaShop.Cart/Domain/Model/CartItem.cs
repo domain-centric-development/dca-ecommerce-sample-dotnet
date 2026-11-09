@@ -52,8 +52,4 @@ public sealed class CartItem : IEntity<CartItem, CartItemId>
         _units = _units.Resize(newQuantity.Value);
         Quantity = newQuantity;
     }
-
-    internal void IncreaseQuantity() => UpdateQuantity(Quantity.Increase());
-
-    internal void DecreaseQuantity() => UpdateQuantity(Quantity.Decrease());
 }

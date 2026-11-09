@@ -24,12 +24,11 @@ open orders, and ensures that reservations never exceed the available quantity.
 **Identity:** `StockLevelId`
 
 **Related terms:** `StockQuantity`, `ProductId`, `StockLevelCreated`,
-`StockIncreased`, `StockDecreased`, `StockReserved`, `StockReleased`,
+`StockDecreased`, `StockReserved`, `StockReleased`,
 `StockChanged`
 
 **Operations:**
 - `Create(productId, initialQuantity)` — Create a new stock-keeping unit: the stock level comes into existence for one product, nothing reserved
-- `IncreaseStock(amount)` — Record incoming goods: the available quantity grows by the amount
 - `DecreaseStock(amount)` — Record outgoing goods (e.g. shipment): the available quantity shrinks by the amount. It does not consume a reservation — a reservation above the new figure is only capped to it; there is no separate operation that turns reserved stock into shipped stock
 - `Reserve(amount)` — Reserve stock for an order: the amount is earmarked out of the unreserved stock and stays in the available quantity
 - `Release(amount)` — Release previously reserved stock: the reservation shrinks, the available quantity is unchanged
@@ -100,17 +99,6 @@ object.
 **Related terms:** `StockLevel.Create`
 
 **Notes:** Payload: `StockLevelId`, `ProductId`, `InitialQuantity`.
-
----
-
-### StockIncreased
-
-**Definition:** Available stock was increased by a specific amount
-(typical trigger: incoming goods).
-
-**Type:** Domain Event
-
-**Related terms:** `StockLevel.IncreaseStock`
 
 ---
 

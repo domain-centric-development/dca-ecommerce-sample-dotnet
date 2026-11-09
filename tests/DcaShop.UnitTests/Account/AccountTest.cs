@@ -18,6 +18,19 @@ public sealed class AccountTest
             UserId.Of("visitor-1"),
             Hasher);
 
+    /// <summary>The account as the store would hand it back in <paramref name="status"/>.</summary>
+    private static DcaShop.Account.Domain.Model.Account Stored(DcaShop.Account.Domain.Model.Account account, AccountStatus status) =>
+        DcaShop.Account.Domain.Model.Account.Reconstitute(
+            account.Id,
+            account.Email,
+            account.Owner,
+            account.LinkedUserId,
+            account.Password,
+            status,
+            account.Roles,
+            account.CreatedAt,
+            account.LastLoginAt);
+
     [Fact]
     public void RolesAreImmutableSnapshots()
     {
@@ -26,9 +39,6 @@ public sealed class AccountTest
         if (snapshot is ISet<Role> mutable)
             Assert.Throws<NotSupportedException>(() => mutable.Add(Role.Staff));
         Assert.DoesNotContain(Role.Staff, account.Roles);
-        account.AddRole(Role.Staff);
-        Assert.DoesNotContain(Role.Staff, snapshot);
-        Assert.Contains(Role.Staff, account.Roles);
     }
 
     [Fact]
@@ -94,36 +104,21 @@ public sealed class AccountTest
     [Fact]
     public void ASuspendedAccountCannotLogIn()
     {
-        var account = NewAccount();
-        account.Suspend();
+        var account = Stored(NewAccount(), AccountStatus.Suspended);
 
         Assert.False(account.Status.CanLogin());
         Assert.Throws<AccountNotAccessibleException>(account.RecordLogin);
     }
 
     [Fact]
-    public void ReactivatingRestoresLogin()
-    {
-        var account = NewAccount();
-        account.Suspend();
-
-        account.Reactivate();
-
-        Assert.Equal(AccountStatus.Active, account.Status);
-        Assert.True(account.Status.CanLogin());
-    }
-
-    [Fact]
     public void AClosedAccountRefusesEveryChange()
     {
-        var account = NewAccount();
-        account.Close();
+        var account = Stored(NewAccount(), AccountStatus.Closed);
 
         Assert.True(account.Status.IsTerminal());
         Assert.Throws<AccountClosedException>(() => account.ChangePassword("Another123", Hasher));
         Assert.Throws<AccountClosedException>(() => account.ChangeEmail(Email.Of("new@example.com")));
         Assert.Throws<AccountClosedException>(() => account.ChangeOwnerDateOfBirth(new DateOnly(1991, 1, 1)));
-        Assert.Throws<AccountClosedException>(account.Close);
     }
 
     [Fact]

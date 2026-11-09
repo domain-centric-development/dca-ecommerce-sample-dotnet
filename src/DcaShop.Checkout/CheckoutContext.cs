@@ -16,11 +16,11 @@ namespace DcaShop.Checkout;
 [Upstream("Cart", Translation.Conformist, Consumes.Events,
     Rationale = "CheckoutConfirmedEvent implements cart's consumer-defined ICartCompletionTrigger contract as-is; cart's CartContentsChangedEvent is consumed as published")]
 [ExternalUpstream("Payment Service Provider", Translation.AntiCorruptionLayer, Interaction.Outbound,
-    Protocol = "REST", Exchanges = "payment operations (initiate, confirm, refund)",
-    Rationale = "Behind the caller-owned IPaymentProviderRegistry port; RestPaymentProvider translates the provider's REST contract, the in-sample stand-in takes payments where no provider address is configured")]
+    Protocol = "REST", Exchanges = "payment operations (initiate, confirm, cancel)",
+    Rationale = "Behind a caller-owned port per provider and a registry that chooses one; a REST adapter translates the provider's answers where its address is configured, a stand-in takes payments otherwise")]
 [ExternalUpstream("Mail Provider", Translation.AntiCorruptionLayer, Interaction.Outbound,
-    Protocol = "REST", Exchanges = "order confirmation mails",
-    Rationale = "Behind the caller-owned IOrderConfirmationMailer port; RestMailProvider translates the provider's REST contract, the in-sample stand-in takes mails and sends nothing where no provider address is configured")]
+    Protocol = "REST", Exchanges = "order confirmation mail (recipient, template, idempotency key, total) and its answer (accepted, unavailable)",
+    Rationale = "Behind the caller-owned IOrderConfirmationMailer port; a REST adapter translates the provider's answers where its address is configured, a stand-in accepts every mail and sends nothing otherwise")]
 [Upstream("Inventory", Translation.Conformist, Consumes.Events,
     Rationale = "CheckoutConfirmedEvent implements inventory's consumer-defined IStockReductionTrigger contract as-is")]
 [Partnership("Cart",
