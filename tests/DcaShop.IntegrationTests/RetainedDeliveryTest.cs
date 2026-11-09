@@ -18,45 +18,86 @@ public sealed class RetainedDeliveryTest
         using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "specification/vectors/delivery.json")));
         foreach (var v in document.RootElement.EnumerateArray()) yield return new object[] { v.GetProperty("id").GetString()! };
     }
+    /// <summary>Each vector names one claim, and one method asserts it, so a vector fails on its own.</summary>
     [SpecificationTheory, MemberData(nameof(SharedVectors))]
     public async Task SharedDeliveryVector(string id)
     {
         switch (id)
         {
-            case "delivery.rollback.no-publication": await UncommittedAndRolledBackWorkCannotBeReplayed(true); break;
-            case "delivery.startup.replays-committed-only": await UncommittedAndRolledBackWorkCannotBeReplayed(false); await ReconstructedDispatcherReplaysCommittedSnapshotWithOrWithoutWakeup(false); break;
-            case "delivery.replay.snapshot": await ReconstructedDispatcherReplaysCommittedSnapshotWithOrWithoutWakeup(true); break;
-            case "delivery.multi-consumer.partial-failure":
-            case "delivery.retry.same-key":
-            case "delivery.ack.provider-accepted-not-delivered":
-            case "delivery.provider-idempotency.same-key": await AcceptanceBeforeAcknowledgementRetriesSameConsumerKeyAndSnapshot(true, 1); break;
-            case "delivery.provider-no-idempotency.duplicate-possible": await AcceptanceBeforeAcknowledgementRetriesSameConsumerKeyAndSnapshot(false, 2); break;
-            case "delivery.retry.exhausted-inspectable":
-            case "delivery.manual-replay.failed-consumer-only": await ExhaustionIsInspectableAndManualReplayTouchesOnlyFailedConsumer(); break;
+            case "delivery.rollback.no-publication": await RollbackLeavesNoPublication(); break;
+            case "delivery.startup.replays-committed-only": await StartupReplaysCommittedOnly(); break;
+            case "delivery.multi-consumer.partial-failure": await PartialFailureRetriesOnlyTheFailedConsumer(); break;
+            case "delivery.retry.same-key": await RetryKeepsTheSameKey(); break;
+            case "delivery.replay.snapshot": await ReplayDeliversTheSnapshot(); break;
+            case "delivery.ack.provider-accepted-not-delivered": await AcceptanceWithoutAcknowledgementIsRetried(); break;
+            case "delivery.retry.exhausted-inspectable": await ExhaustedDeliveryIsInspectable(); break;
+            case "delivery.manual-replay.failed-consumer-only": await ManualReplayTouchesOnlyTheFailedConsumer(); break;
+            case "delivery.provider-idempotency.same-key": await IdempotentProviderMakesOneEffect(); break;
+            case "delivery.provider-no-idempotency.duplicate-possible": await ProviderWithoutIdempotencyMayMakeTwoEffects(); break;
             default: Assert.Fail("Vector has no adapter: " + id); break;
         }
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ReconstructedDispatcherReplaysCommittedSnapshotWithOrWithoutWakeup(bool wakeup)
+    [Fact]
+    public async Task RollbackLeavesNoPublication()
     {
         using var store = new IsolatedDatabase();
         var outbox = store.Outbox;
         var boundary = store.Boundary;
-        var probe = new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "captured");
-        var publisher = new OutboxIntegrationEventPublisher(outbox, new Hooks(boundary, wakeup));
-        await boundary.InTransactionAsync(async ct => { await publisher.PublishAsync(probe, ct); return 0; });
-        probe.Content = "changed later";
+        var publisher = new OutboxIntegrationEventPublisher(outbox, boundary);
+        var survivor = new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "committed outside a transaction");
+        await publisher.PublishAsync(survivor);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => boundary.InTransactionAsync<int>(async ct =>
+        {
+            await publisher.PublishAsync(new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "rolled back"), ct);
+            throw new InvalidOperationException("rollback");
+        }));
+        Assert.Equal(1, store.Committed());
+        Assert.Equal(survivor.EventId, outbox.All().Single().Id);
         var observed = new Observed();
         using var services = Services(observed);
         using var dispatcher = Dispatcher(outbox, services);
         await dispatcher.StartAsync(default);
         await Until(() => outbox.All().Single().Status == PublicationStatus.Completed);
+        await Task.Delay(30);
         await dispatcher.StopAsync(default);
         Assert.Equal(1, observed.FirstCalls);
-        Assert.All(observed.Payloads, value => Assert.Equal("captured", value));
+        Assert.All(observed.Payloads, payload => Assert.Equal("committed outside a transaction", payload));
+    }
+
+    [Fact]
+    public async Task StartupReplaysCommittedOnly()
+    {
+        using var store = new IsolatedDatabase();
+        var outbox = store.Outbox;
+        var boundary = store.Boundary;
+        // no wakeup: only a dispatcher reading the store when it starts can deliver
+        var publisher = new OutboxIntegrationEventPublisher(outbox, new Hooks(boundary, wakeup: false));
+        await boundary.InTransactionAsync(async ct => { await publisher.PublishAsync(new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "committed"), ct); return 0; });
+        await Assert.ThrowsAsync<InvalidOperationException>(() => boundary.InTransactionAsync<int>(async ct =>
+        {
+            await publisher.PublishAsync(new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "rolled back"), ct);
+            throw new InvalidOperationException("rollback");
+        }));
+        var observed = new Observed();
+        using var services = Services(observed);
+        using var dispatcher = Dispatcher(outbox, services);
+        // the dispatcher starts before the next transaction, so it never runs inside it
+        await dispatcher.StartAsync(default);
+        await Until(() => outbox.All().Single().Status == PublicationStatus.Completed);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => boundary.InTransactionAsync<int>(async ct =>
+        {
+            await publisher.PublishAsync(new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "uncommitted"), ct);
+            await Task.Delay(30, ct);
+            Assert.Equal(1, observed.FirstCalls);
+            Assert.Equal(1, store.Committed());
+            throw new InvalidOperationException("rollback");
+        }));
+        await Task.Delay(30);
+        await dispatcher.StopAsync(default);
+        Assert.Equal(1, observed.FirstCalls);
+        Assert.All(observed.Payloads, payload => Assert.Equal("committed", payload));
+        Assert.Single(outbox.All());
         // Another dispatcher over the same retained store must not repeat acknowledged work.
         using var reconstructed = Dispatcher(outbox, services);
         await reconstructed.StartAsync(default);
@@ -65,41 +106,120 @@ public sealed class RetainedDeliveryTest
         Assert.Equal(1, observed.FirstCalls);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task UncommittedAndRolledBackWorkCannotBeReplayed(bool rollback)
+    [Fact]
+    public async Task PartialFailureRetriesOnlyTheFailedConsumer()
+    {
+        var (observed, publication) = await DeliverWithCrashAfterAcceptance(providerIdempotency: true);
+        Assert.Equal(1, observed.FirstCalls);
+        Assert.Equal(2, observed.SecondCalls);
+        Assert.Equal(0, publication.Consumers[typeof(FirstListener).FullName!].Attempts);
+        Assert.Equal(1, publication.Consumers[typeof(SecondListener).FullName!].Attempts);
+        Assert.All(publication.Consumers.Values, c => Assert.Equal(PublicationStatus.Completed, c.Status));
+    }
+
+    [Fact]
+    public async Task RetryKeepsTheSameKey()
+    {
+        var (observed, publication) = await DeliverWithCrashAfterAcceptance(providerIdempotency: true);
+        Assert.Equal(2, observed.Keys.Count);
+        Assert.All(observed.Keys, key => Assert.Equal(DeliveryIdentity.For(publication.Id, typeof(SecondListener).FullName!, "provider-effect"), key));
+    }
+
+    [Fact]
+    public async Task ReplayDeliversTheSnapshot()
     {
         using var store = new IsolatedDatabase();
         var outbox = store.Outbox;
         var boundary = store.Boundary;
-        var publisher = new OutboxIntegrationEventPublisher(outbox, boundary);
-        var observed = new Observed();
+        var observed = new Observed { CrashAfterAcceptance = true, ProviderIdempotency = true };
         using var services = Services(observed);
         using var dispatcher = Dispatcher(outbox, services);
-        // the dispatcher runs before the transaction starts, so it never runs inside it
-        if (!rollback) await dispatcher.StartAsync(default);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => boundary.InTransactionAsync<int>(async ct =>
-        {
-            await publisher.PublishAsync(new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "uncommitted"), ct);
-            if (!rollback)
-            {
-                await Task.Delay(30, ct);
-                Assert.Equal(0, observed.FirstCalls);
-                Assert.Equal(0, store.Committed());
-            }
-            throw new InvalidOperationException("rollback");
-        }));
-        if (rollback) { await dispatcher.StartAsync(default); }
-        await Task.Delay(30);
+        await dispatcher.StartAsync(default);
+        var probe = new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "captured");
+        var publisher = new OutboxIntegrationEventPublisher(outbox, new Hooks(boundary, wakeup: true));
+        await boundary.InTransactionAsync(async ct => { await publisher.PublishAsync(probe, ct); probe.Content = "changed in the same transaction"; return 0; });
+        probe.Content = "changed later";
+        await Until(() => outbox.All().Single().Status == PublicationStatus.Completed);
         await dispatcher.StopAsync(default);
-        Assert.Empty(outbox.All()); Assert.Equal(0, observed.FirstCalls);
+        Assert.Equal(2, observed.SecondCalls);
+        Assert.Equal(3, observed.Payloads.Count);
+        Assert.All(observed.Payloads, payload => Assert.Equal("captured", payload));
     }
 
-    [Theory]
-    [InlineData(true, 1)]
-    [InlineData(false, 2)]
-    public async Task AcceptanceBeforeAcknowledgementRetriesSameConsumerKeyAndSnapshot(bool providerIdempotency, int externalEffects)
+    [Fact]
+    public async Task AcceptanceWithoutAcknowledgementIsRetried()
+    {
+        var (observed, publication) = await DeliverWithCrashAfterAcceptance(providerIdempotency: true);
+        Assert.Equal(2, observed.SecondCalls);
+        Assert.Equal(PublicationStatus.Completed, publication.Status);
+        Assert.Equal(PublicationStatus.Completed, publication.Consumers[typeof(SecondListener).FullName!].Status);
+        Assert.Equal(0, observed.InboxDeliveries); // provider acceptance, not inbox delivery, acknowledges work
+    }
+
+    [Fact]
+    public async Task ExhaustedDeliveryIsInspectable()
+    {
+        using var store = new IsolatedDatabase();
+        var outbox = store.Outbox;
+        var observed = new Observed { AlwaysFail = true };
+        using var services = Services(observed);
+        await new OutboxIntegrationEventPublisher(outbox, store.Boundary).PublishAsync(new ProbeEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "original"));
+        using var dispatcher = Dispatcher(outbox, services);
+        await dispatcher.StartAsync(default);
+        await Until(() => outbox.All().Single().Status == PublicationStatus.Failed);
+        await Task.Delay(50);
+        await dispatcher.StopAsync(default);
+        var failed = outbox.All().Single();
+        Assert.Equal(PublicationStatus.Failed, failed.Status);
+        var consumer = failed.Consumers[typeof(SecondListener).FullName!];
+        Assert.Equal(PublicationStatus.Failed, consumer.Status);
+        Assert.Equal(2, consumer.Attempts);
+        Assert.NotNull(failed.LastError);
+        Assert.Contains("original", failed.Payload);
+        Assert.Equal(2, observed.SecondCalls); // not retried automatically after the bounded attempts
+        Assert.Equal(1, observed.FirstCalls);
+    }
+
+    [Fact]
+    public async Task ManualReplayTouchesOnlyTheFailedConsumer()
+    {
+        using var store = new IsolatedDatabase();
+        var outbox = store.Outbox;
+        var observed = new Observed { AlwaysFail = true };
+        using var services = Services(observed);
+        var id = Guid.NewGuid();
+        await new OutboxIntegrationEventPublisher(outbox, store.Boundary).PublishAsync(new ProbeEvent(id, DateTimeOffset.UtcNow, "original"));
+        using var dispatcher = Dispatcher(outbox, services);
+        await dispatcher.StartAsync(default);
+        await Until(() => outbox.All().Single().Status == PublicationStatus.Failed);
+        var failed = outbox.All().Single();
+        observed.AlwaysFail = false;
+        await outbox.ReplayFailedAsync(id);
+        await Until(() => outbox.All().Single().Status == PublicationStatus.Completed);
+        await dispatcher.StopAsync(default);
+        Assert.Equal(1, observed.FirstCalls);
+        Assert.Equal(3, observed.SecondCalls);
+        Assert.Single(observed.Keys.Distinct());
+        Assert.Equal(failed.Payload, outbox.All().Single().Payload);
+    }
+
+    [Fact]
+    public async Task IdempotentProviderMakesOneEffect()
+    {
+        var (observed, _) = await DeliverWithCrashAfterAcceptance(providerIdempotency: true);
+        Assert.Equal(1, observed.ExternalEffects);
+    }
+
+    [Fact]
+    public async Task ProviderWithoutIdempotencyMayMakeTwoEffects()
+    {
+        var (observed, _) = await DeliverWithCrashAfterAcceptance(providerIdempotency: false);
+        Assert.Equal(2, observed.ExternalEffects);
+    }
+
+    /// <summary>The second listener reaches the provider and crashes before its local acknowledgement once; the retry
+    /// completes it. The event is changed after publication, so a retry that re-read it would show.</summary>
+    private static async Task<(Observed Observed, EventPublication Publication)> DeliverWithCrashAfterAcceptance(bool providerIdempotency)
     {
         using var store = new IsolatedDatabase();
         var outbox = store.Outbox;
@@ -112,36 +232,7 @@ public sealed class RetainedDeliveryTest
         await dispatcher.StartAsync(default);
         await Until(() => outbox.All().Single().Status == PublicationStatus.Completed);
         await dispatcher.StopAsync(default);
-        Assert.Equal(1, observed.FirstCalls); Assert.Equal(2, observed.SecondCalls);
-        Assert.Equal(externalEffects, observed.ExternalEffects);
-        Assert.Single(observed.Keys.Distinct());
-        Assert.All(observed.Payloads, payload => Assert.Equal("original", payload));
-        Assert.Equal(0, observed.InboxDeliveries); // provider acceptance, not inbox delivery, acknowledges work
-        Assert.All(outbox.All().Single().Consumers.Values, c => Assert.Equal(PublicationStatus.Completed, c.Status));
-    }
-
-    [Fact]
-    public async Task ExhaustionIsInspectableAndManualReplayTouchesOnlyFailedConsumer()
-    {
-        using var store = new IsolatedDatabase();
-        var outbox = store.Outbox;
-        var observed = new Observed { AlwaysFail = true };
-        using var services = Services(observed);
-        var id = Guid.NewGuid();
-        await new OutboxIntegrationEventPublisher(outbox, store.Boundary).PublishAsync(new ProbeEvent(id, DateTimeOffset.UtcNow, "original"));
-        using var dispatcher = Dispatcher(outbox, services);
-        await dispatcher.StartAsync(default);
-        await Until(() => outbox.All().Single().Status == PublicationStatus.Failed);
-        var failed = outbox.All().Single();
-        Assert.Equal(2, failed.Consumers.Values.Single(c => c.Status == PublicationStatus.Failed).Attempts);
-        Assert.NotNull(failed.LastError); Assert.Equal(1, observed.FirstCalls);
-        observed.AlwaysFail = false;
-        await outbox.ReplayFailedAsync(id);
-        await Until(() => outbox.All().Single().Status == PublicationStatus.Completed);
-        await dispatcher.StopAsync(default);
-        Assert.Equal(1, observed.FirstCalls); Assert.Equal(3, observed.SecondCalls);
-        Assert.Single(observed.Keys.Distinct());
-        Assert.Equal(failed.Payload, outbox.All().Single().Payload);
+        return (observed, outbox.All().Single());
     }
 
     private static ServiceProvider Services(Observed observed) => new ServiceCollection().AddSingleton(observed)
