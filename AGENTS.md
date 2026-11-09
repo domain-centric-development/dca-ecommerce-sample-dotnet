@@ -72,7 +72,7 @@ commit it with the change that caused it. `product/domain.md` is the designed, h
 ## Tech stack
 
 .NET 10 (LTS; SDK pinned via `global.json`), ASP.NET Core MVC + Razor views, xUnit, `DomainCentric.BuildingBlocks` + `DomainCentric.ArchRules(.Xunit)`
-from NuGet.org (`DomainCentric.BuildingBlocks` 0.3.0, `DomainCentric.ArchRules.Xunit` 0.12.0, pinned in `Directory.Build.props`;
+from NuGet.org (`DomainCentric.BuildingBlocks` 0.3.0, `DomainCentric.ArchRules.Xunit` 0.13.0, pinned in `Directory.Build.props`;
 `-p:UseLocalDcaDotnet=true` references the sibling `../dca-dotnet` as projects for unreleased rules — the counterpart of
 the Java sample's `-PwithDcaJava`; **run the tests once without it before calling anything done**, and CI
 (`.github/workflows/ci.yml`) does exactly that on every push). In-memory persistence only.
