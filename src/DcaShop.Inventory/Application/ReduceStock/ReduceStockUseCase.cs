@@ -84,15 +84,7 @@ public sealed class ReduceStockUseCase : IReduceStockInputPort
         var previousStock = stockLevel.AvailableQuantity.Value;
         try
         {
-            // The order reserved its line when it was placed: the sale consumes what is still held of it, a stocktake
-            // may have capped that. Only a line the stock covers releases, so a failing reduction changes nothing.
-            var held = Math.Min(line.Quantity, stockLevel.ReservedQuantity.Value);
-            if (held > 0 && stockLevel.AvailableQuantity.Value >= line.Quantity)
-            {
-                stockLevel.Release(held);
-            }
-
-            stockLevel.DecreaseStock(line.Quantity);
+            stockLevel.Sell(line.Quantity);
         }
         catch (InsufficientStockException e)
         {

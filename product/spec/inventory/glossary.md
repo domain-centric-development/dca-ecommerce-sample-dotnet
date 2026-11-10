@@ -29,9 +29,11 @@ open orders, and ensures that reservations never exceed the available quantity.
 
 **Operations:**
 - `Create(productId, initialQuantity)` — Create a new stock-keeping unit: the stock level comes into existence for one product, nothing reserved
-- `DecreaseStock(amount)` — Record outgoing goods (e.g. shipment): the available quantity shrinks by the amount. It does not consume a reservation — a reservation above the new figure is only capped to it; there is no separate operation that turns reserved stock into shipped stock
+- `DecreaseStock(amount)` — Record outgoing goods (e.g. shipment): the available quantity shrinks by the amount. It does not consume a reservation — a reservation above the new figure is only capped to it; a sale against a reservation is `Sell`
+- Sell stock (`Sell(amount)`) — Record a sale: the amount leaves the available quantity and, as far as one is held, the reservation; raises `StockDecreased` alone — a sale is no cancelled reservation. More than is available is refused (`InsufficientStock`) before anything changes
 - `Reserve(amount)` — Reserve stock for an order: the amount is earmarked out of the unreserved stock and stays in the available quantity
 - `Release(amount)` — Release previously reserved stock: the reservation shrinks, the available quantity is unchanged
+- Release up to (`ReleaseUpTo(amount)`) — Give back at most the amount of the reservation, never more than is reserved, and answer what was released; with nothing reserved nothing changes and no event is raised
 - `AdjustStockTo(quantity)` — Manual correction / stocktake (see Open Issues): the available quantity is set to the counted figure, a reservation above it is capped
 - `IsAvailable` — Checks whether unreserved stock is available (a question; changes nothing)
 - `UnreservedQuantity` — The unreserved quantity (available-to-promise): available minus reserved (a question; changes nothing)
@@ -105,11 +107,11 @@ object.
 ### StockDecreased
 
 **Definition:** Available stock was reduced by a specific amount
-(typical trigger: shipment / outgoing goods).
+(typical triggers: shipment / outgoing goods, a sale — `StockLevel.Sell`).
 
 **Type:** Domain Event
 
-**Related terms:** `StockLevel.DecreaseStock`
+**Related terms:** `StockLevel.DecreaseStock`, `StockLevel.Sell`
 
 ---
 
@@ -127,12 +129,12 @@ order and is no longer available for further reservations.
 ### StockReleased
 
 **Definition:** A previously made reservation has been given back — an order
-that was then not placed released it, or a sale consumed it before its stock
-went down; the quantity is no longer held for that order.
+that was then not placed released it; the quantity is no longer held for that
+order. A sale consumes its reservation without it (`StockDecreased`).
 
 **Type:** Domain Event
 
-**Related terms:** `StockLevel.Release`
+**Related terms:** `StockLevel.Release`, `StockLevel.ReleaseUpTo`
 
 ---
 
@@ -224,8 +226,8 @@ whose stock must go down. Owned here and implemented by Checkout's `CheckoutConf
 
 **Notes:** Consumed by `DcaShop.Inventory.Adapter.Incoming.Event.StockReductionEventConsumer`, which hands all
 lines and the event's `EventId` to the `ReduceStock` use case in one command (the contract extends
-`IIntegrationEvent`). For each line the stock still covers, the use case first releases what is still reserved
-of it (at most the line's quantity), then decreases the stock. The use case reduces the lines in one transaction, skips an event `IProcessedEvents` has
+`IIntegrationEvent`). Each line is a `Sell`: the stock goes down by the line's quantity and the reservation by as
+much of it as is still held; a line the stock does not cover changes nothing. The use case reduces the lines in one transaction, skips an event `IProcessedEvents` has
 already recorded for its effect, `reduce-stock`, and records it there — a redelivered order never reduces stock
 twice, while `set-stock-level` for the same event id is a different effect and still happens. The lines are
 `LineItems` in Inventory's own words — the contract borrows no order vocabulary from Checkout.

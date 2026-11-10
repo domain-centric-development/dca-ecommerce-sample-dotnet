@@ -40,13 +40,17 @@ public sealed class ReleaseStockUseCase : IReleaseStockInputPort
         foreach (var line in lines)
         {
             var stockLevel = await _stockLevels.FindByProductIdAsync(new ProductId(line.ProductId), ct).ConfigureAwait(false);
-            var amount = stockLevel is null ? 0 : Math.Min(line.Quantity, stockLevel.ReservedQuantity.Value);
-            if (stockLevel is null || amount == 0)
+            if (stockLevel is null)
             {
                 continue;
             }
 
-            stockLevel.Release(amount);
+            var releasedQuantity = stockLevel.ReleaseUpTo(line.Quantity);
+            if (releasedQuantity == 0)
+            {
+                continue;
+            }
+
             await _stockLevels.SaveAsync(stockLevel, ct).ConfigureAwait(false);
             await _events.PublishAndClearEventsAsync(stockLevel, ct).ConfigureAwait(false);
             released.Add(line.ProductId);

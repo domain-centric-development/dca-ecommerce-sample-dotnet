@@ -17,7 +17,7 @@ public sealed record StockLevelCreated(
         new(Guid.NewGuid(), DateTimeOffset.UtcNow, stockLevelId, productId, initialQuantity);
 }
 
-/// <summary>Stock was taken out — the counterpart of a shipped or sold item.</summary>
+/// <summary>Stock was taken out — the counterpart of a shipped or sold item; a sale also consumes what was reserved for it.</summary>
 public sealed record StockDecreased(
     Guid EventId,
     DateTimeOffset OccurredOn,

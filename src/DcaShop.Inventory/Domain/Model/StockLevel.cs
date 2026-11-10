@@ -61,6 +61,19 @@ public sealed class StockLevel : AggregateRootBase<StockLevel, StockLevelId>
         RegisterEvent(StockDecreased.Now(Id, ProductId, StockQuantity.Of(amount), AvailableQuantity));
     }
 
+    /// <summary>
+    /// Records a sale: the amount leaves the available quantity and, as far as one is held, the reservation the order
+    /// made for it. A sale is a decrease, not a cancelled reservation, so it raises <see cref="StockDecreased"/> alone;
+    /// more than is available is refused before anything changes.
+    /// </summary>
+    public void Sell(int amount)
+    {
+        RequireNotNegative(amount);
+        var reservedAfterSale = Math.Max(ReservedQuantity.Value - amount, 0);
+        DecreaseStock(amount);
+        ReservedQuantity = StockQuantity.Of(reservedAfterSale);
+    }
+
     public void Reserve(int amount)
     {
         RequireNotNegative(amount);
@@ -84,6 +97,22 @@ public sealed class StockLevel : AggregateRootBase<StockLevel, StockLevelId>
 
         ReservedQuantity = StockQuantity.Of(ReservedQuantity.Value - amount);
         RegisterEvent(StockReleased.Now(Id, ProductId, StockQuantity.Of(amount)));
+    }
+
+    /// <summary>
+    /// Gives back at most <paramref name="amount"/> of the reservation, never more than is reserved, and answers what it
+    /// released; with nothing reserved it changes nothing and raises no event.
+    /// </summary>
+    public int ReleaseUpTo(int amount)
+    {
+        RequireNotNegative(amount);
+        var released = Math.Min(amount, ReservedQuantity.Value);
+        if (released > 0)
+        {
+            Release(released);
+        }
+
+        return released;
     }
 
     /// <summary>Corrects the stock to an absolute figure (stocktaking), capping reservations at the new amount.</summary>
