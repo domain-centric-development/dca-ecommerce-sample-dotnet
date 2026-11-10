@@ -2,7 +2,9 @@
 id: the-inventory-findings-are-closed
 epic: guest-checkout
 kind: task
-status: approved
+status: delivered
+delivered: 2026-11-10T23:45:33Z
+delivered_by: gate
 created: 2026-10-23T21:25:20Z
 context: inventory
 title: The inventory's open findings are closed
