@@ -88,6 +88,19 @@ PLACES_REL: typing.Dict[str, str] = {}
 RELEASE: typing.Dict[str, str] = {}
 
 
+@contextlib.contextmanager
+def kept_places() -> typing.Iterator[None]:
+    """The places as they are, put back afterwards: a call that sets its own (the gate's command line, run in the
+    runner's process) leaves the caller's as they were."""
+    kept = dict(PLACES), dict(PLACES_REL), dict(RELEASE)
+    try:
+        yield
+    finally:
+        for table, before in zip((PLACES, PLACES_REL, RELEASE), kept):
+            table.clear()
+            table.update(before)
+
+
 def release_required() -> bool:
     """The profile's `release: required`: only a story a person released is delivered — a draft, or one without
     `status:`, never. Without the line a story without `status:` is not held back, as before the key existed."""
@@ -242,6 +255,8 @@ PROFILE_KEYS = frozenset((
     "filterFlag", "filterFormat", "filterJoin", "testReport", "testEvidence",
     # what the project has, and what must hold
     "required", "checks.backlog", "browser", "screenshots", "integration", "http.stub", "adopt.breakProof", "acceptance", "run",
+    # who answers the lessons — the loop keeper (WP-185); unnamed, whoever answers the decisions
+    "lessons",
     # whether only a released story is delivered — a draft, or a story without `status:`, never (WP-192)
     "release",
     # where things are (DEFAULTS), the generated map and the glossary; `backlog` is the older layout's, named by
@@ -253,6 +268,12 @@ PROFILE_KEYS = frozenset((
     "evidence.keepDays",
     # `model` alone is refused by the model check, which names the right form
     "model",
+    # what judges a stage beside the profile itself — the globs a stage may change only where its plan announces it
+    "guarded",
+    # the told-rule groups every brief leaves out — a bench's ablation switch, `<stage>:<section>, …`
+    "ablate",
+    # how strong a story's tests are, measured after the judge — informational, never a gate
+    "mutation",
 ))
 
 #: Key families: `<prefix><name>`, with an open list of names — a test command (`test.integration`), what a

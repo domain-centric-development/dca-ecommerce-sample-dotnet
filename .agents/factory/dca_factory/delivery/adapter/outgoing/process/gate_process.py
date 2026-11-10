@@ -1,11 +1,13 @@
-"""The gate as a process of its own beside the runner (WP-94: the evidence out of a stage's reach): a stage's gate run
+"""The gate beside the runner — a process of its own, or its command line in the runner's process where the two are one
+package (WP-94: the evidence out of a stage's reach; WP-197): a stage's gate run
 with its report kept, the person's parts recorded and compared across a stage window, the story's base and changes
-recorded, and the snapshot of the working tree before and after a window."""
+recorded, and the one observation of the working tree at each edge of a window."""
 
 from __future__ import annotations
 
 import contextlib
 import hashlib
+import io
 import os
 import shutil
 import subprocess
@@ -13,12 +15,12 @@ import sys
 import typing
 
 from ..files.owned_files import OWNED_DIGEST, WINDOW_DIGEST
+from ..files.snapshots import Edge, observe_edge
+from ..git.checkout import Checkouts
+from ....domain.model.tree_observation import Hashing
 from .....sharedkernel.adapter.outgoing.profile.profile_files import evidence_dir, place
 from ..tools.tool_processes import err, flush, utc
 
-#: The first line of a snapshot written without a hash: the observer reads such a snapshot as absent, because a
-#: snapshot of empty digests compares equal to every other and would read as "this stage changed nothing".
-NO_HASHES = "# no-sha256-command: names only, no content hashes"
 
 
 def hashing() -> bool:
@@ -40,6 +42,7 @@ class GateHost(typing.Protocol):
     gate_path: str
     runs: str
     suites_key: str
+    checkouts: Checkouts
 
     def evidence(self, story: str) -> str: ...
 
@@ -51,6 +54,10 @@ class GateHost(typing.Protocol):
             cwd: typing.Optional[str] = None, env: typing.Optional[typing.Mapping[str, str]] = None,
             stdin: typing.Optional[int] = None, stdout: typing.Optional[int] = None) -> typing.Tuple[int, str]: ...
 
+    def runs_the_gate(self, gate_path: str) -> bool: ...
+
+    def gate_here(self, argv: typing.Sequence[str], *, quiet: bool = False) -> int: ...
+
 
 class GateProcess:
     """The gate's process for one run (<host>)."""
@@ -61,12 +68,20 @@ class GateProcess:
     def installed(self) -> bool:
         return os.path.isfile(self._host.gate_path)
 
+    def call(self, argv: typing.List[str], *, quiet: bool = False) -> int:
+        """The gate's command line: in the runner's process where the runner's package is the installed gate's, by
+        content (WP-197: a process start is what the run pays most for on Windows) — else as a process of its own."""
+        host = self._host
+        if host.runs_the_gate(host.gate_path):
+            return host.gate_here(argv, quiet=quiet)
+        return host.run([sys.executable, host.gate_path, *argv], quiet=quiet,
+                        stdout=subprocess.DEVNULL if quiet else None)[0]
+
     def owned(self, edge: str, window: str, story: str, code: typing.Optional[int] = None) -> int:
         """What is the person's is unchanged across a stage window — recorded at its start, compared at its end."""
         if not self.installed():
             return 0
-        return self._host.run([sys.executable, self._host.gate_path, "--owned", edge, window,
-                               *([str(code)] if code is not None else []), "--story", story])[0]
+        return self.call(["--owned", edge, window, *([str(code)] if code is not None else []), "--story", story])
 
     def fresh_window(self, story: str) -> None:
         """`--from <stage>`: a person names where the story starts, so a window a killed run left open is closed —
@@ -85,8 +100,7 @@ class GateProcess:
     def record(self, flag: str, story: str, *more: str) -> None:
         """`--record-base` / `--record-changes <stage>`: what the story's diff is taken against, and what it changed."""
         if self.installed():
-            self._host.run([sys.executable, self._host.gate_path, flag, *more, "--story", story], quiet=True,
-                           stdout=subprocess.DEVNULL)
+            self.call([flag, *more, "--story", story], quiet=True)
 
     def gate(self, stage: str, story: str, gate_path: str) -> int:
         """The gate of <stage> run over <story>, its report shown and kept for the observer; a refusal is kept where
@@ -95,16 +109,20 @@ class GateProcess:
         report = f"{host.runs}/{story}/.gate-{stage}.txt"
         journal = host.evidence(story)
         flush()
-        env = dict(os.environ, FACTORY_SUITES_KEY=host.suites_key)
-        process = subprocess.Popen([sys.executable, gate_path, "--story", story, "--stage", stage, "--record-suites"],
-                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
-        assert process.stdout is not None
-        with open(report, "wb") as kept:
-            for chunk in iter(process.stdout.readline, b""):
-                kept.write(chunk)
-                sys.stdout.buffer.write(chunk)
-                sys.stdout.flush()
-        code = process.wait()
+        argv = ["--story", story, "--stage", stage, "--record-suites"]
+        if host.runs_the_gate(gate_path):
+            code = self._gate_here(argv, report)
+        else:
+            env = dict(os.environ, FACTORY_SUITES_KEY=host.suites_key)
+            process = subprocess.Popen([sys.executable, gate_path, *argv],
+                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
+            assert process.stdout is not None
+            with open(report, "wb") as kept:
+                for chunk in iter(process.stdout.readline, b""):
+                    kept.write(chunk)
+                    sys.stdout.buffer.write(chunk)
+                    sys.stdout.flush()
+            code = process.wait()
         # Every gate run is kept for the observer, with its verdict; only a refusal is kept where the next stage
         # reads it. 3 is not a refusal: every check passed and a human is asked (acceptance).
         shutil.copy(report, f"{journal}/gate-{stage}.{utc('%H%M%S')}.txt")
@@ -112,41 +130,51 @@ class GateProcess:
             os.remove(report)
         return code
 
-    def snapshot(self, story: str, label: str) -> None:
-        """What the working tree looks like right now, so a later stage's claim about what it changed can be
-        checked rather than believed."""
-        journal = self._host.evidence(story)
-        os.makedirs(journal, exist_ok=True)
+    def _gate_here(self, argv: typing.List[str], report: str) -> int:
+        """The stage's gate in the runner's process: what it prints, its errors among it, into the report and onto
+        the terminal, as its process's lines would go; the suites key in the environment for this call alone."""
+        before = os.environ.get("FACTORY_SUITES_KEY")
+        os.environ["FACTORY_SUITES_KEY"] = self._host.suites_key
+        try:
+            with open(report, "w", encoding="utf-8", newline="\n") as kept:
+                both = _Both(kept, sys.stdout)
+                with contextlib.redirect_stdout(both), contextlib.redirect_stderr(both):
+                    return self._host.gate_here(argv)
+        finally:
+            if before is None:
+                os.environ.pop("FACTORY_SUITES_KEY", None)
+            else:
+                os.environ["FACTORY_SUITES_KEY"] = before
+
+    def observe(self, story: str, edge: Edge, window: str) -> None:
+        """The one observation of a window's edge (WP-202): what the working tree looks like right now, so a later
+        stage's claim about what it changed can be checked rather than believed — the end's with the tree the story's
+        record reads, a start's with the base where the story has none yet."""
         hashed = hashing()
         if not hashed:
             err("factory: no sha256 command found (shasum, sha256sum, openssl) — the tree snapshots")
             err("factory:   record file names without content, and factory-verify reports every check")
             err("factory:   that needs a digest as not observed. Install one of the three for full evidence.")
-        lines = [NO_HASHES] if not hashed else []
-        prefix = subprocess.run(["git", "rev-parse", "--show-prefix"], capture_output=True, text=True).stdout.strip()
-        status = subprocess.run(["git", "-c", "core.fileMode=false", "status", "--porcelain", "-z", "-uall", "--", "."],
-                                capture_output=True).stdout.decode("utf-8", errors="replace")
-
-        def strip(name: str) -> str:
-            return name[len(prefix):] if prefix and name.startswith(prefix) else name
-        origin = ""
-        for entry in status.split("\0"):
-            if not entry:
-                continue
-            if origin:                          # -z writes a rename's source as the next entry
-                if origin == "R":
-                    lines.append(f"deleted  {strip(entry)}")
-                origin = ""
-                continue
-            code, name = entry[:2], strip(entry[3:])
-            if code[:1] in ("R", "C"):
-                origin = code[:1]
-            if "D" in code:
-                lines.append(f"deleted  {name}")
-                continue
-            if not os.path.isfile(name):
-                continue
-            lines.append(f"{file_sha(name) if hashed else '-'}  {name}")
         with contextlib.suppress(OSError):
-            with open(f"{journal}/tree-{label}.txt", "w", encoding="utf-8", newline="\n") as handle:
-                handle.write("".join(line + "\n" for line in lines))
+            observe_edge(os.getcwd(), self._host.evidence(story), edge, window,
+                         Hashing.HASHED if hashed else Hashing.NAMES_ONLY, self._host.checkouts)
+
+
+class _Both(io.TextIOBase):
+    """Every line written to the report and to the terminal, the terminal's flushed at once."""
+
+    def __init__(self, kept: typing.TextIO, shown: typing.TextIO) -> None:
+        self._kept, self._shown = kept, shown
+
+    def writable(self) -> bool:
+        return True
+
+    def write(self, text: str) -> int:
+        self._kept.write(text)
+        self._shown.write(text)
+        self._shown.flush()
+        return len(text)
+
+    def flush(self) -> None:
+        self._kept.flush()
+        self._shown.flush()
