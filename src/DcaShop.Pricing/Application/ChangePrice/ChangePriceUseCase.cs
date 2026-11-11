@@ -38,7 +38,7 @@ public sealed class ChangePriceUseCase : IChangePriceInputPort
                 return new ChangePriceResult.ProductPriceNotFound(productId);
             }
 
-            productPrice.UpdatePrice(newPrice);
+            productPrice.ChangePrice(newPrice);
             await _prices.SaveAsync(productPrice, ct).ConfigureAwait(false);
             await _events.PublishAndClearEventsAsync(productPrice, ct).ConfigureAwait(false);
 

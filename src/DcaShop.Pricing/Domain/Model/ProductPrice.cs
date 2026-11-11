@@ -42,7 +42,7 @@ public sealed class ProductPrice : AggregateRootBase<ProductPrice, PriceId>
         new(id, productId, currentPrice, effectiveFrom);
 
     /// <summary>Sets a new price and registers <see cref="PriceChanged"/> with the previous one.</summary>
-    public void UpdatePrice(Price newPrice)
+    public void ChangePrice(Price newPrice)
     {
         ValidateGreaterThanZero(newPrice);
         var oldPrice = CurrentPrice;

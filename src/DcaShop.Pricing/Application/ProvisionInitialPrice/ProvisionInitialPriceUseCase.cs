@@ -50,7 +50,7 @@ public sealed class ProvisionInitialPriceUseCase : IProvisionInitialPriceInputPo
             if (existing is not null)
             {
                 productPrice = existing;
-                productPrice.UpdatePrice(newPrice);
+                productPrice.ChangePrice(newPrice);
                 created = false;
             }
             else

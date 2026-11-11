@@ -26,8 +26,8 @@ Encapsulates the business rules around price formation and price changes.
 
 **Operations:**
 - `Create(productId, price)` — Initial price determination for a product: the product's price comes into existence, effective now
-- `UpdatePrice(newPrice)` — Price change (new effective point in time): the current price is replaced, not added to a history; the previous price survives only in `PriceChanged`
-- Price change (`ChangePrice`) — an operator replaces a product's current price with a new one through the staff API (`PUT /api/products/{productId}/price`), effective now, recorded as `PriceChanged`; the use case calls `UpdatePrice`
+- `ChangePrice(newPrice)` — Price change (new effective point in time): the current price is replaced, not added to a history; the previous price survives only in `PriceChanged`
+- Price change (`ChangePrice`) — an operator replaces a product's current price with a new one through the staff API (`PUT /api/products/{productId}/price`), effective now, recorded as `PriceChanged`; the use case calls `ProductPrice.ChangePrice`
 - `CurrentPrice` — Currently valid price
 - `EffectiveFrom` — Point in time from which `CurrentPrice` applies
 
@@ -97,7 +97,7 @@ a new one; a new effective point in time was set.
 
 **Type:** Domain Event
 
-**Related terms:** `ProductPrice.updatePrice`
+**Related terms:** `ProductPrice.ChangePrice`
 
 **Notes:** Payload: `PriceId`, `ProductId`, `OldPrice`, `NewPrice`,
 `EffectiveFrom`.
