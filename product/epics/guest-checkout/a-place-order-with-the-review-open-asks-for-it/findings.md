@@ -9,4 +9,4 @@ The judge's confirmed defects that did not block the story, kept for a later sto
 
 | # | Perspective | File:line | Severity | Defect | Fix | Status |
 |---|---|---|---|---|---|---|
-| 1 | clean-code | src/DcaShop.Checkout/Adapter/Incoming/Web/CheckoutCompletion/CheckoutStepPage.cs:92 | minor | flag argument `fromTheReview` picks between placing and redirecting; `placing` is ignored on the false path, so the call at `ConfirmationPageController.cs:42` reads as always placing | split into `PlacingTheOrderAsync(placing, ct)` and a public `ToTheReviewFirstAsync(ct)`; let the controller choose | open |
+| 1 | clean-code | src/DcaShop.Checkout/Adapter/Incoming/Web/CheckoutCompletion/CheckoutStepPage.cs:92 | minor | flag argument `fromTheReview` picks between placing and redirecting; `placing` is ignored on the false path, so the call at `ConfirmationPageController.cs:42` reads as always placing | split into `PlacingTheOrderAsync(placing, ct)` and a public `ToTheReviewFirstAsync(ct)`; let the controller choose | done |
