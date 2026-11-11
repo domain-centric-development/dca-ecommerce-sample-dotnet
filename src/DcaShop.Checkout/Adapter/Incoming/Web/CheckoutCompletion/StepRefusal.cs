@@ -9,8 +9,7 @@ namespace DcaShop.Checkout.Adapter.Incoming.Web.CheckoutCompletion;
 /// </summary>
 /// <param name="What">What was refused.</param>
 /// <param name="ProductName">The product a refusal names, where it names one.</param>
-/// <param name="Count">The number of lines a refusal counts, where it counts them.</param>
-internal sealed record StepRefusal(StepRefusal.Kind What, string? ProductName = null, int Count = 0)
+internal sealed record StepRefusal(StepRefusal.Kind What, string? ProductName = null)
 {
     /// <summary>What a step's refusal is about, as far as the pages tell them apart.</summary>
     internal enum Kind
@@ -25,7 +24,6 @@ internal sealed record StepRefusal(StepRefusal.Kind What, string? ProductName = 
         PaymentRefused,
         NothingToPay,
         StockRanShort,
-        PricesChanged,
         PriceChangedSinceReview,
         OrderChangedSinceReview,
 
@@ -63,13 +61,16 @@ internal sealed record StepRefusal(StepRefusal.Kind What, string? ProductName = 
     /// <summary>A line's price changed since the review; the line is named by its product.</summary>
     public static StepRefusal PriceChangedSinceReview(string productName) => new(Kind.PriceChangedSinceReview, productName);
 
-    /// <summary>The lines the facts of this moment refuse: a line short of stock is named, other changes are counted.</summary>
+    /// <summary>
+    /// The lines the facts of this moment refuse, named by the first that is unavailable or short of stock; a verdict
+    /// that names no such line is refused like any rule of the model.
+    /// </summary>
     public static StepRefusal Invalid(CheckoutValidationResult validation)
     {
         ArgumentNullException.ThrowIfNull(validation);
         return validation.ShortOfStock is { } shortLine
             ? new(Kind.StockRanShort, shortLine.ProductName)
-            : new(Kind.PricesChanged, Count: validation.Errors.Count);
+            : RuleRefused;
     }
 
     /// <summary>A step sent before the earlier steps are done.</summary>

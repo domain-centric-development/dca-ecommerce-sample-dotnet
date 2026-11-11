@@ -129,8 +129,9 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
     }
 
     /// <summary>
-    /// Records how the customer pays and moves on to the review. The payment step only chooses the way to pay: the
-    /// payment itself is authorized at "Place Order", so nothing is requested, and nothing is published, here.
+    /// Records the way to pay the customer chose and moves on to the review. The payment step only chooses the way to
+    /// pay: the payment itself is authorized at "Place Order", so a selection that already carries a payment reference
+    /// or an authorized amount is refused, nothing is requested, and nothing is published, here.
     /// </summary>
     public void SubmitPayment(PaymentSelection payment)
     {
@@ -139,6 +140,11 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
         EnsureStepCompleted(CheckoutStep.Delivery);
         EnsureAtOrBeforeStep(CheckoutStep.Payment);
         ArgumentNullException.ThrowIfNull(payment);
+        if (payment.HasReference || payment.AuthorizedAmount is not null)
+        {
+            throw new ArgumentException("The payment step records a way to pay, not an authorized payment.", nameof(payment));
+        }
+
         if (!Totals.Total.IsPositive)
         {
             throw new NothingToPayException(Id, Totals.Total);
@@ -168,7 +174,7 @@ public sealed class CheckoutSession : AggregateRootBase<CheckoutSession, Checkou
 
     /// <summary>
     /// Confirms the checkout as the review showed it, with the payment its provider authorized at "Place Order": once the
-    /// checkout pricing has judged the lines, and only when the order at today's prices still has the fingerprint the
+    /// availability check has judged the lines, and only when the order at today's prices still has the fingerprint the
     /// review <paramref name="shown"/>. The session then holds the lines at those prices and their totals. The verdict
     /// and the article facts are handed in by the use case: they are the facts of this moment, which the session does
     /// not own. The session refuses a payment that does not pay exactly that total through the provider the customer chose.

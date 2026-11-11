@@ -4,7 +4,10 @@ using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Checkout.Domain.Model;
 
-/// <summary>Raised when an order would be confirmed with a payment that does not pay exactly its total.</summary>
+/// <summary>
+/// Raised when an order would be confirmed with a payment that does not pay exactly its total through the provider the
+/// customer chose — no payment reference, another provider, or another amount.
+/// </summary>
 /// <remarks>
 /// The provider holds what it authorized, not what the order costs: an order confirmed for another amount would be an
 /// order nobody pays, or one the customer pays more for than they ordered.
@@ -12,7 +15,7 @@ namespace DcaShop.Checkout.Domain.Model;
 public sealed class PaymentDoesNotCoverTotalException : DomainException
 {
     public PaymentDoesNotCoverTotalException(CheckoutSessionId sessionId, Money? authorizedAmount, Money total)
-        : base($"The payment authorized for {authorizedAmount?.ToString() ?? "nothing"} does not cover the total of {total}")
+        : base($"The payment does not pay exactly the total of {total} through the chosen provider (authorized: {authorizedAmount?.ToString() ?? "nothing"})")
     {
         SessionId = sessionId;
         AuthorizedAmount = authorizedAmount;

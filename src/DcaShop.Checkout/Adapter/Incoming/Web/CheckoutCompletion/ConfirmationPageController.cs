@@ -41,10 +41,11 @@ public sealed class ConfirmationPageController : Controller
     /// </summary>
     [HttpPost("confirm")]
     public Task<IActionResult> Confirm([FromForm] string? placedFrom, [FromForm] string? fingerprint, CancellationToken cancellationToken) =>
-        _page.PlacingTheOrderAsync(
-            placedFrom == FromTheReview,
-            async id => RefusalOf(await _confirm.ExecuteAsync(new ConfirmCheckoutCommand(id, _page.CurrentCustomerId(), fingerprint ?? string.Empty), cancellationToken)),
-            cancellationToken);
+        placedFrom == FromTheReview
+            ? _page.PlacingTheOrderAsync(
+                async id => RefusalOf(await _confirm.ExecuteAsync(new ConfirmCheckoutCommand(id, _page.CurrentCustomerId(), fingerprint ?? string.Empty), cancellationToken)),
+                cancellationToken)
+            : _page.ToTheReviewFirstAsync(cancellationToken);
 
     [HttpGet("confirmation")]
     public async Task<IActionResult> Confirmation(CancellationToken cancellationToken)

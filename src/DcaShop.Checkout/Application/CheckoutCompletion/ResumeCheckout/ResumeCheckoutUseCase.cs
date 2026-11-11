@@ -40,6 +40,8 @@ public sealed class ResumeCheckoutUseCase : IResumeCheckoutInputPort
         return await _sessions.InCartSessionAsync(cart.CartId, () => _transactionBoundary.InTransactionAsync(
             async ct =>
             {
+                // Looked up by the cart alone: Cart's Open Host Service answered the customer's own cart, so the session
+                // on it needs no second ownership check
                 var session = await _sessions.FindActiveByCartIdAsync(cart.CartId, ct).ConfigureAwait(false);
                 if (session is null)
                 {

@@ -40,7 +40,7 @@ public static class CheckoutContextRegistration
         ArgumentNullException.ThrowIfNull(configuration);
 
         // Domain
-        services.AddSingleton<CheckoutPricing>();
+        services.AddSingleton<CheckoutAvailabilityCheck>();
         services.AddSingleton<CheckoutCartFactory>();
 
         // Use cases (input ports)

@@ -4,7 +4,7 @@ using DomainCentric.BuildingBlocks.Ddd.Tactical;
 
 namespace DcaShop.Checkout.Domain.Model;
 
-/// <summary>Result of validating the line items against current price and availability data.</summary>
+/// <summary>Result of validating the line items against current availability and stock data.</summary>
 public sealed record CheckoutValidationResult(IReadOnlyList<ValidationError> Errors) : IValue
 {
     public bool IsValid => Errors.Count == 0;
@@ -15,7 +15,7 @@ public sealed record CheckoutValidationResult(IReadOnlyList<ValidationError> Err
 
     /// <summary>
     /// The line a refusal names: the first, in the order's line order, that the stock no longer covers — unavailable or
-    /// short; none when only prices changed.
+    /// short; none when no line is.
     /// </summary>
     public ValidationError? ShortOfStock =>
         Errors.FirstOrDefault(error => error.Type is ErrorType.ProductUnavailable or ErrorType.InsufficientStock);

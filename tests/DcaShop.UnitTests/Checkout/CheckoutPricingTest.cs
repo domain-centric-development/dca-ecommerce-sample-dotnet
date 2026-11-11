@@ -5,7 +5,7 @@ using DcaShop.SharedKernel.Domain.Model;
 namespace DcaShop.UnitTests.Checkout;
 
 /// <summary>
-/// The checkout pricing judges whether a line can still be bought; a price that moved is no reason to refuse — the
+/// The availability check judges whether a line can still be bought; a price that moved is no reason to refuse — the
 /// order's fingerprint says whether the customer saw it.
 /// </summary>
 public sealed class CheckoutPricingTest
@@ -18,7 +18,7 @@ public sealed class CheckoutPricingTest
         var session = SessionWith(Money.Euro(54.99m), 1);
         var today = Facts(Money.Euro(49.99m), available: true, stock: 5);
 
-        var validation = new CheckoutPricing().ValidateItems(session, today);
+        var validation = new CheckoutAvailabilityCheck().ValidateItems(session, today);
 
         Assert.True(validation.IsValid);
         Assert.Empty(validation.Errors);

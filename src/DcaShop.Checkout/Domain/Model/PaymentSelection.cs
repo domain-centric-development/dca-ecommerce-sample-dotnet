@@ -12,8 +12,6 @@ public sealed record PaymentSelection(PaymentProviderId ProviderId, string? Prov
 {
     public bool HasReference => !string.IsNullOrWhiteSpace(ProviderReference);
 
-    public PaymentSelection WithReference(string reference) => this with { ProviderReference = reference };
-
     /// <summary>The chosen way to pay, once its provider authorized <paramref name="amount"/> under <paramref name="reference"/>.</summary>
     public PaymentSelection Authorized(string reference, Money amount) =>
         this with { ProviderReference = reference, AuthorizedAmount = amount };

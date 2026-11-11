@@ -28,8 +28,7 @@ public sealed class GetReviewUseCase : IGetReviewInputPort
             return new GetReviewResult.CheckoutSessionNotFound(sessionId);
         }
 
-        var articles = await _articleData.GetArticleDataAsync(session.LineItems.Select(i => i.ProductId).ToArray(), cancellationToken).ConfigureAwait(false);
-        var facts = articles.ToDictionary(e => e.Key, e => new ArticlePrice(e.Value.CurrentPrice, e.Value.IsAvailable, e.Value.AvailableStock));
+        var facts = await _articleData.GetArticleFactsAsync(session.LineItems, cancellationToken).ConfigureAwait(false);
         return new GetReviewResult.Found(CheckoutCartSnapshot.AtTodaysPrices(session, facts), session.FingerprintAt(facts).Value);
     }
 }

@@ -42,7 +42,7 @@ internal sealed class CheckoutStepPage(
     /// </summary>
     public async Task<IActionResult> ShowAsync(CheckoutStep step, Render render, CancellationToken cancellationToken, string? error = null)
     {
-        var (notice, count, product) = page.TempData.TakeCheckoutStepNotice(step);
+        var (notice, product) = page.TempData.TakeCheckoutStepNotice(step);
         var current = await ActiveSessionAsync(cancellationToken) ?? await ResumedSessionAsync(cancellationToken);
         if (current is null)
         {
@@ -51,7 +51,7 @@ internal sealed class CheckoutStepPage(
 
         if (step == CheckoutStep.Review)
         {
-            error ??= notice?.Sentence(count, product);
+            error ??= notice?.Sentence(product);
         }
 
         // A step re-rendered with an error — a rejected submit, or a refused "Place Order" carried to the review — keeps
@@ -67,7 +67,7 @@ internal sealed class CheckoutStepPage(
             current = result.AsT0.Session;
         }
 
-        return await render(current, error ?? notice?.Sentence(count, product));
+        return await render(current, error ?? notice?.Sentence(product));
     }
 
     /// <summary>
@@ -87,21 +87,17 @@ internal sealed class CheckoutStepPage(
 
     /// <summary>
     /// Places the order and redirects to the confirmation. A refused "Place Order" redirects to the review, so the
-    /// browser stays at the review's own address. One not sent <paramref name="fromTheReview"/> places nothing: it
-    /// leads to the review, which asks for a look at the order first — or, while the review is closed, to the step
-    /// still open.
+    /// browser stays at the review's own address.
     /// </summary>
-    public Task<IActionResult> PlacingTheOrderAsync(bool fromTheReview, Func<Guid, Task<StepRefusal?>> placing, CancellationToken cancellationToken) =>
-        fromTheReview
-            ? SubmitAsync(
-                CheckoutStep.Review,
-                CheckoutRoutes.PathOf(CheckoutStep.Confirmation),
-                placing,
-                // The confirmation carries no field the customer typed.
-                acceptsTypedValues: false,
-                refusal => Task.FromResult<IActionResult>(BackToTheReview(refusal)),
-                cancellationToken)
-            : ToTheReviewFirstAsync(cancellationToken);
+    public Task<IActionResult> PlacingTheOrderAsync(Func<Guid, Task<StepRefusal?>> placing, CancellationToken cancellationToken) =>
+        SubmitAsync(
+            CheckoutStep.Review,
+            CheckoutRoutes.PathOf(CheckoutStep.Confirmation),
+            placing,
+            // The confirmation carries no field the customer typed.
+            acceptsTypedValues: false,
+            refusal => Task.FromResult<IActionResult>(BackToTheReview(refusal)),
+            cancellationToken);
 
     /// <summary>Back to the cart, leaving the cart page the notice that says why.</summary>
     public RedirectResult ToTheCart(CartNotice notice)
@@ -169,10 +165,10 @@ internal sealed class CheckoutStepPage(
     }
 
     /// <summary>
-    /// A "Place Order" sent from another page than the review: the review, once open, asks for a look at the order
-    /// first; before that the step still open says why.
+    /// A "Place Order" sent from another page than the review places nothing: the review, once open, asks for a look at
+    /// the order first; before that the step still open says why.
     /// </summary>
-    private async Task<IActionResult> ToTheReviewFirstAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> ToTheReviewFirstAsync(CancellationToken cancellationToken)
     {
         var current = await ActiveSessionAsync(cancellationToken);
         if (current is null)
@@ -203,21 +199,18 @@ internal sealed class CheckoutStepPage(
 
     /// <summary>
     /// The refused "Place Order" carried to the review, which renders it at its own address — and with it the order as
-    /// it is now. A line the stock no longer covers and a price changed since the review are named by their product;
-    /// lines whose prices changed are counted.
+    /// it is now. A line that is unavailable or short of stock, and a price changed since the review, are named by
+    /// their product.
     /// </summary>
     private RedirectResult BackToTheReview(StepRefusal refusal)
     {
         switch (refusal.What)
         {
             case StepRefusal.Kind.StockRanShort:
-                page.TempData.Leave(CheckoutStep.Review, CheckoutStepNotice.StockRanShort, product: refusal.ProductName);
+                page.TempData.Leave(CheckoutStep.Review, CheckoutStepNotice.StockRanShort, refusal.ProductName);
                 break;
             case StepRefusal.Kind.PriceChangedSinceReview:
-                page.TempData.Leave(CheckoutStep.Review, CheckoutStepNotice.PriceChangedSinceReview, product: refusal.ProductName);
-                break;
-            case StepRefusal.Kind.PricesChanged:
-                page.TempData.Leave(CheckoutStep.Review, CheckoutStepNotice.PricesChanged, refusal.Count);
+                page.TempData.Leave(CheckoutStep.Review, CheckoutStepNotice.PriceChangedSinceReview, refusal.ProductName);
                 break;
             default:
                 page.TempData.Leave(CheckoutStep.Review, ReviewNoticeFor(refusal));

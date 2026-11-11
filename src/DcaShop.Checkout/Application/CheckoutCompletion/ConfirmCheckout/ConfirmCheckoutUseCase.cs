@@ -33,7 +33,7 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
     private readonly ICheckoutArticleDataPort _articleData;
     private readonly IStockReservationPort _stockReservation;
     private readonly IPaymentProviderRegistry _providers;
-    private readonly CheckoutPricing _pricing;
+    private readonly CheckoutAvailabilityCheck _availability;
     private readonly IDomainEventPublisher _events;
     private readonly ITransactionBoundary _transactionBoundary;
     private readonly ILogger<ConfirmCheckoutUseCase> _logger;
@@ -43,7 +43,7 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
         ICheckoutArticleDataPort articleData,
         IStockReservationPort stockReservation,
         IPaymentProviderRegistry providers,
-        CheckoutPricing pricing,
+        CheckoutAvailabilityCheck availability,
         IDomainEventPublisher events,
         ITransactionBoundary transactionBoundary,
         ILogger<ConfirmCheckoutUseCase> logger)
@@ -53,7 +53,7 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
         _articleData = articleData;
         _stockReservation = stockReservation;
         _providers = providers;
-        _pricing = pricing;
+        _availability = availability;
         _events = events;
         _logger = logger;
     }
@@ -70,13 +70,12 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
             return new ConfirmCheckoutResult.CheckoutSessionNotFound(sessionId);
         }
 
-        var articles = await _articleData.GetArticleDataAsync(current.LineItems.Select(i => i.ProductId).ToArray(), cancellationToken).ConfigureAwait(false);
-        var facts = articles.ToDictionary(e => e.Key, e => new ArticlePrice(e.Value.CurrentPrice, e.Value.IsAvailable, e.Value.AvailableStock));
+        var facts = await _articleData.GetArticleFactsAsync(current.LineItems, cancellationToken).ConfigureAwait(false);
         var shown = OrderFingerprint.From(command.Fingerprint);
 
         // Everything the session itself can refuse — an order changed since the review among it — is refused before the
         // stock is reserved: no order that cannot be placed holds stock back from another
-        if (RefusalOf(() => current.AssertReadyForConfirmation(_pricing.ValidateItems(current, facts), facts, shown)) is { } notReady)
+        if (RefusalOf(() => current.AssertReadyForConfirmation(_availability.ValidateItems(current, facts), facts, shown)) is { } notReady)
         {
             return notReady;
         }
@@ -102,7 +101,7 @@ public sealed class ConfirmCheckoutUseCase : IConfirmCheckoutInputPort
                         return new ConfirmCheckoutResult.CheckoutSessionNotFound(sessionId);
                     }
 
-                    if (RefusalOf(() => session.Confirm(_pricing.ValidateItems(session, facts), facts, shown, payment!)) is { } moved)
+                    if (RefusalOf(() => session.Confirm(_availability.ValidateItems(session, facts), facts, shown, payment!)) is { } moved)
                     {
                         return moved;
                     }

@@ -9,7 +9,7 @@ namespace DcaShop.Checkout.Domain.Service;
 /// stock for the quantity. A price that moved is no reason to refuse here — whether the customer saw it is the order
 /// fingerprint's to say.
 /// </summary>
-public sealed class CheckoutPricing : IDomainService
+public sealed class CheckoutAvailabilityCheck : IDomainService
 {
     public CheckoutValidationResult ValidateItems(CheckoutSession session, IReadOnlyDictionary<ProductId, ArticlePrice> facts)
     {
@@ -30,6 +30,5 @@ public sealed class CheckoutPricing : IDomainService
         }
 
         return errors.Count == 0 ? CheckoutValidationResult.Valid() : CheckoutValidationResult.WithErrors(errors);
-
     }
 }

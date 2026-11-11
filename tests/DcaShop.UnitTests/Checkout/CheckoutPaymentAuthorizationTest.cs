@@ -96,11 +96,11 @@ public sealed class CheckoutPaymentAuthorizationTest
         return session;
     }
 
-    /// <summary>What "Place Order" does once the provider authorized: the pricing judges today's facts, the session confirms.</summary>
+    /// <summary>What "Place Order" does once the provider authorized: the availability check judges today's facts, the session confirms.</summary>
     private static void Confirm(CheckoutSession session, PaymentSelection authorizedPayment)
     {
-        var pricing = new CheckoutPricing();
+        var availability = new CheckoutAvailabilityCheck();
         var facts = session.LineItems.ToDictionary(i => i.ProductId, _ => new ArticlePrice(Money.Euro(10m), true, 5));
-        session.Confirm(pricing.ValidateItems(session, facts), facts, session.FingerprintAt(facts), authorizedPayment);
+        session.Confirm(availability.ValidateItems(session, facts), facts, session.FingerprintAt(facts), authorizedPayment);
     }
 }

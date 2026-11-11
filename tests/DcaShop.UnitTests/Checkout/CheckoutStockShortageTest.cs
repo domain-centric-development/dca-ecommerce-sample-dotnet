@@ -19,7 +19,7 @@ public sealed class CheckoutStockShortageTest
             [shortLine.ProductId] = new(Money.Euro(20m), true, 3),
         };
 
-        var validation = new CheckoutPricing().ValidateItems(session, facts);
+        var validation = new CheckoutAvailabilityCheck().ValidateItems(session, facts);
 
         Assert.Equal(
             ["Wooden Hexagon Desk Model", "Domain-Driven Design"],

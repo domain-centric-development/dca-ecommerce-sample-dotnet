@@ -53,7 +53,7 @@ public sealed class CheckoutSessionTodaysPricesTest
         var session = AtTheReview(Line(DomainDrivenDesign, 10.00m, 2));
         var today = Today((DomainDrivenDesign, 11.00m, true));
 
-        session.Confirm(new CheckoutPricing().ValidateItems(session, today), today, session.FingerprintAt(today), Authorized(session, today));
+        session.Confirm(new CheckoutAvailabilityCheck().ValidateItems(session, today), today, session.FingerprintAt(today), Authorized(session, today));
 
         Assert.Equal(CheckoutSessionStatus.Confirmed, session.Status);
         Assert.Equal(Money.Euro(11.00m), Assert.Single(session.LineItems).UnitPrice);
@@ -69,7 +69,7 @@ public sealed class CheckoutSessionTodaysPricesTest
         var today = Today((DomainDrivenDesign, 49.99m, true));
 
         var refusal = Assert.Throws<PriceChangedSinceReviewException>(() =>
-            session.Confirm(new CheckoutPricing().ValidateItems(session, today), today, shown, Authorized(session, today)));
+            session.Confirm(new CheckoutAvailabilityCheck().ValidateItems(session, today), today, shown, Authorized(session, today)));
 
         Assert.Equal("Domain-Driven Design", refusal.ProductName);
         Assert.Equal(CheckoutSessionStatus.Active, session.Status);
@@ -87,7 +87,7 @@ public sealed class CheckoutSessionTodaysPricesTest
         var totals = session.Totals;
 
         Assert.Throws<OrderChangedSinceReviewException>(() =>
-            session.Confirm(new CheckoutPricing().ValidateItems(session, today), today, shown, Authorized(session, today)));
+            session.Confirm(new CheckoutAvailabilityCheck().ValidateItems(session, today), today, shown, Authorized(session, today)));
 
         Assert.Equal(CheckoutSessionStatus.Active, session.Status);
         Assert.Equal(totals, session.Totals);

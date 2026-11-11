@@ -43,7 +43,7 @@ else
 <div class="review-section__header"><h3 class="review-section__title">Payment Method</h3><a class="review-section__edit" href="/checkout/payment" data-test="review-payment-edit-link">Edit</a></div>
 @if (s.PaymentSelection is { } p)
 {
-<div class="review-section__body"><p>@p.ProviderId.Value</p>@if (p.HasReference) {<p>Reference: @p.ProviderReference</p>}</div>
+<div class="review-section__body"><p>@p.ProviderId.Value</p></div>
 }
 else
 {

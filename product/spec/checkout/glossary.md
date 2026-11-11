@@ -62,8 +62,8 @@ claim of durable distributed transactions or universal rollback of unenlisted re
 - `SubmitBuyerInfo`, `SubmitDelivery`, `SubmitPayment` — record the step's data and move on to the next step when standing on it. `SubmitPayment` records only the chosen provider: no payment is requested and no event is published; a total of zero is refused (`NothingToPay`)
 - `LinesAt`, `TotalsAt`, `FingerprintAt` — questions: the lines, the totals and the order fingerprint at today's prices, as the article facts state them; a line whose article is not available keeps its own price
 - Get review (`GetReview`) — the use case the review page reads: the session at today's prices with its order fingerprint; no transaction, nothing stored
-- `AssertReadyForConfirmation` — a question: the preconditions of `Confirm` against a pricing verdict and the order fingerprint shown, checked without changing anything
-- `Confirm` — status confirmed, the lines and totals at today's prices, the authorized payment recorded; publishes `PaymentSubmitted`, then `CheckoutConfirmed`. Refused while the pricing verdict reports a shortage, when the order fingerprint at today's prices differs from the one the review showed (`PriceChangedSinceReview` names the first line that differs, `OrderChangedSinceReview` anything else), and for a payment that does not pay exactly the confirmed total through the chosen provider (`PaymentDoesNotCoverTotal`). Place Order (`ConfirmCheckout`) checks the session and the fingerprint, reserves its stock in Inventory, has the chosen provider authorize the total the review showed, then confirms: an order changed since the review, or a line the stock no longer covers, is refused and requests no payment; a payment refused or unanswered, or a confirmation that then fails, releases the reservation
+- `AssertReadyForConfirmation` — a question: the preconditions of `Confirm` against the availability check's verdict and the order fingerprint shown, checked without changing anything
+- `Confirm` — status confirmed, the lines and totals at today's prices, the authorized payment recorded; publishes `PaymentSubmitted`, then `CheckoutConfirmed`. Refused while the availability check reports a shortage, when the order fingerprint at today's prices differs from the one the review showed (`PriceChangedSinceReview` names the first line that differs, `OrderChangedSinceReview` anything else), and for a payment that does not pay exactly the confirmed total through the chosen provider (`PaymentDoesNotCoverTotal`). Place Order (`ConfirmCheckout`) checks the session and the fingerprint, reserves its stock in Inventory, has the chosen provider authorize the total the review showed, then confirms: an order changed since the review, or a line the stock no longer covers, is refused and requests no payment; a payment refused or unanswered, or a confirmation that then fails, releases the reservation
 - Hand over the checkout (`HandOverTo`) — the open session follows its cart to the customer who owns the cart now: a guest's checkout becomes the account's when the guest cart was handed over at a login. Cart, lines and the step reached stay as they are; only an open session is handed over (else `CheckoutNotModifiable`)
 - Resume checkout (`ResumeCheckout`) — the use case a step page runs when the customer has no session of their own: it finds the open session of the customer's active cart (which cart that is, Cart's Open Host Service says) and hands it to the customer. The one step-page GET that updates a session; it never creates one, so a cart without an open checkout still leads to the cart (ADR-012)
 - `SyncLineItems` — exists only to refuse: a session's positions are immutable, a changed cart needs a new session
@@ -118,7 +118,7 @@ authorized the payment at Place Order, the provider reference (e.g. payment inte
 
 **Related terms:** `PaymentProviderId`, `PaymentSubmitted`, Authorized amount, Payment cancellation.
 
-**Operations:** `Authorized` — the chosen way to pay with the reference and the amount its provider authorized; `WithReference`, `HasReference`, `Covers` — whether the payment, authorized by the given provider, pays exactly the given total: it needs a payment reference, the same provider and an authorized amount equal to the total.
+**Operations:** `Authorized` — the chosen way to pay with the reference and the amount its provider authorized; `HasReference`, `Covers` — whether the payment, authorized by the given provider, pays exactly the given total: it needs a payment reference, the same provider and an authorized amount equal to the total.
 
 ### Authorized amount (AuthorizedAmount)
 
@@ -300,12 +300,13 @@ Kernel should be used here.
 
 ### ArticlePrice
 
-**Definition:** Bundle of current article price, availability, and stock level returned by the
-`ICheckoutArticlePriceResolver`.
+**Definition:** Bundle of current article price, availability, and stock level — the article facts of this moment.
+The review and "Place Order" read them from `ICheckoutArticleDataPort.GetArticleFactsAsync`; the legacy
+`ICheckoutArticlePriceResolver` returns them as well.
 
 **Type:** Value Object
 
-**Related terms:** `ICheckoutArticlePriceResolver`.
+**Related terms:** `ICheckoutArticleDataPort`, Availability check, Order fingerprint, `ICheckoutArticlePriceResolver`.
 
 ### Order fingerprint (OrderFingerprint)
 
@@ -411,9 +412,21 @@ adapter (`CheckoutRoutes`) maps the decision to a redirect path. A step's form r
 (`CheckoutStepNotCompletedException`, `CheckoutStepOutOfOrderException`) asks step access for that step too, and a
 denied access sends the customer to the step still open, which says that the earlier steps come first.
 
+### Availability check (CheckoutAvailabilityCheck)
+
+**Definition:** Judges whether a session's lines can still be bought against the article facts of this moment —
+available, and in stock for the quantity — and answers a `CheckoutValidationResult`. A price that moved is no reason
+to refuse here: whether the customer saw it is the order fingerprint's to say.
+
+**Type:** Domain Service
+
+**Related terms:** `CheckoutSession`, `CheckoutValidationResult`, `ArticlePrice`, Order fingerprint.
+
+**Operations:** `ValidateItems(session, facts)`.
+
 ### CheckoutArticlePriceResolver
 
-Legacy application/test lookup abstraction. CheckoutSession accepts supplied article facts; CheckoutPricing owns cross-article validation of availability and stock. No repository or remote callback enters the aggregate.
+Legacy application/test lookup abstraction. CheckoutSession accepts supplied article facts; `CheckoutAvailabilityCheck` owns cross-article validation of availability and stock. No repository or remote callback enters the aggregate.
 
 ### CheckoutCartFactory
 
