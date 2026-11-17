@@ -14,7 +14,7 @@ from ..model.stack_profile import SkillName
 from ..model.stage import HandOver, Stage, StageName, StageText, StoryKind, Window
 from ..model.story_words import Place
 from ..model.workflow import Workflow
-from ..model.workflow_rule import OutcomeState, RulePart, RuleText, WorkflowRule
+from ..model.workflow_rule import OutcomeState, ProcessName, RulePart, RuleText, WorkflowRule
 
 
 class CarrierRole(enum.Enum):
@@ -62,6 +62,9 @@ class Brief(Value):
     told: typing.Tuple[Told, ...]
     measured: typing.Tuple[Measure, ...]
     carriers: typing.Tuple[Carrier, ...]
+    #: the gate rules every gate of the story's kind holds it to — preconditions the stage's own work rarely decides,
+    #: named by their ids alone and left out of <measured>
+    held_everywhere: typing.Tuple[RuleId, ...] = ()
 
     @property
     def said(self) -> StageText:
@@ -76,15 +79,17 @@ class StageBrief(DomainService):
         self._workflow = workflow
 
     def of(self, stage: StageName, kind: StoryKind, rules: typing.Sequence[WorkflowRule],
-           measured_by: typing.Sequence[RuleId], carriers: typing.Sequence[Carrier]) -> Brief:
+           measured_by: typing.Sequence[RuleId], carriers: typing.Sequence[Carrier],
+           everywhere: typing.AbstractSet[RuleId] = frozenset()) -> Brief:
         """The brief of <stage> for a story of <kind>: the frames with the told rules of <rules> that hold there, a
-        told rule no frame places after them, the gate rules <measured_by> in their order."""
+        told rule no frame places after them, the gate rules <measured_by> in their order — those of <everywhere>,
+        which every gate of the kind holds, marked as such."""
         found = self._workflow.stage(stage)
         if found is None:
             raise ValueError(f"the workflow has no stage {stage.value}")
         if kind not in found.kinds:
             raise ValueError(f"a {kind.value} story does not run the {stage.value} stage")
-        held = {r.id: r for r in rules if r.part is RulePart.TOLD and r.retired is None and r.told is not None
+        held = {r.id: r for r in rules if r.part is RulePart.TOLD and r.in_force and r.told is not None
                 and holds(r, stage, kind)}
         placed = {r.id for r in rules if r.part is RulePart.TOLD}
         framed = [expanded(frame, held, placed) if frame is not None else None
@@ -104,20 +109,29 @@ class StageBrief(DomainService):
                 parts.append("\n\n".join(rest_text(r).value for r in rules_of))
                 order += [r.id for r in rules_of]
         by_id = {r.id: r for r in rules}
-        measured = [by_id[rule_id] for rule_id in measured_by if rule_id in by_id]
+        measured = [by_id[rule_id] for rule_id in measured_by if rule_id in by_id
+                    and by_id[rule_id].in_force and holds(by_id[rule_id], stage, kind)]
         return Brief(stage, kind, found.about, found.hand_over, found.window,
                      StageText("\n\n".join(p for p in common if p.strip())),
                      StageText("\n\n".join(p for p in own if p.strip())),
                      tuple(Told(held[i].id, held[i].section, held[i].told or RuleText("")) for i in order
                            if i in held),
-                     tuple(Measure(r.id, r.when, refused_by(r)) for r in measured
-                           if r.retired is None and holds(r, stage, kind)),
-                     tuple(carriers))
+                     tuple(Measure(r.id, r.when, refused_by(r)) for r in measured if r.id not in everywhere),
+                     tuple(carriers),
+                     tuple(r.id for r in measured if r.id in everywhere))
+
+    def told_to(self, process: ProcessName, rules: typing.Sequence[WorkflowRule]) -> StageText:
+        """What a process beside the stages is told — the reviewers: the told rules that name it, and nothing else of
+        what every stage is told; the rest is the stages' and never reaches it."""
+        held = sorted((r for r in rules if r.part is RulePart.TOLD and r.in_force and r.told is not None
+                       and process in r.processes),
+                      key=lambda r: (r.order.value if r.order else 0, r.id.value))
+        return StageText("\n\n".join(rest_text(r).value for r in held))
 
     def every_stage(self, rules: typing.Sequence[WorkflowRule]) -> StageText:
         """What every stage is told, for a session that works no stage — a request: every stage's frame with the told
         rules of <rules> that name no stage and no kind, then those no frame places."""
-        held = {r.id: r for r in rules if r.part is RulePart.TOLD and r.retired is None and r.told is not None
+        held = {r.id: r for r in rules if r.part is RulePart.TOLD and r.in_force and r.told is not None
                 and not r.stages and not r.kinds}
         placed = {r.id for r in rules if r.part is RulePart.TOLD}
         frame = self._workflow.every_stage
@@ -215,10 +229,14 @@ def written(brief: Brief, told: StageText, every_stage: typing.Optional[Place] =
         lines += [f"- {c.role.value}: the `{c.skill.value}` skill" for c in brief.carriers]
         lines.append("")
     lines += ["## What you do", "", told.value, ""]
-    if brief.measured:
+    if brief.measured or brief.held_everywhere:
         lines += ["## What the gate holds you to", ""]
         lines += [f"- `{m.rule.value}` — when: {m.when.value}" + (f"; refused: {m.refused.value}" if m.refused else "")
                   for m in brief.measured]
+        if brief.held_everywhere:
+            lines += ["- and what every gate holds a story to: "
+                      + ", ".join(f"`{rule.value}`" for rule in brief.held_everywhere)
+                      + f" (`--contract {brief.stage.value}` says what each refuses)"]
         lines.append("")
     return StageText("\n".join(lines).rstrip("\n") + "\n")
 

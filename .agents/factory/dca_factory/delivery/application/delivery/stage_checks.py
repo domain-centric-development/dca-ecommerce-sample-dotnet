@@ -34,6 +34,16 @@ from .pipeline_workflow import workflow
 #: The contract that holds a build to the plan's files, and the one that holds a criterion's test to the real use case.
 PLAN_FILES_CONTRACT = ContractNumber(22)
 TESTS_REAL_CONTRACT = ContractNumber(21)
+#: The contract that holds a criterion's adapter test to the name the plan gave it.
+TESTS_PLANNED_CONTRACT = ContractNumber(34)
+#: The contract that gives a criterion the adapter shape only where its `Then` names what the adapter produces.
+ADAPTER_SHAPE_CONTRACT = ContractNumber(35)
+#: The contract that holds every domain type a story changes to a line under the plan's `## Invariants`.
+INVARIANTS_COVER_CONTRACT = ContractNumber(36)
+#: The contract that refuses a round's question about a minor alone.
+MINOR_QUESTION_CONTRACT = ContractNumber(36)
+#: The contract that holds the plan to what its gate passed, once a later stage ran.
+PLAN_KEPT_CONTRACT = ContractNumber(38)
 TESTS_MAPPED = CheckName("tests-mapped")
 
 
@@ -215,6 +225,42 @@ def _tests_real(run: Run) -> None:
         run.result.take(DesignChecks.tests_real(run.story, mapped(run), run.evidence))
 
 
+def plan_held_to(run: Run) -> ContractNumber:
+    """The contract a check of the plan's form holds this story's plan to: the profile's, never a later one than the
+    plan came about under (`PlanOrigin`) — a check introduced after a plan was written does not reach back to it."""
+    return run.evidence.plan_origin(run.story.id).held_to(run.contract)
+
+
+@check("tests-planned", stages=("test",), kinds=frozenset((StoryKind.STORY,)), rule="GATE-TESTS-PLANNED")
+def _tests_planned(run: Run) -> None:
+    if plan_held_to(run).value >= TESTS_PLANNED_CONTRACT.value:
+        run.result.take(DesignChecks.tests_planned(run.story, mapped(run), run.evidence))
+
+
+@check("adapter-shape", stages=("plan",), kinds=frozenset((StoryKind.STORY,)), rule="GATE-ADAPTER-SHAPE")
+def _adapter_shape(run: Run) -> None:
+    if plan_held_to(run).value >= ADAPTER_SHAPE_CONTRACT.value:
+        run.result.take(ThenChecks.adapter_shape(run.story, run.evidence))
+
+
+@check("invariants-cover", stages=("build", "tidy"), kinds=frozenset((StoryKind.STORY,)), rule="GATE-INVARIANTS-COVER")
+def _invariants_cover(run: Run) -> None:
+    if plan_held_to(run).value >= INVARIANTS_COVER_CONTRACT.value:
+        run.result.take(DesignChecks.invariants_cover(run.story, run.evidence))
+
+
+@check("minor-question", stages=("test", "build", "tidy"), rule="GATE-MINOR-QUESTION")
+def _minor_question(run: Run) -> None:
+    if run.contract.value >= MINOR_QUESTION_CONTRACT.value:
+        run.result.take(DecisionChecks.minor_questions(run.story, run.evidence))
+
+
+@check("plan-kept", stages=("test", "build", "tidy"), rule="GATE-PLAN-KEPT")
+def _plan_kept(run: Run) -> None:
+    if run.contract.value >= PLAN_KEPT_CONTRACT.value:
+        run.result.take(DesignChecks.plan_kept(run.story, run.evidence))
+
+
 @check("tests-assert-then", stages=("test",), kinds=frozenset((StoryKind.STORY,)), rule="GATE-TESTS-ASSERT-THEN")
 def _tests_assert_then(run: Run) -> None:
     run.result.take(ThenChecks.asserted(run.story, mapped(run), run.evidence))
@@ -283,6 +329,7 @@ def _plan(run: Run) -> None:
     "GATE-GLOSSARY",
     "GATE-REVIEWS",
     "GATE-JUDGE-PERSPECTIVE",
+    "GATE-JUDGE-CLASS",
 ))
 def _document(run: Run) -> None:
     passed = DeliveryChecks.story_pass(run.story, run.evidence, workflow().hand_over(workflow().role(Role.JUDGES)))
@@ -293,6 +340,7 @@ def _document(run: Run) -> None:
     run.result.take(DeliveryChecks.documented(run.story, run.evidence))
     run.result.take(DeliveryChecks.proposals_landed(run.story, run.evidence))
     run.result.take(DeliveryChecks.reviews(run.story, run.evidence))
+    run.result.take(DeliveryChecks.finding_classes(run.story, run.contract, run.evidence))
 
 
 @check("integrate", stages=("integrate",), rule=(

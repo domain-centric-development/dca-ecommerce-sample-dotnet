@@ -6,9 +6,39 @@ import enum
 import typing
 
 from ....building_blocks import Value
-from .profile_facts import ByteSize
+from .profile_facts import ByteSize, ContractNumber
 from .story_state import Detail
 from .story_words import Place, ScenarioKey, Selector
+
+
+class PlannedTest(Value):
+    """The adapter test the plan names for a criterion's adapter shape — `<Class>#<method>`, named after the state it
+    shows — or none, where the shape names no test."""
+
+    key: ScenarioKey
+    test: typing.Optional[Selector]
+
+    def found_in(self, selectors: typing.Iterable[Selector]) -> bool:
+        """Whether one of the criterion's mapped tests is this one: the same method, in a class of the same simple
+        name — the plan may name the class without its package."""
+        return self.test is not None and any(same_test(self.test, selector) for selector in selectors)
+
+
+class TestRename(Value):
+    """A planned test a later stage renamed, split or dropped, and why — tests.md's `## Plan changes`,
+    `- `<old>` → `<new>`[, `<new>`] — <why>`, or `→ none`. The plan stays as its gate passed it."""
+
+    old: Selector
+    new: typing.Tuple[Selector, ...]
+    why: Detail
+
+
+def same_test(one: Selector, other: Selector) -> bool:
+    """The same test: the same method in a class of the same simple name — a row names the class with its package or
+    without."""
+    cls, _, method = one.value.partition("#")
+    other_cls, _, other_method = other.value.partition("#")
+    return method == other_method and cls.rsplit(".", 1)[-1] == other_cls.rsplit(".", 1)[-1]
 
 
 class PlanLevels(Value):
@@ -20,6 +50,20 @@ class PlanLevels(Value):
     browser_only: typing.FrozenSet[ScenarioKey]
     adapter: typing.FrozenSet[ScenarioKey]
     both: typing.FrozenSet[ScenarioKey]
+    named: typing.Tuple[PlannedTest, ...] = ()
+    renames: typing.Tuple[TestRename, ...] = ()
+
+    def held_names(self) -> typing.Tuple[PlannedTest, ...]:
+        """The adapter tests a criterion is held to: the plan's, each one a later stage renamed or split replaced by
+        its new names, one it dropped gone."""
+        held: typing.List[PlannedTest] = []
+        for planned in self.named:
+            rename = next((r for r in self.renames if planned.test is not None and same_test(planned.test, r.old)), None)
+            if rename is None:
+                held.append(planned)
+            else:
+                held.extend(PlannedTest(planned.key, new) for new in rename.new)
+        return tuple(held)
 
 
 class HandOverSize(Value):
@@ -39,11 +83,13 @@ class FileChange(enum.Enum):
 
 
 class PlannedFile(Value):
-    """A file the plan's `## Files` says becomes new or is removed, and whether it is there after the build."""
+    """A file the plan's `## Files` says becomes new or is removed, whether it is there after the build, and the reason
+    build.md's `## Plan changes` gives where the build took the planned change back."""
 
     place: Place
     change: FileChange
     _exists: bool
+    withdrawn: typing.Optional[Detail] = None
 
     @property
     def exists(self) -> bool:
@@ -90,3 +136,35 @@ class PlannedDigest(enum.Enum):
     MISSING = "missing"
     CHANGED = "changed"
     SAME = "same"
+
+
+class PlanStamp(enum.Enum):
+    """What the journal knows of the plan as it stands: a passing plan gate stamped it with its contract; plan gates
+    passed before stamps existed and none stamped it; no gate has passed it yet — a new plan; or a stamped plan gate
+    passed it, and it was changed after — by a stage after the plan."""
+
+    STAMPED = "stamped"
+    BEFORE_STAMPS = "before stamps"
+    NEW = "new"
+    CHANGED = "changed since its gate"
+
+
+#: The contract a plan from before the stamps is held to: the one before the first check of the plan's form
+#: (`tests-planned`, contract 34). A plan keeps the rules it was written under.
+UNSTAMPED_PLAN_CONTRACT = ContractNumber(33)
+
+
+class PlanOrigin(Value):
+    """Under which contract the story's plan came about, as the journal records it."""
+
+    stamp: PlanStamp
+    contract: typing.Optional[ContractNumber] = None
+
+    def held_to(self, profile: ContractNumber) -> ContractNumber:
+        """The contract a check of the plan's form holds this plan to: the profile's, but never a later one than the
+        plan was written under — a check introduced after the plan came about does not reach back to it."""
+        if self.stamp is PlanStamp.STAMPED and self.contract is not None:
+            return ContractNumber(min(profile.value, self.contract.value))
+        if self.stamp is PlanStamp.BEFORE_STAMPS:
+            return ContractNumber(min(profile.value, UNSTAMPED_PLAN_CONTRACT.value))
+        return profile

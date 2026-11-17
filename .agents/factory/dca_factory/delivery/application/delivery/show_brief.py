@@ -8,8 +8,8 @@ import typing
 from ....building_blocks import UseCase
 from ...domain.model.jump import RuleId
 from ...domain.model.stack_profile import SkillName
-from ...domain.model.stage import StageName, StageText, Trait
-from ...domain.model.workflow_rule import RuleGroup, RuleText
+from ...domain.model.stage import StageName, StageText, StoryKind, Trait
+from ...domain.model.workflow_rule import ProcessName, RuleGroup, RuleText
 from ...domain.model.story import StoryId
 from ...domain.service.stage_brief import Brief, Carrier, CarrierRole, StageBrief
 from ....sharedkernel.application.profile_source import ProfileSource
@@ -41,7 +41,14 @@ class ShowBriefUseCase(ShowBriefInputPort):
         rules = [rule for rule in RULES.values() if not any(group.covers(rule) for group in groups)]
         return StageBrief(workflow()).of(query.stage, kind, rules,
                                           [RuleId(r) for r in judging(query.stage.value, kind)],
-                                          self._carriers(query.stage))
+                                          self._carriers(query.stage), self._everywhere(kind))
+
+    @staticmethod
+    def _everywhere(kind: StoryKind) -> typing.FrozenSet[RuleId]:
+        """The gate rules every gated stage of <kind> holds a story to — named in a brief by their ids alone."""
+        held = [set(judging(stage.name.value, kind)) for stage in workflow().stages
+                if kind in stage.kinds and Trait.GATED in stage.traits and Trait.IN_ORDER in stage.traits]
+        return frozenset(RuleId(r) for r in set.intersection(*held)) if held else frozenset()
 
     def _ablated(self) -> typing.List[RuleGroup]:
         """The told-rule groups the profile's `ablate:` leaves out of every brief — `<stage>:<section>`, `every:<section>`
@@ -79,3 +86,12 @@ class ShowEveryStageInputPort(UseCase[None, StageText], typing.Protocol):
 class ShowEveryStageUseCase(ShowEveryStageInputPort):
     def execute(self, query: None = None) -> StageText:
         return StageBrief(workflow()).every_stage(list(RULES.values()))
+
+
+class ShowProcessBriefInputPort(UseCase[ProcessName, StageText], typing.Protocol):
+    """What a process beside the stages is told — the reviewers."""
+
+
+class ShowProcessBriefUseCase(ShowProcessBriefInputPort):
+    def execute(self, query: ProcessName) -> StageText:
+        return StageBrief(workflow()).told_to(query, list(RULES.values()))

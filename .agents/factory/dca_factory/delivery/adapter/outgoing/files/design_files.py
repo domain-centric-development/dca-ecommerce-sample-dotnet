@@ -40,6 +40,23 @@ def adapter_shapes(runs: str, story_id: str) -> typing.Tuple[typing.Set[str], ty
     return alone, both
 
 
+#: The adapter test the plan names inside the adapter shape: `integration (adapter: <Adapter>, test: <Class>#<method>)`.
+ADAPTER_TEST = re.compile(r"\btest:\s*`?([A-Za-z_][\w.$]*#[A-Za-z_]\w*)`?")
+
+
+def adapter_tests(runs: str, story_id: str) -> typing.List[typing.Tuple[str, str]]:
+    """The adapter tests the plan names, one `(key, <Class>#<method>)` per adapter shape, with an empty test where the
+    shape names none."""
+    path = os.path.join(runs, story_id, "plan.md")
+    text = read_text(path) if os.path.isfile(path) else ""
+    named: typing.List[typing.Tuple[str, str]] = []
+    for m in LEVEL_LINE.finditer(text):
+        for shape in ADAPTER_SHAPE.finditer(m.group(2).split(" — ", 1)[0]):
+            test = ADAPTER_TEST.search(shape.group(0))
+            named.append((m.group(1), test.group(1) if test else ""))
+    return named
+
+
 #: The kinds of a plan's `## Changes` row that carry invariants: the domain's own types. A use case, a port, an
 #: adapter or a read model has none of its own — its rules are the domain's, reached through the use case.
 DOMAIN_KINDS = re.compile(r"\b(aggregate|entity|value object|value|domain service)\b", re.I)
@@ -257,6 +274,8 @@ def mocked_ports(text: str, markers: typing.Sequence[str], suffixes: typing.Iter
 
 #: A plan's `## Files` line that says what becomes of the file: `- `<path>` — changes: new …` or `… changes: removed …`.
 PLAN_FILE_LINE = re.compile(r"^\s*[-*]\s*`([^`]+)`\s*[—–-]+\s*changes:\s*(new|removed)\b", re.I)
+#: A line of build.md's `## Plan changes`: a planned file the build took back, and why — `- `<path>` — <why>`.
+PLAN_CHANGE_LINE = re.compile(r"^\s*[-*]\s*`([^`]+)`\s*[—–-]+\s*(.+?)\s*$")
 
 
 BREAK_IGNORE = (".git", "build", "bin", "obj", "target", "node_modules", ".gradle", "TestResults", "out")
@@ -264,3 +283,21 @@ BREAK_IGNORE = (".git", "build", "bin", "obj", "target", "node_modules", ".gradl
 
 #: A statement that checks: an assertion library's call, a framework's expectation, a mock's verification.
 ASSERTION_STATEMENT = re.compile(r"\b(?:assert\w*|expect\w*|andExpect\w*|verify\w*|should\w*)\b", re.IGNORECASE)
+
+
+#: A line of tests.md's `## Plan changes`: a planned test renamed, split or dropped — `- `<old>` → `<new>`[, `<new>`]
+#: — <why>`, `→ none` for one dropped.
+TEST_RENAME = re.compile(r"^\s*[-*]\s*`([^`]+#[^`]+)`\s*(?:→|->)\s*(.+?)\s+[—–]\s*(.+?)\s*$")
+
+
+def test_renames(runs: str, story_id: str) -> typing.List[typing.Tuple[str, typing.List[str], str]]:
+    """(old, [new, …], why) for each planned test tests.md's `## Plan changes` renames, splits or drops."""
+    path = os.path.join(runs, story_id, "tests.md")
+    text = read_text(path) if os.path.isfile(path) else ""
+    found = []
+    for line in section_of(text, "plan changes") or []:
+        match = TEST_RENAME.match(line)
+        if match:
+            new = [n for n in re.findall(r"`([^`]+#[^`]+)`", match.group(2))]
+            found.append((match.group(1).strip(), new, match.group(3)))
+    return found

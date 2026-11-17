@@ -67,7 +67,11 @@ from ..files.stage_evidence_files import source_of
 from ..files.status_facts import changed_production
 from ..stack.mutation_runs import mutation_command, run_mutation, score_of
 from ....domain.service.stage_brief import Brief, written
-from ..files.brief_files import brief_dir, EVERY_STAGE, write_brief, write_every_stage, write_told_everywhere
+from ..files.brief_files import brief_dir, EVERY_STAGE, write_brief, write_every_stage, write_file, write_told_everywhere
+
+#: The process the reviewers are, and the brief it is told.
+REVIEW_PROCESS = "review"
+REVIEW_BRIEF = "review.md"
 from ..files.request_files import default_by, REQUEST_JOURNAL, requests_dir
 from ....application.requests.list_requests import target_text
 from ..files.run_readers import contradiction_in, needs_human_lines, open_decision_files, verdict_of_story
@@ -90,6 +94,11 @@ from .....sharedkernel.application.profile_source import ProfileSource
 #
 # Its entry points — the arguments, the signals, the exit codes — are the incoming adapter
 # `delivery/adapter/incoming/runner/run_command.py`; the composition root `infrastructure/runner.py` builds the run.
+
+#: how a stage reads its briefs: what it reads stays in its context for every later turn, so a second read is paid on all
+#: of them — and a shell that prints two files at once cuts the output short, which is what made the second read
+READ_ONCE = ("Read each of these files once, whole, with a read of its own — never two in one shell command, whose "
+             "output is cut short — and do not read one again: it stays in front of you.")
 
 STAGE_SHELL = ("cd, ls, cat, head, tail, wc, sort, grep, diff, pwd, and git status, git diff, git log, git ls-files, "
                "git apply --check, and git rm (a file the plan removes)")
@@ -127,6 +136,9 @@ class RunCases(typing.Protocol):
 
     def every_stage(self, run: Run) -> StageText:
         """What every stage is told, for a session that works no stage (`ShowEveryStageUseCase`)."""
+
+    def told_to(self, run: Run, process: str) -> StageText:
+        """What a process beside the stages is told — the reviewers (`ShowProcessBriefUseCase`)."""
 
     def gate_here(self, argv: typing.Sequence[str]) -> int:
         """The gate's command line (`story-gate.py <argv>`) in this process, wired by its composition root; its exit."""
@@ -727,7 +739,7 @@ class Run(ProfileSource):
         """The prompt's first sentence for one stage: the stage, the story and the brief it works by."""
         every, (own,) = self.briefs(story, [stage], dry)
         return (f"Carry out the {stage} stage of the delivery pipeline for backlog story {story}. Its brief: {own}; "
-                f"what every stage is told: {every} — read both whole, then work by them.")
+                f"what every stage is told: {every} — read both whole, then work by them. {READ_ONCE}")
 
     def fresh_sentence(self, story: str, stages: typing.Sequence[str], dry: bool) -> typing.Optional[str]:
         """What a fresh restart (RUN-ROUNDS-3) is told in place of the earlier attempt's account: where it works from.
@@ -899,7 +911,7 @@ class Run(ProfileSource):
     def window_briefs(self, story: str, stages: typing.Sequence[str], dry: bool) -> str:
         every, own = self.briefs(story, stages, dry)
         return (f"What every stage is told: {every} — read it whole first; each stage's brief, read whole before the "
-                f"stage: {', '.join(f'{stage} {path}' for stage, path in zip(stages, own))}.")
+                f"stage: {', '.join(f'{stage} {path}' for stage, path in zip(stages, own))}. {READ_ONCE}")
 
     def run_reviews(self, story: str, tool: str, dry: bool) -> int:
         """One tool process per perspective, started at once, each writing reviews/<perspective>.md; the judge then
@@ -914,7 +926,10 @@ class Run(ProfileSource):
         folder = f"{self.runs}/{story}/reviews"
         print(f"   reviews: {', '.join(names)} — one process each, at once; the judge converges from "
               "reviews/<perspective>.md")
-        every = self.briefs(story, [stage_of(Role.JUDGES)], dry)[0]
+        # A reviewer is told what reaches it by name (`processes: [review]`), not what every stage is told.
+        every = f"{brief_dir(self.runs, story).replace(os.sep, '/')}/{REVIEW_BRIEF}"
+        if not dry:
+            write_file(every, self.cases.told_to(self, REVIEW_PROCESS).value.rstrip() + "\n")
         prompts = [(f"Review the change of backlog story {story} from the {name} perspective: apply the `{carrier}` "
                     f"skill to the diff {self.evidence(story)}/story.diff, as *A review the runner started* in "
                     f"{every} says. Its input beside the diff: the story and its epic (epic.md "
